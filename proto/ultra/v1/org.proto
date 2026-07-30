@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package ultra.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1";
+
+// OrgRole is a user's role within an org.
+enum OrgRole {
+  ORG_ROLE_UNSPECIFIED = 0;
+  ORG_ROLE_OWNER = 1;
+  ORG_ROLE_ADMIN = 2;
+  ORG_ROLE_MEMBER = 3;
+}
+
+// Org is the tenancy and billing boundary.
+message Org {
+  string id = 1;
+  string name = 2;
+  string plan = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+// OrgMember links a user to an org with a role.
+message OrgMember {
+  string org_id = 1;
+  string user_id = 2;
+  string email = 3;
+  OrgRole role = 4;
+  google.protobuf.Timestamp joined_at = 5;
+}
+
+message CreateOrgRequest {
+  string name = 1;
+}
+
+message CreateOrgResponse {
+  Org org = 1;
+}
+
+message GetOrgRequest {
+  string org_id = 1;
+}
+
+message GetOrgResponse {
+  Org org = 1;
+}
+
+message InviteMemberRequest {
+  string org_id = 1;
+  // Email of an existing user. Invitation flows for unknown emails are a
+  // later phase; for now the user must already exist.
+  string email = 2;
+  OrgRole role = 3;
+}
+
+message InviteMemberResponse {
+  OrgMember member = 1;
+}
+
+message ListMembersRequest {
+  string org_id = 1;
+}
+
+message ListMembersResponse {
+  repeated OrgMember members = 1;
+}
+
+// OrgService manages orgs and membership. The caller of CreateOrg becomes
+// the org's owner.
+service OrgService {
+  rpc CreateOrg(CreateOrgRequest) returns (CreateOrgResponse);
+  rpc GetOrg(GetOrgRequest) returns (GetOrgResponse);
+  rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse);
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+}

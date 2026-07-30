@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package ultra.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1";
+
+// Session is the durable unit of work. It outlives any process, UI, agent
+// loop, or environment, and owns an append-only event log.
+message Session {
+  string id = 1;
+  string org_id = 2;
+  string title = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp archived_at = 5;
+}
+
+message CreateSessionRequest {
+  string org_id = 1;
+  string title = 2;
+}
+
+message CreateSessionResponse {
+  Session session = 1;
+}
+
+message GetSessionRequest {
+  string session_id = 1;
+}
+
+message GetSessionResponse {
+  Session session = 1;
+}
+
+message ListSessionsRequest {
+  string org_id = 1;
+}
+
+message ListSessionsResponse {
+  repeated Session sessions = 1;
+}
+
+// SessionService manages session lifecycle. Access requires membership in
+// the session's org; missing sessions and cross-tenant access return the
+// same not-found error so existence never leaks.
+service SessionService {
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+}

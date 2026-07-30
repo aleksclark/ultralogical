@@ -1,0 +1,198 @@
+// Package conformance is the shared black-box suite every jobqueue backend
+// must pass. It asserts the seam's contract: transactional enqueue
+// visibility, at-least-once redelivery with retry delay, and kind routing.
+// New backends get added to the CI matrix by passing this suite — nothing
+// else in the system may depend on backend-specific behavior.
+package conformance
+
+import (
+	"context"
+	"errors"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/aleksclark/ultralogical/jobqueue"
+)
+
+// Factory builds a started queue for the suite and returns it along with the
+// retry delay the backend promises between attempts (used to assert backoff).
+type Factory func(t *testing.T) (q jobqueue.Queue, retryDelay time.Duration)
+
+type testJob struct {
+	Marker string `json:"marker"`
+}
+
+func (testJob) Kind() string { return "conformance_test" }
+
+type otherJob struct {
+	Marker string `json:"marker"`
+}
+
+func (otherJob) Kind() string { return "conformance_other" }
+
+// recorder collects worked markers with timestamps, thread-safe.
+type recorder struct {
+	mu    sync.Mutex
+	seen  map[string][]time.Time
+	failN map[string]*atomic.Int32 // remaining failures per marker
+}
+
+func newRecorder() *recorder {
+	return &recorder{seen: map[string][]time.Time{}, failN: map[string]*atomic.Int32{}}
+}
+
+func (r *recorder) failFirst(marker string, n int32) {
+	c := &atomic.Int32{}
+	c.Store(n)
+	r.mu.Lock()
+	r.failN[marker] = c
+	r.mu.Unlock()
+}
+
+func (r *recorder) record(marker string) error {
+	r.mu.Lock()
+	r.seen[marker] = append(r.seen[marker], time.Now())
+	c := r.failN[marker]
+	r.mu.Unlock()
+	if c != nil && c.Add(-1) >= 0 {
+		return errors.New("conformance: induced failure")
+	}
+	return nil
+}
+
+func (r *recorder) attempts(marker string) []time.Time {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make([]time.Time, len(r.seen[marker]))
+	copy(out, r.seen[marker])
+	return out
+}
+
+func (r *recorder) waitAttempts(t *testing.T, marker string, n int, timeout time.Duration) []time.Time {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if got := r.attempts(marker); len(got) >= n {
+			return got
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	got := r.attempts(marker)
+	t.Fatalf("marker %q: wanted %d attempts within %s, got %d", marker, n, timeout, len(got))
+	return got
+}
+
+// Run executes the conformance suite against a backend. The pool must point
+// at the same database the queue enqueues through.
+func Run(t *testing.T, pool *pgxpool.Pool, factory Factory) {
+	ctx := context.Background()
+
+	t.Run("TransactionalVisibility", func(t *testing.T) {
+		q, _ := factory(t)
+		rec := newRecorder()
+		jobqueue.Register(q, jobqueue.WorkerFunc[testJob](func(_ context.Context, j testJob) error {
+			return rec.record(j.Marker)
+		}))
+
+		// Uncommitted: hold the tx open, assert nothing is worked.
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := q.EnqueueTx(ctx, tx, testJob{Marker: "committed"}); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(500 * time.Millisecond)
+		if got := rec.attempts("committed"); len(got) != 0 {
+			t.Fatalf("job visible before commit: %d attempts", len(got))
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+		rec.waitAttempts(t, "committed", 1, 10*time.Second)
+
+		// Rolled back: never delivered.
+		tx2, err := pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := q.EnqueueTx(ctx, tx2, testJob{Marker: "rolledback"}); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx2.Rollback(ctx); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(2 * time.Second)
+		if got := rec.attempts("rolledback"); len(got) != 0 {
+			t.Fatalf("rolled-back job was delivered: %d attempts", len(got))
+		}
+	})
+
+	t.Run("AtLeastOnceRedelivery", func(t *testing.T) {
+		q, retryDelay := factory(t)
+		rec := newRecorder()
+		rec.failFirst("retry-me", 1)
+		jobqueue.Register(q, jobqueue.WorkerFunc[testJob](func(_ context.Context, j testJob) error {
+			return rec.record(j.Marker)
+		}))
+
+		enqueue(t, pool, q, testJob{Marker: "retry-me"})
+		attempts := rec.waitAttempts(t, "retry-me", 2, 30*time.Second)
+
+		if len(attempts) < 2 {
+			t.Fatalf("wanted >= 2 attempts, got %d", len(attempts))
+		}
+		// Backoff contract: second attempt respects the promised minimum
+		// delay (with scheduling slack).
+		gap := attempts[1].Sub(attempts[0])
+		if gap < retryDelay/2 {
+			t.Fatalf("retry gap %s below promised delay %s", gap, retryDelay)
+		}
+	})
+
+	t.Run("KindRouting", func(t *testing.T) {
+		q, _ := factory(t)
+		rec := newRecorder()
+		var wrongKind atomic.Int32
+		jobqueue.Register(q, jobqueue.WorkerFunc[testJob](func(_ context.Context, j testJob) error {
+			if j.Marker != "for-test" {
+				wrongKind.Add(1)
+			}
+			return rec.record("test:" + j.Marker)
+		}))
+		jobqueue.Register(q, jobqueue.WorkerFunc[otherJob](func(_ context.Context, j otherJob) error {
+			if j.Marker != "for-other" {
+				wrongKind.Add(1)
+			}
+			return rec.record("other:" + j.Marker)
+		}))
+
+		enqueue(t, pool, q, testJob{Marker: "for-test"})
+		enqueue(t, pool, q, otherJob{Marker: "for-other"})
+
+		rec.waitAttempts(t, "test:for-test", 1, 10*time.Second)
+		rec.waitAttempts(t, "other:for-other", 1, 10*time.Second)
+		if wrongKind.Load() != 0 {
+			t.Fatalf("worker received a job of the wrong kind")
+		}
+	})
+}
+
+func enqueue(t *testing.T, pool *pgxpool.Pool, q jobqueue.Queue, job jobqueue.Job) {
+	t.Helper()
+	ctx := context.Background()
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := q.EnqueueTx(ctx, tx, job); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+}
