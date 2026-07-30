@@ -2,7 +2,8 @@
 
 Ultralogical: a durable-session platform for agentic work — multi-tenant,
 event-sourced sessions that humans and agents share. Go backend, ConnectRPC
-API, Postgres, React/gpui UIs (later phases). Currently at **Phase 0**.
+API, Postgres, React/gpui UIs. Currently at **Phase 1** (durable fantasy
+agent loop + React SPA).
 
 ## Cheatsheet
 
@@ -13,7 +14,9 @@ task generate          # regen from protos (commit the output!)
 task test              # unit + store + queue tests (needs docker)
 task test:functional   # e2e/ acceptance suite (real stack)
 task verify:codegen    # fail if gen/ is stale
-task dev               # local postgres + ultrad
+task dev               # local postgres + ultrad + worker
+ task web:build         # typecheck + build React SPA
+ task web:test          # Playwright golden on real stack
 ```
 
 - Go 1.25+ (toolchain auto-downloads), `buf`, `docker`, `task`, node 22
@@ -45,9 +48,10 @@ task dev               # local postgres + ultrad
 | Doc | Read when |
 |---|---|
 | [agent_docs/architecture.md](agent_docs/architecture.md) | touching http, store, eventbus, tenancy, queue, clients/UIs |
+| [agent_docs/agent_loop.md](agent_docs/agent_loop.md) | touching fantasy, step jobs, credentials, modelscript |
 | [agent_docs/package_layout.md](agent_docs/package_layout.md) | deciding where new code goes |
 | [agent_docs/testing.md](agent_docs/testing.md) | writing/running tests, using the harness |
 | [agent_docs/codegen.md](agent_docs/codegen.md) | changing protos, adding events/RPCs |
 | [agent_docs/conventions.md](agent_docs/conventions.md) | code style, layout rules, errors, migrations, never-do list |
 | [plan/index.md](plan/index.md) | architecture rationale + full roadmap |
-| [plan/phase_1.md](plan/phase_1.md) | the next phase to implement |
+| [plan/phase_2.md](plan/phase_2.md) | the next phase to implement |

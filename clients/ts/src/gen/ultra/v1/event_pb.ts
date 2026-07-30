@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file ultra/v1/event.proto.
  */
 export const file_ultra_v1_event: GenFile = /*@__PURE__*/
-  fileDesc("ChR1bHRyYS92MS9ldmVudC5wcm90bxIIdWx0cmEudjEiNgoFQWN0b3ISIQoEdHlwZRgBIAEoDjITLnVsdHJhLnYxLkFjdG9yVHlwZRIKCgJpZBgCIAEoCSIbCgtVc2VyTWVzc2FnZRIMCgR0ZXh0GAEgASgJIhoKCkFubm90YXRpb24SDAoEdGV4dBgBIAEoCSJ0CgxFdmVudFBheWxvYWQSLQoMdXNlcl9tZXNzYWdlGAogASgLMhUudWx0cmEudjEuVXNlck1lc3NhZ2VIABIqCgphbm5vdGF0aW9uGAsgASgLMhQudWx0cmEudjEuQW5ub3RhdGlvbkgAQgkKB3BheWxvYWQioAEKDFNlc3Npb25FdmVudBISCgpzZXNzaW9uX2lkGAEgASgJEgsKA3NlcRgCIAEoAxImCgJ0cxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHgoFYWN0b3IYBCABKAsyDy51bHRyYS52MS5BY3RvchInCgdwYXlsb2FkGAUgASgLMhYudWx0cmEudjEuRXZlbnRQYXlsb2FkIkwKDUFwcGVuZFJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRInCgdwYXlsb2FkGAIgASgLMhYudWx0cmEudjEuRXZlbnRQYXlsb2FkIh0KDkFwcGVuZFJlc3BvbnNlEgsKA3NlcRgBIAEoAyI4ChBTdWJzY3JpYmVSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSEAoIZnJvbV9zZXEYAiABKAMiOgoRU3Vic2NyaWJlUmVzcG9uc2USJQoFZXZlbnQYASABKAsyFi51bHRyYS52MS5TZXNzaW9uRXZlbnQqaQoJQWN0b3JUeXBlEhoKFkFDVE9SX1RZUEVfVU5TUEVDSUZJRUQQABITCg9BQ1RPUl9UWVBFX1VTRVIQARIUChBBQ1RPUl9UWVBFX0FHRU5UEAISFQoRQUNUT1JfVFlQRV9TWVNURU0QAzKTAQoMRXZlbnRTZXJ2aWNlEjsKBkFwcGVuZBIXLnVsdHJhLnYxLkFwcGVuZFJlcXVlc3QaGC51bHRyYS52MS5BcHBlbmRSZXNwb25zZRJGCglTdWJzY3JpYmUSGi51bHRyYS52MS5TdWJzY3JpYmVSZXF1ZXN0GhsudWx0cmEudjEuU3Vic2NyaWJlUmVzcG9uc2UwAUI8WjpnaXRodWIuY29tL2FsZWtzY2xhcmsvdWx0cmFsb2dpY2FsL2dlbi9nby91bHRyYS92MTt1bHRyYXYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChR1bHRyYS92MS9ldmVudC5wcm90bxIIdWx0cmEudjEiNgoFQWN0b3ISIQoEdHlwZRgBIAEoDjITLnVsdHJhLnYxLkFjdG9yVHlwZRIKCgJpZBgCIAEoCSIbCgtVc2VyTWVzc2FnZRIMCgR0ZXh0GAEgASgJIhoKCkFubm90YXRpb24SDAoEdGV4dBgBIAEoCSIsCgpSdW5TdGFydGVkEg4KBnJ1bl9pZBgBIAEoCRIOCgZwcm9tcHQYAiABKAkiQgoLU3RlcFN0YXJ0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSDwoHYXR0ZW1wdBgDIAEoBSJjCglUZXh0RGVsdGESDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSDwoHYXR0ZW1wdBgDIAEoBRITCgtkZWx0YV9pbmRleBgEIAEoBRIMCgR0ZXh0GAUgASgJImgKDlJlYXNvbmluZ0RlbHRhEg4KBnJ1bl9pZBgBIAEoCRISCgpzdGVwX2luZGV4GAIgASgFEg8KB2F0dGVtcHQYAyABKAUSEwoLZGVsdGFfaW5kZXgYBCABKAUSDAoEdGV4dBgFIAEoCSJoCg9Ub29sQ2FsbFN0YXJ0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSFAoMdG9vbF9jYWxsX2lkGAMgASgJEgwKBG5hbWUYBCABKAkSDQoFaW5wdXQYBSABKAkidwoKVG9vbFJlc3VsdBIOCgZydW5faWQYASABKAkSEgoKc3RlcF9pbmRleBgCIAEoBRIUCgx0b29sX2NhbGxfaWQYAyABKAkSDAoEbmFtZRgEIAEoCRIPCgdjb250ZW50GAUgASgJEhAKCGlzX2Vycm9yGAYgASgIInAKDFN0ZXBGaW5pc2hlZBIOCgZydW5faWQYASABKAkSEgoKc3RlcF9pbmRleBgCIAEoBRIRCgl0b2tlbnNfaW4YAyABKAMSEgoKdG9rZW5zX291dBgEIAEoAxIVCg1maW5pc2hfcmVhc29uGAUgASgJIikKCFF1ZXN0aW9uEgwKBHRleHQYASABKAkSDwoHY2hvaWNlcxgCIAMoCSJDCgtSdW5Bd2FpdGluZxIOCgZydW5faWQYASABKAkSJAoIcXVlc3Rpb24YAiABKAsyEi51bHRyYS52MS5RdWVzdGlvbiIyCgxSdW5Db21wbGV0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCmZpbmFsX3RleHQYAiABKAkiPAoJUnVuRmFpbGVkEg4KBnJ1bl9pZBgBIAEoCRIOCgZyZWFzb24YAiABKAkSDwoHbWVzc2FnZRgDIAEoCSIeCgxSdW5DYW5jZWxsZWQSDgoGcnVuX2lkGAEgASgJIoIFCgxFdmVudFBheWxvYWQSLQoMdXNlcl9tZXNzYWdlGAogASgLMhUudWx0cmEudjEuVXNlck1lc3NhZ2VIABIqCgphbm5vdGF0aW9uGAsgASgLMhQudWx0cmEudjEuQW5ub3RhdGlvbkgAEisKC3J1bl9zdGFydGVkGAwgASgLMhQudWx0cmEudjEuUnVuU3RhcnRlZEgAEi0KDHN0ZXBfc3RhcnRlZBgNIAEoCzIVLnVsdHJhLnYxLlN0ZXBTdGFydGVkSAASKQoKdGV4dF9kZWx0YRgOIAEoCzITLnVsdHJhLnYxLlRleHREZWx0YUgAEjMKD3JlYXNvbmluZ19kZWx0YRgPIAEoCzIYLnVsdHJhLnYxLlJlYXNvbmluZ0RlbHRhSAASNgoRdG9vbF9jYWxsX3N0YXJ0ZWQYECABKAsyGS51bHRyYS52MS5Ub29sQ2FsbFN0YXJ0ZWRIABIrCgt0b29sX3Jlc3VsdBgRIAEoCzIULnVsdHJhLnYxLlRvb2xSZXN1bHRIABIvCg1zdGVwX2ZpbmlzaGVkGBIgASgLMhYudWx0cmEudjEuU3RlcEZpbmlzaGVkSAASLQoMcnVuX2F3YWl0aW5nGBMgASgLMhUudWx0cmEudjEuUnVuQXdhaXRpbmdIABIvCg1ydW5fY29tcGxldGVkGBQgASgLMhYudWx0cmEudjEuUnVuQ29tcGxldGVkSAASKQoKcnVuX2ZhaWxlZBgVIAEoCzITLnVsdHJhLnYxLlJ1bkZhaWxlZEgAEi8KDXJ1bl9jYW5jZWxsZWQYFiABKAsyFi51bHRyYS52MS5SdW5DYW5jZWxsZWRIAEIJCgdwYXlsb2FkIqABCgxTZXNzaW9uRXZlbnQSEgoKc2Vzc2lvbl9pZBgBIAEoCRILCgNzZXEYAiABKAMSJgoCdHMYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh4KBWFjdG9yGAQgASgLMg8udWx0cmEudjEuQWN0b3ISJwoHcGF5bG9hZBgFIAEoCzIWLnVsdHJhLnYxLkV2ZW50UGF5bG9hZCJMCg1BcHBlbmRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSJwoHcGF5bG9hZBgCIAEoCzIWLnVsdHJhLnYxLkV2ZW50UGF5bG9hZCIdCg5BcHBlbmRSZXNwb25zZRILCgNzZXEYASABKAMiOAoQU3Vic2NyaWJlUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEhAKCGZyb21fc2VxGAIgASgDIjoKEVN1YnNjcmliZVJlc3BvbnNlEiUKBWV2ZW50GAEgASgLMhYudWx0cmEudjEuU2Vzc2lvbkV2ZW50KmkKCUFjdG9yVHlwZRIaChZBQ1RPUl9UWVBFX1VOU1BFQ0lGSUVEEAASEwoPQUNUT1JfVFlQRV9VU0VSEAESFAoQQUNUT1JfVFlQRV9BR0VOVBACEhUKEUFDVE9SX1RZUEVfU1lTVEVNEAMykwEKDEV2ZW50U2VydmljZRI7CgZBcHBlbmQSFy51bHRyYS52MS5BcHBlbmRSZXF1ZXN0GhgudWx0cmEudjEuQXBwZW5kUmVzcG9uc2USRgoJU3Vic2NyaWJlEhoudWx0cmEudjEuU3Vic2NyaWJlUmVxdWVzdBobLnVsdHJhLnYxLlN1YnNjcmliZVJlc3BvbnNlMAFCPFo6Z2l0aHViLmNvbS9hbGVrc2NsYXJrL3VsdHJhbG9naWNhbC9nZW4vZ28vdWx0cmEvdjE7dWx0cmF2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * Actor identifies the producer of an event.
@@ -77,6 +77,383 @@ export const AnnotationSchema: GenMessage<Annotation> = /*@__PURE__*/
   messageDesc(file_ultra_v1_event, 2);
 
 /**
+ * RunStarted marks an agent run's creation.
+ *
+ * @generated from message ultra.v1.RunStarted
+ */
+export type RunStarted = Message<"ultra.v1.RunStarted"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: string prompt = 2;
+   */
+  prompt: string;
+};
+
+/**
+ * Describes the message ultra.v1.RunStarted.
+ * Use `create(RunStartedSchema)` to create a new message.
+ */
+export const RunStartedSchema: GenMessage<RunStarted> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 3);
+
+/**
+ * StepStarted marks the beginning of a step execution attempt. Attempt > 1
+ * supersedes any partial deltas from earlier attempts of the same step.
+ *
+ * @generated from message ultra.v1.StepStarted
+ */
+export type StepStarted = Message<"ultra.v1.StepStarted"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: int32 step_index = 2;
+   */
+  stepIndex: number;
+
+  /**
+   * @generated from field: int32 attempt = 3;
+   */
+  attempt: number;
+};
+
+/**
+ * Describes the message ultra.v1.StepStarted.
+ * Use `create(StepStartedSchema)` to create a new message.
+ */
+export const StepStartedSchema: GenMessage<StepStarted> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 4);
+
+/**
+ * TextDelta is a batched chunk of streamed assistant text.
+ *
+ * @generated from message ultra.v1.TextDelta
+ */
+export type TextDelta = Message<"ultra.v1.TextDelta"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: int32 step_index = 2;
+   */
+  stepIndex: number;
+
+  /**
+   * @generated from field: int32 attempt = 3;
+   */
+  attempt: number;
+
+  /**
+   * @generated from field: int32 delta_index = 4;
+   */
+  deltaIndex: number;
+
+  /**
+   * @generated from field: string text = 5;
+   */
+  text: string;
+};
+
+/**
+ * Describes the message ultra.v1.TextDelta.
+ * Use `create(TextDeltaSchema)` to create a new message.
+ */
+export const TextDeltaSchema: GenMessage<TextDelta> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 5);
+
+/**
+ * ReasoningDelta is a batched chunk of streamed reasoning text.
+ *
+ * @generated from message ultra.v1.ReasoningDelta
+ */
+export type ReasoningDelta = Message<"ultra.v1.ReasoningDelta"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: int32 step_index = 2;
+   */
+  stepIndex: number;
+
+  /**
+   * @generated from field: int32 attempt = 3;
+   */
+  attempt: number;
+
+  /**
+   * @generated from field: int32 delta_index = 4;
+   */
+  deltaIndex: number;
+
+  /**
+   * @generated from field: string text = 5;
+   */
+  text: string;
+};
+
+/**
+ * Describes the message ultra.v1.ReasoningDelta.
+ * Use `create(ReasoningDeltaSchema)` to create a new message.
+ */
+export const ReasoningDeltaSchema: GenMessage<ReasoningDelta> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 6);
+
+/**
+ * ToolCallStarted records a completed tool invocation request.
+ *
+ * @generated from message ultra.v1.ToolCallStarted
+ */
+export type ToolCallStarted = Message<"ultra.v1.ToolCallStarted"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: int32 step_index = 2;
+   */
+  stepIndex: number;
+
+  /**
+   * @generated from field: string tool_call_id = 3;
+   */
+  toolCallId: string;
+
+  /**
+   * @generated from field: string name = 4;
+   */
+  name: string;
+
+  /**
+   * JSON as sent by the model
+   *
+   * @generated from field: string input = 5;
+   */
+  input: string;
+};
+
+/**
+ * Describes the message ultra.v1.ToolCallStarted.
+ * Use `create(ToolCallStartedSchema)` to create a new message.
+ */
+export const ToolCallStartedSchema: GenMessage<ToolCallStarted> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 7);
+
+/**
+ * ToolResult records a tool execution result.
+ *
+ * @generated from message ultra.v1.ToolResult
+ */
+export type ToolResult = Message<"ultra.v1.ToolResult"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: int32 step_index = 2;
+   */
+  stepIndex: number;
+
+  /**
+   * @generated from field: string tool_call_id = 3;
+   */
+  toolCallId: string;
+
+  /**
+   * @generated from field: string name = 4;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string content = 5;
+   */
+  content: string;
+
+  /**
+   * @generated from field: bool is_error = 6;
+   */
+  isError: boolean;
+};
+
+/**
+ * Describes the message ultra.v1.ToolResult.
+ * Use `create(ToolResultSchema)` to create a new message.
+ */
+export const ToolResultSchema: GenMessage<ToolResult> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 8);
+
+/**
+ * StepFinished closes a step with its usage audit.
+ *
+ * @generated from message ultra.v1.StepFinished
+ */
+export type StepFinished = Message<"ultra.v1.StepFinished"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: int32 step_index = 2;
+   */
+  stepIndex: number;
+
+  /**
+   * @generated from field: int64 tokens_in = 3;
+   */
+  tokensIn: bigint;
+
+  /**
+   * @generated from field: int64 tokens_out = 4;
+   */
+  tokensOut: bigint;
+
+  /**
+   * @generated from field: string finish_reason = 5;
+   */
+  finishReason: string;
+};
+
+/**
+ * Describes the message ultra.v1.StepFinished.
+ * Use `create(StepFinishedSchema)` to create a new message.
+ */
+export const StepFinishedSchema: GenMessage<StepFinished> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 9);
+
+/**
+ * Question is a structured question an agent asks a human.
+ *
+ * @generated from message ultra.v1.Question
+ */
+export type Question = Message<"ultra.v1.Question"> & {
+  /**
+   * @generated from field: string text = 1;
+   */
+  text: string;
+
+  /**
+   * @generated from field: repeated string choices = 2;
+   */
+  choices: string[];
+};
+
+/**
+ * Describes the message ultra.v1.Question.
+ * Use `create(QuestionSchema)` to create a new message.
+ */
+export const QuestionSchema: GenMessage<Question> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 10);
+
+/**
+ * RunAwaiting marks a run parked on human input.
+ *
+ * @generated from message ultra.v1.RunAwaiting
+ */
+export type RunAwaiting = Message<"ultra.v1.RunAwaiting"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: ultra.v1.Question question = 2;
+   */
+  question?: Question | undefined;
+};
+
+/**
+ * Describes the message ultra.v1.RunAwaiting.
+ * Use `create(RunAwaitingSchema)` to create a new message.
+ */
+export const RunAwaitingSchema: GenMessage<RunAwaiting> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 11);
+
+/**
+ * RunCompleted is a run's terminal success event.
+ *
+ * @generated from message ultra.v1.RunCompleted
+ */
+export type RunCompleted = Message<"ultra.v1.RunCompleted"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: string final_text = 2;
+   */
+  finalText: string;
+};
+
+/**
+ * Describes the message ultra.v1.RunCompleted.
+ * Use `create(RunCompletedSchema)` to create a new message.
+ */
+export const RunCompletedSchema: GenMessage<RunCompleted> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 12);
+
+/**
+ * RunFailed is a run's terminal failure event. Reason is typed and
+ * user-actionable; it never contains raw provider errors.
+ *
+ * @generated from message ultra.v1.RunFailed
+ */
+export type RunFailed = Message<"ultra.v1.RunFailed"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: string reason = 2;
+   */
+  reason: string;
+
+  /**
+   * @generated from field: string message = 3;
+   */
+  message: string;
+};
+
+/**
+ * Describes the message ultra.v1.RunFailed.
+ * Use `create(RunFailedSchema)` to create a new message.
+ */
+export const RunFailedSchema: GenMessage<RunFailed> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 13);
+
+/**
+ * RunCancelled is a run's terminal cancellation event.
+ *
+ * @generated from message ultra.v1.RunCancelled
+ */
+export type RunCancelled = Message<"ultra.v1.RunCancelled"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+};
+
+/**
+ * Describes the message ultra.v1.RunCancelled.
+ * Use `create(RunCancelledSchema)` to create a new message.
+ */
+export const RunCancelledSchema: GenMessage<RunCancelled> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 14);
+
+/**
  * EventPayload is the typed payload of a session event. Every observable
  * thing in a session is one of these variants; later phases add variants
  * (additive only — enforced by breaking-change CI).
@@ -99,6 +476,72 @@ export type EventPayload = Message<"ultra.v1.EventPayload"> & {
      */
     value: Annotation;
     case: "annotation";
+  } | {
+    /**
+     * @generated from field: ultra.v1.RunStarted run_started = 12;
+     */
+    value: RunStarted;
+    case: "runStarted";
+  } | {
+    /**
+     * @generated from field: ultra.v1.StepStarted step_started = 13;
+     */
+    value: StepStarted;
+    case: "stepStarted";
+  } | {
+    /**
+     * @generated from field: ultra.v1.TextDelta text_delta = 14;
+     */
+    value: TextDelta;
+    case: "textDelta";
+  } | {
+    /**
+     * @generated from field: ultra.v1.ReasoningDelta reasoning_delta = 15;
+     */
+    value: ReasoningDelta;
+    case: "reasoningDelta";
+  } | {
+    /**
+     * @generated from field: ultra.v1.ToolCallStarted tool_call_started = 16;
+     */
+    value: ToolCallStarted;
+    case: "toolCallStarted";
+  } | {
+    /**
+     * @generated from field: ultra.v1.ToolResult tool_result = 17;
+     */
+    value: ToolResult;
+    case: "toolResult";
+  } | {
+    /**
+     * @generated from field: ultra.v1.StepFinished step_finished = 18;
+     */
+    value: StepFinished;
+    case: "stepFinished";
+  } | {
+    /**
+     * @generated from field: ultra.v1.RunAwaiting run_awaiting = 19;
+     */
+    value: RunAwaiting;
+    case: "runAwaiting";
+  } | {
+    /**
+     * @generated from field: ultra.v1.RunCompleted run_completed = 20;
+     */
+    value: RunCompleted;
+    case: "runCompleted";
+  } | {
+    /**
+     * @generated from field: ultra.v1.RunFailed run_failed = 21;
+     */
+    value: RunFailed;
+    case: "runFailed";
+  } | {
+    /**
+     * @generated from field: ultra.v1.RunCancelled run_cancelled = 22;
+     */
+    value: RunCancelled;
+    case: "runCancelled";
   } | { case: undefined; value?: undefined };
 };
 
@@ -107,7 +550,7 @@ export type EventPayload = Message<"ultra.v1.EventPayload"> & {
  * Use `create(EventPayloadSchema)` to create a new message.
  */
 export const EventPayloadSchema: GenMessage<EventPayload> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 3);
+  messageDesc(file_ultra_v1_event, 15);
 
 /**
  * SessionEvent is one entry in a session's append-only event log. Seq is
@@ -147,7 +590,7 @@ export type SessionEvent = Message<"ultra.v1.SessionEvent"> & {
  * Use `create(SessionEventSchema)` to create a new message.
  */
 export const SessionEventSchema: GenMessage<SessionEvent> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 4);
+  messageDesc(file_ultra_v1_event, 16);
 
 /**
  * @generated from message ultra.v1.AppendRequest
@@ -169,7 +612,7 @@ export type AppendRequest = Message<"ultra.v1.AppendRequest"> & {
  * Use `create(AppendRequestSchema)` to create a new message.
  */
 export const AppendRequestSchema: GenMessage<AppendRequest> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 5);
+  messageDesc(file_ultra_v1_event, 17);
 
 /**
  * @generated from message ultra.v1.AppendResponse
@@ -189,7 +632,7 @@ export type AppendResponse = Message<"ultra.v1.AppendResponse"> & {
  * Use `create(AppendResponseSchema)` to create a new message.
  */
 export const AppendResponseSchema: GenMessage<AppendResponse> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 6);
+  messageDesc(file_ultra_v1_event, 18);
 
 /**
  * @generated from message ultra.v1.SubscribeRequest
@@ -213,7 +656,7 @@ export type SubscribeRequest = Message<"ultra.v1.SubscribeRequest"> & {
  * Use `create(SubscribeRequestSchema)` to create a new message.
  */
 export const SubscribeRequestSchema: GenMessage<SubscribeRequest> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 7);
+  messageDesc(file_ultra_v1_event, 19);
 
 /**
  * @generated from message ultra.v1.SubscribeResponse
@@ -234,7 +677,7 @@ export type SubscribeResponse = Message<"ultra.v1.SubscribeResponse"> & {
  * Use `create(SubscribeResponseSchema)` to create a new message.
  */
 export const SubscribeResponseSchema: GenMessage<SubscribeResponse> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 8);
+  messageDesc(file_ultra_v1_event, 20);
 
 /**
  * ActorType classifies who produced an event.

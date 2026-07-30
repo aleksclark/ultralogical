@@ -1,11 +1,13 @@
 // Package harness boots the real stack for functional tests: real Postgres
-// (shared container, fresh database per test), migrations, and ultrad as a
-// real child process on a random port. Tests interact only through the
-// public API via testclient — the same artifacts users consume.
+// (shared container, fresh database per test), migrations, ultrad and worker
+// as real child processes on random ports, plus a modelscript server (the
+// only substituted component — it replaces the LLM vendor at the network
+// boundary). Tests interact only through the public API via testclient.
 package harness
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -17,9 +19,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	ultra "github.com/aleksclark/ultralogical"
 	"github.com/aleksclark/ultralogical/postgres"
+	"github.com/aleksclark/ultralogical/secrets"
+	"github.com/aleksclark/ultralogical/testkit/modelscript"
 	"github.com/aleksclark/ultralogical/testkit/pgtest"
 	"github.com/aleksclark/ultralogical/testkit/testclient"
 )
@@ -31,45 +36,83 @@ const (
 	TokenBob   = "tok-bob"
 	EmailAlice = "alice@example.com"
 	EmailBob   = "bob@example.com"
+
+	// CanaryAPIKey is the secret embedded in org A's seeded inference
+	// credential. Tests assert it never leaks into events, logs, or errors.
+	CanaryAPIKey = "sk-canary-XyZZy-0451-leak-detector"
 )
 
-// Stack is a running ultrad + database with seeded identities.
+// Options tune the harness.
+type Options struct {
+	// SeedCredential controls whether org A gets a default openai
+	// credential pointing at the modelscript server. Default true.
+	SeedCredential bool
+	// WorkerEnv adds environment variables to the worker process.
+	WorkerEnv []string
+}
+
+// Opt mutates Options.
+type Opt func(*Options)
+
+// WithoutSeedCredential leaves org A credential-less (for A1.7a).
+func WithoutSeedCredential() Opt { return func(o *Options) { o.SeedCredential = false } }
+
+// WithWorkerEnv adds env vars to the worker process.
+func WithWorkerEnv(kv ...string) Opt {
+	return func(o *Options) { o.WorkerEnv = append(o.WorkerEnv, kv...) }
+}
+
+// Stack is a running ultrad + worker + database + modelscript with seeded
+// identities.
 type Stack struct {
 	BaseURL     string
 	DatabaseURL string
+	MasterKey   string
 	OrgA        ultra.Org
 	OrgB        ultra.Org
 	Alice       ultra.User
 	Bob         ultra.User
 	Store       *postgres.Store
+	Model       *modelscript.Server
+
+	workerMu  sync.Mutex
+	workerCmd *exec.Cmd
+	workerEnv []string
+	ultradBin string
+	workerBin string
+	t         *testing.T
 }
 
 var (
 	buildOnce sync.Once
 	buildErr  error
-	ultradBin string
+	binDir    string
 )
 
-// binary builds ultrad once per test process.
-func binary(t *testing.T) string {
+// binaries builds ultrad and worker once per test process.
+func binaries(t *testing.T) (string, string) {
 	t.Helper()
 	buildOnce.Do(func() {
-		dir, err := os.MkdirTemp("", "ultrad-bin-*")
+		dir, err := os.MkdirTemp("", "ultra-bin-*")
 		if err != nil {
 			buildErr = err
 			return
 		}
-		ultradBin = filepath.Join(dir, "ultrad")
-		cmd := exec.Command("go", "build", "-o", ultradBin, "github.com/aleksclark/ultralogical/cmd/ultrad")
-		cmd.Env = os.Environ()
-		if out, err := cmd.CombinedOutput(); err != nil {
-			buildErr = fmt.Errorf("build ultrad: %w\n%s", err, out)
+		binDir = dir
+		for _, target := range []string{"ultrad", "worker"} {
+			cmd := exec.Command("go", "build", "-o", filepath.Join(dir, target),
+				"github.com/aleksclark/ultralogical/cmd/"+target)
+			cmd.Env = os.Environ()
+			if out, err := cmd.CombinedOutput(); err != nil {
+				buildErr = fmt.Errorf("build %s: %w\n%s", target, err, out)
+				return
+			}
 		}
 	})
 	if buildErr != nil {
 		t.Fatal(buildErr)
 	}
-	return ultradBin
+	return filepath.Join(binDir, "ultrad"), filepath.Join(binDir, "worker")
 }
 
 func freePort(t *testing.T) int {
@@ -83,11 +126,15 @@ func freePort(t *testing.T) int {
 }
 
 // Up boots a full stack and registers cleanup on the test.
-func Up(t *testing.T) *Stack {
+func Up(t *testing.T, opts ...Opt) *Stack {
 	t.Helper()
+	options := Options{SeedCredential: true}
+	for _, opt := range opts {
+		opt(&options)
+	}
 	ctx := context.Background()
 
-	bin := binary(t)
+	ultradBin, workerBin := binaries(t)
 	dbURL := pgtest.NewDB(t)
 	if err := postgres.Migrate(ctx, dbURL); err != nil {
 		t.Fatal(err)
@@ -99,34 +146,108 @@ func Up(t *testing.T) *Stack {
 	}
 	t.Cleanup(pool.Close)
 
-	stack := &Stack{DatabaseURL: dbURL, Store: store}
-	stack.seed(t, store)
+	masterKey, err := secrets.GenerateMasterKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stack := &Stack{
+		DatabaseURL: dbURL,
+		MasterKey:   masterKey,
+		Store:       store,
+		Model:       modelscript.New(),
+		ultradBin:   ultradBin,
+		workerBin:   workerBin,
+		workerEnv:   options.WorkerEnv,
+		t:           t,
+	}
+	t.Cleanup(stack.Model.Close)
+	stack.seed(t, store, options)
 
 	port := freePort(t)
 	stack.BaseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
 
-	cmd := exec.Command(bin)
-	cmd.Env = append(os.Environ(),
+	ultradCmd := exec.Command(ultradBin)
+	ultradCmd.Env = append(os.Environ(),
 		"DATABASE_URL="+dbURL,
 		fmt.Sprintf("ULTRA_ADDR=127.0.0.1:%d", port),
 		fmt.Sprintf("ULTRA_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob),
+		"ULTRA_MASTER_KEY="+masterKey,
+		"ULTRA_DEFAULT_MODEL=mock-model",
 		"ULTRA_MIGRATE=false",
 	)
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
+	ultradCmd.Stdout = os.Stderr
+	ultradCmd.Stderr = os.Stderr
+	if err := ultradCmd.Start(); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_ = cmd.Process.Kill()
-		_, _ = cmd.Process.Wait()
+		_ = ultradCmd.Process.Kill()
+		_, _ = ultradCmd.Process.Wait()
 	})
 
+	stack.StartWorker()
 	waitHealthy(t, stack.BaseURL)
 	return stack
 }
 
-func (s *Stack) seed(t *testing.T, store *postgres.Store) {
+// StartWorker launches a worker process. Call KillWorker first when
+// simulating crashes.
+func (s *Stack) StartWorker() {
+	s.workerMu.Lock()
+	defer s.workerMu.Unlock()
+	cmd := exec.Command(s.workerBin)
+	cmd.Env = append(os.Environ(),
+		"DATABASE_URL="+s.DatabaseURL,
+		"ULTRA_MASTER_KEY="+s.MasterKey,
+		"ULTRA_JOB_TIMEOUT=20s",
+		"ULTRA_RESCUE_AFTER=21s",
+	)
+	cmd.Env = append(cmd.Env, s.workerEnv...)
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		s.t.Fatal(err)
+	}
+	s.workerCmd = cmd
+	s.t.Cleanup(func() {
+		s.workerMu.Lock()
+		defer s.workerMu.Unlock()
+		if s.workerCmd != nil {
+			_ = s.workerCmd.Process.Kill()
+			_, _ = s.workerCmd.Process.Wait()
+			s.workerCmd = nil
+		}
+	})
+}
+
+// KillWorker SIGKILLs the worker process (crash simulation).
+func (s *Stack) KillWorker() {
+	s.workerMu.Lock()
+	defer s.workerMu.Unlock()
+	if s.workerCmd != nil {
+		_ = s.workerCmd.Process.Kill()
+		_, _ = s.workerCmd.Process.Wait()
+		s.workerCmd = nil
+	}
+}
+
+// QueueDepth returns the number of queued/running step jobs (harness-side
+// inspection of river's table for awaiting-state assertions).
+func (s *Stack) QueueDepth(ctx context.Context) (int, error) {
+	pool, err := pgxpool.New(ctx, s.DatabaseURL)
+	if err != nil {
+		return 0, err
+	}
+	defer pool.Close()
+	var n int
+	err = pool.QueryRow(ctx,
+		`SELECT count(*) FROM river_job WHERE state IN ('available', 'running', 'scheduled', 'retryable')`).
+		Scan(&n)
+	return n, err
+}
+
+func (s *Stack) seed(t *testing.T, store *postgres.Store, options Options) {
 	t.Helper()
 	ctx := context.Background()
 
@@ -153,6 +274,32 @@ func (s *Stack) seed(t *testing.T, store *postgres.Store) {
 		if err := store.Orgs().AddMember(ctx, m); err != nil {
 			t.Fatal(err)
 		}
+	}
+
+	if options.SeedCredential {
+		s.SeedCredential(t, s.OrgA.ID, "default", CanaryAPIKey, s.Model.URL())
+	}
+}
+
+// SeedCredential stores an encrypted openai inference credential for an org.
+func (s *Stack) SeedCredential(t *testing.T, org ultra.OrgID, name, apiKey, baseURL string) {
+	t.Helper()
+	keyring, err := secrets.NewAESKeyring(s.MasterKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload, err := json.Marshal(ultra.InferencePayload{APIKey: apiKey, BaseURL: baseURL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	enc, err := keyring.Encrypt(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Store.Org(org).Credentials().Put(context.Background(), ultra.Credential{
+		Kind: ultra.CredentialKindOpenAI, Name: name, EncPayload: enc,
+	}); err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -17,8 +17,10 @@ type orgScope struct {
 	org ultra.OrgID
 }
 
-func (o *orgScope) Sessions() ultra.SessionStore { return &sessionStore{o} }
-func (o *orgScope) Events() ultra.EventStore     { return &eventStore{o} }
+func (o *orgScope) Sessions() ultra.SessionStore       { return &sessionStore{o} }
+func (o *orgScope) Events() ultra.EventStore           { return &eventStore{o} }
+func (o *orgScope) Runs() ultra.RunStore               { return &runStore{o} }
+func (o *orgScope) Credentials() ultra.CredentialStore { return &credentialStore{o} }
 
 type sessionStore struct{ scope *orgScope }
 

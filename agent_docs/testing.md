@@ -18,12 +18,13 @@ not.
 | Unit | alongside code | pure logic only |
 | Store tests | `postgres/*_test.go` | real Postgres (testcontainers) |
 | Queue conformance | `jobqueue/conformance` | real Postgres, real backend |
-| Functional (first line) | `e2e/` | real Postgres + real `ultrad` child process + generated clients |
+| Functional (first line) | `e2e/` | real Postgres + real `ultrad` + real `worker` child processes + generated clients |
 | TS smoke | `clients/ts/smoke.test.ts` | same real stack, driven from `e2e/ts_smoke_test.go` |
+| Web golden | `ui/web/e2e/` | real React SPA in Chromium + same real backend stack |
 
-From Phase 1 on, the only substituted component anywhere is the LLM vendor
-(modelscript — a real HTTP server speaking the OpenAI API at the network
-boundary). Everything else is always real.
+The only substituted component anywhere is the LLM vendor (`modelscript` —
+a real HTTP/SSE server speaking the OpenAI API at the network boundary).
+Fantasy, River, Postgres, ultrad, worker, clients, and UI are always real.
 
 ## Running
 
@@ -43,8 +44,9 @@ Requirements: docker running (testcontainers), `npx` + `npm ci` in
   `NewDB(t)` / `NewPool(t)` create an isolated database per test (cheap,
   parallel-safe). Ryuk reaps the container on process exit.
 - **`testkit/harness`** — `harness.Up(t)` returns a `*Stack`: migrated fresh
-  DB, seeded identities, and `ultrad` running as a **real child process** on
-  a random port (binary built once per process). Cleanup is automatic.
+  DB, seeded identities/credential, modelscript, and `ultrad` + `worker`
+  running as **real child processes** (binaries built once). It exposes
+  KillWorker/StartWorker for crash tests. Cleanup is automatic.
   Seeded fixtures: OrgA/alice (`harness.TokenAlice`), OrgB/bob
   (`harness.TokenBob`) — two orgs so tenant isolation is always testable.
 - **`testkit/testclient`** — wraps the generated Connect client (the same

@@ -37,18 +37,33 @@ const (
 	OrgServiceCreateOrgProcedure = "/ultra.v1.OrgService/CreateOrg"
 	// OrgServiceGetOrgProcedure is the fully-qualified name of the OrgService's GetOrg RPC.
 	OrgServiceGetOrgProcedure = "/ultra.v1.OrgService/GetOrg"
+	// OrgServiceListOrgsProcedure is the fully-qualified name of the OrgService's ListOrgs RPC.
+	OrgServiceListOrgsProcedure = "/ultra.v1.OrgService/ListOrgs"
 	// OrgServiceInviteMemberProcedure is the fully-qualified name of the OrgService's InviteMember RPC.
 	OrgServiceInviteMemberProcedure = "/ultra.v1.OrgService/InviteMember"
 	// OrgServiceListMembersProcedure is the fully-qualified name of the OrgService's ListMembers RPC.
 	OrgServiceListMembersProcedure = "/ultra.v1.OrgService/ListMembers"
+	// OrgServicePutCredentialProcedure is the fully-qualified name of the OrgService's PutCredential
+	// RPC.
+	OrgServicePutCredentialProcedure = "/ultra.v1.OrgService/PutCredential"
+	// OrgServiceListCredentialsProcedure is the fully-qualified name of the OrgService's
+	// ListCredentials RPC.
+	OrgServiceListCredentialsProcedure = "/ultra.v1.OrgService/ListCredentials"
+	// OrgServiceDeleteCredentialProcedure is the fully-qualified name of the OrgService's
+	// DeleteCredential RPC.
+	OrgServiceDeleteCredentialProcedure = "/ultra.v1.OrgService/DeleteCredential"
 )
 
 // OrgServiceClient is a client for the ultra.v1.OrgService service.
 type OrgServiceClient interface {
 	CreateOrg(context.Context, *connect.Request[v1.CreateOrgRequest]) (*connect.Response[v1.CreateOrgResponse], error)
 	GetOrg(context.Context, *connect.Request[v1.GetOrgRequest]) (*connect.Response[v1.GetOrgResponse], error)
+	ListOrgs(context.Context, *connect.Request[v1.ListOrgsRequest]) (*connect.Response[v1.ListOrgsResponse], error)
 	InviteMember(context.Context, *connect.Request[v1.InviteMemberRequest]) (*connect.Response[v1.InviteMemberResponse], error)
 	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
+	PutCredential(context.Context, *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error)
+	ListCredentials(context.Context, *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error)
+	DeleteCredential(context.Context, *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error)
 }
 
 // NewOrgServiceClient constructs a client for the ultra.v1.OrgService service. By default, it uses
@@ -74,6 +89,12 @@ func NewOrgServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(orgServiceMethods.ByName("GetOrg")),
 			connect.WithClientOptions(opts...),
 		),
+		listOrgs: connect.NewClient[v1.ListOrgsRequest, v1.ListOrgsResponse](
+			httpClient,
+			baseURL+OrgServiceListOrgsProcedure,
+			connect.WithSchema(orgServiceMethods.ByName("ListOrgs")),
+			connect.WithClientOptions(opts...),
+		),
 		inviteMember: connect.NewClient[v1.InviteMemberRequest, v1.InviteMemberResponse](
 			httpClient,
 			baseURL+OrgServiceInviteMemberProcedure,
@@ -86,15 +107,37 @@ func NewOrgServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(orgServiceMethods.ByName("ListMembers")),
 			connect.WithClientOptions(opts...),
 		),
+		putCredential: connect.NewClient[v1.PutCredentialRequest, v1.PutCredentialResponse](
+			httpClient,
+			baseURL+OrgServicePutCredentialProcedure,
+			connect.WithSchema(orgServiceMethods.ByName("PutCredential")),
+			connect.WithClientOptions(opts...),
+		),
+		listCredentials: connect.NewClient[v1.ListCredentialsRequest, v1.ListCredentialsResponse](
+			httpClient,
+			baseURL+OrgServiceListCredentialsProcedure,
+			connect.WithSchema(orgServiceMethods.ByName("ListCredentials")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteCredential: connect.NewClient[v1.DeleteCredentialRequest, v1.DeleteCredentialResponse](
+			httpClient,
+			baseURL+OrgServiceDeleteCredentialProcedure,
+			connect.WithSchema(orgServiceMethods.ByName("DeleteCredential")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // orgServiceClient implements OrgServiceClient.
 type orgServiceClient struct {
-	createOrg    *connect.Client[v1.CreateOrgRequest, v1.CreateOrgResponse]
-	getOrg       *connect.Client[v1.GetOrgRequest, v1.GetOrgResponse]
-	inviteMember *connect.Client[v1.InviteMemberRequest, v1.InviteMemberResponse]
-	listMembers  *connect.Client[v1.ListMembersRequest, v1.ListMembersResponse]
+	createOrg        *connect.Client[v1.CreateOrgRequest, v1.CreateOrgResponse]
+	getOrg           *connect.Client[v1.GetOrgRequest, v1.GetOrgResponse]
+	listOrgs         *connect.Client[v1.ListOrgsRequest, v1.ListOrgsResponse]
+	inviteMember     *connect.Client[v1.InviteMemberRequest, v1.InviteMemberResponse]
+	listMembers      *connect.Client[v1.ListMembersRequest, v1.ListMembersResponse]
+	putCredential    *connect.Client[v1.PutCredentialRequest, v1.PutCredentialResponse]
+	listCredentials  *connect.Client[v1.ListCredentialsRequest, v1.ListCredentialsResponse]
+	deleteCredential *connect.Client[v1.DeleteCredentialRequest, v1.DeleteCredentialResponse]
 }
 
 // CreateOrg calls ultra.v1.OrgService.CreateOrg.
@@ -107,6 +150,11 @@ func (c *orgServiceClient) GetOrg(ctx context.Context, req *connect.Request[v1.G
 	return c.getOrg.CallUnary(ctx, req)
 }
 
+// ListOrgs calls ultra.v1.OrgService.ListOrgs.
+func (c *orgServiceClient) ListOrgs(ctx context.Context, req *connect.Request[v1.ListOrgsRequest]) (*connect.Response[v1.ListOrgsResponse], error) {
+	return c.listOrgs.CallUnary(ctx, req)
+}
+
 // InviteMember calls ultra.v1.OrgService.InviteMember.
 func (c *orgServiceClient) InviteMember(ctx context.Context, req *connect.Request[v1.InviteMemberRequest]) (*connect.Response[v1.InviteMemberResponse], error) {
 	return c.inviteMember.CallUnary(ctx, req)
@@ -117,12 +165,31 @@ func (c *orgServiceClient) ListMembers(ctx context.Context, req *connect.Request
 	return c.listMembers.CallUnary(ctx, req)
 }
 
+// PutCredential calls ultra.v1.OrgService.PutCredential.
+func (c *orgServiceClient) PutCredential(ctx context.Context, req *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error) {
+	return c.putCredential.CallUnary(ctx, req)
+}
+
+// ListCredentials calls ultra.v1.OrgService.ListCredentials.
+func (c *orgServiceClient) ListCredentials(ctx context.Context, req *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error) {
+	return c.listCredentials.CallUnary(ctx, req)
+}
+
+// DeleteCredential calls ultra.v1.OrgService.DeleteCredential.
+func (c *orgServiceClient) DeleteCredential(ctx context.Context, req *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error) {
+	return c.deleteCredential.CallUnary(ctx, req)
+}
+
 // OrgServiceHandler is an implementation of the ultra.v1.OrgService service.
 type OrgServiceHandler interface {
 	CreateOrg(context.Context, *connect.Request[v1.CreateOrgRequest]) (*connect.Response[v1.CreateOrgResponse], error)
 	GetOrg(context.Context, *connect.Request[v1.GetOrgRequest]) (*connect.Response[v1.GetOrgResponse], error)
+	ListOrgs(context.Context, *connect.Request[v1.ListOrgsRequest]) (*connect.Response[v1.ListOrgsResponse], error)
 	InviteMember(context.Context, *connect.Request[v1.InviteMemberRequest]) (*connect.Response[v1.InviteMemberResponse], error)
 	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
+	PutCredential(context.Context, *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error)
+	ListCredentials(context.Context, *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error)
+	DeleteCredential(context.Context, *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error)
 }
 
 // NewOrgServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -144,6 +211,12 @@ func NewOrgServiceHandler(svc OrgServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(orgServiceMethods.ByName("GetOrg")),
 		connect.WithHandlerOptions(opts...),
 	)
+	orgServiceListOrgsHandler := connect.NewUnaryHandler(
+		OrgServiceListOrgsProcedure,
+		svc.ListOrgs,
+		connect.WithSchema(orgServiceMethods.ByName("ListOrgs")),
+		connect.WithHandlerOptions(opts...),
+	)
 	orgServiceInviteMemberHandler := connect.NewUnaryHandler(
 		OrgServiceInviteMemberProcedure,
 		svc.InviteMember,
@@ -156,16 +229,42 @@ func NewOrgServiceHandler(svc OrgServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(orgServiceMethods.ByName("ListMembers")),
 		connect.WithHandlerOptions(opts...),
 	)
+	orgServicePutCredentialHandler := connect.NewUnaryHandler(
+		OrgServicePutCredentialProcedure,
+		svc.PutCredential,
+		connect.WithSchema(orgServiceMethods.ByName("PutCredential")),
+		connect.WithHandlerOptions(opts...),
+	)
+	orgServiceListCredentialsHandler := connect.NewUnaryHandler(
+		OrgServiceListCredentialsProcedure,
+		svc.ListCredentials,
+		connect.WithSchema(orgServiceMethods.ByName("ListCredentials")),
+		connect.WithHandlerOptions(opts...),
+	)
+	orgServiceDeleteCredentialHandler := connect.NewUnaryHandler(
+		OrgServiceDeleteCredentialProcedure,
+		svc.DeleteCredential,
+		connect.WithSchema(orgServiceMethods.ByName("DeleteCredential")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/ultra.v1.OrgService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case OrgServiceCreateOrgProcedure:
 			orgServiceCreateOrgHandler.ServeHTTP(w, r)
 		case OrgServiceGetOrgProcedure:
 			orgServiceGetOrgHandler.ServeHTTP(w, r)
+		case OrgServiceListOrgsProcedure:
+			orgServiceListOrgsHandler.ServeHTTP(w, r)
 		case OrgServiceInviteMemberProcedure:
 			orgServiceInviteMemberHandler.ServeHTTP(w, r)
 		case OrgServiceListMembersProcedure:
 			orgServiceListMembersHandler.ServeHTTP(w, r)
+		case OrgServicePutCredentialProcedure:
+			orgServicePutCredentialHandler.ServeHTTP(w, r)
+		case OrgServiceListCredentialsProcedure:
+			orgServiceListCredentialsHandler.ServeHTTP(w, r)
+		case OrgServiceDeleteCredentialProcedure:
+			orgServiceDeleteCredentialHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -183,10 +282,26 @@ func (UnimplementedOrgServiceHandler) GetOrg(context.Context, *connect.Request[v
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.OrgService.GetOrg is not implemented"))
 }
 
+func (UnimplementedOrgServiceHandler) ListOrgs(context.Context, *connect.Request[v1.ListOrgsRequest]) (*connect.Response[v1.ListOrgsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.OrgService.ListOrgs is not implemented"))
+}
+
 func (UnimplementedOrgServiceHandler) InviteMember(context.Context, *connect.Request[v1.InviteMemberRequest]) (*connect.Response[v1.InviteMemberResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.OrgService.InviteMember is not implemented"))
 }
 
 func (UnimplementedOrgServiceHandler) ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.OrgService.ListMembers is not implemented"))
+}
+
+func (UnimplementedOrgServiceHandler) PutCredential(context.Context, *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.OrgService.PutCredential is not implemented"))
+}
+
+func (UnimplementedOrgServiceHandler) ListCredentials(context.Context, *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.OrgService.ListCredentials is not implemented"))
+}
+
+func (UnimplementedOrgServiceHandler) DeleteCredential(context.Context, *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.OrgService.DeleteCredential is not implemented"))
 }

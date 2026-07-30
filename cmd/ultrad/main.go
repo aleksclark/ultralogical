@@ -20,11 +20,13 @@ import (
 
 	ultra "github.com/aleksclark/ultralogical"
 	ultrahttp "github.com/aleksclark/ultralogical/http"
+	riverqueue "github.com/aleksclark/ultralogical/jobqueue/river"
 	"github.com/aleksclark/ultralogical/postgres"
+	"github.com/aleksclark/ultralogical/secrets"
 )
 
 func main() {
-	log := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	log := slog.New(secrets.NewRedactingHandler(slog.NewJSONHandler(os.Stderr, nil)))
 	if err := run(log); err != nil {
 		log.Error("ultrad exited", "error", err)
 		os.Exit(1)
@@ -47,6 +49,10 @@ func run(log *slog.Logger) error {
 	if len(devTokens) == 0 {
 		return errors.New("ULTRA_DEV_TOKENS is required (no other authenticator is configured yet)")
 	}
+	keyring, err := secrets.NewAESKeyring(os.Getenv("ULTRA_MASTER_KEY"))
+	if err != nil {
+		return err
+	}
 
 	if os.Getenv("ULTRA_MIGRATE") != "false" {
 		if err := postgres.Migrate(ctx, databaseURL); err != nil {
@@ -65,11 +71,26 @@ func run(log *slog.Logger) error {
 	bus.Start()
 	defer bus.Stop()
 
+	// Enqueue-only queue handle: ultrad inserts step jobs; workers run them.
+	queue, err := riverqueue.New(ctx, pool, riverqueue.Config{})
+	if err != nil {
+		return err
+	}
+
+	defaultModel := ultra.ModelConfig{
+		Provider:   envOr("ULTRA_DEFAULT_PROVIDER", "openai"),
+		ModelID:    envOr("ULTRA_DEFAULT_MODEL", "gpt-4.1-mini"),
+		Credential: "default",
+	}
+
 	handler := ultrahttp.NewHandler(ultrahttp.Config{
-		Store: store,
-		Auth:  ultra.NewDevTokenAuthenticator(store, devTokens),
-		Bus:   bus,
-		Log:   log,
+		Store:        store,
+		Auth:         ultra.NewDevTokenAuthenticator(store, devTokens),
+		Bus:          bus,
+		Log:          log,
+		Keyring:      keyring,
+		Enqueue:      postgres.TxEnqueuer{Queue: queue},
+		DefaultModel: defaultModel,
 	})
 
 	protocols := new(http.Protocols)
@@ -96,4 +117,11 @@ func run(log *slog.Logger) error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	return srv.Shutdown(shutdownCtx)
+}
+
+func envOr(name, def string) string {
+	if v := os.Getenv(name); v != "" {
+		return v
+	}
+	return def
 }

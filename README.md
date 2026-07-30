@@ -12,10 +12,11 @@ provider.
 
 ## Status
 
-**Phase 0 complete**: schema-first ConnectRPC API (Go + TS generated
-clients), tenant-scoped Postgres store, gapless per-session event log with
-live fan-out, transactional job-queue seam (river + inproc, shared
-conformance suite), real-stack functional test harness, CI drift gates.
+**Phase 1 complete**: schema-first ConnectRPC API (Go + TS generated
+clients), tenant-scoped Postgres store, gapless session event log, durable
+fantasy agent loop (one River job per step, crash-resumable history), BYO
+OpenAI/Anthropic/Bedrock credentials encrypted at rest, ask-user workflows,
+streaming React SPA, and real-stack API + Playwright acceptance suites.
 
 See [`plan/index.md`](plan/index.md) for the architecture and roadmap, and
 [`AGENTS.md`](AGENTS.md) for the contributor/agent cheatsheet.

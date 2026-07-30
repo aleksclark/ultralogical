@@ -22,6 +22,7 @@ type Client struct {
 	Orgs     ultrav1connect.OrgServiceClient
 	Sessions ultrav1connect.SessionServiceClient
 	Events   ultrav1connect.EventServiceClient
+	Agents   ultrav1connect.AgentServiceClient
 }
 
 type authTransport struct {
@@ -45,6 +46,7 @@ func New(baseURL, token string) *Client {
 		Orgs:     ultrav1connect.NewOrgServiceClient(httpClient, baseURL),
 		Sessions: ultrav1connect.NewSessionServiceClient(httpClient, baseURL),
 		Events:   ultrav1connect.NewEventServiceClient(httpClient, baseURL),
+		Agents:   ultrav1connect.NewAgentServiceClient(httpClient, baseURL),
 	}
 }
 
@@ -125,4 +127,101 @@ func (s *Subscription) Collect(t *testing.T, n int, timeout time.Duration) []*ul
 		t.Fatalf("collected %d events, want %d (timeout %s)", len(out), n, timeout)
 	}
 	return out
+}
+
+// CollectUntil receives events until match returns true (inclusive) or the
+// timeout elapses (test failure). Returns everything received.
+func (s *Subscription) CollectUntil(t *testing.T, timeout time.Duration, match func(*ultrav1.SessionEvent) bool) []*ultrav1.SessionEvent {
+	t.Helper()
+	var out []*ultrav1.SessionEvent
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for {
+			ev, err := s.Next()
+			if err != nil {
+				return
+			}
+			out = append(out, ev)
+			if match(ev) {
+				return
+			}
+		}
+	}()
+	select {
+	case <-done:
+	case <-time.After(timeout):
+		t.Fatalf("CollectUntil: no matching event within %s (%d received)", timeout, len(out))
+	}
+	if len(out) == 0 || !match(out[len(out)-1]) {
+		t.Fatalf("CollectUntil: stream ended before match (%d received)", len(out))
+	}
+	return out
+}
+
+// Kind returns a short string naming the payload variant of an event, for
+// compact sequence assertions.
+func Kind(ev *ultrav1.SessionEvent) string {
+	switch ev.GetPayload().GetPayload().(type) {
+	case *ultrav1.EventPayload_UserMessage:
+		return "user_message"
+	case *ultrav1.EventPayload_Annotation:
+		return "annotation"
+	case *ultrav1.EventPayload_RunStarted:
+		return "run_started"
+	case *ultrav1.EventPayload_StepStarted:
+		return "step_started"
+	case *ultrav1.EventPayload_TextDelta:
+		return "text_delta"
+	case *ultrav1.EventPayload_ReasoningDelta:
+		return "reasoning_delta"
+	case *ultrav1.EventPayload_ToolCallStarted:
+		return "tool_call_started"
+	case *ultrav1.EventPayload_ToolResult:
+		return "tool_result"
+	case *ultrav1.EventPayload_StepFinished:
+		return "step_finished"
+	case *ultrav1.EventPayload_RunAwaiting:
+		return "run_awaiting"
+	case *ultrav1.EventPayload_RunCompleted:
+		return "run_completed"
+	case *ultrav1.EventPayload_RunFailed:
+		return "run_failed"
+	case *ultrav1.EventPayload_RunCancelled:
+		return "run_cancelled"
+	default:
+		return "unknown"
+	}
+}
+
+// StartRun starts an agent run with the default model config.
+func (c *Client) StartRun(ctx context.Context, sessionID, prompt string) (*ultrav1.AgentRun, int64, error) {
+	resp, err := c.Agents.StartRun(ctx, connect.NewRequest(&ultrav1.StartRunRequest{
+		SessionId: sessionID,
+		Prompt:    prompt,
+	}))
+	if err != nil {
+		return nil, 0, err
+	}
+	return resp.Msg.GetRun(), resp.Msg.GetEventSeq(), nil
+}
+
+// AwaitRunState polls GetRun until the run reaches the wanted state or the
+// timeout elapses (test failure).
+func (c *Client) AwaitRunState(t *testing.T, runID string, want ultrav1.RunState, timeout time.Duration) *ultrav1.AgentRun {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	var last *ultrav1.AgentRun
+	for time.Now().Before(deadline) {
+		resp, err := c.Agents.GetRun(context.Background(), connect.NewRequest(&ultrav1.GetRunRequest{RunId: runID}))
+		if err == nil {
+			last = resp.Msg.GetRun()
+			if last.GetState() == want {
+				return last
+			}
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	t.Fatalf("run %s never reached %v within %s (last: %v)", runID, want, timeout, last.GetState())
+	return nil
 }

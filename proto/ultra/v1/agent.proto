@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package ultra.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1";
+
+// RunState is the agent-run state machine.
+enum RunState {
+  RUN_STATE_UNSPECIFIED = 0;
+  RUN_STATE_PENDING = 1;
+  RUN_STATE_RUNNING = 2;
+  RUN_STATE_AWAITING = 3;
+  RUN_STATE_COMPLETED = 4;
+  RUN_STATE_FAILED = 5;
+  RUN_STATE_CANCELLED = 6;
+}
+
+// ModelConfig names the model a run uses and which org credential pays for
+// it. Inference is always on org credentials.
+message ModelConfig {
+  string provider = 1;   // openai | anthropic | bedrock
+  string model_id = 2;
+  string credential = 3; // credential name within the org; "default" if empty
+}
+
+// AgentRun is one durable agent loop bound to a session.
+message AgentRun {
+  string id = 1;
+  string session_id = 2;
+  RunState state = 3;
+  string loop_kind = 4;
+  int32 loop_version = 5;
+  ModelConfig model_config = 6;
+  string prompt = 7;
+  string failure_reason = 8;  // typed: credential_missing | credential_invalid | provider_error | internal
+  string failure_message = 9; // user-actionable, never raw provider errors
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message StartRunRequest {
+  string session_id = 1;
+  string prompt = 2;
+  // Optional; defaults to {provider: "openai", model from server default,
+  // credential: "default"}.
+  ModelConfig model_config = 3;
+}
+
+message StartRunResponse {
+  AgentRun run = 1;
+  // Seq of the RunStarted event.
+  int64 event_seq = 2;
+}
+
+// PromptRun wakes an awaiting run with an answer, or starts a new turn on a
+// completed run.
+message PromptRunRequest {
+  string run_id = 1;
+  string message = 2;
+}
+
+message PromptRunResponse {
+  int64 event_seq = 1;
+}
+
+message CancelRunRequest {
+  string run_id = 1;
+}
+
+message CancelRunResponse {}
+
+message GetRunRequest {
+  string run_id = 1;
+}
+
+message GetRunResponse {
+  AgentRun run = 1;
+}
+
+message ListRunsRequest {
+  string session_id = 1;
+}
+
+message ListRunsResponse {
+  repeated AgentRun runs = 1;
+}
+
+// AgentService manages agent runs. Access requires membership in the run's
+// session's org.
+service AgentService {
+  rpc StartRun(StartRunRequest) returns (StartRunResponse);
+  rpc PromptRun(PromptRunRequest) returns (PromptRunResponse);
+  rpc CancelRun(CancelRunRequest) returns (CancelRunResponse);
+  rpc GetRun(GetRunRequest) returns (GetRunResponse);
+  rpc ListRuns(ListRunsRequest) returns (ListRunsResponse);
+}

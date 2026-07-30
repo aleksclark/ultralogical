@@ -8,6 +8,7 @@ package river
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -37,6 +38,13 @@ type Config struct {
 	MaxWorkers int
 	// RetryDelay is the fixed delay between attempts. Default 1s.
 	RetryDelay time.Duration
+	// JobTimeout cancels a job's context after this long. Zero uses the
+	// backend default (1m).
+	JobTimeout time.Duration
+	// RescueAfter re-queues jobs whose worker died mid-execution (e.g.
+	// SIGKILL) after this long. Zero derives JobTimeout + 30s. Must exceed
+	// JobTimeout.
+	RescueAfter time.Duration
 }
 
 // Queue implements jobqueue.Queue on River.
@@ -82,21 +90,46 @@ func New(ctx context.Context, pool *pgxpool.Pool, cfg Config) (*Queue, error) {
 	if err != nil {
 		return nil, fmt.Errorf("river: migrator: %w", err)
 	}
-	if _, err := migrator.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
-		return nil, fmt.Errorf("river: migrate: %w", err)
+	// Serialize schema migration across processes (ultrad and workers boot
+	// concurrently against the same database).
+	lockConn, err := pool.Acquire(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("river: acquire migration lock conn: %w", err)
+	}
+	if _, err := lockConn.Exec(ctx, `SELECT pg_advisory_lock(hashtext('river_migrate'))`); err != nil {
+		lockConn.Release()
+		return nil, fmt.Errorf("river: migration lock: %w", err)
+	}
+	_, migrateErr := migrator.Migrate(ctx, rivermigrate.DirectionUp, nil)
+	if _, err := lockConn.Exec(ctx, `SELECT pg_advisory_unlock(hashtext('river_migrate'))`); err != nil {
+		migrateErr = errors.Join(migrateErr, err)
+	}
+	lockConn.Release()
+	if migrateErr != nil {
+		return nil, fmt.Errorf("river: migrate: %w", migrateErr)
 	}
 
 	q := &Queue{handlers: map[string]jobqueue.RawHandler{}}
 	workers := riverlib.NewWorkers()
 	riverlib.AddWorker(workers, &envelopeWorker{q: q})
 
-	client, err := riverlib.NewClient(driver, &riverlib.Config{
+	riverCfg := &riverlib.Config{
 		Queues: map[string]riverlib.QueueConfig{
 			riverlib.QueueDefault: {MaxWorkers: cfg.MaxWorkers},
 		},
 		Workers:     workers,
 		RetryPolicy: fixedRetry{delay: cfg.RetryDelay},
-	})
+	}
+	if cfg.JobTimeout > 0 {
+		riverCfg.JobTimeout = cfg.JobTimeout
+	}
+	if cfg.RescueAfter > 0 {
+		riverCfg.RescueStuckJobsAfter = cfg.RescueAfter
+	} else if cfg.JobTimeout > 0 {
+		riverCfg.RescueStuckJobsAfter = cfg.JobTimeout + 30*time.Second
+	}
+
+	client, err := riverlib.NewClient(driver, riverCfg)
 	if err != nil {
 		return nil, fmt.Errorf("river: client: %w", err)
 	}

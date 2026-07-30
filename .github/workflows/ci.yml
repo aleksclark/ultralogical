@@ -60,5 +60,14 @@ jobs:
       - name: Typecheck TS client
         working-directory: clients/ts
         run: npx tsc --noEmit
-      - name: Functional API suite (Go + TS clients, real stack)
+      - name: Install web UI deps
+        working-directory: ui/web
+        run: npm ci
+      - name: Build web UI
+        working-directory: ui/web
+        run: npm run build
+      - name: Install Playwright Chromium
+        working-directory: ui/web
+        run: npx playwright install --with-deps chromium
+      - name: Functional API + UI suite (real stack)
         run: go test ./e2e/ -count=1 -v -timeout 15m

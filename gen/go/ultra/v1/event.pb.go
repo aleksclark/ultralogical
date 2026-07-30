@@ -218,6 +218,780 @@ func (x *Annotation) GetText() string {
 	return ""
 }
 
+// RunStarted marks an agent run's creation.
+type RunStarted struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Prompt        string                 `protobuf:"bytes,2,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RunStarted) Reset() {
+	*x = RunStarted{}
+	mi := &file_ultra_v1_event_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunStarted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunStarted) ProtoMessage() {}
+
+func (x *RunStarted) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunStarted.ProtoReflect.Descriptor instead.
+func (*RunStarted) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RunStarted) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *RunStarted) GetPrompt() string {
+	if x != nil {
+		return x.Prompt
+	}
+	return ""
+}
+
+// StepStarted marks the beginning of a step execution attempt. Attempt > 1
+// supersedes any partial deltas from earlier attempts of the same step.
+type StepStarted struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	StepIndex     int32                  `protobuf:"varint,2,opt,name=step_index,json=stepIndex,proto3" json:"step_index,omitempty"`
+	Attempt       int32                  `protobuf:"varint,3,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StepStarted) Reset() {
+	*x = StepStarted{}
+	mi := &file_ultra_v1_event_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StepStarted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StepStarted) ProtoMessage() {}
+
+func (x *StepStarted) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StepStarted.ProtoReflect.Descriptor instead.
+func (*StepStarted) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *StepStarted) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *StepStarted) GetStepIndex() int32 {
+	if x != nil {
+		return x.StepIndex
+	}
+	return 0
+}
+
+func (x *StepStarted) GetAttempt() int32 {
+	if x != nil {
+		return x.Attempt
+	}
+	return 0
+}
+
+// TextDelta is a batched chunk of streamed assistant text.
+type TextDelta struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	StepIndex     int32                  `protobuf:"varint,2,opt,name=step_index,json=stepIndex,proto3" json:"step_index,omitempty"`
+	Attempt       int32                  `protobuf:"varint,3,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	DeltaIndex    int32                  `protobuf:"varint,4,opt,name=delta_index,json=deltaIndex,proto3" json:"delta_index,omitempty"`
+	Text          string                 `protobuf:"bytes,5,opt,name=text,proto3" json:"text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TextDelta) Reset() {
+	*x = TextDelta{}
+	mi := &file_ultra_v1_event_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TextDelta) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TextDelta) ProtoMessage() {}
+
+func (x *TextDelta) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TextDelta.ProtoReflect.Descriptor instead.
+func (*TextDelta) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *TextDelta) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *TextDelta) GetStepIndex() int32 {
+	if x != nil {
+		return x.StepIndex
+	}
+	return 0
+}
+
+func (x *TextDelta) GetAttempt() int32 {
+	if x != nil {
+		return x.Attempt
+	}
+	return 0
+}
+
+func (x *TextDelta) GetDeltaIndex() int32 {
+	if x != nil {
+		return x.DeltaIndex
+	}
+	return 0
+}
+
+func (x *TextDelta) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+// ReasoningDelta is a batched chunk of streamed reasoning text.
+type ReasoningDelta struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	StepIndex     int32                  `protobuf:"varint,2,opt,name=step_index,json=stepIndex,proto3" json:"step_index,omitempty"`
+	Attempt       int32                  `protobuf:"varint,3,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	DeltaIndex    int32                  `protobuf:"varint,4,opt,name=delta_index,json=deltaIndex,proto3" json:"delta_index,omitempty"`
+	Text          string                 `protobuf:"bytes,5,opt,name=text,proto3" json:"text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReasoningDelta) Reset() {
+	*x = ReasoningDelta{}
+	mi := &file_ultra_v1_event_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReasoningDelta) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReasoningDelta) ProtoMessage() {}
+
+func (x *ReasoningDelta) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReasoningDelta.ProtoReflect.Descriptor instead.
+func (*ReasoningDelta) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ReasoningDelta) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *ReasoningDelta) GetStepIndex() int32 {
+	if x != nil {
+		return x.StepIndex
+	}
+	return 0
+}
+
+func (x *ReasoningDelta) GetAttempt() int32 {
+	if x != nil {
+		return x.Attempt
+	}
+	return 0
+}
+
+func (x *ReasoningDelta) GetDeltaIndex() int32 {
+	if x != nil {
+		return x.DeltaIndex
+	}
+	return 0
+}
+
+func (x *ReasoningDelta) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+// ToolCallStarted records a completed tool invocation request.
+type ToolCallStarted struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	StepIndex     int32                  `protobuf:"varint,2,opt,name=step_index,json=stepIndex,proto3" json:"step_index,omitempty"`
+	ToolCallId    string                 `protobuf:"bytes,3,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
+	Name          string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	Input         string                 `protobuf:"bytes,5,opt,name=input,proto3" json:"input,omitempty"` // JSON as sent by the model
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolCallStarted) Reset() {
+	*x = ToolCallStarted{}
+	mi := &file_ultra_v1_event_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolCallStarted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolCallStarted) ProtoMessage() {}
+
+func (x *ToolCallStarted) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolCallStarted.ProtoReflect.Descriptor instead.
+func (*ToolCallStarted) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ToolCallStarted) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *ToolCallStarted) GetStepIndex() int32 {
+	if x != nil {
+		return x.StepIndex
+	}
+	return 0
+}
+
+func (x *ToolCallStarted) GetToolCallId() string {
+	if x != nil {
+		return x.ToolCallId
+	}
+	return ""
+}
+
+func (x *ToolCallStarted) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ToolCallStarted) GetInput() string {
+	if x != nil {
+		return x.Input
+	}
+	return ""
+}
+
+// ToolResult records a tool execution result.
+type ToolResult struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	StepIndex     int32                  `protobuf:"varint,2,opt,name=step_index,json=stepIndex,proto3" json:"step_index,omitempty"`
+	ToolCallId    string                 `protobuf:"bytes,3,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
+	Name          string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	Content       string                 `protobuf:"bytes,5,opt,name=content,proto3" json:"content,omitempty"`
+	IsError       bool                   `protobuf:"varint,6,opt,name=is_error,json=isError,proto3" json:"is_error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolResult) Reset() {
+	*x = ToolResult{}
+	mi := &file_ultra_v1_event_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolResult) ProtoMessage() {}
+
+func (x *ToolResult) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolResult.ProtoReflect.Descriptor instead.
+func (*ToolResult) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ToolResult) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *ToolResult) GetStepIndex() int32 {
+	if x != nil {
+		return x.StepIndex
+	}
+	return 0
+}
+
+func (x *ToolResult) GetToolCallId() string {
+	if x != nil {
+		return x.ToolCallId
+	}
+	return ""
+}
+
+func (x *ToolResult) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ToolResult) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *ToolResult) GetIsError() bool {
+	if x != nil {
+		return x.IsError
+	}
+	return false
+}
+
+// StepFinished closes a step with its usage audit.
+type StepFinished struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	StepIndex     int32                  `protobuf:"varint,2,opt,name=step_index,json=stepIndex,proto3" json:"step_index,omitempty"`
+	TokensIn      int64                  `protobuf:"varint,3,opt,name=tokens_in,json=tokensIn,proto3" json:"tokens_in,omitempty"`
+	TokensOut     int64                  `protobuf:"varint,4,opt,name=tokens_out,json=tokensOut,proto3" json:"tokens_out,omitempty"`
+	FinishReason  string                 `protobuf:"bytes,5,opt,name=finish_reason,json=finishReason,proto3" json:"finish_reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StepFinished) Reset() {
+	*x = StepFinished{}
+	mi := &file_ultra_v1_event_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StepFinished) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StepFinished) ProtoMessage() {}
+
+func (x *StepFinished) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StepFinished.ProtoReflect.Descriptor instead.
+func (*StepFinished) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *StepFinished) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *StepFinished) GetStepIndex() int32 {
+	if x != nil {
+		return x.StepIndex
+	}
+	return 0
+}
+
+func (x *StepFinished) GetTokensIn() int64 {
+	if x != nil {
+		return x.TokensIn
+	}
+	return 0
+}
+
+func (x *StepFinished) GetTokensOut() int64 {
+	if x != nil {
+		return x.TokensOut
+	}
+	return 0
+}
+
+func (x *StepFinished) GetFinishReason() string {
+	if x != nil {
+		return x.FinishReason
+	}
+	return ""
+}
+
+// Question is a structured question an agent asks a human.
+type Question struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	Choices       []string               `protobuf:"bytes,2,rep,name=choices,proto3" json:"choices,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Question) Reset() {
+	*x = Question{}
+	mi := &file_ultra_v1_event_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Question) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Question) ProtoMessage() {}
+
+func (x *Question) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Question.ProtoReflect.Descriptor instead.
+func (*Question) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *Question) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+func (x *Question) GetChoices() []string {
+	if x != nil {
+		return x.Choices
+	}
+	return nil
+}
+
+// RunAwaiting marks a run parked on human input.
+type RunAwaiting struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Question      *Question              `protobuf:"bytes,2,opt,name=question,proto3" json:"question,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RunAwaiting) Reset() {
+	*x = RunAwaiting{}
+	mi := &file_ultra_v1_event_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunAwaiting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunAwaiting) ProtoMessage() {}
+
+func (x *RunAwaiting) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunAwaiting.ProtoReflect.Descriptor instead.
+func (*RunAwaiting) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RunAwaiting) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *RunAwaiting) GetQuestion() *Question {
+	if x != nil {
+		return x.Question
+	}
+	return nil
+}
+
+// RunCompleted is a run's terminal success event.
+type RunCompleted struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	FinalText     string                 `protobuf:"bytes,2,opt,name=final_text,json=finalText,proto3" json:"final_text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RunCompleted) Reset() {
+	*x = RunCompleted{}
+	mi := &file_ultra_v1_event_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunCompleted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunCompleted) ProtoMessage() {}
+
+func (x *RunCompleted) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunCompleted.ProtoReflect.Descriptor instead.
+func (*RunCompleted) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RunCompleted) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *RunCompleted) GetFinalText() string {
+	if x != nil {
+		return x.FinalText
+	}
+	return ""
+}
+
+// RunFailed is a run's terminal failure event. Reason is typed and
+// user-actionable; it never contains raw provider errors.
+type RunFailed struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RunFailed) Reset() {
+	*x = RunFailed{}
+	mi := &file_ultra_v1_event_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunFailed) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunFailed) ProtoMessage() {}
+
+func (x *RunFailed) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunFailed.ProtoReflect.Descriptor instead.
+func (*RunFailed) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *RunFailed) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *RunFailed) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *RunFailed) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+// RunCancelled is a run's terminal cancellation event.
+type RunCancelled struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RunCancelled) Reset() {
+	*x = RunCancelled{}
+	mi := &file_ultra_v1_event_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunCancelled) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunCancelled) ProtoMessage() {}
+
+func (x *RunCancelled) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunCancelled.ProtoReflect.Descriptor instead.
+func (*RunCancelled) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *RunCancelled) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
 // EventPayload is the typed payload of a session event. Every observable
 // thing in a session is one of these variants; later phases add variants
 // (additive only — enforced by breaking-change CI).
@@ -227,6 +1001,17 @@ type EventPayload struct {
 	//
 	//	*EventPayload_UserMessage
 	//	*EventPayload_Annotation
+	//	*EventPayload_RunStarted
+	//	*EventPayload_StepStarted
+	//	*EventPayload_TextDelta
+	//	*EventPayload_ReasoningDelta
+	//	*EventPayload_ToolCallStarted
+	//	*EventPayload_ToolResult
+	//	*EventPayload_StepFinished
+	//	*EventPayload_RunAwaiting
+	//	*EventPayload_RunCompleted
+	//	*EventPayload_RunFailed
+	//	*EventPayload_RunCancelled
 	Payload       isEventPayload_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -234,7 +1019,7 @@ type EventPayload struct {
 
 func (x *EventPayload) Reset() {
 	*x = EventPayload{}
-	mi := &file_ultra_v1_event_proto_msgTypes[3]
+	mi := &file_ultra_v1_event_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -246,7 +1031,7 @@ func (x *EventPayload) String() string {
 func (*EventPayload) ProtoMessage() {}
 
 func (x *EventPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[3]
+	mi := &file_ultra_v1_event_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -259,7 +1044,7 @@ func (x *EventPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventPayload.ProtoReflect.Descriptor instead.
 func (*EventPayload) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{3}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *EventPayload) GetPayload() isEventPayload_Payload {
@@ -287,6 +1072,105 @@ func (x *EventPayload) GetAnnotation() *Annotation {
 	return nil
 }
 
+func (x *EventPayload) GetRunStarted() *RunStarted {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_RunStarted); ok {
+			return x.RunStarted
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetStepStarted() *StepStarted {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_StepStarted); ok {
+			return x.StepStarted
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetTextDelta() *TextDelta {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_TextDelta); ok {
+			return x.TextDelta
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetReasoningDelta() *ReasoningDelta {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_ReasoningDelta); ok {
+			return x.ReasoningDelta
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetToolCallStarted() *ToolCallStarted {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_ToolCallStarted); ok {
+			return x.ToolCallStarted
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetToolResult() *ToolResult {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_ToolResult); ok {
+			return x.ToolResult
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetStepFinished() *StepFinished {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_StepFinished); ok {
+			return x.StepFinished
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetRunAwaiting() *RunAwaiting {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_RunAwaiting); ok {
+			return x.RunAwaiting
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetRunCompleted() *RunCompleted {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_RunCompleted); ok {
+			return x.RunCompleted
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetRunFailed() *RunFailed {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_RunFailed); ok {
+			return x.RunFailed
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetRunCancelled() *RunCancelled {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_RunCancelled); ok {
+			return x.RunCancelled
+		}
+	}
+	return nil
+}
+
 type isEventPayload_Payload interface {
 	isEventPayload_Payload()
 }
@@ -299,9 +1183,75 @@ type EventPayload_Annotation struct {
 	Annotation *Annotation `protobuf:"bytes,11,opt,name=annotation,proto3,oneof"`
 }
 
+type EventPayload_RunStarted struct {
+	RunStarted *RunStarted `protobuf:"bytes,12,opt,name=run_started,json=runStarted,proto3,oneof"`
+}
+
+type EventPayload_StepStarted struct {
+	StepStarted *StepStarted `protobuf:"bytes,13,opt,name=step_started,json=stepStarted,proto3,oneof"`
+}
+
+type EventPayload_TextDelta struct {
+	TextDelta *TextDelta `protobuf:"bytes,14,opt,name=text_delta,json=textDelta,proto3,oneof"`
+}
+
+type EventPayload_ReasoningDelta struct {
+	ReasoningDelta *ReasoningDelta `protobuf:"bytes,15,opt,name=reasoning_delta,json=reasoningDelta,proto3,oneof"`
+}
+
+type EventPayload_ToolCallStarted struct {
+	ToolCallStarted *ToolCallStarted `protobuf:"bytes,16,opt,name=tool_call_started,json=toolCallStarted,proto3,oneof"`
+}
+
+type EventPayload_ToolResult struct {
+	ToolResult *ToolResult `protobuf:"bytes,17,opt,name=tool_result,json=toolResult,proto3,oneof"`
+}
+
+type EventPayload_StepFinished struct {
+	StepFinished *StepFinished `protobuf:"bytes,18,opt,name=step_finished,json=stepFinished,proto3,oneof"`
+}
+
+type EventPayload_RunAwaiting struct {
+	RunAwaiting *RunAwaiting `protobuf:"bytes,19,opt,name=run_awaiting,json=runAwaiting,proto3,oneof"`
+}
+
+type EventPayload_RunCompleted struct {
+	RunCompleted *RunCompleted `protobuf:"bytes,20,opt,name=run_completed,json=runCompleted,proto3,oneof"`
+}
+
+type EventPayload_RunFailed struct {
+	RunFailed *RunFailed `protobuf:"bytes,21,opt,name=run_failed,json=runFailed,proto3,oneof"`
+}
+
+type EventPayload_RunCancelled struct {
+	RunCancelled *RunCancelled `protobuf:"bytes,22,opt,name=run_cancelled,json=runCancelled,proto3,oneof"`
+}
+
 func (*EventPayload_UserMessage) isEventPayload_Payload() {}
 
 func (*EventPayload_Annotation) isEventPayload_Payload() {}
+
+func (*EventPayload_RunStarted) isEventPayload_Payload() {}
+
+func (*EventPayload_StepStarted) isEventPayload_Payload() {}
+
+func (*EventPayload_TextDelta) isEventPayload_Payload() {}
+
+func (*EventPayload_ReasoningDelta) isEventPayload_Payload() {}
+
+func (*EventPayload_ToolCallStarted) isEventPayload_Payload() {}
+
+func (*EventPayload_ToolResult) isEventPayload_Payload() {}
+
+func (*EventPayload_StepFinished) isEventPayload_Payload() {}
+
+func (*EventPayload_RunAwaiting) isEventPayload_Payload() {}
+
+func (*EventPayload_RunCompleted) isEventPayload_Payload() {}
+
+func (*EventPayload_RunFailed) isEventPayload_Payload() {}
+
+func (*EventPayload_RunCancelled) isEventPayload_Payload() {}
 
 // SessionEvent is one entry in a session's append-only event log. Seq is
 // per-session, gapless, and monotonic; clients resume by seq.
@@ -318,7 +1268,7 @@ type SessionEvent struct {
 
 func (x *SessionEvent) Reset() {
 	*x = SessionEvent{}
-	mi := &file_ultra_v1_event_proto_msgTypes[4]
+	mi := &file_ultra_v1_event_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -330,7 +1280,7 @@ func (x *SessionEvent) String() string {
 func (*SessionEvent) ProtoMessage() {}
 
 func (x *SessionEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[4]
+	mi := &file_ultra_v1_event_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -343,7 +1293,7 @@ func (x *SessionEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionEvent.ProtoReflect.Descriptor instead.
 func (*SessionEvent) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{4}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SessionEvent) GetSessionId() string {
@@ -391,7 +1341,7 @@ type AppendRequest struct {
 
 func (x *AppendRequest) Reset() {
 	*x = AppendRequest{}
-	mi := &file_ultra_v1_event_proto_msgTypes[5]
+	mi := &file_ultra_v1_event_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -403,7 +1353,7 @@ func (x *AppendRequest) String() string {
 func (*AppendRequest) ProtoMessage() {}
 
 func (x *AppendRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[5]
+	mi := &file_ultra_v1_event_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -416,7 +1366,7 @@ func (x *AppendRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendRequest.ProtoReflect.Descriptor instead.
 func (*AppendRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{5}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *AppendRequest) GetSessionId() string {
@@ -444,7 +1394,7 @@ type AppendResponse struct {
 
 func (x *AppendResponse) Reset() {
 	*x = AppendResponse{}
-	mi := &file_ultra_v1_event_proto_msgTypes[6]
+	mi := &file_ultra_v1_event_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -456,7 +1406,7 @@ func (x *AppendResponse) String() string {
 func (*AppendResponse) ProtoMessage() {}
 
 func (x *AppendResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[6]
+	mi := &file_ultra_v1_event_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -469,7 +1419,7 @@ func (x *AppendResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendResponse.ProtoReflect.Descriptor instead.
 func (*AppendResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{6}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *AppendResponse) GetSeq() int64 {
@@ -490,7 +1440,7 @@ type SubscribeRequest struct {
 
 func (x *SubscribeRequest) Reset() {
 	*x = SubscribeRequest{}
-	mi := &file_ultra_v1_event_proto_msgTypes[7]
+	mi := &file_ultra_v1_event_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -502,7 +1452,7 @@ func (x *SubscribeRequest) String() string {
 func (*SubscribeRequest) ProtoMessage() {}
 
 func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[7]
+	mi := &file_ultra_v1_event_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -515,7 +1465,7 @@ func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeRequest.ProtoReflect.Descriptor instead.
 func (*SubscribeRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{7}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *SubscribeRequest) GetSessionId() string {
@@ -544,7 +1494,7 @@ type SubscribeResponse struct {
 
 func (x *SubscribeResponse) Reset() {
 	*x = SubscribeResponse{}
-	mi := &file_ultra_v1_event_proto_msgTypes[8]
+	mi := &file_ultra_v1_event_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -556,7 +1506,7 @@ func (x *SubscribeResponse) String() string {
 func (*SubscribeResponse) ProtoMessage() {}
 
 func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[8]
+	mi := &file_ultra_v1_event_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -569,7 +1519,7 @@ func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeResponse.ProtoReflect.Descriptor instead.
 func (*SubscribeResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{8}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *SubscribeResponse) GetEvent() *SessionEvent {
@@ -591,13 +1541,95 @@ const file_ultra_v1_event_proto_rawDesc = "" +
 	"\x04text\x18\x01 \x01(\tR\x04text\" \n" +
 	"\n" +
 	"Annotation\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text\"\x8d\x01\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\";\n" +
+	"\n" +
+	"RunStarted\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x16\n" +
+	"\x06prompt\x18\x02 \x01(\tR\x06prompt\"]\n" +
+	"\vStepStarted\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1d\n" +
+	"\n" +
+	"step_index\x18\x02 \x01(\x05R\tstepIndex\x12\x18\n" +
+	"\aattempt\x18\x03 \x01(\x05R\aattempt\"\x90\x01\n" +
+	"\tTextDelta\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1d\n" +
+	"\n" +
+	"step_index\x18\x02 \x01(\x05R\tstepIndex\x12\x18\n" +
+	"\aattempt\x18\x03 \x01(\x05R\aattempt\x12\x1f\n" +
+	"\vdelta_index\x18\x04 \x01(\x05R\n" +
+	"deltaIndex\x12\x12\n" +
+	"\x04text\x18\x05 \x01(\tR\x04text\"\x95\x01\n" +
+	"\x0eReasoningDelta\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1d\n" +
+	"\n" +
+	"step_index\x18\x02 \x01(\x05R\tstepIndex\x12\x18\n" +
+	"\aattempt\x18\x03 \x01(\x05R\aattempt\x12\x1f\n" +
+	"\vdelta_index\x18\x04 \x01(\x05R\n" +
+	"deltaIndex\x12\x12\n" +
+	"\x04text\x18\x05 \x01(\tR\x04text\"\x93\x01\n" +
+	"\x0fToolCallStarted\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1d\n" +
+	"\n" +
+	"step_index\x18\x02 \x01(\x05R\tstepIndex\x12 \n" +
+	"\ftool_call_id\x18\x03 \x01(\tR\n" +
+	"toolCallId\x12\x12\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\x12\x14\n" +
+	"\x05input\x18\x05 \x01(\tR\x05input\"\xad\x01\n" +
+	"\n" +
+	"ToolResult\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1d\n" +
+	"\n" +
+	"step_index\x18\x02 \x01(\x05R\tstepIndex\x12 \n" +
+	"\ftool_call_id\x18\x03 \x01(\tR\n" +
+	"toolCallId\x12\x12\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\x12\x18\n" +
+	"\acontent\x18\x05 \x01(\tR\acontent\x12\x19\n" +
+	"\bis_error\x18\x06 \x01(\bR\aisError\"\xa5\x01\n" +
+	"\fStepFinished\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1d\n" +
+	"\n" +
+	"step_index\x18\x02 \x01(\x05R\tstepIndex\x12\x1b\n" +
+	"\ttokens_in\x18\x03 \x01(\x03R\btokensIn\x12\x1d\n" +
+	"\n" +
+	"tokens_out\x18\x04 \x01(\x03R\ttokensOut\x12#\n" +
+	"\rfinish_reason\x18\x05 \x01(\tR\ffinishReason\"8\n" +
+	"\bQuestion\x12\x12\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\x12\x18\n" +
+	"\achoices\x18\x02 \x03(\tR\achoices\"T\n" +
+	"\vRunAwaiting\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12.\n" +
+	"\bquestion\x18\x02 \x01(\v2\x12.ultra.v1.QuestionR\bquestion\"D\n" +
+	"\fRunCompleted\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1d\n" +
+	"\n" +
+	"final_text\x18\x02 \x01(\tR\tfinalText\"T\n" +
+	"\tRunFailed\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"%\n" +
+	"\fRunCancelled\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\"\xae\x06\n" +
 	"\fEventPayload\x12:\n" +
 	"\fuser_message\x18\n" +
 	" \x01(\v2\x15.ultra.v1.UserMessageH\x00R\vuserMessage\x126\n" +
 	"\n" +
 	"annotation\x18\v \x01(\v2\x14.ultra.v1.AnnotationH\x00R\n" +
-	"annotationB\t\n" +
+	"annotation\x127\n" +
+	"\vrun_started\x18\f \x01(\v2\x14.ultra.v1.RunStartedH\x00R\n" +
+	"runStarted\x12:\n" +
+	"\fstep_started\x18\r \x01(\v2\x15.ultra.v1.StepStartedH\x00R\vstepStarted\x124\n" +
+	"\n" +
+	"text_delta\x18\x0e \x01(\v2\x13.ultra.v1.TextDeltaH\x00R\ttextDelta\x12C\n" +
+	"\x0freasoning_delta\x18\x0f \x01(\v2\x18.ultra.v1.ReasoningDeltaH\x00R\x0ereasoningDelta\x12G\n" +
+	"\x11tool_call_started\x18\x10 \x01(\v2\x19.ultra.v1.ToolCallStartedH\x00R\x0ftoolCallStarted\x127\n" +
+	"\vtool_result\x18\x11 \x01(\v2\x14.ultra.v1.ToolResultH\x00R\n" +
+	"toolResult\x12=\n" +
+	"\rstep_finished\x18\x12 \x01(\v2\x16.ultra.v1.StepFinishedH\x00R\fstepFinished\x12:\n" +
+	"\frun_awaiting\x18\x13 \x01(\v2\x15.ultra.v1.RunAwaitingH\x00R\vrunAwaiting\x12=\n" +
+	"\rrun_completed\x18\x14 \x01(\v2\x16.ultra.v1.RunCompletedH\x00R\frunCompleted\x124\n" +
+	"\n" +
+	"run_failed\x18\x15 \x01(\v2\x13.ultra.v1.RunFailedH\x00R\trunFailed\x12=\n" +
+	"\rrun_cancelled\x18\x16 \x01(\v2\x16.ultra.v1.RunCancelledH\x00R\frunCancelledB\t\n" +
 	"\apayload\"\xc4\x01\n" +
 	"\fSessionEvent\x12\x1d\n" +
 	"\n" +
@@ -640,38 +1672,62 @@ func file_ultra_v1_event_proto_rawDescGZIP() []byte {
 }
 
 var file_ultra_v1_event_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ultra_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_ultra_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_ultra_v1_event_proto_goTypes = []any{
 	(ActorType)(0),                // 0: ultra.v1.ActorType
 	(*Actor)(nil),                 // 1: ultra.v1.Actor
 	(*UserMessage)(nil),           // 2: ultra.v1.UserMessage
 	(*Annotation)(nil),            // 3: ultra.v1.Annotation
-	(*EventPayload)(nil),          // 4: ultra.v1.EventPayload
-	(*SessionEvent)(nil),          // 5: ultra.v1.SessionEvent
-	(*AppendRequest)(nil),         // 6: ultra.v1.AppendRequest
-	(*AppendResponse)(nil),        // 7: ultra.v1.AppendResponse
-	(*SubscribeRequest)(nil),      // 8: ultra.v1.SubscribeRequest
-	(*SubscribeResponse)(nil),     // 9: ultra.v1.SubscribeResponse
-	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
+	(*RunStarted)(nil),            // 4: ultra.v1.RunStarted
+	(*StepStarted)(nil),           // 5: ultra.v1.StepStarted
+	(*TextDelta)(nil),             // 6: ultra.v1.TextDelta
+	(*ReasoningDelta)(nil),        // 7: ultra.v1.ReasoningDelta
+	(*ToolCallStarted)(nil),       // 8: ultra.v1.ToolCallStarted
+	(*ToolResult)(nil),            // 9: ultra.v1.ToolResult
+	(*StepFinished)(nil),          // 10: ultra.v1.StepFinished
+	(*Question)(nil),              // 11: ultra.v1.Question
+	(*RunAwaiting)(nil),           // 12: ultra.v1.RunAwaiting
+	(*RunCompleted)(nil),          // 13: ultra.v1.RunCompleted
+	(*RunFailed)(nil),             // 14: ultra.v1.RunFailed
+	(*RunCancelled)(nil),          // 15: ultra.v1.RunCancelled
+	(*EventPayload)(nil),          // 16: ultra.v1.EventPayload
+	(*SessionEvent)(nil),          // 17: ultra.v1.SessionEvent
+	(*AppendRequest)(nil),         // 18: ultra.v1.AppendRequest
+	(*AppendResponse)(nil),        // 19: ultra.v1.AppendResponse
+	(*SubscribeRequest)(nil),      // 20: ultra.v1.SubscribeRequest
+	(*SubscribeResponse)(nil),     // 21: ultra.v1.SubscribeResponse
+	(*timestamppb.Timestamp)(nil), // 22: google.protobuf.Timestamp
 }
 var file_ultra_v1_event_proto_depIdxs = []int32{
 	0,  // 0: ultra.v1.Actor.type:type_name -> ultra.v1.ActorType
-	2,  // 1: ultra.v1.EventPayload.user_message:type_name -> ultra.v1.UserMessage
-	3,  // 2: ultra.v1.EventPayload.annotation:type_name -> ultra.v1.Annotation
-	10, // 3: ultra.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
-	1,  // 4: ultra.v1.SessionEvent.actor:type_name -> ultra.v1.Actor
-	4,  // 5: ultra.v1.SessionEvent.payload:type_name -> ultra.v1.EventPayload
-	4,  // 6: ultra.v1.AppendRequest.payload:type_name -> ultra.v1.EventPayload
-	5,  // 7: ultra.v1.SubscribeResponse.event:type_name -> ultra.v1.SessionEvent
-	6,  // 8: ultra.v1.EventService.Append:input_type -> ultra.v1.AppendRequest
-	8,  // 9: ultra.v1.EventService.Subscribe:input_type -> ultra.v1.SubscribeRequest
-	7,  // 10: ultra.v1.EventService.Append:output_type -> ultra.v1.AppendResponse
-	9,  // 11: ultra.v1.EventService.Subscribe:output_type -> ultra.v1.SubscribeResponse
-	10, // [10:12] is the sub-list for method output_type
-	8,  // [8:10] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	11, // 1: ultra.v1.RunAwaiting.question:type_name -> ultra.v1.Question
+	2,  // 2: ultra.v1.EventPayload.user_message:type_name -> ultra.v1.UserMessage
+	3,  // 3: ultra.v1.EventPayload.annotation:type_name -> ultra.v1.Annotation
+	4,  // 4: ultra.v1.EventPayload.run_started:type_name -> ultra.v1.RunStarted
+	5,  // 5: ultra.v1.EventPayload.step_started:type_name -> ultra.v1.StepStarted
+	6,  // 6: ultra.v1.EventPayload.text_delta:type_name -> ultra.v1.TextDelta
+	7,  // 7: ultra.v1.EventPayload.reasoning_delta:type_name -> ultra.v1.ReasoningDelta
+	8,  // 8: ultra.v1.EventPayload.tool_call_started:type_name -> ultra.v1.ToolCallStarted
+	9,  // 9: ultra.v1.EventPayload.tool_result:type_name -> ultra.v1.ToolResult
+	10, // 10: ultra.v1.EventPayload.step_finished:type_name -> ultra.v1.StepFinished
+	12, // 11: ultra.v1.EventPayload.run_awaiting:type_name -> ultra.v1.RunAwaiting
+	13, // 12: ultra.v1.EventPayload.run_completed:type_name -> ultra.v1.RunCompleted
+	14, // 13: ultra.v1.EventPayload.run_failed:type_name -> ultra.v1.RunFailed
+	15, // 14: ultra.v1.EventPayload.run_cancelled:type_name -> ultra.v1.RunCancelled
+	22, // 15: ultra.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
+	1,  // 16: ultra.v1.SessionEvent.actor:type_name -> ultra.v1.Actor
+	16, // 17: ultra.v1.SessionEvent.payload:type_name -> ultra.v1.EventPayload
+	16, // 18: ultra.v1.AppendRequest.payload:type_name -> ultra.v1.EventPayload
+	17, // 19: ultra.v1.SubscribeResponse.event:type_name -> ultra.v1.SessionEvent
+	18, // 20: ultra.v1.EventService.Append:input_type -> ultra.v1.AppendRequest
+	20, // 21: ultra.v1.EventService.Subscribe:input_type -> ultra.v1.SubscribeRequest
+	19, // 22: ultra.v1.EventService.Append:output_type -> ultra.v1.AppendResponse
+	21, // 23: ultra.v1.EventService.Subscribe:output_type -> ultra.v1.SubscribeResponse
+	22, // [22:24] is the sub-list for method output_type
+	20, // [20:22] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_event_proto_init() }
@@ -679,9 +1735,20 @@ func file_ultra_v1_event_proto_init() {
 	if File_ultra_v1_event_proto != nil {
 		return
 	}
-	file_ultra_v1_event_proto_msgTypes[3].OneofWrappers = []any{
+	file_ultra_v1_event_proto_msgTypes[15].OneofWrappers = []any{
 		(*EventPayload_UserMessage)(nil),
 		(*EventPayload_Annotation)(nil),
+		(*EventPayload_RunStarted)(nil),
+		(*EventPayload_StepStarted)(nil),
+		(*EventPayload_TextDelta)(nil),
+		(*EventPayload_ReasoningDelta)(nil),
+		(*EventPayload_ToolCallStarted)(nil),
+		(*EventPayload_ToolResult)(nil),
+		(*EventPayload_StepFinished)(nil),
+		(*EventPayload_RunAwaiting)(nil),
+		(*EventPayload_RunCompleted)(nil),
+		(*EventPayload_RunFailed)(nil),
+		(*EventPayload_RunCancelled)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -689,7 +1756,7 @@ func file_ultra_v1_event_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ultra_v1_event_proto_rawDesc), len(file_ultra_v1_event_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

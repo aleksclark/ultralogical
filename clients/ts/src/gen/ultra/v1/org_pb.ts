@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file ultra/v1/org.proto.
  */
 export const file_ultra_v1_org: GenFile = /*@__PURE__*/
-  fileDesc("ChJ1bHRyYS92MS9vcmcucHJvdG8SCHVsdHJhLnYxIl0KA09yZxIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEgwKBHBsYW4YAyABKAkSLgoKY3JlYXRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiiwEKCU9yZ01lbWJlchIOCgZvcmdfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRINCgVlbWFpbBgDIAEoCRIfCgRyb2xlGAQgASgOMhEudWx0cmEudjEuT3JnUm9sZRItCglqb2luZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiAKEENyZWF0ZU9yZ1JlcXVlc3QSDAoEbmFtZRgBIAEoCSIvChFDcmVhdGVPcmdSZXNwb25zZRIaCgNvcmcYASABKAsyDS51bHRyYS52MS5PcmciHwoNR2V0T3JnUmVxdWVzdBIOCgZvcmdfaWQYASABKAkiLAoOR2V0T3JnUmVzcG9uc2USGgoDb3JnGAEgASgLMg0udWx0cmEudjEuT3JnIlUKE0ludml0ZU1lbWJlclJlcXVlc3QSDgoGb3JnX2lkGAEgASgJEg0KBWVtYWlsGAIgASgJEh8KBHJvbGUYAyABKA4yES51bHRyYS52MS5PcmdSb2xlIjsKFEludml0ZU1lbWJlclJlc3BvbnNlEiMKBm1lbWJlchgBIAEoCzITLnVsdHJhLnYxLk9yZ01lbWJlciIkChJMaXN0TWVtYmVyc1JlcXVlc3QSDgoGb3JnX2lkGAEgASgJIjsKE0xpc3RNZW1iZXJzUmVzcG9uc2USJAoHbWVtYmVycxgBIAMoCzITLnVsdHJhLnYxLk9yZ01lbWJlcipgCgdPcmdSb2xlEhgKFE9SR19ST0xFX1VOU1BFQ0lGSUVEEAASEgoOT1JHX1JPTEVfT1dORVIQARISCg5PUkdfUk9MRV9BRE1JThACEhMKD09SR19ST0xFX01FTUJFUhADMqoCCgpPcmdTZXJ2aWNlEkQKCUNyZWF0ZU9yZxIaLnVsdHJhLnYxLkNyZWF0ZU9yZ1JlcXVlc3QaGy51bHRyYS52MS5DcmVhdGVPcmdSZXNwb25zZRI7CgZHZXRPcmcSFy51bHRyYS52MS5HZXRPcmdSZXF1ZXN0GhgudWx0cmEudjEuR2V0T3JnUmVzcG9uc2USTQoMSW52aXRlTWVtYmVyEh0udWx0cmEudjEuSW52aXRlTWVtYmVyUmVxdWVzdBoeLnVsdHJhLnYxLkludml0ZU1lbWJlclJlc3BvbnNlEkoKC0xpc3RNZW1iZXJzEhwudWx0cmEudjEuTGlzdE1lbWJlcnNSZXF1ZXN0Gh0udWx0cmEudjEuTGlzdE1lbWJlcnNSZXNwb25zZUI8WjpnaXRodWIuY29tL2FsZWtzY2xhcmsvdWx0cmFsb2dpY2FsL2dlbi9nby91bHRyYS92MTt1bHRyYXYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChJ1bHRyYS92MS9vcmcucHJvdG8SCHVsdHJhLnYxIl0KA09yZxIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEgwKBHBsYW4YAyABKAkSLgoKY3JlYXRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiiwEKCU9yZ01lbWJlchIOCgZvcmdfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRINCgVlbWFpbBgDIAEoCRIfCgRyb2xlGAQgASgOMhEudWx0cmEudjEuT3JnUm9sZRItCglqb2luZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiAKEENyZWF0ZU9yZ1JlcXVlc3QSDAoEbmFtZRgBIAEoCSIvChFDcmVhdGVPcmdSZXNwb25zZRIaCgNvcmcYASABKAsyDS51bHRyYS52MS5PcmciHwoNR2V0T3JnUmVxdWVzdBIOCgZvcmdfaWQYASABKAkiLAoOR2V0T3JnUmVzcG9uc2USGgoDb3JnGAEgASgLMg0udWx0cmEudjEuT3JnIlUKE0ludml0ZU1lbWJlclJlcXVlc3QSDgoGb3JnX2lkGAEgASgJEg0KBWVtYWlsGAIgASgJEh8KBHJvbGUYAyABKA4yES51bHRyYS52MS5PcmdSb2xlIjsKFEludml0ZU1lbWJlclJlc3BvbnNlEiMKBm1lbWJlchgBIAEoCzITLnVsdHJhLnYxLk9yZ01lbWJlciIkChJMaXN0TWVtYmVyc1JlcXVlc3QSDgoGb3JnX2lkGAEgASgJIjsKE0xpc3RNZW1iZXJzUmVzcG9uc2USJAoHbWVtYmVycxgBIAMoCzITLnVsdHJhLnYxLk9yZ01lbWJlciIRCg9MaXN0T3Jnc1JlcXVlc3QiLwoQTGlzdE9yZ3NSZXNwb25zZRIbCgRvcmdzGAEgAygLMg0udWx0cmEudjEuT3JnIowBCg5DcmVkZW50aWFsSW5mbxIMCgRraW5kGAEgASgJEgwKBG5hbWUYAiABKAkSLgoKY3JlYXRlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKcm90YXRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiZQoUUHV0Q3JlZGVudGlhbFJlcXVlc3QSDgoGb3JnX2lkGAEgASgJEgwKBGtpbmQYAiABKAkSDAoEbmFtZRgDIAEoCRIPCgdhcGlfa2V5GAQgASgJEhAKCGJhc2VfdXJsGAUgASgJIkUKFVB1dENyZWRlbnRpYWxSZXNwb25zZRIsCgpjcmVkZW50aWFsGAEgASgLMhgudWx0cmEudjEuQ3JlZGVudGlhbEluZm8iKAoWTGlzdENyZWRlbnRpYWxzUmVxdWVzdBIOCgZvcmdfaWQYASABKAkiSAoXTGlzdENyZWRlbnRpYWxzUmVzcG9uc2USLQoLY3JlZGVudGlhbHMYASADKAsyGC51bHRyYS52MS5DcmVkZW50aWFsSW5mbyJFChdEZWxldGVDcmVkZW50aWFsUmVxdWVzdBIOCgZvcmdfaWQYASABKAkSDAoEa2luZBgCIAEoCRIMCgRuYW1lGAMgASgJIhoKGERlbGV0ZUNyZWRlbnRpYWxSZXNwb25zZSpgCgdPcmdSb2xlEhgKFE9SR19ST0xFX1VOU1BFQ0lGSUVEEAASEgoOT1JHX1JPTEVfT1dORVIQARISCg5PUkdfUk9MRV9BRE1JThACEhMKD09SR19ST0xFX01FTUJFUhADMvIECgpPcmdTZXJ2aWNlEkQKCUNyZWF0ZU9yZxIaLnVsdHJhLnYxLkNyZWF0ZU9yZ1JlcXVlc3QaGy51bHRyYS52MS5DcmVhdGVPcmdSZXNwb25zZRI7CgZHZXRPcmcSFy51bHRyYS52MS5HZXRPcmdSZXF1ZXN0GhgudWx0cmEudjEuR2V0T3JnUmVzcG9uc2USQQoITGlzdE9yZ3MSGS51bHRyYS52MS5MaXN0T3Jnc1JlcXVlc3QaGi51bHRyYS52MS5MaXN0T3Jnc1Jlc3BvbnNlEk0KDEludml0ZU1lbWJlchIdLnVsdHJhLnYxLkludml0ZU1lbWJlclJlcXVlc3QaHi51bHRyYS52MS5JbnZpdGVNZW1iZXJSZXNwb25zZRJKCgtMaXN0TWVtYmVycxIcLnVsdHJhLnYxLkxpc3RNZW1iZXJzUmVxdWVzdBodLnVsdHJhLnYxLkxpc3RNZW1iZXJzUmVzcG9uc2USUAoNUHV0Q3JlZGVudGlhbBIeLnVsdHJhLnYxLlB1dENyZWRlbnRpYWxSZXF1ZXN0Gh8udWx0cmEudjEuUHV0Q3JlZGVudGlhbFJlc3BvbnNlElYKD0xpc3RDcmVkZW50aWFscxIgLnVsdHJhLnYxLkxpc3RDcmVkZW50aWFsc1JlcXVlc3QaIS51bHRyYS52MS5MaXN0Q3JlZGVudGlhbHNSZXNwb25zZRJZChBEZWxldGVDcmVkZW50aWFsEiEudWx0cmEudjEuRGVsZXRlQ3JlZGVudGlhbFJlcXVlc3QaIi51bHRyYS52MS5EZWxldGVDcmVkZW50aWFsUmVzcG9uc2VCPFo6Z2l0aHViLmNvbS9hbGVrc2NsYXJrL3VsdHJhbG9naWNhbC9nZW4vZ28vdWx0cmEvdjE7dWx0cmF2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * Org is the tenancy and billing boundary.
@@ -237,6 +237,211 @@ export const ListMembersResponseSchema: GenMessage<ListMembersResponse> = /*@__P
   messageDesc(file_ultra_v1_org, 9);
 
 /**
+ * @generated from message ultra.v1.ListOrgsRequest
+ */
+export type ListOrgsRequest = Message<"ultra.v1.ListOrgsRequest"> & {
+};
+
+/**
+ * Describes the message ultra.v1.ListOrgsRequest.
+ * Use `create(ListOrgsRequestSchema)` to create a new message.
+ */
+export const ListOrgsRequestSchema: GenMessage<ListOrgsRequest> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_org, 10);
+
+/**
+ * @generated from message ultra.v1.ListOrgsResponse
+ */
+export type ListOrgsResponse = Message<"ultra.v1.ListOrgsResponse"> & {
+  /**
+   * Orgs the caller is a member of.
+   *
+   * @generated from field: repeated ultra.v1.Org orgs = 1;
+   */
+  orgs: Org[];
+};
+
+/**
+ * Describes the message ultra.v1.ListOrgsResponse.
+ * Use `create(ListOrgsResponseSchema)` to create a new message.
+ */
+export const ListOrgsResponseSchema: GenMessage<ListOrgsResponse> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_org, 11);
+
+/**
+ * CredentialInfo is the listable, secret-free view of a credential.
+ * Payload values are write-only: they never appear in any response.
+ *
+ * @generated from message ultra.v1.CredentialInfo
+ */
+export type CredentialInfo = Message<"ultra.v1.CredentialInfo"> & {
+  /**
+   * e.g. inference:openai
+   *
+   * @generated from field: string kind = 1;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_at = 3;
+   */
+  createdAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp rotated_at = 4;
+   */
+  rotatedAt?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message ultra.v1.CredentialInfo.
+ * Use `create(CredentialInfoSchema)` to create a new message.
+ */
+export const CredentialInfoSchema: GenMessage<CredentialInfo> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_org, 12);
+
+/**
+ * @generated from message ultra.v1.PutCredentialRequest
+ */
+export type PutCredentialRequest = Message<"ultra.v1.PutCredentialRequest"> & {
+  /**
+   * @generated from field: string org_id = 1;
+   */
+  orgId: string;
+
+  /**
+   * inference:openai | inference:anthropic | inference:bedrock
+   *
+   * @generated from field: string kind = 2;
+   */
+  kind: string;
+
+  /**
+   * "default" if empty
+   *
+   * @generated from field: string name = 3;
+   */
+  name: string;
+
+  /**
+   * Write-only secret material.
+   *
+   * @generated from field: string api_key = 4;
+   */
+  apiKey: string;
+
+  /**
+   * optional vendor endpoint override
+   *
+   * @generated from field: string base_url = 5;
+   */
+  baseUrl: string;
+};
+
+/**
+ * Describes the message ultra.v1.PutCredentialRequest.
+ * Use `create(PutCredentialRequestSchema)` to create a new message.
+ */
+export const PutCredentialRequestSchema: GenMessage<PutCredentialRequest> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_org, 13);
+
+/**
+ * @generated from message ultra.v1.PutCredentialResponse
+ */
+export type PutCredentialResponse = Message<"ultra.v1.PutCredentialResponse"> & {
+  /**
+   * @generated from field: ultra.v1.CredentialInfo credential = 1;
+   */
+  credential?: CredentialInfo | undefined;
+};
+
+/**
+ * Describes the message ultra.v1.PutCredentialResponse.
+ * Use `create(PutCredentialResponseSchema)` to create a new message.
+ */
+export const PutCredentialResponseSchema: GenMessage<PutCredentialResponse> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_org, 14);
+
+/**
+ * @generated from message ultra.v1.ListCredentialsRequest
+ */
+export type ListCredentialsRequest = Message<"ultra.v1.ListCredentialsRequest"> & {
+  /**
+   * @generated from field: string org_id = 1;
+   */
+  orgId: string;
+};
+
+/**
+ * Describes the message ultra.v1.ListCredentialsRequest.
+ * Use `create(ListCredentialsRequestSchema)` to create a new message.
+ */
+export const ListCredentialsRequestSchema: GenMessage<ListCredentialsRequest> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_org, 15);
+
+/**
+ * @generated from message ultra.v1.ListCredentialsResponse
+ */
+export type ListCredentialsResponse = Message<"ultra.v1.ListCredentialsResponse"> & {
+  /**
+   * @generated from field: repeated ultra.v1.CredentialInfo credentials = 1;
+   */
+  credentials: CredentialInfo[];
+};
+
+/**
+ * Describes the message ultra.v1.ListCredentialsResponse.
+ * Use `create(ListCredentialsResponseSchema)` to create a new message.
+ */
+export const ListCredentialsResponseSchema: GenMessage<ListCredentialsResponse> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_org, 16);
+
+/**
+ * @generated from message ultra.v1.DeleteCredentialRequest
+ */
+export type DeleteCredentialRequest = Message<"ultra.v1.DeleteCredentialRequest"> & {
+  /**
+   * @generated from field: string org_id = 1;
+   */
+  orgId: string;
+
+  /**
+   * @generated from field: string kind = 2;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message ultra.v1.DeleteCredentialRequest.
+ * Use `create(DeleteCredentialRequestSchema)` to create a new message.
+ */
+export const DeleteCredentialRequestSchema: GenMessage<DeleteCredentialRequest> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_org, 17);
+
+/**
+ * @generated from message ultra.v1.DeleteCredentialResponse
+ */
+export type DeleteCredentialResponse = Message<"ultra.v1.DeleteCredentialResponse"> & {
+};
+
+/**
+ * Describes the message ultra.v1.DeleteCredentialResponse.
+ * Use `create(DeleteCredentialResponseSchema)` to create a new message.
+ */
+export const DeleteCredentialResponseSchema: GenMessage<DeleteCredentialResponse> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_org, 18);
+
+/**
  * OrgRole is a user's role within an org.
  *
  * @generated from enum ultra.v1.OrgRole
@@ -270,8 +475,9 @@ export const OrgRoleSchema: GenEnum<OrgRole> = /*@__PURE__*/
   enumDesc(file_ultra_v1_org, 0);
 
 /**
- * OrgService manages orgs and membership. The caller of CreateOrg becomes
- * the org's owner.
+ * OrgService manages orgs, membership, and org credentials. The caller of
+ * CreateOrg becomes the org's owner. Credential payloads are write-only and
+ * encrypted at rest.
  *
  * @generated from service ultra.v1.OrgService
  */
@@ -293,6 +499,14 @@ export const OrgService: GenService<{
     output: typeof GetOrgResponseSchema;
   },
   /**
+   * @generated from rpc ultra.v1.OrgService.ListOrgs
+   */
+  listOrgs: {
+    methodKind: "unary";
+    input: typeof ListOrgsRequestSchema;
+    output: typeof ListOrgsResponseSchema;
+  },
+  /**
    * @generated from rpc ultra.v1.OrgService.InviteMember
    */
   inviteMember: {
@@ -307,6 +521,30 @@ export const OrgService: GenService<{
     methodKind: "unary";
     input: typeof ListMembersRequestSchema;
     output: typeof ListMembersResponseSchema;
+  },
+  /**
+   * @generated from rpc ultra.v1.OrgService.PutCredential
+   */
+  putCredential: {
+    methodKind: "unary";
+    input: typeof PutCredentialRequestSchema;
+    output: typeof PutCredentialResponseSchema;
+  },
+  /**
+   * @generated from rpc ultra.v1.OrgService.ListCredentials
+   */
+  listCredentials: {
+    methodKind: "unary";
+    input: typeof ListCredentialsRequestSchema;
+    output: typeof ListCredentialsResponseSchema;
+  },
+  /**
+   * @generated from rpc ultra.v1.OrgService.DeleteCredential
+   */
+  deleteCredential: {
+    methodKind: "unary";
+    input: typeof DeleteCredentialRequestSchema;
+    output: typeof DeleteCredentialResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_ultra_v1_org, 0);
