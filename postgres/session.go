@@ -24,6 +24,9 @@ func (o *orgScope) Credentials() ultra.CredentialStore     { return &credentialS
 func (o *orgScope) Envs() ultra.EnvStore                   { return &envStore{o} }
 func (o *orgScope) Providers() ultra.ProviderInstanceStore { return &providerStore{o} }
 func (o *orgScope) Usage() ultra.UsageStore                { return &usageStore{o} }
+func (o *orgScope) Participants() ultra.ParticipantStore   { return &participantStore{o} }
+func (o *orgScope) Memory() ultra.SessionMemoryStore       { return &memoryStore{o} }
+func (o *orgScope) Waits() ultra.RunWaitStore              { return &waitStore{o} }
 
 type sessionStore struct{ scope *orgScope }
 

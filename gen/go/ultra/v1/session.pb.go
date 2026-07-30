@@ -372,6 +372,918 @@ func (x *ListSessionsResponse) GetSessions() []*Session {
 	return nil
 }
 
+type Participant struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	ParticipantId string                 `protobuf:"bytes,3,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	Display       string                 `protobuf:"bytes,4,opt,name=display,proto3" json:"display,omitempty"`
+	State         string                 `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
+	JoinedAt      *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
+	LastSeenAt    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_seen_at,json=lastSeenAt,proto3" json:"last_seen_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Participant) Reset() {
+	*x = Participant{}
+	mi := &file_ultra_v1_session_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Participant) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Participant) ProtoMessage() {}
+
+func (x *Participant) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Participant.ProtoReflect.Descriptor instead.
+func (*Participant) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Participant) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *Participant) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *Participant) GetParticipantId() string {
+	if x != nil {
+		return x.ParticipantId
+	}
+	return ""
+}
+
+func (x *Participant) GetDisplay() string {
+	if x != nil {
+		return x.Display
+	}
+	return ""
+}
+
+func (x *Participant) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *Participant) GetJoinedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.JoinedAt
+	}
+	return nil
+}
+
+func (x *Participant) GetLastSeenAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastSeenAt
+	}
+	return nil
+}
+
+type JoinRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Display       string                 `protobuf:"bytes,2,opt,name=display,proto3" json:"display,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JoinRequest) Reset() {
+	*x = JoinRequest{}
+	mi := &file_ultra_v1_session_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JoinRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JoinRequest) ProtoMessage() {}
+
+func (x *JoinRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JoinRequest.ProtoReflect.Descriptor instead.
+func (*JoinRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *JoinRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *JoinRequest) GetDisplay() string {
+	if x != nil {
+		return x.Display
+	}
+	return ""
+}
+
+type JoinResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Participants  []*Participant         `protobuf:"bytes,1,rep,name=participants,proto3" json:"participants,omitempty"`
+	EventSeq      int64                  `protobuf:"varint,2,opt,name=event_seq,json=eventSeq,proto3" json:"event_seq,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JoinResponse) Reset() {
+	*x = JoinResponse{}
+	mi := &file_ultra_v1_session_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JoinResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JoinResponse) ProtoMessage() {}
+
+func (x *JoinResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JoinResponse.ProtoReflect.Descriptor instead.
+func (*JoinResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *JoinResponse) GetParticipants() []*Participant {
+	if x != nil {
+		return x.Participants
+	}
+	return nil
+}
+
+func (x *JoinResponse) GetEventSeq() int64 {
+	if x != nil {
+		return x.EventSeq
+	}
+	return 0
+}
+
+type LeaveRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LeaveRequest) Reset() {
+	*x = LeaveRequest{}
+	mi := &file_ultra_v1_session_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LeaveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LeaveRequest) ProtoMessage() {}
+
+func (x *LeaveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LeaveRequest.ProtoReflect.Descriptor instead.
+func (*LeaveRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *LeaveRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type LeaveResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EventSeq      int64                  `protobuf:"varint,1,opt,name=event_seq,json=eventSeq,proto3" json:"event_seq,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LeaveResponse) Reset() {
+	*x = LeaveResponse{}
+	mi := &file_ultra_v1_session_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LeaveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LeaveResponse) ProtoMessage() {}
+
+func (x *LeaveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LeaveResponse.ProtoReflect.Descriptor instead.
+func (*LeaveResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *LeaveResponse) GetEventSeq() int64 {
+	if x != nil {
+		return x.EventSeq
+	}
+	return 0
+}
+
+type HeartbeatRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HeartbeatRequest) Reset() {
+	*x = HeartbeatRequest{}
+	mi := &file_ultra_v1_session_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HeartbeatRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HeartbeatRequest) ProtoMessage() {}
+
+func (x *HeartbeatRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HeartbeatRequest.ProtoReflect.Descriptor instead.
+func (*HeartbeatRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *HeartbeatRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type HeartbeatResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HeartbeatResponse) Reset() {
+	*x = HeartbeatResponse{}
+	mi := &file_ultra_v1_session_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HeartbeatResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HeartbeatResponse) ProtoMessage() {}
+
+func (x *HeartbeatResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HeartbeatResponse.ProtoReflect.Descriptor instead.
+func (*HeartbeatResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{13}
+}
+
+type ListParticipantsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListParticipantsRequest) Reset() {
+	*x = ListParticipantsRequest{}
+	mi := &file_ultra_v1_session_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListParticipantsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListParticipantsRequest) ProtoMessage() {}
+
+func (x *ListParticipantsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListParticipantsRequest.ProtoReflect.Descriptor instead.
+func (*ListParticipantsRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ListParticipantsRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type ListParticipantsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Participants  []*Participant         `protobuf:"bytes,1,rep,name=participants,proto3" json:"participants,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListParticipantsResponse) Reset() {
+	*x = ListParticipantsResponse{}
+	mi := &file_ultra_v1_session_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListParticipantsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListParticipantsResponse) ProtoMessage() {}
+
+func (x *ListParticipantsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListParticipantsResponse.ProtoReflect.Descriptor instead.
+func (*ListParticipantsResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ListParticipantsResponse) GetParticipants() []*Participant {
+	if x != nil {
+		return x.Participants
+	}
+	return nil
+}
+
+type MemoryEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	ValueJson     string                 `protobuf:"bytes,2,opt,name=value_json,json=valueJson,proto3" json:"value_json,omitempty"`
+	UpdatedByType string                 `protobuf:"bytes,3,opt,name=updated_by_type,json=updatedByType,proto3" json:"updated_by_type,omitempty"`
+	UpdatedById   string                 `protobuf:"bytes,4,opt,name=updated_by_id,json=updatedById,proto3" json:"updated_by_id,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MemoryEntry) Reset() {
+	*x = MemoryEntry{}
+	mi := &file_ultra_v1_session_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MemoryEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MemoryEntry) ProtoMessage() {}
+
+func (x *MemoryEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MemoryEntry.ProtoReflect.Descriptor instead.
+func (*MemoryEntry) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *MemoryEntry) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *MemoryEntry) GetValueJson() string {
+	if x != nil {
+		return x.ValueJson
+	}
+	return ""
+}
+
+func (x *MemoryEntry) GetUpdatedByType() string {
+	if x != nil {
+		return x.UpdatedByType
+	}
+	return ""
+}
+
+func (x *MemoryEntry) GetUpdatedById() string {
+	if x != nil {
+		return x.UpdatedById
+	}
+	return ""
+}
+
+func (x *MemoryEntry) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+type SetMemoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	ValueJson     string                 `protobuf:"bytes,3,opt,name=value_json,json=valueJson,proto3" json:"value_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetMemoryRequest) Reset() {
+	*x = SetMemoryRequest{}
+	mi := &file_ultra_v1_session_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetMemoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetMemoryRequest) ProtoMessage() {}
+
+func (x *SetMemoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetMemoryRequest.ProtoReflect.Descriptor instead.
+func (*SetMemoryRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *SetMemoryRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *SetMemoryRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *SetMemoryRequest) GetValueJson() string {
+	if x != nil {
+		return x.ValueJson
+	}
+	return ""
+}
+
+type SetMemoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EventSeq      int64                  `protobuf:"varint,1,opt,name=event_seq,json=eventSeq,proto3" json:"event_seq,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetMemoryResponse) Reset() {
+	*x = SetMemoryResponse{}
+	mi := &file_ultra_v1_session_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetMemoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetMemoryResponse) ProtoMessage() {}
+
+func (x *SetMemoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetMemoryResponse.ProtoReflect.Descriptor instead.
+func (*SetMemoryResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *SetMemoryResponse) GetEventSeq() int64 {
+	if x != nil {
+		return x.EventSeq
+	}
+	return 0
+}
+
+type GetMemoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetMemoryRequest) Reset() {
+	*x = GetMemoryRequest{}
+	mi := &file_ultra_v1_session_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetMemoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetMemoryRequest) ProtoMessage() {}
+
+func (x *GetMemoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetMemoryRequest.ProtoReflect.Descriptor instead.
+func (*GetMemoryRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetMemoryRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *GetMemoryRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type GetMemoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Entry         *MemoryEntry           `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetMemoryResponse) Reset() {
+	*x = GetMemoryResponse{}
+	mi := &file_ultra_v1_session_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetMemoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetMemoryResponse) ProtoMessage() {}
+
+func (x *GetMemoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetMemoryResponse.ProtoReflect.Descriptor instead.
+func (*GetMemoryResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetMemoryResponse) GetEntry() *MemoryEntry {
+	if x != nil {
+		return x.Entry
+	}
+	return nil
+}
+
+type ListMemoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListMemoryRequest) Reset() {
+	*x = ListMemoryRequest{}
+	mi := &file_ultra_v1_session_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListMemoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListMemoryRequest) ProtoMessage() {}
+
+func (x *ListMemoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListMemoryRequest.ProtoReflect.Descriptor instead.
+func (*ListMemoryRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ListMemoryRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type ListMemoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Entries       []*MemoryEntry         `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListMemoryResponse) Reset() {
+	*x = ListMemoryResponse{}
+	mi := &file_ultra_v1_session_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListMemoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListMemoryResponse) ProtoMessage() {}
+
+func (x *ListMemoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListMemoryResponse.ProtoReflect.Descriptor instead.
+func (*ListMemoryResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *ListMemoryResponse) GetEntries() []*MemoryEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+type DeleteMemoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteMemoryRequest) Reset() {
+	*x = DeleteMemoryRequest{}
+	mi := &file_ultra_v1_session_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteMemoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteMemoryRequest) ProtoMessage() {}
+
+func (x *DeleteMemoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteMemoryRequest.ProtoReflect.Descriptor instead.
+func (*DeleteMemoryRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *DeleteMemoryRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *DeleteMemoryRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type DeleteMemoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EventSeq      int64                  `protobuf:"varint,1,opt,name=event_seq,json=eventSeq,proto3" json:"event_seq,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteMemoryResponse) Reset() {
+	*x = DeleteMemoryResponse{}
+	mi := &file_ultra_v1_session_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteMemoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteMemoryResponse) ProtoMessage() {}
+
+func (x *DeleteMemoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_session_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteMemoryResponse.ProtoReflect.Descriptor instead.
+func (*DeleteMemoryResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_session_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *DeleteMemoryResponse) GetEventSeq() int64 {
+	if x != nil {
+		return x.EventSeq
+	}
+	return 0
+}
+
 var File_ultra_v1_session_proto protoreflect.FileDescriptor
 
 const file_ultra_v1_session_proto_rawDesc = "" +
@@ -398,12 +1310,85 @@ const file_ultra_v1_session_proto_rawDesc = "" +
 	"\x13ListSessionsRequest\x12\x15\n" +
 	"\x06org_id\x18\x01 \x01(\tR\x05orgId\"E\n" +
 	"\x14ListSessionsResponse\x12-\n" +
-	"\bsessions\x18\x01 \x03(\v2\x11.ultra.v1.SessionR\bsessions2\xfa\x01\n" +
+	"\bsessions\x18\x01 \x03(\v2\x11.ultra.v1.SessionR\bsessions\"\x8e\x02\n" +
+	"\vParticipant\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12%\n" +
+	"\x0eparticipant_id\x18\x03 \x01(\tR\rparticipantId\x12\x18\n" +
+	"\adisplay\x18\x04 \x01(\tR\adisplay\x12\x14\n" +
+	"\x05state\x18\x05 \x01(\tR\x05state\x127\n" +
+	"\tjoined_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\bjoinedAt\x12<\n" +
+	"\flast_seen_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"lastSeenAt\"F\n" +
+	"\vJoinRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x18\n" +
+	"\adisplay\x18\x02 \x01(\tR\adisplay\"f\n" +
+	"\fJoinResponse\x129\n" +
+	"\fparticipants\x18\x01 \x03(\v2\x15.ultra.v1.ParticipantR\fparticipants\x12\x1b\n" +
+	"\tevent_seq\x18\x02 \x01(\x03R\beventSeq\"-\n" +
+	"\fLeaveRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\",\n" +
+	"\rLeaveResponse\x12\x1b\n" +
+	"\tevent_seq\x18\x01 \x01(\x03R\beventSeq\"1\n" +
+	"\x10HeartbeatRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"\x13\n" +
+	"\x11HeartbeatResponse\"8\n" +
+	"\x17ListParticipantsRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"U\n" +
+	"\x18ListParticipantsResponse\x129\n" +
+	"\fparticipants\x18\x01 \x03(\v2\x15.ultra.v1.ParticipantR\fparticipants\"\xc5\x01\n" +
+	"\vMemoryEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1d\n" +
+	"\n" +
+	"value_json\x18\x02 \x01(\tR\tvalueJson\x12&\n" +
+	"\x0fupdated_by_type\x18\x03 \x01(\tR\rupdatedByType\x12\"\n" +
+	"\rupdated_by_id\x18\x04 \x01(\tR\vupdatedById\x129\n" +
+	"\n" +
+	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"b\n" +
+	"\x10SetMemoryRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x1d\n" +
+	"\n" +
+	"value_json\x18\x03 \x01(\tR\tvalueJson\"0\n" +
+	"\x11SetMemoryResponse\x12\x1b\n" +
+	"\tevent_seq\x18\x01 \x01(\x03R\beventSeq\"C\n" +
+	"\x10GetMemoryRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\"@\n" +
+	"\x11GetMemoryResponse\x12+\n" +
+	"\x05entry\x18\x01 \x01(\v2\x15.ultra.v1.MemoryEntryR\x05entry\"2\n" +
+	"\x11ListMemoryRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"E\n" +
+	"\x12ListMemoryResponse\x12/\n" +
+	"\aentries\x18\x01 \x03(\v2\x15.ultra.v1.MemoryEntryR\aentries\"F\n" +
+	"\x13DeleteMemoryRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\"3\n" +
+	"\x14DeleteMemoryResponse\x12\x1b\n" +
+	"\tevent_seq\x18\x01 \x01(\x03R\beventSeq2\xb0\x06\n" +
 	"\x0eSessionService\x12P\n" +
 	"\rCreateSession\x12\x1e.ultra.v1.CreateSessionRequest\x1a\x1f.ultra.v1.CreateSessionResponse\x12G\n" +
 	"\n" +
 	"GetSession\x12\x1b.ultra.v1.GetSessionRequest\x1a\x1c.ultra.v1.GetSessionResponse\x12M\n" +
-	"\fListSessions\x12\x1d.ultra.v1.ListSessionsRequest\x1a\x1e.ultra.v1.ListSessionsResponseB<Z:github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1b\x06proto3"
+	"\fListSessions\x12\x1d.ultra.v1.ListSessionsRequest\x1a\x1e.ultra.v1.ListSessionsResponse\x125\n" +
+	"\x04Join\x12\x15.ultra.v1.JoinRequest\x1a\x16.ultra.v1.JoinResponse\x128\n" +
+	"\x05Leave\x12\x16.ultra.v1.LeaveRequest\x1a\x17.ultra.v1.LeaveResponse\x12D\n" +
+	"\tHeartbeat\x12\x1a.ultra.v1.HeartbeatRequest\x1a\x1b.ultra.v1.HeartbeatResponse\x12Y\n" +
+	"\x10ListParticipants\x12!.ultra.v1.ListParticipantsRequest\x1a\".ultra.v1.ListParticipantsResponse\x12D\n" +
+	"\tSetMemory\x12\x1a.ultra.v1.SetMemoryRequest\x1a\x1b.ultra.v1.SetMemoryResponse\x12D\n" +
+	"\tGetMemory\x12\x1a.ultra.v1.GetMemoryRequest\x1a\x1b.ultra.v1.GetMemoryResponse\x12G\n" +
+	"\n" +
+	"ListMemory\x12\x1b.ultra.v1.ListMemoryRequest\x1a\x1c.ultra.v1.ListMemoryResponse\x12M\n" +
+	"\fDeleteMemory\x12\x1d.ultra.v1.DeleteMemoryRequest\x1a\x1e.ultra.v1.DeleteMemoryResponseB<Z:github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1b\x06proto3"
 
 var (
 	file_ultra_v1_session_proto_rawDescOnce sync.Once
@@ -417,34 +1402,75 @@ func file_ultra_v1_session_proto_rawDescGZIP() []byte {
 	return file_ultra_v1_session_proto_rawDescData
 }
 
-var file_ultra_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_ultra_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_ultra_v1_session_proto_goTypes = []any{
-	(*Session)(nil),               // 0: ultra.v1.Session
-	(*CreateSessionRequest)(nil),  // 1: ultra.v1.CreateSessionRequest
-	(*CreateSessionResponse)(nil), // 2: ultra.v1.CreateSessionResponse
-	(*GetSessionRequest)(nil),     // 3: ultra.v1.GetSessionRequest
-	(*GetSessionResponse)(nil),    // 4: ultra.v1.GetSessionResponse
-	(*ListSessionsRequest)(nil),   // 5: ultra.v1.ListSessionsRequest
-	(*ListSessionsResponse)(nil),  // 6: ultra.v1.ListSessionsResponse
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*Session)(nil),                  // 0: ultra.v1.Session
+	(*CreateSessionRequest)(nil),     // 1: ultra.v1.CreateSessionRequest
+	(*CreateSessionResponse)(nil),    // 2: ultra.v1.CreateSessionResponse
+	(*GetSessionRequest)(nil),        // 3: ultra.v1.GetSessionRequest
+	(*GetSessionResponse)(nil),       // 4: ultra.v1.GetSessionResponse
+	(*ListSessionsRequest)(nil),      // 5: ultra.v1.ListSessionsRequest
+	(*ListSessionsResponse)(nil),     // 6: ultra.v1.ListSessionsResponse
+	(*Participant)(nil),              // 7: ultra.v1.Participant
+	(*JoinRequest)(nil),              // 8: ultra.v1.JoinRequest
+	(*JoinResponse)(nil),             // 9: ultra.v1.JoinResponse
+	(*LeaveRequest)(nil),             // 10: ultra.v1.LeaveRequest
+	(*LeaveResponse)(nil),            // 11: ultra.v1.LeaveResponse
+	(*HeartbeatRequest)(nil),         // 12: ultra.v1.HeartbeatRequest
+	(*HeartbeatResponse)(nil),        // 13: ultra.v1.HeartbeatResponse
+	(*ListParticipantsRequest)(nil),  // 14: ultra.v1.ListParticipantsRequest
+	(*ListParticipantsResponse)(nil), // 15: ultra.v1.ListParticipantsResponse
+	(*MemoryEntry)(nil),              // 16: ultra.v1.MemoryEntry
+	(*SetMemoryRequest)(nil),         // 17: ultra.v1.SetMemoryRequest
+	(*SetMemoryResponse)(nil),        // 18: ultra.v1.SetMemoryResponse
+	(*GetMemoryRequest)(nil),         // 19: ultra.v1.GetMemoryRequest
+	(*GetMemoryResponse)(nil),        // 20: ultra.v1.GetMemoryResponse
+	(*ListMemoryRequest)(nil),        // 21: ultra.v1.ListMemoryRequest
+	(*ListMemoryResponse)(nil),       // 22: ultra.v1.ListMemoryResponse
+	(*DeleteMemoryRequest)(nil),      // 23: ultra.v1.DeleteMemoryRequest
+	(*DeleteMemoryResponse)(nil),     // 24: ultra.v1.DeleteMemoryResponse
+	(*timestamppb.Timestamp)(nil),    // 25: google.protobuf.Timestamp
 }
 var file_ultra_v1_session_proto_depIdxs = []int32{
-	7, // 0: ultra.v1.Session.created_at:type_name -> google.protobuf.Timestamp
-	7, // 1: ultra.v1.Session.archived_at:type_name -> google.protobuf.Timestamp
-	0, // 2: ultra.v1.CreateSessionResponse.session:type_name -> ultra.v1.Session
-	0, // 3: ultra.v1.GetSessionResponse.session:type_name -> ultra.v1.Session
-	0, // 4: ultra.v1.ListSessionsResponse.sessions:type_name -> ultra.v1.Session
-	1, // 5: ultra.v1.SessionService.CreateSession:input_type -> ultra.v1.CreateSessionRequest
-	3, // 6: ultra.v1.SessionService.GetSession:input_type -> ultra.v1.GetSessionRequest
-	5, // 7: ultra.v1.SessionService.ListSessions:input_type -> ultra.v1.ListSessionsRequest
-	2, // 8: ultra.v1.SessionService.CreateSession:output_type -> ultra.v1.CreateSessionResponse
-	4, // 9: ultra.v1.SessionService.GetSession:output_type -> ultra.v1.GetSessionResponse
-	6, // 10: ultra.v1.SessionService.ListSessions:output_type -> ultra.v1.ListSessionsResponse
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	25, // 0: ultra.v1.Session.created_at:type_name -> google.protobuf.Timestamp
+	25, // 1: ultra.v1.Session.archived_at:type_name -> google.protobuf.Timestamp
+	0,  // 2: ultra.v1.CreateSessionResponse.session:type_name -> ultra.v1.Session
+	0,  // 3: ultra.v1.GetSessionResponse.session:type_name -> ultra.v1.Session
+	0,  // 4: ultra.v1.ListSessionsResponse.sessions:type_name -> ultra.v1.Session
+	25, // 5: ultra.v1.Participant.joined_at:type_name -> google.protobuf.Timestamp
+	25, // 6: ultra.v1.Participant.last_seen_at:type_name -> google.protobuf.Timestamp
+	7,  // 7: ultra.v1.JoinResponse.participants:type_name -> ultra.v1.Participant
+	7,  // 8: ultra.v1.ListParticipantsResponse.participants:type_name -> ultra.v1.Participant
+	25, // 9: ultra.v1.MemoryEntry.updated_at:type_name -> google.protobuf.Timestamp
+	16, // 10: ultra.v1.GetMemoryResponse.entry:type_name -> ultra.v1.MemoryEntry
+	16, // 11: ultra.v1.ListMemoryResponse.entries:type_name -> ultra.v1.MemoryEntry
+	1,  // 12: ultra.v1.SessionService.CreateSession:input_type -> ultra.v1.CreateSessionRequest
+	3,  // 13: ultra.v1.SessionService.GetSession:input_type -> ultra.v1.GetSessionRequest
+	5,  // 14: ultra.v1.SessionService.ListSessions:input_type -> ultra.v1.ListSessionsRequest
+	8,  // 15: ultra.v1.SessionService.Join:input_type -> ultra.v1.JoinRequest
+	10, // 16: ultra.v1.SessionService.Leave:input_type -> ultra.v1.LeaveRequest
+	12, // 17: ultra.v1.SessionService.Heartbeat:input_type -> ultra.v1.HeartbeatRequest
+	14, // 18: ultra.v1.SessionService.ListParticipants:input_type -> ultra.v1.ListParticipantsRequest
+	17, // 19: ultra.v1.SessionService.SetMemory:input_type -> ultra.v1.SetMemoryRequest
+	19, // 20: ultra.v1.SessionService.GetMemory:input_type -> ultra.v1.GetMemoryRequest
+	21, // 21: ultra.v1.SessionService.ListMemory:input_type -> ultra.v1.ListMemoryRequest
+	23, // 22: ultra.v1.SessionService.DeleteMemory:input_type -> ultra.v1.DeleteMemoryRequest
+	2,  // 23: ultra.v1.SessionService.CreateSession:output_type -> ultra.v1.CreateSessionResponse
+	4,  // 24: ultra.v1.SessionService.GetSession:output_type -> ultra.v1.GetSessionResponse
+	6,  // 25: ultra.v1.SessionService.ListSessions:output_type -> ultra.v1.ListSessionsResponse
+	9,  // 26: ultra.v1.SessionService.Join:output_type -> ultra.v1.JoinResponse
+	11, // 27: ultra.v1.SessionService.Leave:output_type -> ultra.v1.LeaveResponse
+	13, // 28: ultra.v1.SessionService.Heartbeat:output_type -> ultra.v1.HeartbeatResponse
+	15, // 29: ultra.v1.SessionService.ListParticipants:output_type -> ultra.v1.ListParticipantsResponse
+	18, // 30: ultra.v1.SessionService.SetMemory:output_type -> ultra.v1.SetMemoryResponse
+	20, // 31: ultra.v1.SessionService.GetMemory:output_type -> ultra.v1.GetMemoryResponse
+	22, // 32: ultra.v1.SessionService.ListMemory:output_type -> ultra.v1.ListMemoryResponse
+	24, // 33: ultra.v1.SessionService.DeleteMemory:output_type -> ultra.v1.DeleteMemoryResponse
+	23, // [23:34] is the sub-list for method output_type
+	12, // [12:23] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_session_proto_init() }
@@ -458,7 +1484,7 @@ func file_ultra_v1_session_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ultra_v1_session_proto_rawDesc), len(file_ultra_v1_session_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

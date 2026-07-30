@@ -52,6 +52,9 @@ type AgentRun struct {
 	ID                RunID
 	SessionID         SessionID
 	OrgID             OrgID
+	ParentRunID       *RunID
+	Grants            Grants
+	Result            json.RawMessage
 	State             RunState
 	LoopKind          string
 	LoopVersion       int
@@ -98,4 +101,5 @@ type RunStore interface {
 	// CountStepAttempts returns how many StepStarted attempts have been
 	// recorded for a step index (used to number attempt markers).
 	Steps(ctx context.Context, id RunID) ([]RunStep, error)
+	CountChildren(ctx context.Context, id RunID) (int, error)
 }

@@ -38,7 +38,11 @@ message AgentRun {
   string failure_message = 9; // user-actionable, never raw provider errors
   google.protobuf.Timestamp created_at = 10;
   google.protobuf.Timestamp updated_at = 11;
+  string parent_run_id = 12;
+  Grants grants = 13;
 }
+
+message Grants { repeated string tools=1; bool env_all=2; repeated string env_ids=3; bool may_spawn=4; int32 max_children=5; }
 
 message StartRunRequest {
   string session_id = 1;
@@ -46,6 +50,9 @@ message StartRunRequest {
   // Optional; defaults to {provider: "openai", model from server default,
   // credential: "default"}.
   ModelConfig model_config = 3;
+  // Optional only for child-spawn internals; human StartRun ignores this
+  // and receives server-defined root grants.
+  Grants grants = 4;
 }
 
 message StartRunResponse {

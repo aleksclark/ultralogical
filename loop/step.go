@@ -156,6 +156,7 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 		newAskUserTool(rec),
 		newPostEventTool(events, sessionID, runID),
 	}
+	tools = append(tools, memoryTools(w.Store, run)...)
 	if w.ToolResolver != nil {
 		dynamic, err := w.ToolResolver.Tools(ctx, run)
 		if err != nil {

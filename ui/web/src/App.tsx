@@ -22,6 +22,8 @@ export function App() {
   const [envs, setEnvs] = useState<DevEnv[]>([]);
   const [command, setCommand] = useState("");
   const [envOutput, setEnvOutput] = useState("");
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [memory, setMemory] = useState<{key:string,valueJson:string}[]>([]);
   const [key, setKey] = useState("");
   const [credentialBaseUrl, setCredentialBaseUrl] = useState("");
   const [extraHeaders, setExtraHeaders] = useState("{}");
@@ -39,7 +41,7 @@ export function App() {
   }, [api, org]);
   useEffect(() => { void load(); }, [load]);
 
-  useEffect(() => { void refreshEnvs(); }, [session]);
+  useEffect(() => { if(session){void api.sessions.join({sessionId:session.id,display:"You"}).then(refreshMultiplayer);void refreshEnvs();} }, [session]);
 
   useEffect(() => {
     if (!session) return;
@@ -68,6 +70,7 @@ export function App() {
   }
   async function answer(runId: string, message: string) { await api.agents.promptRun({ runId, message }); }
   async function refreshEnvs() { if(session) setEnvs((await api.envs.listEnvs({sessionId:session.id})).envs); }
+  async function refreshMultiplayer() { if(!session)return; const p=await api.sessions.listParticipants({sessionId:session.id});setParticipants(p.participants.filter(x=>x.state==="active").map(x=>x.display||x.participantId));const m=await api.sessions.listMemory({sessionId:session.id});setMemory(m.entries); }
   async function provisionEnv() { if(!session)return; await api.envs.provisionEnv({sessionId:session.id,spec:{name:"main",workdir:"/work",env:{},metadata:{}},providerInstance:"default"}); await refreshEnvs(); setTimeout(refreshEnvs,1000); }
   async function execPreview() { const env=envs.find(e=>e.state===3);if(!env||!command)return;const r=await api.envs.execPreview({envId:env.id,command});setEnvOutput(r.output);setCommand(""); }
   async function saveKey() {
@@ -96,7 +99,7 @@ export function App() {
     </aside>
     <main className="flex-1 max-w-4xl mx-auto p-6 flex flex-col h-screen">
       {settings ? <section className="space-y-4"><h2 className="text-2xl font-semibold">Org settings</h2><p className="text-zinc-400">Inference credentials are write-only and encrypted at rest.</p><label className="block space-y-1"><span>OpenAI API key</span><input aria-label="OpenAI API key" type="password" value={key} onChange={(e) => setKey(e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded p-3" /></label><label className="block space-y-1"><span>Base URL</span><input aria-label="Base URL" value={credentialBaseUrl} onChange={(e)=>setCredentialBaseUrl(e.target.value)} placeholder="https://gateway.example.com/v1" className="w-full bg-zinc-900 border border-zinc-700 rounded p-3" /></label><label className="block space-y-1"><span>Extra headers (JSON)</span><textarea aria-label="Extra headers JSON" value={extraHeaders} onChange={(e)=>setExtraHeaders(e.target.value)} rows={7} className="w-full font-mono text-sm bg-zinc-900 border border-zinc-700 rounded p-3" /><span className="text-xs text-zinc-500">Example: {`{"cf-aig-collect-log-payload":"false","cf-aig-metadata":"{\\"tier\\":\\"fast\\"}"}`}</span></label><button onClick={saveKey} className="bg-white text-black rounded px-4 py-2">Save credential</button></section>
-      : session ? <><header className="border-b border-zinc-800 pb-4 flex justify-between"><h2 className="text-xl font-medium">{session.title}</h2><button onClick={provisionEnv} className="border border-zinc-700 rounded px-3 text-sm">New environment</button></header><div className="py-2 flex gap-2 items-center">{envs.map(e=><span key={e.id} className="text-xs border border-zinc-700 rounded px-2 py-1">{e.spec?.name}: {e.state}</span>)}<input aria-label="Environment command" value={command} onChange={e=>setCommand(e.target.value)} className="ml-auto bg-zinc-900 border border-zinc-700 rounded px-2"/><button onClick={execPreview} className="text-sm border rounded px-2">Run</button></div>{envOutput&&<pre data-testid="env-output" className="text-xs bg-zinc-900 p-2">{envOutput}</pre>}<section data-testid="timeline" className="flex-1 overflow-auto py-4 space-y-3">{view.items.map((item, i) => <Timeline key={i} item={item} onAnswer={answer} />)}</section><div className="flex gap-2 border-t border-zinc-800 pt-4"><input aria-label="Prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendPrompt(); }} className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-3" placeholder="Ask an agent…" /><button onClick={sendPrompt} className="bg-white text-black rounded px-5">Send</button></div></> : <div className="m-auto text-zinc-500">Create or select a session</div>}
+      : session ? <><header className="border-b border-zinc-800 pb-4 flex justify-between"><div><h2 className="text-xl font-medium">{session.title}</h2><div data-testid="presence" className="text-xs text-zinc-500">{participants.join(", ")}</div></div><button onClick={provisionEnv} className="border border-zinc-700 rounded px-3 text-sm">New environment</button></header><div className="py-2 flex gap-2 items-center">{envs.map(e=><span key={e.id} className="text-xs border border-zinc-700 rounded px-2 py-1">{e.spec?.name}: {e.state}</span>)}<input aria-label="Environment command" value={command} onChange={e=>setCommand(e.target.value)} className="ml-auto bg-zinc-900 border border-zinc-700 rounded px-2"/><button onClick={execPreview} className="text-sm border rounded px-2">Run</button></div>{envOutput&&<pre data-testid="env-output" className="text-xs bg-zinc-900 p-2">{envOutput}</pre>}{memory.length>0&&<details className="text-xs"><summary>Session memory ({memory.length})</summary>{memory.map(m=><pre key={m.key}>{m.key}: {m.valueJson}</pre>)}</details>}<section data-testid="timeline" className="flex-1 overflow-auto py-4 space-y-3">{view.items.map((item, i) => <Timeline key={i} item={item} onAnswer={answer} />)}</section><div className="flex gap-2 border-t border-zinc-800 pt-4"><input aria-label="Prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendPrompt(); }} className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-3" placeholder="Ask an agent…" /><button onClick={sendPrompt} className="bg-white text-black rounded px-5">Send</button></div></> : <div className="m-auto text-zinc-500">Create or select a session</div>}
       {error && <div role="alert" className="fixed right-4 bottom-4 bg-red-950 border border-red-800 rounded p-3 text-sm">{error}</div>}
     </main>
   </div>;

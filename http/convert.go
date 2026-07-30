@@ -205,6 +205,34 @@ func payloadFromDomain(kind string, payload []byte) (*ultrav1.EventPayload, erro
 		return decodeAs(payload, &ultrav1.ExecPreviewRan{}, func(m *ultrav1.ExecPreviewRan) *ultrav1.EventPayload {
 			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_ExecPreviewRan{ExecPreviewRan: m}}
 		})
+	case ultra.EventKindParticipantJoined:
+		return decodeAs(payload, &ultrav1.ParticipantTransition{}, func(m *ultrav1.ParticipantTransition) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_ParticipantJoined{ParticipantJoined: m}}
+		})
+	case ultra.EventKindParticipantLeft:
+		return decodeAs(payload, &ultrav1.ParticipantTransition{}, func(m *ultrav1.ParticipantTransition) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_ParticipantLeft{ParticipantLeft: m}}
+		})
+	case ultra.EventKindParticipantIdle:
+		return decodeAs(payload, &ultrav1.ParticipantTransition{}, func(m *ultrav1.ParticipantTransition) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_ParticipantIdle{ParticipantIdle: m}}
+		})
+	case ultra.EventKindRunSpawned:
+		return decodeAs(payload, &ultrav1.RunSpawned{}, func(m *ultrav1.RunSpawned) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_RunSpawned{RunSpawned: m}}
+		})
+	case ultra.EventKindMemorySet:
+		return decodeAs(payload, &ultrav1.MemoryChanged{}, func(m *ultrav1.MemoryChanged) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_MemorySet{MemorySet: m}}
+		})
+	case ultra.EventKindMemoryDeleted:
+		return decodeAs(payload, &ultrav1.MemoryChanged{}, func(m *ultrav1.MemoryChanged) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_MemoryDeleted{MemoryDeleted: m}}
+		})
+	case ultra.EventKindPermissionDenied:
+		return decodeAs(payload, &ultrav1.PermissionDenied{}, func(m *ultrav1.PermissionDenied) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_PermissionDenied{PermissionDenied: m}}
+		})
 	default:
 		return nil, errors.New("unknown event kind " + kind)
 	}
