@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+
+	ultra "github.com/aleksclark/ultralogical"
 )
 
 // Job is a queueable unit of work. Implementations must be plain structs with
@@ -43,6 +45,13 @@ func WithScheduledAt(t time.Time) Opt { return func(o *Options) { o.ScheduledAt 
 // makes entity-creation + first-job atomic everywhere in the system.
 type Enqueuer interface {
 	EnqueueTx(ctx context.Context, tx pgx.Tx, job Job, opts ...Opt) error
+}
+
+// TxEnqueuer bridges queue insertion into a transaction-bound domain Store.
+// It lives in the queue seam (not loop) because agent and environment jobs
+// share the atomic entity+job pattern.
+type TxEnqueuer interface {
+	EnqueueInTx(ctx context.Context, txStore ultra.Store, job Job, opts ...Opt) error
 }
 
 // Worker processes jobs of one kind. Delivery is at-least-once: Work must be

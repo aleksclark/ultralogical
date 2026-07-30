@@ -81,4 +81,6 @@ tasks:
         ULTRA_DEV_TOKENS=dev-token=dev@example.com \
         go run ./cmd/ultrad &
         DATABASE_URL=postgres://postgres:dev@localhost:5499/postgres?sslmode=disable \
+        ULTRA_MASTER_KEY=$ULTRA_MASTER_KEY \
+        ULTRA_BEZALEL_IMAGE=${ULTRA_BEZALEL_IMAGE:-ultralogical/bezalel:local} \
         go run ./cmd/worker

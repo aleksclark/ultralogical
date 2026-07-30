@@ -177,6 +177,34 @@ func payloadFromDomain(kind string, payload []byte) (*ultrav1.EventPayload, erro
 		return decodeAs(payload, &ultrav1.RunCancelled{}, func(m *ultrav1.RunCancelled) *ultrav1.EventPayload {
 			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_RunCancelled{RunCancelled: m}}
 		})
+	case ultra.EventKindEnvRequested:
+		return decodeAs(payload, &ultrav1.EnvLifecycle{}, func(m *ultrav1.EnvLifecycle) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_EnvRequested{EnvRequested: m}}
+		})
+	case ultra.EventKindEnvProvisioning:
+		return decodeAs(payload, &ultrav1.EnvLifecycle{}, func(m *ultrav1.EnvLifecycle) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_EnvProvisioning{EnvProvisioning: m}}
+		})
+	case ultra.EventKindEnvReady:
+		return decodeAs(payload, &ultrav1.EnvLifecycle{}, func(m *ultrav1.EnvLifecycle) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_EnvReady{EnvReady: m}}
+		})
+	case ultra.EventKindEnvFailed:
+		return decodeAs(payload, &ultrav1.EnvLifecycle{}, func(m *ultrav1.EnvLifecycle) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_EnvFailed{EnvFailed: m}}
+		})
+	case ultra.EventKindEnvTerminating:
+		return decodeAs(payload, &ultrav1.EnvLifecycle{}, func(m *ultrav1.EnvLifecycle) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_EnvTerminating{EnvTerminating: m}}
+		})
+	case ultra.EventKindEnvTerminated:
+		return decodeAs(payload, &ultrav1.EnvLifecycle{}, func(m *ultrav1.EnvLifecycle) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_EnvTerminated{EnvTerminated: m}}
+		})
+	case ultra.EventKindExecPreviewRan:
+		return decodeAs(payload, &ultrav1.ExecPreviewRan{}, func(m *ultrav1.ExecPreviewRan) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_ExecPreviewRan{ExecPreviewRan: m}}
+		})
 	default:
 		return nil, errors.New("unknown event kind " + kind)
 	}

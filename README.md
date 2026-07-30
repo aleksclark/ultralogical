@@ -12,11 +12,12 @@ provider.
 
 ## Status
 
-**Phase 1 complete**: schema-first ConnectRPC API (Go + TS generated
-clients), tenant-scoped Postgres store, gapless session event log, durable
-fantasy agent loop (one River job per step, crash-resumable history), BYO
-OpenAI/Anthropic/Bedrock credentials encrypted at rest, ask-user workflows,
-streaming React SPA, and real-stack API + Playwright acceptance suites.
+**Phase 2 complete**: multi-tenant ConnectRPC platform with a durable
+Fantasy loop, encrypted BYO inference credentials, and session-owned
+development environments. The local provider launches real Bezalel Docker
+containers with persistent workspaces, exposes MCP tools to agents, supports
+human ExecPreview, reconciles failures, and records usage intervals. React
+and generated Go/TypeScript clients consume the same typed event stream.
 
 See [`plan/index.md`](plan/index.md) for the architecture and roadmap, and
 [`AGENTS.md`](AGENTS.md) for the contributor/agent cheatsheet.

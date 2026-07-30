@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file ultra/v1/event.proto.
  */
 export const file_ultra_v1_event: GenFile = /*@__PURE__*/
-  fileDesc("ChR1bHRyYS92MS9ldmVudC5wcm90bxIIdWx0cmEudjEiNgoFQWN0b3ISIQoEdHlwZRgBIAEoDjITLnVsdHJhLnYxLkFjdG9yVHlwZRIKCgJpZBgCIAEoCSIbCgtVc2VyTWVzc2FnZRIMCgR0ZXh0GAEgASgJIhoKCkFubm90YXRpb24SDAoEdGV4dBgBIAEoCSIsCgpSdW5TdGFydGVkEg4KBnJ1bl9pZBgBIAEoCRIOCgZwcm9tcHQYAiABKAkiQgoLU3RlcFN0YXJ0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSDwoHYXR0ZW1wdBgDIAEoBSJjCglUZXh0RGVsdGESDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSDwoHYXR0ZW1wdBgDIAEoBRITCgtkZWx0YV9pbmRleBgEIAEoBRIMCgR0ZXh0GAUgASgJImgKDlJlYXNvbmluZ0RlbHRhEg4KBnJ1bl9pZBgBIAEoCRISCgpzdGVwX2luZGV4GAIgASgFEg8KB2F0dGVtcHQYAyABKAUSEwoLZGVsdGFfaW5kZXgYBCABKAUSDAoEdGV4dBgFIAEoCSJoCg9Ub29sQ2FsbFN0YXJ0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSFAoMdG9vbF9jYWxsX2lkGAMgASgJEgwKBG5hbWUYBCABKAkSDQoFaW5wdXQYBSABKAkidwoKVG9vbFJlc3VsdBIOCgZydW5faWQYASABKAkSEgoKc3RlcF9pbmRleBgCIAEoBRIUCgx0b29sX2NhbGxfaWQYAyABKAkSDAoEbmFtZRgEIAEoCRIPCgdjb250ZW50GAUgASgJEhAKCGlzX2Vycm9yGAYgASgIInAKDFN0ZXBGaW5pc2hlZBIOCgZydW5faWQYASABKAkSEgoKc3RlcF9pbmRleBgCIAEoBRIRCgl0b2tlbnNfaW4YAyABKAMSEgoKdG9rZW5zX291dBgEIAEoAxIVCg1maW5pc2hfcmVhc29uGAUgASgJIikKCFF1ZXN0aW9uEgwKBHRleHQYASABKAkSDwoHY2hvaWNlcxgCIAMoCSJDCgtSdW5Bd2FpdGluZxIOCgZydW5faWQYASABKAkSJAoIcXVlc3Rpb24YAiABKAsyEi51bHRyYS52MS5RdWVzdGlvbiIyCgxSdW5Db21wbGV0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCmZpbmFsX3RleHQYAiABKAkiPAoJUnVuRmFpbGVkEg4KBnJ1bl9pZBgBIAEoCRIOCgZyZWFzb24YAiABKAkSDwoHbWVzc2FnZRgDIAEoCSIeCgxSdW5DYW5jZWxsZWQSDgoGcnVuX2lkGAEgASgJIoIFCgxFdmVudFBheWxvYWQSLQoMdXNlcl9tZXNzYWdlGAogASgLMhUudWx0cmEudjEuVXNlck1lc3NhZ2VIABIqCgphbm5vdGF0aW9uGAsgASgLMhQudWx0cmEudjEuQW5ub3RhdGlvbkgAEisKC3J1bl9zdGFydGVkGAwgASgLMhQudWx0cmEudjEuUnVuU3RhcnRlZEgAEi0KDHN0ZXBfc3RhcnRlZBgNIAEoCzIVLnVsdHJhLnYxLlN0ZXBTdGFydGVkSAASKQoKdGV4dF9kZWx0YRgOIAEoCzITLnVsdHJhLnYxLlRleHREZWx0YUgAEjMKD3JlYXNvbmluZ19kZWx0YRgPIAEoCzIYLnVsdHJhLnYxLlJlYXNvbmluZ0RlbHRhSAASNgoRdG9vbF9jYWxsX3N0YXJ0ZWQYECABKAsyGS51bHRyYS52MS5Ub29sQ2FsbFN0YXJ0ZWRIABIrCgt0b29sX3Jlc3VsdBgRIAEoCzIULnVsdHJhLnYxLlRvb2xSZXN1bHRIABIvCg1zdGVwX2ZpbmlzaGVkGBIgASgLMhYudWx0cmEudjEuU3RlcEZpbmlzaGVkSAASLQoMcnVuX2F3YWl0aW5nGBMgASgLMhUudWx0cmEudjEuUnVuQXdhaXRpbmdIABIvCg1ydW5fY29tcGxldGVkGBQgASgLMhYudWx0cmEudjEuUnVuQ29tcGxldGVkSAASKQoKcnVuX2ZhaWxlZBgVIAEoCzITLnVsdHJhLnYxLlJ1bkZhaWxlZEgAEi8KDXJ1bl9jYW5jZWxsZWQYFiABKAsyFi51bHRyYS52MS5SdW5DYW5jZWxsZWRIAEIJCgdwYXlsb2FkIqABCgxTZXNzaW9uRXZlbnQSEgoKc2Vzc2lvbl9pZBgBIAEoCRILCgNzZXEYAiABKAMSJgoCdHMYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh4KBWFjdG9yGAQgASgLMg8udWx0cmEudjEuQWN0b3ISJwoHcGF5bG9hZBgFIAEoCzIWLnVsdHJhLnYxLkV2ZW50UGF5bG9hZCJMCg1BcHBlbmRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSJwoHcGF5bG9hZBgCIAEoCzIWLnVsdHJhLnYxLkV2ZW50UGF5bG9hZCIdCg5BcHBlbmRSZXNwb25zZRILCgNzZXEYASABKAMiOAoQU3Vic2NyaWJlUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEhAKCGZyb21fc2VxGAIgASgDIjoKEVN1YnNjcmliZVJlc3BvbnNlEiUKBWV2ZW50GAEgASgLMhYudWx0cmEudjEuU2Vzc2lvbkV2ZW50KmkKCUFjdG9yVHlwZRIaChZBQ1RPUl9UWVBFX1VOU1BFQ0lGSUVEEAASEwoPQUNUT1JfVFlQRV9VU0VSEAESFAoQQUNUT1JfVFlQRV9BR0VOVBACEhUKEUFDVE9SX1RZUEVfU1lTVEVNEAMykwEKDEV2ZW50U2VydmljZRI7CgZBcHBlbmQSFy51bHRyYS52MS5BcHBlbmRSZXF1ZXN0GhgudWx0cmEudjEuQXBwZW5kUmVzcG9uc2USRgoJU3Vic2NyaWJlEhoudWx0cmEudjEuU3Vic2NyaWJlUmVxdWVzdBobLnVsdHJhLnYxLlN1YnNjcmliZVJlc3BvbnNlMAFCPFo6Z2l0aHViLmNvbS9hbGVrc2NsYXJrL3VsdHJhbG9naWNhbC9nZW4vZ28vdWx0cmEvdjE7dWx0cmF2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChR1bHRyYS92MS9ldmVudC5wcm90bxIIdWx0cmEudjEiNgoFQWN0b3ISIQoEdHlwZRgBIAEoDjITLnVsdHJhLnYxLkFjdG9yVHlwZRIKCgJpZBgCIAEoCSIbCgtVc2VyTWVzc2FnZRIMCgR0ZXh0GAEgASgJIhoKCkFubm90YXRpb24SDAoEdGV4dBgBIAEoCSIsCgpSdW5TdGFydGVkEg4KBnJ1bl9pZBgBIAEoCRIOCgZwcm9tcHQYAiABKAkiQgoLU3RlcFN0YXJ0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSDwoHYXR0ZW1wdBgDIAEoBSJjCglUZXh0RGVsdGESDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSDwoHYXR0ZW1wdBgDIAEoBRITCgtkZWx0YV9pbmRleBgEIAEoBRIMCgR0ZXh0GAUgASgJImgKDlJlYXNvbmluZ0RlbHRhEg4KBnJ1bl9pZBgBIAEoCRISCgpzdGVwX2luZGV4GAIgASgFEg8KB2F0dGVtcHQYAyABKAUSEwoLZGVsdGFfaW5kZXgYBCABKAUSDAoEdGV4dBgFIAEoCSJoCg9Ub29sQ2FsbFN0YXJ0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSFAoMdG9vbF9jYWxsX2lkGAMgASgJEgwKBG5hbWUYBCABKAkSDQoFaW5wdXQYBSABKAkidwoKVG9vbFJlc3VsdBIOCgZydW5faWQYASABKAkSEgoKc3RlcF9pbmRleBgCIAEoBRIUCgx0b29sX2NhbGxfaWQYAyABKAkSDAoEbmFtZRgEIAEoCRIPCgdjb250ZW50GAUgASgJEhAKCGlzX2Vycm9yGAYgASgIInAKDFN0ZXBGaW5pc2hlZBIOCgZydW5faWQYASABKAkSEgoKc3RlcF9pbmRleBgCIAEoBRIRCgl0b2tlbnNfaW4YAyABKAMSEgoKdG9rZW5zX291dBgEIAEoAxIVCg1maW5pc2hfcmVhc29uGAUgASgJIikKCFF1ZXN0aW9uEgwKBHRleHQYASABKAkSDwoHY2hvaWNlcxgCIAMoCSJDCgtSdW5Bd2FpdGluZxIOCgZydW5faWQYASABKAkSJAoIcXVlc3Rpb24YAiABKAsyEi51bHRyYS52MS5RdWVzdGlvbiIyCgxSdW5Db21wbGV0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCmZpbmFsX3RleHQYAiABKAkiPAoJUnVuRmFpbGVkEg4KBnJ1bl9pZBgBIAEoCRIOCgZyZWFzb24YAiABKAkSDwoHbWVzc2FnZRgDIAEoCSIeCgxSdW5DYW5jZWxsZWQSDgoGcnVuX2lkGAEgASgJIm0KDEVudkxpZmVjeWNsZRIOCgZlbnZfaWQYASABKAkSDAoEbmFtZRgCIAEoCRIcChRwcm92aWRlcl9pbnN0YW5jZV9pZBgDIAEoCRIQCghlbmRwb2ludBgEIAEoCRIPCgdtZXNzYWdlGAUgASgJIlMKDkV4ZWNQcmV2aWV3UmFuEg4KBmVudl9pZBgBIAEoCRIPCgdjb21tYW5kGAIgASgJEg4KBm91dHB1dBgDIAEoCRIQCghpc19lcnJvchgEIAEoCCLdBwoMRXZlbnRQYXlsb2FkEi0KDHVzZXJfbWVzc2FnZRgKIAEoCzIVLnVsdHJhLnYxLlVzZXJNZXNzYWdlSAASKgoKYW5ub3RhdGlvbhgLIAEoCzIULnVsdHJhLnYxLkFubm90YXRpb25IABIrCgtydW5fc3RhcnRlZBgMIAEoCzIULnVsdHJhLnYxLlJ1blN0YXJ0ZWRIABItCgxzdGVwX3N0YXJ0ZWQYDSABKAsyFS51bHRyYS52MS5TdGVwU3RhcnRlZEgAEikKCnRleHRfZGVsdGEYDiABKAsyEy51bHRyYS52MS5UZXh0RGVsdGFIABIzCg9yZWFzb25pbmdfZGVsdGEYDyABKAsyGC51bHRyYS52MS5SZWFzb25pbmdEZWx0YUgAEjYKEXRvb2xfY2FsbF9zdGFydGVkGBAgASgLMhkudWx0cmEudjEuVG9vbENhbGxTdGFydGVkSAASKwoLdG9vbF9yZXN1bHQYESABKAsyFC51bHRyYS52MS5Ub29sUmVzdWx0SAASLwoNc3RlcF9maW5pc2hlZBgSIAEoCzIWLnVsdHJhLnYxLlN0ZXBGaW5pc2hlZEgAEi0KDHJ1bl9hd2FpdGluZxgTIAEoCzIVLnVsdHJhLnYxLlJ1bkF3YWl0aW5nSAASLwoNcnVuX2NvbXBsZXRlZBgUIAEoCzIWLnVsdHJhLnYxLlJ1bkNvbXBsZXRlZEgAEikKCnJ1bl9mYWlsZWQYFSABKAsyEy51bHRyYS52MS5SdW5GYWlsZWRIABIvCg1ydW5fY2FuY2VsbGVkGBYgASgLMhYudWx0cmEudjEuUnVuQ2FuY2VsbGVkSAASLwoNZW52X3JlcXVlc3RlZBgXIAEoCzIWLnVsdHJhLnYxLkVudkxpZmVjeWNsZUgAEjIKEGVudl9wcm92aXNpb25pbmcYGCABKAsyFi51bHRyYS52MS5FbnZMaWZlY3ljbGVIABIrCgllbnZfcmVhZHkYGSABKAsyFi51bHRyYS52MS5FbnZMaWZlY3ljbGVIABIsCgplbnZfZmFpbGVkGBogASgLMhYudWx0cmEudjEuRW52TGlmZWN5Y2xlSAASMQoPZW52X3Rlcm1pbmF0aW5nGBsgASgLMhYudWx0cmEudjEuRW52TGlmZWN5Y2xlSAASMAoOZW52X3Rlcm1pbmF0ZWQYHCABKAsyFi51bHRyYS52MS5FbnZMaWZlY3ljbGVIABI0ChBleGVjX3ByZXZpZXdfcmFuGB0gASgLMhgudWx0cmEudjEuRXhlY1ByZXZpZXdSYW5IAEIJCgdwYXlsb2FkIqABCgxTZXNzaW9uRXZlbnQSEgoKc2Vzc2lvbl9pZBgBIAEoCRILCgNzZXEYAiABKAMSJgoCdHMYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh4KBWFjdG9yGAQgASgLMg8udWx0cmEudjEuQWN0b3ISJwoHcGF5bG9hZBgFIAEoCzIWLnVsdHJhLnYxLkV2ZW50UGF5bG9hZCJMCg1BcHBlbmRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSJwoHcGF5bG9hZBgCIAEoCzIWLnVsdHJhLnYxLkV2ZW50UGF5bG9hZCIdCg5BcHBlbmRSZXNwb25zZRILCgNzZXEYASABKAMiOAoQU3Vic2NyaWJlUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEhAKCGZyb21fc2VxGAIgASgDIjoKEVN1YnNjcmliZVJlc3BvbnNlEiUKBWV2ZW50GAEgASgLMhYudWx0cmEudjEuU2Vzc2lvbkV2ZW50KmkKCUFjdG9yVHlwZRIaChZBQ1RPUl9UWVBFX1VOU1BFQ0lGSUVEEAASEwoPQUNUT1JfVFlQRV9VU0VSEAESFAoQQUNUT1JfVFlQRV9BR0VOVBACEhUKEUFDVE9SX1RZUEVfU1lTVEVNEAMykwEKDEV2ZW50U2VydmljZRI7CgZBcHBlbmQSFy51bHRyYS52MS5BcHBlbmRSZXF1ZXN0GhgudWx0cmEudjEuQXBwZW5kUmVzcG9uc2USRgoJU3Vic2NyaWJlEhoudWx0cmEudjEuU3Vic2NyaWJlUmVxdWVzdBobLnVsdHJhLnYxLlN1YnNjcmliZVJlc3BvbnNlMAFCPFo6Z2l0aHViLmNvbS9hbGVrc2NsYXJrL3VsdHJhbG9naWNhbC9nZW4vZ28vdWx0cmEvdjE7dWx0cmF2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * Actor identifies the producer of an event.
@@ -454,6 +454,75 @@ export const RunCancelledSchema: GenMessage<RunCancelled> = /*@__PURE__*/
   messageDesc(file_ultra_v1_event, 14);
 
 /**
+ * @generated from message ultra.v1.EnvLifecycle
+ */
+export type EnvLifecycle = Message<"ultra.v1.EnvLifecycle"> & {
+  /**
+   * @generated from field: string env_id = 1;
+   */
+  envId: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string provider_instance_id = 3;
+   */
+  providerInstanceId: string;
+
+  /**
+   * @generated from field: string endpoint = 4;
+   */
+  endpoint: string;
+
+  /**
+   * @generated from field: string message = 5;
+   */
+  message: string;
+};
+
+/**
+ * Describes the message ultra.v1.EnvLifecycle.
+ * Use `create(EnvLifecycleSchema)` to create a new message.
+ */
+export const EnvLifecycleSchema: GenMessage<EnvLifecycle> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 15);
+
+/**
+ * @generated from message ultra.v1.ExecPreviewRan
+ */
+export type ExecPreviewRan = Message<"ultra.v1.ExecPreviewRan"> & {
+  /**
+   * @generated from field: string env_id = 1;
+   */
+  envId: string;
+
+  /**
+   * @generated from field: string command = 2;
+   */
+  command: string;
+
+  /**
+   * @generated from field: string output = 3;
+   */
+  output: string;
+
+  /**
+   * @generated from field: bool is_error = 4;
+   */
+  isError: boolean;
+};
+
+/**
+ * Describes the message ultra.v1.ExecPreviewRan.
+ * Use `create(ExecPreviewRanSchema)` to create a new message.
+ */
+export const ExecPreviewRanSchema: GenMessage<ExecPreviewRan> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_event, 16);
+
+/**
  * EventPayload is the typed payload of a session event. Every observable
  * thing in a session is one of these variants; later phases add variants
  * (additive only — enforced by breaking-change CI).
@@ -542,6 +611,48 @@ export type EventPayload = Message<"ultra.v1.EventPayload"> & {
      */
     value: RunCancelled;
     case: "runCancelled";
+  } | {
+    /**
+     * @generated from field: ultra.v1.EnvLifecycle env_requested = 23;
+     */
+    value: EnvLifecycle;
+    case: "envRequested";
+  } | {
+    /**
+     * @generated from field: ultra.v1.EnvLifecycle env_provisioning = 24;
+     */
+    value: EnvLifecycle;
+    case: "envProvisioning";
+  } | {
+    /**
+     * @generated from field: ultra.v1.EnvLifecycle env_ready = 25;
+     */
+    value: EnvLifecycle;
+    case: "envReady";
+  } | {
+    /**
+     * @generated from field: ultra.v1.EnvLifecycle env_failed = 26;
+     */
+    value: EnvLifecycle;
+    case: "envFailed";
+  } | {
+    /**
+     * @generated from field: ultra.v1.EnvLifecycle env_terminating = 27;
+     */
+    value: EnvLifecycle;
+    case: "envTerminating";
+  } | {
+    /**
+     * @generated from field: ultra.v1.EnvLifecycle env_terminated = 28;
+     */
+    value: EnvLifecycle;
+    case: "envTerminated";
+  } | {
+    /**
+     * @generated from field: ultra.v1.ExecPreviewRan exec_preview_ran = 29;
+     */
+    value: ExecPreviewRan;
+    case: "execPreviewRan";
   } | { case: undefined; value?: undefined };
 };
 
@@ -550,7 +661,7 @@ export type EventPayload = Message<"ultra.v1.EventPayload"> & {
  * Use `create(EventPayloadSchema)` to create a new message.
  */
 export const EventPayloadSchema: GenMessage<EventPayload> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 15);
+  messageDesc(file_ultra_v1_event, 17);
 
 /**
  * SessionEvent is one entry in a session's append-only event log. Seq is
@@ -590,7 +701,7 @@ export type SessionEvent = Message<"ultra.v1.SessionEvent"> & {
  * Use `create(SessionEventSchema)` to create a new message.
  */
 export const SessionEventSchema: GenMessage<SessionEvent> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 16);
+  messageDesc(file_ultra_v1_event, 18);
 
 /**
  * @generated from message ultra.v1.AppendRequest
@@ -612,7 +723,7 @@ export type AppendRequest = Message<"ultra.v1.AppendRequest"> & {
  * Use `create(AppendRequestSchema)` to create a new message.
  */
 export const AppendRequestSchema: GenMessage<AppendRequest> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 17);
+  messageDesc(file_ultra_v1_event, 19);
 
 /**
  * @generated from message ultra.v1.AppendResponse
@@ -632,7 +743,7 @@ export type AppendResponse = Message<"ultra.v1.AppendResponse"> & {
  * Use `create(AppendResponseSchema)` to create a new message.
  */
 export const AppendResponseSchema: GenMessage<AppendResponse> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 18);
+  messageDesc(file_ultra_v1_event, 20);
 
 /**
  * @generated from message ultra.v1.SubscribeRequest
@@ -656,7 +767,7 @@ export type SubscribeRequest = Message<"ultra.v1.SubscribeRequest"> & {
  * Use `create(SubscribeRequestSchema)` to create a new message.
  */
 export const SubscribeRequestSchema: GenMessage<SubscribeRequest> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 19);
+  messageDesc(file_ultra_v1_event, 21);
 
 /**
  * @generated from message ultra.v1.SubscribeResponse
@@ -677,7 +788,7 @@ export type SubscribeResponse = Message<"ultra.v1.SubscribeResponse"> & {
  * Use `create(SubscribeResponseSchema)` to create a new message.
  */
 export const SubscribeResponseSchema: GenMessage<SubscribeResponse> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_event, 20);
+  messageDesc(file_ultra_v1_event, 22);
 
 /**
  * ActorType classifies who produced an event.

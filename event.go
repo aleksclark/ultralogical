@@ -24,19 +24,26 @@ type Actor struct {
 // per-session, gapless, monotonic sequence number. Streaming, multiplayer,
 // history replay, and test assertions all subscribe to the same log.
 const (
-	EventKindUserMessage    = "user_message"
-	EventKindAnnotation     = "annotation"
-	EventKindRunStarted     = "run_started"
-	EventKindStepStarted    = "step_started"
-	EventKindTextDelta      = "text_delta"
-	EventKindReasoningDelta = "reasoning_delta"
-	EventKindToolCallStart  = "tool_call_started"
-	EventKindToolResult     = "tool_result"
-	EventKindStepFinished   = "step_finished"
-	EventKindRunAwaiting    = "run_awaiting"
-	EventKindRunCompleted   = "run_completed"
-	EventKindRunFailed      = "run_failed"
-	EventKindRunCancelled   = "run_cancelled"
+	EventKindUserMessage     = "user_message"
+	EventKindAnnotation      = "annotation"
+	EventKindRunStarted      = "run_started"
+	EventKindStepStarted     = "step_started"
+	EventKindTextDelta       = "text_delta"
+	EventKindReasoningDelta  = "reasoning_delta"
+	EventKindToolCallStart   = "tool_call_started"
+	EventKindToolResult      = "tool_result"
+	EventKindStepFinished    = "step_finished"
+	EventKindRunAwaiting     = "run_awaiting"
+	EventKindRunCompleted    = "run_completed"
+	EventKindRunFailed       = "run_failed"
+	EventKindRunCancelled    = "run_cancelled"
+	EventKindEnvRequested    = "env_requested"
+	EventKindEnvProvisioning = "env_provisioning"
+	EventKindEnvReady        = "env_ready"
+	EventKindEnvFailed       = "env_failed"
+	EventKindEnvTerminating  = "env_terminating"
+	EventKindEnvTerminated   = "env_terminated"
+	EventKindExecPreviewRan  = "exec_preview_ran"
 )
 
 // Event is one entry in a session's append-only event log. Payload is the
@@ -159,6 +166,23 @@ type RunFailedPayload struct {
 // RunCancelledPayload is the run's terminal cancellation event.
 type RunCancelledPayload struct {
 	RunID RunID `json:"run_id"`
+}
+
+// EnvEventPayload is shared by environment lifecycle events.
+type EnvEventPayload struct {
+	EnvID              EnvID              `json:"env_id"`
+	Name               string             `json:"name,omitempty"`
+	ProviderInstanceID ProviderInstanceID `json:"provider_instance_id,omitempty"`
+	Endpoint           string             `json:"endpoint,omitempty"`
+	Message            string             `json:"message,omitempty"`
+}
+
+// ExecPreviewRanPayload records a human command and its real output.
+type ExecPreviewRanPayload struct {
+	EnvID   EnvID  `json:"env_id"`
+	Command string `json:"command"`
+	Output  string `json:"output"`
+	IsError bool   `json:"is_error"`
 }
 
 // EventBus delivers ordered, gapless per-session event streams: a catch-up

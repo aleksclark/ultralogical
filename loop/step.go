@@ -29,19 +29,15 @@ type StepJob struct {
 // Kind implements jobqueue.Job.
 func (StepJob) Kind() string { return "agent.step" }
 
-// TxEnqueuer enqueues jobs inside the store transaction that persists step
-// results — the atomic entity+job pattern.
-type TxEnqueuer interface {
-	EnqueueInTx(ctx context.Context, txStore ultra.Store, job jobqueue.Job) error
-}
-
 // StepWorker executes StepJobs.
 type StepWorker struct {
 	Store    ultra.Store
 	Keyring  secrets.Keyring
-	Enqueue  TxEnqueuer
+	Enqueue  jobqueue.TxEnqueuer
 	Registry *Registry
 	Log      *slog.Logger
+	// ToolResolver injects dynamic session/environment tools per step.
+	ToolResolver ToolResolver
 
 	// CancelPollInterval is how often a running step checks for a cancel
 	// request. Defaults to 300ms.
@@ -159,6 +155,13 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 	tools := []fantasy.AgentTool{
 		newAskUserTool(rec),
 		newPostEventTool(events, sessionID, runID),
+	}
+	if w.ToolResolver != nil {
+		dynamic, err := w.ToolResolver.Tools(ctx, run)
+		if err != nil {
+			return err
+		}
+		tools = append(tools, dynamic...)
 	}
 
 	agent := fantasy.NewAgent(model,

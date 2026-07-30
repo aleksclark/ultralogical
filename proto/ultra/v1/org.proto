@@ -112,7 +112,24 @@ message DeleteCredentialRequest {
 
 message DeleteCredentialResponse {}
 
-// OrgService manages orgs, membership, and org credentials. The caller of
+message ProviderInstance {
+  string id = 1;
+  string org_id = 2;
+  string kind = 3;
+  string name = 4;
+  string rate_class = 5;
+  string state = 6;
+  google.protobuf.Timestamp last_healthy_at = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+message RegisterProviderRequest { string org_id = 1; string kind = 2; string name = 3; string config_json = 4; }
+message RegisterProviderResponse { ProviderInstance provider = 1; }
+message ListProvidersRequest { string org_id = 1; }
+message ListProvidersResponse { repeated ProviderInstance providers = 1; }
+message DeleteProviderRequest { string org_id = 1; string provider_id = 2; }
+message DeleteProviderResponse {}
+
+// OrgService manages orgs, membership, credentials, and provider instances. The caller of
 // CreateOrg becomes the org's owner. Credential payloads are write-only and
 // encrypted at rest.
 service OrgService {
@@ -124,4 +141,7 @@ service OrgService {
   rpc PutCredential(PutCredentialRequest) returns (PutCredentialResponse);
   rpc ListCredentials(ListCredentialsRequest) returns (ListCredentialsResponse);
   rpc DeleteCredential(DeleteCredentialRequest) returns (DeleteCredentialResponse);
+  rpc RegisterProvider(RegisterProviderRequest) returns (RegisterProviderResponse);
+  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
+  rpc DeleteProvider(DeleteProviderRequest) returns (DeleteProviderResponse);
 }

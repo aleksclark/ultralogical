@@ -7,6 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	ultra "github.com/aleksclark/ultralogical"
 	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
@@ -229,4 +230,67 @@ func (h *orgHandler) DeleteCredential(ctx context.Context, req *connect.Request[
 		return nil, mapStoreErr(err)
 	}
 	return connect.NewResponse(&ultrav1.DeleteCredentialResponse{}), nil
+}
+
+func providerToProto(p ultra.ProviderInstance) *ultrav1.ProviderInstance {
+	out := &ultrav1.ProviderInstance{Id: string(p.ID), OrgId: string(p.OrgID), Kind: p.Kind, Name: p.Name, RateClass: p.RateClass, State: p.State, CreatedAt: timestamppb.New(p.CreatedAt)}
+	if p.LastHealthyAt != nil {
+		out.LastHealthyAt = timestamppb.New(*p.LastHealthyAt)
+	}
+	return out
+}
+
+func (h *orgHandler) RegisterProvider(ctx context.Context, req *connect.Request[ultrav1.RegisterProviderRequest]) (*connect.Response[ultrav1.RegisterProviderResponse], error) {
+	orgID := ultra.OrgID(req.Msg.GetOrgId())
+	if err := requireAdmin(ctx, h.store, orgID); err != nil {
+		return nil, err
+	}
+	if req.Msg.GetKind() != ultra.ProviderKindLocalDocker {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("provider kind is not enabled"))
+	}
+	name := req.Msg.GetName()
+	if name == "" {
+		name = "default"
+	}
+	config := json.RawMessage(req.Msg.GetConfigJson())
+	if len(config) == 0 {
+		config = []byte(`{}`)
+	}
+	if !json.Valid(config) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("config_json is invalid"))
+	}
+	p := ultra.ProviderInstance{ID: ultra.ProviderInstanceID(uuid.NewString()), OrgID: orgID, Kind: req.Msg.GetKind(), Name: name, Config: config, RateClass: ultra.RateClassBYO, State: "ready"}
+	if err := h.store.Org(orgID).Providers().Create(ctx, p); err != nil {
+		return nil, mapStoreErr(err)
+	}
+	created, err := h.store.Org(orgID).Providers().Get(ctx, p.ID)
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	return connect.NewResponse(&ultrav1.RegisterProviderResponse{Provider: providerToProto(created)}), nil
+}
+func (h *orgHandler) ListProviders(ctx context.Context, req *connect.Request[ultrav1.ListProvidersRequest]) (*connect.Response[ultrav1.ListProvidersResponse], error) {
+	orgID := ultra.OrgID(req.Msg.GetOrgId())
+	if _, _, err := requireMember(ctx, h.store, orgID); err != nil {
+		return nil, err
+	}
+	items, err := h.store.Org(orgID).Providers().List(ctx)
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	resp := &ultrav1.ListProvidersResponse{}
+	for _, p := range items {
+		resp.Providers = append(resp.Providers, providerToProto(p))
+	}
+	return connect.NewResponse(resp), nil
+}
+func (h *orgHandler) DeleteProvider(ctx context.Context, req *connect.Request[ultrav1.DeleteProviderRequest]) (*connect.Response[ultrav1.DeleteProviderResponse], error) {
+	orgID := ultra.OrgID(req.Msg.GetOrgId())
+	if err := requireAdmin(ctx, h.store, orgID); err != nil {
+		return nil, err
+	}
+	if err := h.store.Org(orgID).Providers().Delete(ctx, ultra.ProviderInstanceID(req.Msg.GetProviderId())); err != nil {
+		return nil, mapStoreErr(err)
+	}
+	return connect.NewResponse(&ultrav1.DeleteProviderResponse{}), nil
 }
