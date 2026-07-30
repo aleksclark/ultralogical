@@ -27,6 +27,7 @@ func (o *orgScope) Usage() ultra.UsageStore                { return &usageStore{
 func (o *orgScope) Participants() ultra.ParticipantStore   { return &participantStore{o} }
 func (o *orgScope) Memory() ultra.SessionMemoryStore       { return &memoryStore{o} }
 func (o *orgScope) Waits() ultra.RunWaitStore              { return &waitStore{o} }
+func (o *orgScope) Flows() ultra.FlowStore                 { return &flowStore{o} }
 
 type sessionStore struct{ scope *orgScope }
 

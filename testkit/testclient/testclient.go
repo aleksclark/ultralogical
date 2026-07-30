@@ -25,6 +25,7 @@ type Client struct {
 	Agents   ultrav1connect.AgentServiceClient
 	Envs     ultrav1connect.EnvServiceClient
 	Billing  ultrav1connect.BillingServiceClient
+	Flows    ultrav1connect.FlowServiceClient
 }
 
 type authTransport struct {
@@ -51,6 +52,7 @@ func New(baseURL, token string) *Client {
 		Agents:   ultrav1connect.NewAgentServiceClient(httpClient, baseURL),
 		Envs:     ultrav1connect.NewEnvServiceClient(httpClient, baseURL),
 		Billing:  ultrav1connect.NewBillingServiceClient(httpClient, baseURL),
+		Flows:    ultrav1connect.NewFlowServiceClient(httpClient, baseURL),
 	}
 }
 
