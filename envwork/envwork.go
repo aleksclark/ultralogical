@@ -44,6 +44,11 @@ type ReconcileJob struct {
 	EnvID string `json:"env_id"`
 }
 
+//nolint:staticcheck // explicit mapping keeps lifecycle job types decoupled.
+func reconcileAfterProvision(job ProvisionJob) ReconcileJob {
+	return ReconcileJob{OrgID: job.OrgID, EnvID: job.EnvID}
+}
+
 func (ReconcileJob) Kind() string { return "env.reconcile" }
 
 // Registry maps provider-instance kinds to concrete providers.
@@ -247,7 +252,7 @@ func (s *Service) Provision(ctx context.Context, job ProvisionJob) error {
 		if e != nil {
 			return e
 		}
-		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{OrgID: job.OrgID, EnvID: job.EnvID}, jobqueue.WithScheduledAt(now.Add(s.interval())))
+		return s.Enqueue.EnqueueInTx(ctx, txs, reconcileAfterProvision(job), jobqueue.WithScheduledAt(now.Add(s.interval())))
 	})
 }
 

@@ -105,7 +105,7 @@ func TestA24_A25_A27_AuthReconcileMetering(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer provider.Close()
+	defer func() { _ = provider.Close() }()
 	if err := provider.KillByEnvID(ctx, env.ID); err != nil {
 		t.Fatal(err)
 	}

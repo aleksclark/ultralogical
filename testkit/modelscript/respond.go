@@ -84,7 +84,7 @@ func (s *Server) respondStream(w http.ResponseWriter, t Turn) {
 			}},
 		}
 		b, _ := json.Marshal(chunk)
-		fmt.Fprintf(w, "data: %s\n\n", b)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", b)
 		if flusher != nil {
 			flusher.Flush()
 		}
@@ -137,8 +137,8 @@ func (s *Server) respondStream(w http.ResponseWriter, t Turn) {
 		"usage":   u,
 	}
 	b, _ := json.Marshal(final)
-	fmt.Fprintf(w, "data: %s\n\n", b)
-	fmt.Fprint(w, "data: [DONE]\n\n")
+	_, _ = fmt.Fprintf(w, "data: %s\n\n", b)
+	_, _ = fmt.Fprint(w, "data: [DONE]\n\n")
 	if flusher != nil {
 		flusher.Flush()
 	}

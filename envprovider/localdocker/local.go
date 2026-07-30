@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	cerrdefs "github.com/containerd/errdefs"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
@@ -20,7 +21,7 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"github.com/opencontainers/image-spec/specs-go/v1"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	ultra "github.com/aleksclark/ultralogical"
 )
@@ -160,7 +161,7 @@ func (p *Provider) Status(ctx context.Context, handle ultra.ProviderHandle) (ult
 		return ultra.ProviderStatus{}, err
 	}
 	info, err := p.docker.ContainerInspect(ctx, d.ContainerID)
-	if client.IsErrNotFound(err) {
+	if cerrdefs.IsNotFound(err) {
 		return ultra.ProviderStatus{State: ultra.EnvFailed, Message: "container not found"}, nil
 	}
 	if err != nil {
@@ -200,10 +201,10 @@ func (p *Provider) Terminate(ctx context.Context, handle ultra.ProviderHandle) e
 	if err != nil {
 		return err
 	}
-	if err := p.docker.ContainerRemove(ctx, d.ContainerID, containertypes.RemoveOptions{Force: true}); err != nil && !client.IsErrNotFound(err) {
+	if err := p.docker.ContainerRemove(ctx, d.ContainerID, containertypes.RemoveOptions{Force: true}); err != nil && !cerrdefs.IsNotFound(err) {
 		return fmt.Errorf("localdocker: remove container: %w", err)
 	}
-	if err := p.docker.VolumeRemove(ctx, d.VolumeName, true); err != nil && !client.IsErrNotFound(err) {
+	if err := p.docker.VolumeRemove(ctx, d.VolumeName, true); err != nil && !cerrdefs.IsNotFound(err) {
 		return fmt.Errorf("localdocker: remove volume: %w", err)
 	}
 	return nil

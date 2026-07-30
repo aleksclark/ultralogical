@@ -748,10 +748,13 @@ type PutCredentialRequest struct {
 	Kind  string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"` // inference:openai | inference:anthropic | inference:bedrock
 	Name  string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"` // "default" if empty
 	// Write-only secret material.
-	ApiKey        string `protobuf:"bytes,4,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
-	BaseUrl       string `protobuf:"bytes,5,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"` // optional vendor endpoint override
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ApiKey  string `protobuf:"bytes,4,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
+	BaseUrl string `protobuf:"bytes,5,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"` // optional vendor endpoint override
+	// JSON object of string header values, e.g.
+	// {"cf-aig-collect-log-payload":"false","cf-aig-metadata":"{...}"}
+	ExtraHeadersJson string `protobuf:"bytes,6,opt,name=extra_headers_json,json=extraHeadersJson,proto3" json:"extra_headers_json,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *PutCredentialRequest) Reset() {
@@ -815,6 +818,13 @@ func (x *PutCredentialRequest) GetApiKey() string {
 func (x *PutCredentialRequest) GetBaseUrl() string {
 	if x != nil {
 		return x.BaseUrl
+	}
+	return ""
+}
+
+func (x *PutCredentialRequest) GetExtraHeadersJson() string {
+	if x != nil {
+		return x.ExtraHeadersJson
 	}
 	return ""
 }
@@ -1479,13 +1489,14 @@ const file_ultra_v1_org_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"rotated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\"\x89\x01\n" +
+	"rotated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\"\xb7\x01\n" +
 	"\x14PutCredentialRequest\x12\x15\n" +
 	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x17\n" +
 	"\aapi_key\x18\x04 \x01(\tR\x06apiKey\x12\x19\n" +
-	"\bbase_url\x18\x05 \x01(\tR\abaseUrl\"Q\n" +
+	"\bbase_url\x18\x05 \x01(\tR\abaseUrl\x12,\n" +
+	"\x12extra_headers_json\x18\x06 \x01(\tR\x10extraHeadersJson\"Q\n" +
 	"\x15PutCredentialResponse\x128\n" +
 	"\n" +
 	"credential\x18\x01 \x01(\v2\x18.ultra.v1.CredentialInfoR\n" +

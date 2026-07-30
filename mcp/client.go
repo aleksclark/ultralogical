@@ -76,7 +76,7 @@ func (c *Client) rpc(ctx context.Context, method string, params any, out any) er
 	if err != nil {
 		return fmt.Errorf("mcp: %s: %w", method, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	data, err := io.ReadAll(io.LimitReader(resp.Body, 5<<20))
 	if err != nil {
 		return err
@@ -163,7 +163,7 @@ func Healthy(ctx context.Context, mcpEndpoint string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health: HTTP %d", resp.StatusCode)
 	}

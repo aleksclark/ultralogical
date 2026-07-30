@@ -90,6 +90,9 @@ message PutCredentialRequest {
   // Write-only secret material.
   string api_key = 4;
   string base_url = 5; // optional vendor endpoint override
+  // JSON object of string header values, e.g.
+  // {"cf-aig-collect-log-payload":"false","cf-aig-metadata":"{...}"}
+  string extra_headers_json = 6;
 }
 
 message PutCredentialResponse {

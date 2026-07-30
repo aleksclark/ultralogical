@@ -143,7 +143,7 @@ func (h *envHandler) ExecPreview(ctx context.Context, req *connect.Request[ultra
 }
 func (h *billingHandler) GetUsage(ctx context.Context, req *connect.Request[ultrav1.GetUsageRequest]) (*connect.Response[ultrav1.GetUsageResponse], error) {
 	org := ultra.OrgID(req.Msg.GetOrgId())
-	if _, _, err := requireMember(ctx, h.store, org); err != nil {
+	if _, err := requireMember(ctx, h.store, org); err != nil {
 		return nil, err
 	}
 	from, to := time.Time{}, time.Now()

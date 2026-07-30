@@ -22,16 +22,16 @@ type orgHandler struct {
 
 // requireMember returns the caller's role in the org, collapsing "no such
 // org" and "not a member" into the same not-found denial.
-func requireMember(ctx context.Context, store ultra.Store, org ultra.OrgID) (ultra.User, ultra.OrgRole, error) {
+func requireMember(ctx context.Context, store ultra.Store, org ultra.OrgID) (ultra.OrgRole, error) {
 	user, ok := userFrom(ctx)
 	if !ok {
-		return ultra.User{}, "", errUnauthenticated()
+		return "", errUnauthenticated()
 	}
 	role, err := store.Orgs().MemberRole(ctx, org, user.ID)
 	if err != nil {
-		return ultra.User{}, "", errNotFound()
+		return "", errNotFound()
 	}
-	return user, role, nil
+	return role, nil
 }
 
 func (h *orgHandler) CreateOrg(ctx context.Context, req *connect.Request[ultrav1.CreateOrgRequest]) (*connect.Response[ultrav1.CreateOrgResponse], error) {
@@ -61,7 +61,7 @@ func (h *orgHandler) CreateOrg(ctx context.Context, req *connect.Request[ultrav1
 
 func (h *orgHandler) GetOrg(ctx context.Context, req *connect.Request[ultrav1.GetOrgRequest]) (*connect.Response[ultrav1.GetOrgResponse], error) {
 	orgID := ultra.OrgID(req.Msg.GetOrgId())
-	if _, _, err := requireMember(ctx, h.store, orgID); err != nil {
+	if _, err := requireMember(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
 	org, err := h.store.Orgs().Get(ctx, orgID)
@@ -73,7 +73,7 @@ func (h *orgHandler) GetOrg(ctx context.Context, req *connect.Request[ultrav1.Ge
 
 func (h *orgHandler) InviteMember(ctx context.Context, req *connect.Request[ultrav1.InviteMemberRequest]) (*connect.Response[ultrav1.InviteMemberResponse], error) {
 	orgID := ultra.OrgID(req.Msg.GetOrgId())
-	_, callerRole, err := requireMember(ctx, h.store, orgID)
+	callerRole, err := requireMember(ctx, h.store, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (h *orgHandler) InviteMember(ctx context.Context, req *connect.Request[ultr
 
 func (h *orgHandler) ListMembers(ctx context.Context, req *connect.Request[ultrav1.ListMembersRequest]) (*connect.Response[ultrav1.ListMembersResponse], error) {
 	orgID := ultra.OrgID(req.Msg.GetOrgId())
-	if _, _, err := requireMember(ctx, h.store, orgID); err != nil {
+	if _, err := requireMember(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
 	members, err := h.store.Orgs().ListMembers(ctx, orgID)
@@ -143,7 +143,7 @@ func (h *orgHandler) ListOrgs(ctx context.Context, _ *connect.Request[ultrav1.Li
 
 // requireAdmin ensures the caller is an owner or admin of the org.
 func requireAdmin(ctx context.Context, store ultra.Store, org ultra.OrgID) error {
-	_, role, err := requireMember(ctx, store, org)
+	role, err := requireMember(ctx, store, org)
 	if err != nil {
 		return err
 	}
@@ -180,9 +180,17 @@ func (h *orgHandler) PutCredential(ctx context.Context, req *connect.Request[ult
 	if name == "" {
 		name = "default"
 	}
+	extraHeaders := map[string]string{}
+	if raw := req.Msg.GetExtraHeadersJson(); raw != "" {
+		if err := json.Unmarshal([]byte(raw), &extraHeaders); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("extra_headers_json must be a JSON object of string values"))
+		}
+	}
+	for _, value := range extraHeaders {
+		secrets.DefaultRedactor.Register(value)
+	}
 	payload, err := json.Marshal(ultra.InferencePayload{
-		APIKey:  req.Msg.GetApiKey(),
-		BaseURL: req.Msg.GetBaseUrl(),
+		APIKey: req.Msg.GetApiKey(), BaseURL: req.Msg.GetBaseUrl(), ExtraHeaders: extraHeaders,
 	})
 	if err != nil {
 		return nil, mapStoreErr(err)
@@ -207,7 +215,7 @@ func (h *orgHandler) PutCredential(ctx context.Context, req *connect.Request[ult
 
 func (h *orgHandler) ListCredentials(ctx context.Context, req *connect.Request[ultrav1.ListCredentialsRequest]) (*connect.Response[ultrav1.ListCredentialsResponse], error) {
 	orgID := ultra.OrgID(req.Msg.GetOrgId())
-	if _, _, err := requireMember(ctx, h.store, orgID); err != nil {
+	if _, err := requireMember(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
 	infos, err := h.store.Org(orgID).Credentials().List(ctx)
@@ -271,7 +279,7 @@ func (h *orgHandler) RegisterProvider(ctx context.Context, req *connect.Request[
 }
 func (h *orgHandler) ListProviders(ctx context.Context, req *connect.Request[ultrav1.ListProvidersRequest]) (*connect.Response[ultrav1.ListProvidersResponse], error) {
 	orgID := ultra.OrgID(req.Msg.GetOrgId())
-	if _, _, err := requireMember(ctx, h.store, orgID); err != nil {
+	if _, err := requireMember(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
 	items, err := h.store.Org(orgID).Providers().List(ctx)

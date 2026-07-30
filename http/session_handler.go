@@ -36,7 +36,7 @@ func resolveSessionOrg(ctx context.Context, store ultra.Store, session ultra.Ses
 
 func (h *sessionHandler) CreateSession(ctx context.Context, req *connect.Request[ultrav1.CreateSessionRequest]) (*connect.Response[ultrav1.CreateSessionResponse], error) {
 	orgID := ultra.OrgID(req.Msg.GetOrgId())
-	if _, _, err := requireMember(ctx, h.store, orgID); err != nil {
+	if _, err := requireMember(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
 	sess := ultra.Session{ID: ultra.SessionID(uuid.NewString()), Title: req.Msg.GetTitle()}
@@ -65,7 +65,7 @@ func (h *sessionHandler) GetSession(ctx context.Context, req *connect.Request[ul
 
 func (h *sessionHandler) ListSessions(ctx context.Context, req *connect.Request[ultrav1.ListSessionsRequest]) (*connect.Response[ultrav1.ListSessionsResponse], error) {
 	orgID := ultra.OrgID(req.Msg.GetOrgId())
-	if _, _, err := requireMember(ctx, h.store, orgID); err != nil {
+	if _, err := requireMember(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
 	sessions, err := h.store.Org(orgID).Sessions().List(ctx)

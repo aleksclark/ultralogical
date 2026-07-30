@@ -73,7 +73,7 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	defer local.Close()
+	defer func() { _ = local.Close() }()
 	envs := &envwork.Service{Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Keyring: keyring,
 		Providers: envwork.Registry{ultra.ProviderKindLocalDocker: local}, Log: log,
 		ReconcileInterval: envDuration("ULTRA_RECONCILE_INTERVAL", 5*time.Second),
