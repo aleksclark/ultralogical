@@ -25,7 +25,8 @@ machines via a cloudflared-connected local provider.
 | [Phase 1](phase_1.md) | Durable agent loop + minimal web UI | 2–3 weeks | 0 |
 | [Phase 2](phase_2.md) | Dev envs: local provider + env tools | 2–3 weeks | 1 |
 | [Phase 3](phase_3.md) | Multiplayer, multi-loop, agent-spawns-agent | 2 weeks | 2 |
-| [Phase 4](phase_4.md) | Flows | 1–2 weeks | 3 |
+| [Phase 3.5](phase_3_5.md) | Cross-client functional completeness | 1–2 weeks | 3 |
+| [Phase 4](phase_4.md) | Flows | 1–2 weeks | 3.5 |
 | [Phase 5](phase_5.md) | BYO & hosted providers: nomad, k8s, cloudflared local, hosted EKS | 2–3 weeks | 2 (parallel with 4) |
 | [Phase 6](phase_6.md) | Advanced loop & tool ergonomics | 2 weeks | 4 |
 | [Phase 7](phase_7.md) | Production hardening, billing & queue-swap proof | 2–3 weeks | 6 |
