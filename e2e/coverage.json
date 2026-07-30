@@ -1,0 +1,9 @@
+{
+  "auth_org_sessions": {"web": "session.spec.ts", "rust": "desktop_e2e.rs"},
+  "event_replay": {"web": "session.spec.ts", "rust": "desktop_e2e.rs"},
+  "agent_stream_and_await": {"web": "session.spec.ts", "rust": "desktop_e2e.rs"},
+  "credential_gateway_fields": {"web": "settings.spec.ts", "rust": "desktop_e2e.rs"},
+  "dev_env_exec_usage": {"web": "environment.spec.ts", "rust": "desktop_e2e.rs"},
+  "presence": {"web": "multiplayer.spec.ts", "rust": "desktop_e2e.rs"},
+  "session_memory": {"web": "multiplayer.spec.ts", "rust": "desktop_e2e.rs"}
+}
