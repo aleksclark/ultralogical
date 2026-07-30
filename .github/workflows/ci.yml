@@ -69,5 +69,12 @@ jobs:
       - name: Install Playwright Chromium
         working-directory: ui/web
         run: npx playwright install --with-deps chromium
-      - name: Functional API + UI suite (real stack)
-        run: go test ./e2e/ -count=1 -v -timeout 15m
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build Rust client and desktop
+        run: cargo test --manifest-path ui/desktop/Cargo.toml --no-run
+      - name: Validate cross-client coverage matrix
+        run: |
+          jq -e 'all(.[]; has("web") and has("rust"))' e2e/coverage.json
+      - name: Functional API + web + Rust desktop suite (real stack)
+        run: go test ./e2e/ -count=1 -v -timeout 20m

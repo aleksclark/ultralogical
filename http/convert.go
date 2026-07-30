@@ -114,7 +114,7 @@ func payloadToDomain(p *ultrav1.EventPayload) (kind string, payload []byte, err 
 
 // decodeAs unmarshals stored JSON into a proto message and wraps it.
 func decodeAs[M proto.Message](payload []byte, m M, wrap func(M) *ultrav1.EventPayload) (*ultrav1.EventPayload, error) {
-	if err := protojson.Unmarshal(payload, m); err != nil {
+	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(payload, m); err != nil {
 		return nil, err
 	}
 	return wrap(m), nil
