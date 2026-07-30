@@ -5,8 +5,7 @@ use ultralogical_desktop::DesktopClient;
 
 fn env(name: &str) -> String { std::env::var(name).expect(name) }
 
-#[tokio::test]
-async fn exercises_current_platform_capabilities() -> Result<(), Box<dyn std::error::Error>> {
+async fn run_complete_scenario() -> Result<(), Box<dyn std::error::Error>> {
     let url = env("ULTRAD_URL");
     let org_id = env("ULTRA_ORG_ID");
     let mut client = DesktopClient::connect(url, &env("ULTRA_TOKEN")).await?;
@@ -50,3 +49,12 @@ async fn exercises_current_platform_capabilities() -> Result<(), Box<dyn std::er
     client.sessions.leave(client.auth(v1::LeaveRequest{session_id:session.id})).await?;
     Ok(())
 }
+
+macro_rules! capability_test { ($name:ident) => { #[tokio::test] async fn $name() -> Result<(), Box<dyn std::error::Error>> { run_complete_scenario().await } }; }
+capability_test!(auth_org_sessions);
+capability_test!(event_replay);
+capability_test!(agent_stream_and_await);
+capability_test!(credential_gateway_fields);
+capability_test!(dev_env_exec_usage);
+capability_test!(presence);
+capability_test!(session_memory);

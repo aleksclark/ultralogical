@@ -102,6 +102,8 @@ no orphaned envs), just under fire.
 
 ## Work breakdown
 
+0. **Define and implement capability evidence first.** Inventory every public behavior this phase will add/change (success, failure, replay/reconnect, tenancy, and distributed failure where applicable). Create capability-specific Go real-stack, Playwright web, and Rust desktop tests using shipped client/application paths. Add `e2e/coverage.json` references only after those existing tests assert observable outcomes. Smoke tests, control presence, unasserted RPCs, test-only shortcuts, and nonexistent filenames are not evidence.
+
 1. Authenticator interface + OIDC impl + role policy table + enforcement + tests.
 2. Billing: Stripe adapter, aggregation job, checkout/portal/webhooks, quotas +
    dunning states, billing UI.
@@ -157,6 +159,9 @@ no orphaned envs), just under fire.
   duration.
 
 ## Exit criteria
+
+- **Capability-completeness audit passes:** compare this plan with actual proto RPCs, event variants, UI controls, desktop commands, and lifecycle states. Every implemented capability has capability-specific Go real-stack + Playwright + Rust desktop evidence and a truthful `e2e/coverage.json` entry whose files exist and run in required CI.
+- Planned-but-unbuilt acceptance bullets remain explicitly incomplete; they are never silently omitted, renamed as complete, or represented by broader tests that do not assert them. `python3 scripts/verify-coverage.py` and all referenced suites pass.
 
 - A7.1–A7.7 green (chaos/load on schedule, not per-PR; per-PR runs a 30s chaos smoke
   and stripe-mock billing tests).

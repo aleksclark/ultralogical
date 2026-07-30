@@ -40,7 +40,9 @@ task dev               # local postgres + ultrad + worker
 6. **Seams stay clean.** No river/pgx types past `jobqueue`; handlers depend
    only on root interfaces; new seam impls must pass the conformance suite
    unmodified.
-7. Follow the phase plan (`plan/`) — don't build ahead of the current phase
+7. **Capability coverage is a merge gate.** Any public/API/UI capability added or changed must be exercised through the real Go functional suite and every supported first-party client (currently web Playwright + Rust desktop). Update `e2e/coverage.json` with existing test files; CI must validate references and run them. A filename or smoke test is not evidence—assert observable behavior, failure paths, replay, and tenancy.
+8. **Never claim unimplemented coverage.** Before coding a phase, inventory its acceptance bullets against actual implementation. Mark unbuilt bullets explicitly; do not rename partial work “complete,” map nonexistent tests, or let an omnibus test stand in for capabilities it does not assert.
+9. Follow the phase plan (`plan/`) — don't build ahead of the current phase
    or invent stopgaps for unbuilt subsystems.
 
 ## Docs index

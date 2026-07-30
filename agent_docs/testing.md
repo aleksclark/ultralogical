@@ -54,6 +54,31 @@ Requirements: docker running (testcontainers), `npx` + `npm ci` in
   `AppendUserMessage`, `Subscribe`, `Subscription.Collect(t, n, timeout)`.
   If the public API can't do something, tests can't either — by design.
 
+## Capability-completeness gate
+
+Backend acceptance is necessary but insufficient. Every implemented public
+capability must also be exercised through each supported first-party client.
+Follow `agent_docs/cross_client_testing.md` and keep `e2e/coverage.json`
+truthful.
+
+A test counts only if it uses the real harness stack and asserts observable
+behavior. Compile checks, control-presence checks, unasserted RPC calls,
+nonexistent filenames, and tests that bypass application state are not
+functional evidence. For stateful capabilities, cover replay/reconnect; for
+tenant data, cover foreign-org denial; for distributed workflows, cover
+failure/restart and concurrent observers where relevant.
+
+Every PR adding/changing a proto RPC, event variant, UI control, desktop
+command, state transition, provider/tool, or billing behavior must include:
+
+- a Go real-stack functional assertion;
+- a Playwright scenario using the web application;
+- a Rust desktop scenario using the shipped desktop core;
+- a coverage-matrix row (or update) referencing those real tests.
+
+If any client surface is not yet implemented, the capability is not complete
+and the phase exit criterion remains open.
+
 ## Conventions
 
 - Acceptance tests are named `TestA<phase><n>_...` and map 1:1 to the
