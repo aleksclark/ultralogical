@@ -2,16 +2,18 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"strings"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	ultra "github.com/aleksclark/ultralogical"
 	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
+	"github.com/aleksclark/ultralogical/secrets"
 	"github.com/aleksclark/ultralogical/testkit/harness"
 	"github.com/aleksclark/ultralogical/testkit/modelscript"
 	"github.com/aleksclark/ultralogical/testkit/testclient"
@@ -522,15 +524,34 @@ func TestCredentialRPCs(t *testing.T) {
 	ctx := context.Background()
 
 	put, err := alice.Orgs.PutCredential(ctx, connect.NewRequest(&ultrav1.PutCredentialRequest{
-		OrgId:  string(stack.OrgA.ID),
-		Kind:   "inference:anthropic",
-		ApiKey: "sk-ant-secret-value-12345",
+		OrgId: string(stack.OrgA.ID), Kind: "inference:anthropic",
+		ApiKey: "sk-ant-secret-value-12345", BaseUrl: "https://gateway.example.test/anthropic",
+		ExtraHeadersJson: `{"cf-aig-collect-log-payload":"false","cf-aig-metadata":"{\"tier\":\"fast\"}"}`,
 	}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if put.Msg.GetCredential().GetName() != "default" {
 		t.Fatalf("put returned %v", put.Msg.GetCredential())
+	}
+	stored, err := stack.Store.Org(stack.OrgA.ID).Credentials().Get(ctx, ultra.CredentialKindAnthropic, "default")
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyring, err := secrets.NewAESKeyring(stack.MasterKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plaintext, err := keyring.Decrypt(stored.EncPayload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var configured ultra.InferencePayload
+	if err := json.Unmarshal(plaintext, &configured); err != nil {
+		t.Fatal(err)
+	}
+	if configured.BaseURL != "https://gateway.example.test/anthropic" || configured.ExtraHeaders["cf-aig-collect-log-payload"] != "false" {
+		t.Fatalf("configuration not persisted: %+v", configured)
 	}
 	if strings.Contains(put.Msg.String(), "sk-ant-secret") {
 		t.Fatal("credential value echoed in response")

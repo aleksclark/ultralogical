@@ -58,6 +58,9 @@ func ResolveModel(ctx context.Context, scope ultra.OrgScope, keyring secrets.Key
 		return nil, fmt.Errorf("loop: decode credential payload: %w", err)
 	}
 	secrets.DefaultRedactor.Register(payload.APIKey)
+	for _, value := range payload.ExtraHeaders {
+		secrets.DefaultRedactor.Register(value)
+	}
 
 	provider, err := buildProvider(cfg.Provider, payload)
 	if err != nil {
@@ -74,18 +77,27 @@ func buildProvider(name string, payload ultra.InferencePayload) (fantasy.Provide
 	switch name {
 	case "openai":
 		opts := []openai.Option{openai.WithAPIKey(payload.APIKey)}
+		if len(payload.ExtraHeaders) > 0 {
+			opts = append(opts, openai.WithHeaders(payload.ExtraHeaders))
+		}
 		if payload.BaseURL != "" {
 			opts = append(opts, openai.WithBaseURL(payload.BaseURL))
 		}
 		return openai.New(opts...)
 	case "anthropic":
 		opts := []anthropic.Option{anthropic.WithAPIKey(payload.APIKey)}
+		if len(payload.ExtraHeaders) > 0 {
+			opts = append(opts, anthropic.WithHeaders(payload.ExtraHeaders))
+		}
 		if payload.BaseURL != "" {
 			opts = append(opts, anthropic.WithBaseURL(payload.BaseURL))
 		}
 		return anthropic.New(opts...)
 	case "bedrock":
 		opts := []bedrock.Option{bedrock.WithAPIKey(payload.APIKey)}
+		if len(payload.ExtraHeaders) > 0 {
+			opts = append(opts, bedrock.WithHeaders(payload.ExtraHeaders))
+		}
 		if payload.BaseURL != "" {
 			opts = append(opts, bedrock.WithBaseURL(payload.BaseURL))
 		}

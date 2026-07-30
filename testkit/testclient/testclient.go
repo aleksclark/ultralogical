@@ -23,6 +23,8 @@ type Client struct {
 	Sessions ultrav1connect.SessionServiceClient
 	Events   ultrav1connect.EventServiceClient
 	Agents   ultrav1connect.AgentServiceClient
+	Envs     ultrav1connect.EnvServiceClient
+	Billing  ultrav1connect.BillingServiceClient
 }
 
 type authTransport struct {
@@ -47,6 +49,8 @@ func New(baseURL, token string) *Client {
 		Sessions: ultrav1connect.NewSessionServiceClient(httpClient, baseURL),
 		Events:   ultrav1connect.NewEventServiceClient(httpClient, baseURL),
 		Agents:   ultrav1connect.NewAgentServiceClient(httpClient, baseURL),
+		Envs:     ultrav1connect.NewEnvServiceClient(httpClient, baseURL),
+		Billing:  ultrav1connect.NewBillingServiceClient(httpClient, baseURL),
 	}
 }
 
@@ -189,6 +193,20 @@ func Kind(ev *ultrav1.SessionEvent) string {
 		return "run_failed"
 	case *ultrav1.EventPayload_RunCancelled:
 		return "run_cancelled"
+	case *ultrav1.EventPayload_EnvRequested:
+		return "env_requested"
+	case *ultrav1.EventPayload_EnvProvisioning:
+		return "env_provisioning"
+	case *ultrav1.EventPayload_EnvReady:
+		return "env_ready"
+	case *ultrav1.EventPayload_EnvFailed:
+		return "env_failed"
+	case *ultrav1.EventPayload_EnvTerminating:
+		return "env_terminating"
+	case *ultrav1.EventPayload_EnvTerminated:
+		return "env_terminated"
+	case *ultrav1.EventPayload_ExecPreviewRan:
+		return "exec_preview_ran"
 	default:
 		return "unknown"
 	}

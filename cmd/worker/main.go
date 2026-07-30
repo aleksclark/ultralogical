@@ -18,6 +18,9 @@ import (
 	"syscall"
 	"time"
 
+	ultra "github.com/aleksclark/ultralogical"
+	"github.com/aleksclark/ultralogical/envprovider/localdocker"
+	"github.com/aleksclark/ultralogical/envwork"
 	"github.com/aleksclark/ultralogical/jobqueue"
 	riverqueue "github.com/aleksclark/ultralogical/jobqueue/river"
 	"github.com/aleksclark/ultralogical/loop"
@@ -66,14 +69,23 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
+	local, err := localdocker.New(localdocker.Config{Image: envOr("ULTRA_BEZALEL_IMAGE", "ultralogical/bezalel:local")})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = local.Close() }()
+	envs := &envwork.Service{Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Keyring: keyring,
+		Providers: envwork.Registry{ultra.ProviderKindLocalDocker: local}, Log: log,
+		ReconcileInterval: envDuration("ULTRA_RECONCILE_INTERVAL", 5*time.Second),
+		ProvisionTimeout:  envDuration("ULTRA_PROVISION_TIMEOUT", time.Minute)}
 	stepWorker := &loop.StepWorker{
-		Store:    store,
-		Keyring:  keyring,
-		Enqueue:  postgres.TxEnqueuer{Queue: queue},
-		Registry: loop.NewRegistry(),
-		Log:      log,
+		Store: store, Keyring: keyring, Enqueue: postgres.TxEnqueuer{Queue: queue},
+		Registry: loop.NewRegistry(), Log: log, ToolResolver: &loop.EnvTools{Store: store, Envs: envs},
 	}
 	jobqueue.Register(queue, jobqueue.Worker[loop.StepJob](stepWorker))
+	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.ProvisionJob](envs.Provision))
+	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.TerminateJob](envs.Terminate))
+	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.ReconcileJob](envs.Reconcile))
 
 	if err := queue.Start(ctx); err != nil {
 		return err
@@ -107,6 +119,13 @@ func parseInt(s string, out *int) (int, error) {
 	}
 	*out = n
 	return n, nil
+}
+
+func envOr(name, def string) string {
+	if v := os.Getenv(name); v != "" {
+		return v
+	}
+	return def
 }
 
 func envDuration(name string, def time.Duration) time.Duration {

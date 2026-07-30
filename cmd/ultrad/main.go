@@ -19,6 +19,7 @@ import (
 	"time"
 
 	ultra "github.com/aleksclark/ultralogical"
+	"github.com/aleksclark/ultralogical/envwork"
 	ultrahttp "github.com/aleksclark/ultralogical/http"
 	riverqueue "github.com/aleksclark/ultralogical/jobqueue/river"
 	"github.com/aleksclark/ultralogical/postgres"
@@ -77,6 +78,8 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
+	envs := &envwork.Service{Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Keyring: keyring, Log: log}
+
 	defaultModel := ultra.ModelConfig{
 		Provider:   envOr("ULTRA_DEFAULT_PROVIDER", "openai"),
 		ModelID:    envOr("ULTRA_DEFAULT_MODEL", "gpt-4.1-mini"),
@@ -91,6 +94,7 @@ func run(log *slog.Logger) error {
 		Keyring:      keyring,
 		Enqueue:      postgres.TxEnqueuer{Queue: queue},
 		DefaultModel: defaultModel,
+		Envs:         envs,
 	})
 
 	protocols := new(http.Protocols)

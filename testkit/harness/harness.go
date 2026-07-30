@@ -83,10 +83,14 @@ type Stack struct {
 	t         *testing.T
 }
 
+const BezalelImage = "ultralogical/bezalel:phase2-test"
+
 var (
-	buildOnce sync.Once
-	buildErr  error
-	binDir    string
+	buildOnce   sync.Once
+	buildErr    error
+	binDir      string
+	bezalelOnce sync.Once
+	bezalelErr  error
 )
 
 // binaries builds ultrad and worker once per test process.
@@ -115,13 +119,29 @@ func binaries(t *testing.T) (string, string) {
 	return filepath.Join(binDir, "ultrad"), filepath.Join(binDir, "worker")
 }
 
+// EnsureBezalelImage builds the pinned real Bezalel image once per test process.
+func EnsureBezalelImage(t *testing.T) string {
+	t.Helper()
+	bezalelOnce.Do(func() {
+		cmd := exec.Command("docker", "build", "-t", BezalelImage,
+			"https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			bezalelErr = fmt.Errorf("build Bezalel: %w\n%s", err, out)
+		}
+	})
+	if bezalelErr != nil {
+		t.Fatal(bezalelErr)
+	}
+	return BezalelImage
+}
+
 func freePort(t *testing.T) int {
 	t.Helper()
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer l.Close()
+	defer func() { _ = l.Close() }()
 	return l.Addr().(*net.TCPAddr).Port
 }
 
@@ -135,6 +155,7 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 	ctx := context.Background()
 
 	ultradBin, workerBin := binaries(t)
+	EnsureBezalelImage(t)
 	dbURL := pgtest.NewDB(t)
 	if err := postgres.Migrate(ctx, dbURL); err != nil {
 		t.Fatal(err)
@@ -202,6 +223,9 @@ func (s *Stack) StartWorker() {
 		"ULTRA_MASTER_KEY="+s.MasterKey,
 		"ULTRA_JOB_TIMEOUT=20s",
 		"ULTRA_RESCUE_AFTER=21s",
+		"ULTRA_BEZALEL_IMAGE="+BezalelImage,
+		"ULTRA_RECONCILE_INTERVAL=1s",
+		"ULTRA_PROVISION_TIMEOUT=45s",
 	)
 	cmd.Env = append(cmd.Env, s.workerEnv...)
 	cmd.Stdout = os.Stderr
@@ -276,6 +300,15 @@ func (s *Stack) seed(t *testing.T, store *postgres.Store, options Options) {
 		}
 	}
 
+	// Every test org has a default local provider instance.
+	for _, org := range []ultra.Org{s.OrgA, s.OrgB} {
+		if err := store.Org(org.ID).Providers().Create(ctx, ultra.ProviderInstance{
+			ID: ultra.ProviderInstanceID(uuid.NewString()), OrgID: org.ID,
+			Kind: ultra.ProviderKindLocalDocker, Name: "default", RateClass: ultra.RateClassBYO, State: "ready",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if options.SeedCredential {
 		s.SeedCredential(t, s.OrgA.ID, "default", CanaryAPIKey, s.Model.URL())
 	}
@@ -309,7 +342,7 @@ func waitHealthy(t *testing.T, baseURL string) {
 	for time.Now().Before(deadline) {
 		resp, err := http.Get(baseURL + "/healthz")
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
 				return
 			}

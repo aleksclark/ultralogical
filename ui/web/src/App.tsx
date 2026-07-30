@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import type { Org } from "@client/gen/ultra/v1/org_pb";
 import type { Session } from "@client/gen/ultra/v1/session_pb";
+import type { DevEnv } from "@client/gen/ultra/v1/env_pb";
 import { clients } from "./api";
 import { foldEvent, initialView, type TimelineItem } from "./reducer";
 
-const baseUrl = import.meta.env.VITE_ULTRAD_URL ?? "http://localhost:8080";
+const apiBaseUrl = import.meta.env.VITE_ULTRAD_URL ?? "http://localhost:8080";
 const initialToken = localStorage.getItem("ultra-token") ?? "dev-token";
 
 export function App() {
   const [token, setToken] = useState(initialToken);
-  const api = useMemo(() => clients(baseUrl, token), [token]);
+  const api = useMemo(() => clients(apiBaseUrl, token), [token]);
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [org, setOrg] = useState<Org>();
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -18,7 +19,12 @@ export function App() {
   const [prompt, setPrompt] = useState("");
   const [title, setTitle] = useState("");
   const [settings, setSettings] = useState(false);
+  const [envs, setEnvs] = useState<DevEnv[]>([]);
+  const [command, setCommand] = useState("");
+  const [envOutput, setEnvOutput] = useState("");
   const [key, setKey] = useState("");
+  const [credentialBaseUrl, setCredentialBaseUrl] = useState("");
+  const [extraHeaders, setExtraHeaders] = useState("{}");
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -32,6 +38,8 @@ export function App() {
     } catch (e) { setError(String(e)); }
   }, [api, org]);
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => { void refreshEnvs(); }, [session]);
 
   useEffect(() => {
     if (!session) return;
@@ -59,10 +67,17 @@ export function App() {
     setPrompt("");
   }
   async function answer(runId: string, message: string) { await api.agents.promptRun({ runId, message }); }
+  async function refreshEnvs() { if(session) setEnvs((await api.envs.listEnvs({sessionId:session.id})).envs); }
+  async function provisionEnv() { if(!session)return; await api.envs.provisionEnv({sessionId:session.id,spec:{name:"main",workdir:"/work",env:{},metadata:{}},providerInstance:"default"}); await refreshEnvs(); setTimeout(refreshEnvs,1000); }
+  async function execPreview() { const env=envs.find(e=>e.state===3);if(!env||!command)return;const r=await api.envs.execPreview({envId:env.id,command});setEnvOutput(r.output);setCommand(""); }
   async function saveKey() {
     if (!org || !key) return;
-    await api.orgs.putCredential({ orgId: org.id, kind: "inference:openai", name: "default", apiKey: key });
-    setKey(""); setSettings(false);
+    try {
+      const parsed = JSON.parse(extraHeaders);
+      if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object" || Object.values(parsed).some(v => typeof v !== "string")) throw new Error("Headers must be a JSON object of string values");
+      await api.orgs.putCredential({ orgId: org.id, kind: "inference:openai", name: "default", apiKey: key, baseUrl: credentialBaseUrl, extraHeadersJson: JSON.stringify(parsed) });
+      setKey(""); setSettings(false); setError("");
+    } catch (e) { setError(String(e)); }
   }
   function changeToken(value: string) { localStorage.setItem("ultra-token", value); setToken(value); }
 
@@ -80,8 +95,8 @@ export function App() {
       <div className="mt-auto flex gap-2"><button className="text-sm text-zinc-400" onClick={() => setSettings(!settings)}>Settings</button><input aria-label="API token" className="w-28 text-xs bg-zinc-900 border border-zinc-800 rounded px-2" value={token} onChange={(e) => changeToken(e.target.value)} /></div>
     </aside>
     <main className="flex-1 max-w-4xl mx-auto p-6 flex flex-col h-screen">
-      {settings ? <section className="space-y-4"><h2 className="text-2xl font-semibold">Org settings</h2><p className="text-zinc-400">Inference credentials are write-only and encrypted at rest.</p><input aria-label="OpenAI API key" type="password" value={key} onChange={(e) => setKey(e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded p-3" /><button onClick={saveKey} className="bg-white text-black rounded px-4 py-2">Save credential</button></section>
-      : session ? <><header className="border-b border-zinc-800 pb-4"><h2 className="text-xl font-medium">{session.title}</h2></header><section data-testid="timeline" className="flex-1 overflow-auto py-4 space-y-3">{view.items.map((item, i) => <Timeline key={i} item={item} onAnswer={answer} />)}</section><div className="flex gap-2 border-t border-zinc-800 pt-4"><input aria-label="Prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendPrompt(); }} className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-3" placeholder="Ask an agent…" /><button onClick={sendPrompt} className="bg-white text-black rounded px-5">Send</button></div></> : <div className="m-auto text-zinc-500">Create or select a session</div>}
+      {settings ? <section className="space-y-4"><h2 className="text-2xl font-semibold">Org settings</h2><p className="text-zinc-400">Inference credentials are write-only and encrypted at rest.</p><label className="block space-y-1"><span>OpenAI API key</span><input aria-label="OpenAI API key" type="password" value={key} onChange={(e) => setKey(e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded p-3" /></label><label className="block space-y-1"><span>Base URL</span><input aria-label="Base URL" value={credentialBaseUrl} onChange={(e)=>setCredentialBaseUrl(e.target.value)} placeholder="https://gateway.example.com/v1" className="w-full bg-zinc-900 border border-zinc-700 rounded p-3" /></label><label className="block space-y-1"><span>Extra headers (JSON)</span><textarea aria-label="Extra headers JSON" value={extraHeaders} onChange={(e)=>setExtraHeaders(e.target.value)} rows={7} className="w-full font-mono text-sm bg-zinc-900 border border-zinc-700 rounded p-3" /><span className="text-xs text-zinc-500">Example: {`{"cf-aig-collect-log-payload":"false","cf-aig-metadata":"{\\"tier\\":\\"fast\\"}"}`}</span></label><button onClick={saveKey} className="bg-white text-black rounded px-4 py-2">Save credential</button></section>
+      : session ? <><header className="border-b border-zinc-800 pb-4 flex justify-between"><h2 className="text-xl font-medium">{session.title}</h2><button onClick={provisionEnv} className="border border-zinc-700 rounded px-3 text-sm">New environment</button></header><div className="py-2 flex gap-2 items-center">{envs.map(e=><span key={e.id} className="text-xs border border-zinc-700 rounded px-2 py-1">{e.spec?.name}: {e.state}</span>)}<input aria-label="Environment command" value={command} onChange={e=>setCommand(e.target.value)} className="ml-auto bg-zinc-900 border border-zinc-700 rounded px-2"/><button onClick={execPreview} className="text-sm border rounded px-2">Run</button></div>{envOutput&&<pre data-testid="env-output" className="text-xs bg-zinc-900 p-2">{envOutput}</pre>}<section data-testid="timeline" className="flex-1 overflow-auto py-4 space-y-3">{view.items.map((item, i) => <Timeline key={i} item={item} onAnswer={answer} />)}</section><div className="flex gap-2 border-t border-zinc-800 pt-4"><input aria-label="Prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendPrompt(); }} className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-3" placeholder="Ask an agent…" /><button onClick={sendPrompt} className="bg-white text-black rounded px-5">Send</button></div></> : <div className="m-auto text-zinc-500">Create or select a session</div>}
       {error && <div role="alert" className="fixed right-4 bottom-4 bg-red-950 border border-red-800 rounded p-3 text-sm">{error}</div>}
     </main>
   </div>;

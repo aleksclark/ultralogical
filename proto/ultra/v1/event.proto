@@ -121,6 +121,21 @@ message RunCancelled {
   string run_id = 1;
 }
 
+message EnvLifecycle {
+  string env_id = 1;
+  string name = 2;
+  string provider_instance_id = 3;
+  string endpoint = 4;
+  string message = 5;
+}
+
+message ExecPreviewRan {
+  string env_id = 1;
+  string command = 2;
+  string output = 3;
+  bool is_error = 4;
+}
+
 // EventPayload is the typed payload of a session event. Every observable
 // thing in a session is one of these variants; later phases add variants
 // (additive only — enforced by breaking-change CI).
@@ -139,6 +154,13 @@ message EventPayload {
     RunCompleted run_completed = 20;
     RunFailed run_failed = 21;
     RunCancelled run_cancelled = 22;
+    EnvLifecycle env_requested = 23;
+    EnvLifecycle env_provisioning = 24;
+    EnvLifecycle env_ready = 25;
+    EnvLifecycle env_failed = 26;
+    EnvLifecycle env_terminating = 27;
+    EnvLifecycle env_terminated = 28;
+    ExecPreviewRan exec_preview_ran = 29;
   }
 }
 

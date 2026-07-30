@@ -748,10 +748,13 @@ type PutCredentialRequest struct {
 	Kind  string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"` // inference:openai | inference:anthropic | inference:bedrock
 	Name  string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"` // "default" if empty
 	// Write-only secret material.
-	ApiKey        string `protobuf:"bytes,4,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
-	BaseUrl       string `protobuf:"bytes,5,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"` // optional vendor endpoint override
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ApiKey  string `protobuf:"bytes,4,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
+	BaseUrl string `protobuf:"bytes,5,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"` // optional vendor endpoint override
+	// JSON object of string header values, e.g.
+	// {"cf-aig-collect-log-payload":"false","cf-aig-metadata":"{...}"}
+	ExtraHeadersJson string `protobuf:"bytes,6,opt,name=extra_headers_json,json=extraHeadersJson,proto3" json:"extra_headers_json,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *PutCredentialRequest) Reset() {
@@ -815,6 +818,13 @@ func (x *PutCredentialRequest) GetApiKey() string {
 func (x *PutCredentialRequest) GetBaseUrl() string {
 	if x != nil {
 		return x.BaseUrl
+	}
+	return ""
+}
+
+func (x *PutCredentialRequest) GetExtraHeadersJson() string {
+	if x != nil {
+		return x.ExtraHeadersJson
 	}
 	return ""
 }
@@ -1047,6 +1057,394 @@ func (*DeleteCredentialResponse) Descriptor() ([]byte, []int) {
 	return file_ultra_v1_org_proto_rawDescGZIP(), []int{18}
 }
 
+type ProviderInstance struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	OrgId         string                 `protobuf:"bytes,2,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	Name          string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	RateClass     string                 `protobuf:"bytes,5,opt,name=rate_class,json=rateClass,proto3" json:"rate_class,omitempty"`
+	State         string                 `protobuf:"bytes,6,opt,name=state,proto3" json:"state,omitempty"`
+	LastHealthyAt *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_healthy_at,json=lastHealthyAt,proto3" json:"last_healthy_at,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProviderInstance) Reset() {
+	*x = ProviderInstance{}
+	mi := &file_ultra_v1_org_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProviderInstance) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProviderInstance) ProtoMessage() {}
+
+func (x *ProviderInstance) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProviderInstance.ProtoReflect.Descriptor instead.
+func (*ProviderInstance) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ProviderInstance) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ProviderInstance) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *ProviderInstance) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *ProviderInstance) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ProviderInstance) GetRateClass() string {
+	if x != nil {
+		return x.RateClass
+	}
+	return ""
+}
+
+func (x *ProviderInstance) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *ProviderInstance) GetLastHealthyAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastHealthyAt
+	}
+	return nil
+}
+
+func (x *ProviderInstance) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type RegisterProviderRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	ConfigJson    string                 `protobuf:"bytes,4,opt,name=config_json,json=configJson,proto3" json:"config_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterProviderRequest) Reset() {
+	*x = RegisterProviderRequest{}
+	mi := &file_ultra_v1_org_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterProviderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterProviderRequest) ProtoMessage() {}
+
+func (x *RegisterProviderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterProviderRequest.ProtoReflect.Descriptor instead.
+func (*RegisterProviderRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *RegisterProviderRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *RegisterProviderRequest) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *RegisterProviderRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *RegisterProviderRequest) GetConfigJson() string {
+	if x != nil {
+		return x.ConfigJson
+	}
+	return ""
+}
+
+type RegisterProviderResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Provider      *ProviderInstance      `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterProviderResponse) Reset() {
+	*x = RegisterProviderResponse{}
+	mi := &file_ultra_v1_org_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterProviderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterProviderResponse) ProtoMessage() {}
+
+func (x *RegisterProviderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterProviderResponse.ProtoReflect.Descriptor instead.
+func (*RegisterProviderResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *RegisterProviderResponse) GetProvider() *ProviderInstance {
+	if x != nil {
+		return x.Provider
+	}
+	return nil
+}
+
+type ListProvidersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListProvidersRequest) Reset() {
+	*x = ListProvidersRequest{}
+	mi := &file_ultra_v1_org_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListProvidersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListProvidersRequest) ProtoMessage() {}
+
+func (x *ListProvidersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListProvidersRequest.ProtoReflect.Descriptor instead.
+func (*ListProvidersRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *ListProvidersRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+type ListProvidersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Providers     []*ProviderInstance    `protobuf:"bytes,1,rep,name=providers,proto3" json:"providers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListProvidersResponse) Reset() {
+	*x = ListProvidersResponse{}
+	mi := &file_ultra_v1_org_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListProvidersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListProvidersResponse) ProtoMessage() {}
+
+func (x *ListProvidersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListProvidersResponse.ProtoReflect.Descriptor instead.
+func (*ListProvidersResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *ListProvidersResponse) GetProviders() []*ProviderInstance {
+	if x != nil {
+		return x.Providers
+	}
+	return nil
+}
+
+type DeleteProviderRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	ProviderId    string                 `protobuf:"bytes,2,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteProviderRequest) Reset() {
+	*x = DeleteProviderRequest{}
+	mi := &file_ultra_v1_org_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteProviderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteProviderRequest) ProtoMessage() {}
+
+func (x *DeleteProviderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteProviderRequest.ProtoReflect.Descriptor instead.
+func (*DeleteProviderRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *DeleteProviderRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *DeleteProviderRequest) GetProviderId() string {
+	if x != nil {
+		return x.ProviderId
+	}
+	return ""
+}
+
+type DeleteProviderResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteProviderResponse) Reset() {
+	*x = DeleteProviderResponse{}
+	mi := &file_ultra_v1_org_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteProviderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteProviderResponse) ProtoMessage() {}
+
+func (x *DeleteProviderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteProviderResponse.ProtoReflect.Descriptor instead.
+func (*DeleteProviderResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{25}
+}
+
 var File_ultra_v1_org_proto protoreflect.FileDescriptor
 
 const file_ultra_v1_org_proto_rawDesc = "" +
@@ -1091,13 +1489,14 @@ const file_ultra_v1_org_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"rotated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\"\x89\x01\n" +
+	"rotated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\"\xb7\x01\n" +
 	"\x14PutCredentialRequest\x12\x15\n" +
 	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x17\n" +
 	"\aapi_key\x18\x04 \x01(\tR\x06apiKey\x12\x19\n" +
-	"\bbase_url\x18\x05 \x01(\tR\abaseUrl\"Q\n" +
+	"\bbase_url\x18\x05 \x01(\tR\abaseUrl\x12,\n" +
+	"\x12extra_headers_json\x18\x06 \x01(\tR\x10extraHeadersJson\"Q\n" +
 	"\x15PutCredentialResponse\x128\n" +
 	"\n" +
 	"credential\x18\x01 \x01(\v2\x18.ultra.v1.CredentialInfoR\n" +
@@ -1110,12 +1509,40 @@ const file_ultra_v1_org_proto_rawDesc = "" +
 	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\"\x1a\n" +
-	"\x18DeleteCredentialResponse*`\n" +
+	"\x18DeleteCredentialResponse\"\x95\x02\n" +
+	"\x10ProviderInstance\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
+	"\x06org_id\x18\x02 \x01(\tR\x05orgId\x12\x12\n" +
+	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x12\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\x12\x1d\n" +
+	"\n" +
+	"rate_class\x18\x05 \x01(\tR\trateClass\x12\x14\n" +
+	"\x05state\x18\x06 \x01(\tR\x05state\x12B\n" +
+	"\x0flast_healthy_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\rlastHealthyAt\x129\n" +
+	"\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"y\n" +
+	"\x17RegisterProviderRequest\x12\x15\n" +
+	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x1f\n" +
+	"\vconfig_json\x18\x04 \x01(\tR\n" +
+	"configJson\"R\n" +
+	"\x18RegisterProviderResponse\x126\n" +
+	"\bprovider\x18\x01 \x01(\v2\x1a.ultra.v1.ProviderInstanceR\bprovider\"-\n" +
+	"\x14ListProvidersRequest\x12\x15\n" +
+	"\x06org_id\x18\x01 \x01(\tR\x05orgId\"Q\n" +
+	"\x15ListProvidersResponse\x128\n" +
+	"\tproviders\x18\x01 \x03(\v2\x1a.ultra.v1.ProviderInstanceR\tproviders\"O\n" +
+	"\x15DeleteProviderRequest\x12\x15\n" +
+	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x1f\n" +
+	"\vprovider_id\x18\x02 \x01(\tR\n" +
+	"providerId\"\x18\n" +
+	"\x16DeleteProviderResponse*`\n" +
 	"\aOrgRole\x12\x18\n" +
 	"\x14ORG_ROLE_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eORG_ROLE_OWNER\x10\x01\x12\x12\n" +
 	"\x0eORG_ROLE_ADMIN\x10\x02\x12\x13\n" +
-	"\x0fORG_ROLE_MEMBER\x10\x032\xf2\x04\n" +
+	"\x0fORG_ROLE_MEMBER\x10\x032\xf4\x06\n" +
 	"\n" +
 	"OrgService\x12D\n" +
 	"\tCreateOrg\x12\x1a.ultra.v1.CreateOrgRequest\x1a\x1b.ultra.v1.CreateOrgResponse\x12;\n" +
@@ -1125,7 +1552,10 @@ const file_ultra_v1_org_proto_rawDesc = "" +
 	"\vListMembers\x12\x1c.ultra.v1.ListMembersRequest\x1a\x1d.ultra.v1.ListMembersResponse\x12P\n" +
 	"\rPutCredential\x12\x1e.ultra.v1.PutCredentialRequest\x1a\x1f.ultra.v1.PutCredentialResponse\x12V\n" +
 	"\x0fListCredentials\x12 .ultra.v1.ListCredentialsRequest\x1a!.ultra.v1.ListCredentialsResponse\x12Y\n" +
-	"\x10DeleteCredential\x12!.ultra.v1.DeleteCredentialRequest\x1a\".ultra.v1.DeleteCredentialResponseB<Z:github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1b\x06proto3"
+	"\x10DeleteCredential\x12!.ultra.v1.DeleteCredentialRequest\x1a\".ultra.v1.DeleteCredentialResponse\x12Y\n" +
+	"\x10RegisterProvider\x12!.ultra.v1.RegisterProviderRequest\x1a\".ultra.v1.RegisterProviderResponse\x12P\n" +
+	"\rListProviders\x12\x1e.ultra.v1.ListProvidersRequest\x1a\x1f.ultra.v1.ListProvidersResponse\x12S\n" +
+	"\x0eDeleteProvider\x12\x1f.ultra.v1.DeleteProviderRequest\x1a .ultra.v1.DeleteProviderResponseB<Z:github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1b\x06proto3"
 
 var (
 	file_ultra_v1_org_proto_rawDescOnce sync.Once
@@ -1140,7 +1570,7 @@ func file_ultra_v1_org_proto_rawDescGZIP() []byte {
 }
 
 var file_ultra_v1_org_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ultra_v1_org_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_ultra_v1_org_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_ultra_v1_org_proto_goTypes = []any{
 	(OrgRole)(0),                     // 0: ultra.v1.OrgRole
 	(*Org)(nil),                      // 1: ultra.v1.Org
@@ -1162,43 +1592,60 @@ var file_ultra_v1_org_proto_goTypes = []any{
 	(*ListCredentialsResponse)(nil),  // 17: ultra.v1.ListCredentialsResponse
 	(*DeleteCredentialRequest)(nil),  // 18: ultra.v1.DeleteCredentialRequest
 	(*DeleteCredentialResponse)(nil), // 19: ultra.v1.DeleteCredentialResponse
-	(*timestamppb.Timestamp)(nil),    // 20: google.protobuf.Timestamp
+	(*ProviderInstance)(nil),         // 20: ultra.v1.ProviderInstance
+	(*RegisterProviderRequest)(nil),  // 21: ultra.v1.RegisterProviderRequest
+	(*RegisterProviderResponse)(nil), // 22: ultra.v1.RegisterProviderResponse
+	(*ListProvidersRequest)(nil),     // 23: ultra.v1.ListProvidersRequest
+	(*ListProvidersResponse)(nil),    // 24: ultra.v1.ListProvidersResponse
+	(*DeleteProviderRequest)(nil),    // 25: ultra.v1.DeleteProviderRequest
+	(*DeleteProviderResponse)(nil),   // 26: ultra.v1.DeleteProviderResponse
+	(*timestamppb.Timestamp)(nil),    // 27: google.protobuf.Timestamp
 }
 var file_ultra_v1_org_proto_depIdxs = []int32{
-	20, // 0: ultra.v1.Org.created_at:type_name -> google.protobuf.Timestamp
+	27, // 0: ultra.v1.Org.created_at:type_name -> google.protobuf.Timestamp
 	0,  // 1: ultra.v1.OrgMember.role:type_name -> ultra.v1.OrgRole
-	20, // 2: ultra.v1.OrgMember.joined_at:type_name -> google.protobuf.Timestamp
+	27, // 2: ultra.v1.OrgMember.joined_at:type_name -> google.protobuf.Timestamp
 	1,  // 3: ultra.v1.CreateOrgResponse.org:type_name -> ultra.v1.Org
 	1,  // 4: ultra.v1.GetOrgResponse.org:type_name -> ultra.v1.Org
 	0,  // 5: ultra.v1.InviteMemberRequest.role:type_name -> ultra.v1.OrgRole
 	2,  // 6: ultra.v1.InviteMemberResponse.member:type_name -> ultra.v1.OrgMember
 	2,  // 7: ultra.v1.ListMembersResponse.members:type_name -> ultra.v1.OrgMember
 	1,  // 8: ultra.v1.ListOrgsResponse.orgs:type_name -> ultra.v1.Org
-	20, // 9: ultra.v1.CredentialInfo.created_at:type_name -> google.protobuf.Timestamp
-	20, // 10: ultra.v1.CredentialInfo.rotated_at:type_name -> google.protobuf.Timestamp
+	27, // 9: ultra.v1.CredentialInfo.created_at:type_name -> google.protobuf.Timestamp
+	27, // 10: ultra.v1.CredentialInfo.rotated_at:type_name -> google.protobuf.Timestamp
 	13, // 11: ultra.v1.PutCredentialResponse.credential:type_name -> ultra.v1.CredentialInfo
 	13, // 12: ultra.v1.ListCredentialsResponse.credentials:type_name -> ultra.v1.CredentialInfo
-	3,  // 13: ultra.v1.OrgService.CreateOrg:input_type -> ultra.v1.CreateOrgRequest
-	5,  // 14: ultra.v1.OrgService.GetOrg:input_type -> ultra.v1.GetOrgRequest
-	11, // 15: ultra.v1.OrgService.ListOrgs:input_type -> ultra.v1.ListOrgsRequest
-	7,  // 16: ultra.v1.OrgService.InviteMember:input_type -> ultra.v1.InviteMemberRequest
-	9,  // 17: ultra.v1.OrgService.ListMembers:input_type -> ultra.v1.ListMembersRequest
-	14, // 18: ultra.v1.OrgService.PutCredential:input_type -> ultra.v1.PutCredentialRequest
-	16, // 19: ultra.v1.OrgService.ListCredentials:input_type -> ultra.v1.ListCredentialsRequest
-	18, // 20: ultra.v1.OrgService.DeleteCredential:input_type -> ultra.v1.DeleteCredentialRequest
-	4,  // 21: ultra.v1.OrgService.CreateOrg:output_type -> ultra.v1.CreateOrgResponse
-	6,  // 22: ultra.v1.OrgService.GetOrg:output_type -> ultra.v1.GetOrgResponse
-	12, // 23: ultra.v1.OrgService.ListOrgs:output_type -> ultra.v1.ListOrgsResponse
-	8,  // 24: ultra.v1.OrgService.InviteMember:output_type -> ultra.v1.InviteMemberResponse
-	10, // 25: ultra.v1.OrgService.ListMembers:output_type -> ultra.v1.ListMembersResponse
-	15, // 26: ultra.v1.OrgService.PutCredential:output_type -> ultra.v1.PutCredentialResponse
-	17, // 27: ultra.v1.OrgService.ListCredentials:output_type -> ultra.v1.ListCredentialsResponse
-	19, // 28: ultra.v1.OrgService.DeleteCredential:output_type -> ultra.v1.DeleteCredentialResponse
-	21, // [21:29] is the sub-list for method output_type
-	13, // [13:21] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	27, // 13: ultra.v1.ProviderInstance.last_healthy_at:type_name -> google.protobuf.Timestamp
+	27, // 14: ultra.v1.ProviderInstance.created_at:type_name -> google.protobuf.Timestamp
+	20, // 15: ultra.v1.RegisterProviderResponse.provider:type_name -> ultra.v1.ProviderInstance
+	20, // 16: ultra.v1.ListProvidersResponse.providers:type_name -> ultra.v1.ProviderInstance
+	3,  // 17: ultra.v1.OrgService.CreateOrg:input_type -> ultra.v1.CreateOrgRequest
+	5,  // 18: ultra.v1.OrgService.GetOrg:input_type -> ultra.v1.GetOrgRequest
+	11, // 19: ultra.v1.OrgService.ListOrgs:input_type -> ultra.v1.ListOrgsRequest
+	7,  // 20: ultra.v1.OrgService.InviteMember:input_type -> ultra.v1.InviteMemberRequest
+	9,  // 21: ultra.v1.OrgService.ListMembers:input_type -> ultra.v1.ListMembersRequest
+	14, // 22: ultra.v1.OrgService.PutCredential:input_type -> ultra.v1.PutCredentialRequest
+	16, // 23: ultra.v1.OrgService.ListCredentials:input_type -> ultra.v1.ListCredentialsRequest
+	18, // 24: ultra.v1.OrgService.DeleteCredential:input_type -> ultra.v1.DeleteCredentialRequest
+	21, // 25: ultra.v1.OrgService.RegisterProvider:input_type -> ultra.v1.RegisterProviderRequest
+	23, // 26: ultra.v1.OrgService.ListProviders:input_type -> ultra.v1.ListProvidersRequest
+	25, // 27: ultra.v1.OrgService.DeleteProvider:input_type -> ultra.v1.DeleteProviderRequest
+	4,  // 28: ultra.v1.OrgService.CreateOrg:output_type -> ultra.v1.CreateOrgResponse
+	6,  // 29: ultra.v1.OrgService.GetOrg:output_type -> ultra.v1.GetOrgResponse
+	12, // 30: ultra.v1.OrgService.ListOrgs:output_type -> ultra.v1.ListOrgsResponse
+	8,  // 31: ultra.v1.OrgService.InviteMember:output_type -> ultra.v1.InviteMemberResponse
+	10, // 32: ultra.v1.OrgService.ListMembers:output_type -> ultra.v1.ListMembersResponse
+	15, // 33: ultra.v1.OrgService.PutCredential:output_type -> ultra.v1.PutCredentialResponse
+	17, // 34: ultra.v1.OrgService.ListCredentials:output_type -> ultra.v1.ListCredentialsResponse
+	19, // 35: ultra.v1.OrgService.DeleteCredential:output_type -> ultra.v1.DeleteCredentialResponse
+	22, // 36: ultra.v1.OrgService.RegisterProvider:output_type -> ultra.v1.RegisterProviderResponse
+	24, // 37: ultra.v1.OrgService.ListProviders:output_type -> ultra.v1.ListProvidersResponse
+	26, // 38: ultra.v1.OrgService.DeleteProvider:output_type -> ultra.v1.DeleteProviderResponse
+	28, // [28:39] is the sub-list for method output_type
+	17, // [17:28] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_org_proto_init() }
@@ -1212,7 +1659,7 @@ func file_ultra_v1_org_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ultra_v1_org_proto_rawDesc), len(file_ultra_v1_org_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   19,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -28,7 +28,7 @@ func Migrate(ctx context.Context, databaseURL string) error {
 	if err != nil {
 		return err
 	}
-	defer provider.Close()
+	defer func() { _ = provider.Close() }()
 	if _, err := provider.Up(ctx); err != nil {
 		return fmt.Errorf("postgres: migrate: %w", err)
 	}

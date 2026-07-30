@@ -45,8 +45,10 @@ supersession.
 
 `ModelConfig{provider, model_id, credential}` resolves inside the worker via
 `OrgScope.Credentials()`. Supported fantasy providers: OpenAI, Anthropic,
-Bedrock. Credentials are AES-GCM encrypted in Postgres, decrypted at point
-of use, and registered with `secrets.DefaultRedactor`. Missing/invalid
+Bedrock. Credential payloads contain `api_key`, optional `base_url`, and
+optional `extra_headers` (string map for gateways such as Cloudflare AI
+Gateway). All fields are AES-GCM encrypted in Postgres; secret/header values
+are registered with `secrets.DefaultRedactor`. Missing/invalid
 credentials fail fast with typed reasons; raw provider errors never reach
 users.
 

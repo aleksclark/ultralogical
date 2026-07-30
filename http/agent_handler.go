@@ -10,13 +10,14 @@ import (
 
 	ultra "github.com/aleksclark/ultralogical"
 	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
+	"github.com/aleksclark/ultralogical/jobqueue"
 	"github.com/aleksclark/ultralogical/loop"
 )
 
 // agentHandler implements ultrav1connect.AgentServiceHandler.
 type agentHandler struct {
 	store        ultra.Store
-	enqueue      loop.TxEnqueuer
+	enqueue      jobqueue.TxEnqueuer
 	defaultModel ultra.ModelConfig
 }
 

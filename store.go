@@ -61,6 +61,9 @@ type OrgScope interface {
 	Events() EventStore
 	Runs() RunStore
 	Credentials() CredentialStore
+	Envs() EnvStore
+	Providers() ProviderInstanceStore
+	Usage() UsageStore
 }
 
 // SessionStore manages sessions within one org.

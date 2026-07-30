@@ -58,6 +58,12 @@ export function foldEvent(state: SessionView, event: SessionEvent): SessionView 
     case "runCancelled":
       items.push({ type: "status", runId: payload.value.runId, status: "cancelled" });
       break;
+    case "execPreviewRan":
+      items.push({ type: "tool", runId: "human", name: `exec: ${payload.value.command}`, input: payload.value.command, output: payload.value.output, error: payload.value.isError });
+      break;
+    case "envRequested": case "envProvisioning": case "envReady": case "envFailed": case "envTerminating": case "envTerminated":
+      items.push({ type: "annotation", text: `${payload.case}: ${payload.value.name}${payload.value.message ? ` (${payload.value.message})` : ""}` });
+      break;
   }
   return { items, lastSeq: event.seq };
 }

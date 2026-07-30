@@ -11,8 +11,9 @@ import (
 	"connectrpc.com/connect"
 
 	ultra "github.com/aleksclark/ultralogical"
+	"github.com/aleksclark/ultralogical/envwork"
 	"github.com/aleksclark/ultralogical/gen/go/ultra/v1/ultrav1connect"
-	"github.com/aleksclark/ultralogical/loop"
+	"github.com/aleksclark/ultralogical/jobqueue"
 	"github.com/aleksclark/ultralogical/secrets"
 )
 
@@ -26,9 +27,11 @@ type Config struct {
 	// happens in workers).
 	Keyring secrets.Keyring
 	// Enqueue enqueues step jobs transactionally with run creation.
-	Enqueue loop.TxEnqueuer
+	Enqueue jobqueue.TxEnqueuer
 	// DefaultModel fills StartRun requests that omit a model config.
 	DefaultModel ultra.ModelConfig
+	// Envs orchestrates development-environment lifecycle and ExecPreview.
+	Envs *envwork.Service
 }
 
 // NewHandler builds the full ultrad http.Handler: all Connect services under
@@ -50,6 +53,13 @@ func NewHandler(cfg Config) http.Handler {
 		store: cfg.Store, enqueue: cfg.Enqueue, defaultModel: cfg.DefaultModel,
 	}, interceptors)
 	mux.Handle(agentPath, agentH)
+
+	if cfg.Envs != nil {
+		envPath, envH := ultrav1connect.NewEnvServiceHandler(&envHandler{store: cfg.Store, envs: cfg.Envs}, interceptors)
+		mux.Handle(envPath, envH)
+		billingPath, billingH := ultrav1connect.NewBillingServiceHandler(&billingHandler{store: cfg.Store}, interceptors)
+		mux.Handle(billingPath, billingH)
+	}
 
 	// The unary interceptor covers Append; Subscribe is a streaming RPC and
 	// authenticates inside the handler.

@@ -17,10 +17,10 @@ type TxEnqueuer struct {
 
 // EnqueueInTx enqueues a job within the transaction bound to txStore. It
 // fails if txStore is not a transaction-bound *Store.
-func (e TxEnqueuer) EnqueueInTx(ctx context.Context, txStore ultra.Store, job jobqueue.Job) error {
+func (e TxEnqueuer) EnqueueInTx(ctx context.Context, txStore ultra.Store, job jobqueue.Job, opts ...jobqueue.Opt) error {
 	ps, ok := txStore.(*Store)
 	if !ok || ps.PgxTx() == nil {
 		return errors.New("postgres: EnqueueInTx requires a transaction-bound store")
 	}
-	return e.Queue.EnqueueTx(ctx, ps.PgxTx(), job)
+	return e.Queue.EnqueueTx(ctx, ps.PgxTx(), job, opts...)
 }

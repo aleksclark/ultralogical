@@ -51,8 +51,9 @@ type CredentialInfo struct {
 // InferencePayload is the decrypted payload shape for inference credentials.
 // BaseURL overrides the vendor default (also how tests point at modelscript).
 type InferencePayload struct {
-	APIKey  string `json:"api_key"`
-	BaseURL string `json:"base_url,omitempty"`
+	APIKey       string            `json:"api_key"`
+	BaseURL      string            `json:"base_url,omitempty"`
+	ExtraHeaders map[string]string `json:"extra_headers,omitempty"`
 }
 
 // CredentialStore manages credentials within one org. Put upserts (rotate =

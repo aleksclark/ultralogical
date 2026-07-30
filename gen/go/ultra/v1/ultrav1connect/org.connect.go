@@ -52,6 +52,15 @@ const (
 	// OrgServiceDeleteCredentialProcedure is the fully-qualified name of the OrgService's
 	// DeleteCredential RPC.
 	OrgServiceDeleteCredentialProcedure = "/ultra.v1.OrgService/DeleteCredential"
+	// OrgServiceRegisterProviderProcedure is the fully-qualified name of the OrgService's
+	// RegisterProvider RPC.
+	OrgServiceRegisterProviderProcedure = "/ultra.v1.OrgService/RegisterProvider"
+	// OrgServiceListProvidersProcedure is the fully-qualified name of the OrgService's ListProviders
+	// RPC.
+	OrgServiceListProvidersProcedure = "/ultra.v1.OrgService/ListProviders"
+	// OrgServiceDeleteProviderProcedure is the fully-qualified name of the OrgService's DeleteProvider
+	// RPC.
+	OrgServiceDeleteProviderProcedure = "/ultra.v1.OrgService/DeleteProvider"
 )
 
 // OrgServiceClient is a client for the ultra.v1.OrgService service.
@@ -64,6 +73,9 @@ type OrgServiceClient interface {
 	PutCredential(context.Context, *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error)
 	ListCredentials(context.Context, *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error)
 	DeleteCredential(context.Context, *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error)
+	RegisterProvider(context.Context, *connect.Request[v1.RegisterProviderRequest]) (*connect.Response[v1.RegisterProviderResponse], error)
+	ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error)
+	DeleteProvider(context.Context, *connect.Request[v1.DeleteProviderRequest]) (*connect.Response[v1.DeleteProviderResponse], error)
 }
 
 // NewOrgServiceClient constructs a client for the ultra.v1.OrgService service. By default, it uses
@@ -125,6 +137,24 @@ func NewOrgServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(orgServiceMethods.ByName("DeleteCredential")),
 			connect.WithClientOptions(opts...),
 		),
+		registerProvider: connect.NewClient[v1.RegisterProviderRequest, v1.RegisterProviderResponse](
+			httpClient,
+			baseURL+OrgServiceRegisterProviderProcedure,
+			connect.WithSchema(orgServiceMethods.ByName("RegisterProvider")),
+			connect.WithClientOptions(opts...),
+		),
+		listProviders: connect.NewClient[v1.ListProvidersRequest, v1.ListProvidersResponse](
+			httpClient,
+			baseURL+OrgServiceListProvidersProcedure,
+			connect.WithSchema(orgServiceMethods.ByName("ListProviders")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteProvider: connect.NewClient[v1.DeleteProviderRequest, v1.DeleteProviderResponse](
+			httpClient,
+			baseURL+OrgServiceDeleteProviderProcedure,
+			connect.WithSchema(orgServiceMethods.ByName("DeleteProvider")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -138,6 +168,9 @@ type orgServiceClient struct {
 	putCredential    *connect.Client[v1.PutCredentialRequest, v1.PutCredentialResponse]
 	listCredentials  *connect.Client[v1.ListCredentialsRequest, v1.ListCredentialsResponse]
 	deleteCredential *connect.Client[v1.DeleteCredentialRequest, v1.DeleteCredentialResponse]
+	registerProvider *connect.Client[v1.RegisterProviderRequest, v1.RegisterProviderResponse]
+	listProviders    *connect.Client[v1.ListProvidersRequest, v1.ListProvidersResponse]
+	deleteProvider   *connect.Client[v1.DeleteProviderRequest, v1.DeleteProviderResponse]
 }
 
 // CreateOrg calls ultra.v1.OrgService.CreateOrg.
@@ -180,6 +213,21 @@ func (c *orgServiceClient) DeleteCredential(ctx context.Context, req *connect.Re
 	return c.deleteCredential.CallUnary(ctx, req)
 }
 
+// RegisterProvider calls ultra.v1.OrgService.RegisterProvider.
+func (c *orgServiceClient) RegisterProvider(ctx context.Context, req *connect.Request[v1.RegisterProviderRequest]) (*connect.Response[v1.RegisterProviderResponse], error) {
+	return c.registerProvider.CallUnary(ctx, req)
+}
+
+// ListProviders calls ultra.v1.OrgService.ListProviders.
+func (c *orgServiceClient) ListProviders(ctx context.Context, req *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error) {
+	return c.listProviders.CallUnary(ctx, req)
+}
+
+// DeleteProvider calls ultra.v1.OrgService.DeleteProvider.
+func (c *orgServiceClient) DeleteProvider(ctx context.Context, req *connect.Request[v1.DeleteProviderRequest]) (*connect.Response[v1.DeleteProviderResponse], error) {
+	return c.deleteProvider.CallUnary(ctx, req)
+}
+
 // OrgServiceHandler is an implementation of the ultra.v1.OrgService service.
 type OrgServiceHandler interface {
 	CreateOrg(context.Context, *connect.Request[v1.CreateOrgRequest]) (*connect.Response[v1.CreateOrgResponse], error)
@@ -190,6 +238,9 @@ type OrgServiceHandler interface {
 	PutCredential(context.Context, *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error)
 	ListCredentials(context.Context, *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error)
 	DeleteCredential(context.Context, *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error)
+	RegisterProvider(context.Context, *connect.Request[v1.RegisterProviderRequest]) (*connect.Response[v1.RegisterProviderResponse], error)
+	ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error)
+	DeleteProvider(context.Context, *connect.Request[v1.DeleteProviderRequest]) (*connect.Response[v1.DeleteProviderResponse], error)
 }
 
 // NewOrgServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -247,6 +298,24 @@ func NewOrgServiceHandler(svc OrgServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(orgServiceMethods.ByName("DeleteCredential")),
 		connect.WithHandlerOptions(opts...),
 	)
+	orgServiceRegisterProviderHandler := connect.NewUnaryHandler(
+		OrgServiceRegisterProviderProcedure,
+		svc.RegisterProvider,
+		connect.WithSchema(orgServiceMethods.ByName("RegisterProvider")),
+		connect.WithHandlerOptions(opts...),
+	)
+	orgServiceListProvidersHandler := connect.NewUnaryHandler(
+		OrgServiceListProvidersProcedure,
+		svc.ListProviders,
+		connect.WithSchema(orgServiceMethods.ByName("ListProviders")),
+		connect.WithHandlerOptions(opts...),
+	)
+	orgServiceDeleteProviderHandler := connect.NewUnaryHandler(
+		OrgServiceDeleteProviderProcedure,
+		svc.DeleteProvider,
+		connect.WithSchema(orgServiceMethods.ByName("DeleteProvider")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/ultra.v1.OrgService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case OrgServiceCreateOrgProcedure:
@@ -265,6 +334,12 @@ func NewOrgServiceHandler(svc OrgServiceHandler, opts ...connect.HandlerOption) 
 			orgServiceListCredentialsHandler.ServeHTTP(w, r)
 		case OrgServiceDeleteCredentialProcedure:
 			orgServiceDeleteCredentialHandler.ServeHTTP(w, r)
+		case OrgServiceRegisterProviderProcedure:
+			orgServiceRegisterProviderHandler.ServeHTTP(w, r)
+		case OrgServiceListProvidersProcedure:
+			orgServiceListProvidersHandler.ServeHTTP(w, r)
+		case OrgServiceDeleteProviderProcedure:
+			orgServiceDeleteProviderHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -304,4 +379,16 @@ func (UnimplementedOrgServiceHandler) ListCredentials(context.Context, *connect.
 
 func (UnimplementedOrgServiceHandler) DeleteCredential(context.Context, *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.OrgService.DeleteCredential is not implemented"))
+}
+
+func (UnimplementedOrgServiceHandler) RegisterProvider(context.Context, *connect.Request[v1.RegisterProviderRequest]) (*connect.Response[v1.RegisterProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.OrgService.RegisterProvider is not implemented"))
+}
+
+func (UnimplementedOrgServiceHandler) ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.OrgService.ListProviders is not implemented"))
+}
+
+func (UnimplementedOrgServiceHandler) DeleteProvider(context.Context, *connect.Request[v1.DeleteProviderRequest]) (*connect.Response[v1.DeleteProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.OrgService.DeleteProvider is not implemented"))
 }

@@ -2,8 +2,8 @@
 
 Ultralogical: a durable-session platform for agentic work — multi-tenant,
 event-sourced sessions that humans and agents share. Go backend, ConnectRPC
-API, Postgres, React/gpui UIs. Currently at **Phase 1** (durable fantasy
-agent loop + React SPA).
+API, Postgres, React/gpui UIs. Currently at **Phase 2** (durable fantasy
+agent loop + session-owned Bezalel dev environments + React SPA).
 
 ## Cheatsheet
 
@@ -49,9 +49,10 @@ task dev               # local postgres + ultrad + worker
 |---|---|
 | [agent_docs/architecture.md](agent_docs/architecture.md) | touching http, store, eventbus, tenancy, queue, clients/UIs |
 | [agent_docs/agent_loop.md](agent_docs/agent_loop.md) | touching fantasy, step jobs, credentials, modelscript |
+| [agent_docs/dev_environments.md](agent_docs/dev_environments.md) | touching providers, env lifecycle, MCP, metering |
 | [agent_docs/package_layout.md](agent_docs/package_layout.md) | deciding where new code goes |
 | [agent_docs/testing.md](agent_docs/testing.md) | writing/running tests, using the harness |
 | [agent_docs/codegen.md](agent_docs/codegen.md) | changing protos, adding events/RPCs |
 | [agent_docs/conventions.md](agent_docs/conventions.md) | code style, layout rules, errors, migrations, never-do list |
 | [plan/index.md](plan/index.md) | architecture rationale + full roadmap |
-| [plan/phase_2.md](plan/phase_2.md) | the next phase to implement |
+| [plan/phase_3.md](plan/phase_3.md) | the next phase to implement |
