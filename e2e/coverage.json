@@ -1,0 +1,11 @@
+{
+  "auth_org_sessions": {"web": "core.spec.ts", "rust": "desktop_e2e.rs"},
+  "event_replay_resume": {"web": "core.spec.ts", "rust": "desktop_e2e.rs"},
+  "agent_stream_tools_await_cancel": {"web": "agent.spec.ts", "rust": "desktop_e2e.rs"},
+  "credential_base_url_headers": {"web": "settings.spec.ts", "rust": "desktop_e2e.rs"},
+  "dev_env_exec_persistence_usage": {"web": "environment.spec.ts", "rust": "desktop_e2e.rs"},
+  "presence_multiplayer": {"web": "multiplayer.spec.ts", "rust": "desktop_e2e.rs"},
+  "concurrent_runs_and_tree": {"web": "multiplayer.spec.ts", "rust": "desktop_e2e.rs"},
+  "session_memory_crud_caps": {"web": "multiplayer.spec.ts", "rust": "desktop_e2e.rs"},
+  "cross_tenant_denial": {"web": "security.spec.ts", "rust": "desktop_e2e.rs"}
+}
