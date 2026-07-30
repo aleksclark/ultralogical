@@ -1,0 +1,64 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+      - name: buf lint
+        run: buf lint
+      - name: buf breaking (drift gate A0.5)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          buf breaking --against ".git#branch=origin/${{ github.base_ref }},subdir=."
+      - name: codegen diff (drift gate A0.5)
+        run: |
+          buf generate
+          git diff --exit-code gen clients/ts/src/gen
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Unit, store, and jobqueue conformance tests
+        run: go test ./... -count=1 -skip 'TestA0' -timeout 15m
+
+  functional:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: clients/ts/package-lock.json
+      - name: Install TS client deps
+        working-directory: clients/ts
+        run: npm ci
+      - name: Typecheck TS client
+        working-directory: clients/ts
+        run: npx tsc --noEmit
+      - name: Functional API suite (Go + TS clients, real stack)
+        run: go test ./e2e/ -count=1 -v -timeout 15m

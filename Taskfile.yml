@@ -1,0 +1,69 @@
+version: "3"
+
+tasks:
+  default:
+    deps: [build]
+
+  build:
+    desc: Build all Go packages
+    cmds:
+      - go build ./...
+
+  generate:
+    desc: Regenerate code from protos (Go + TS)
+    cmds:
+      - buf generate
+
+  lint:
+    desc: Lint Go and protos
+    cmds:
+      - buf lint
+      - go vet ./...
+      - golangci-lint run
+
+  test:
+    desc: Unit + store + jobqueue tests (real Postgres via testcontainers)
+    cmds:
+      - go test ./... -count=1 -skip 'TestA0' -timeout 10m
+
+  test:functional:
+    desc: Functional API suite (real stack, generated clients)
+    cmds:
+      - go test ./e2e/ -count=1 -timeout 10m
+
+  test:all:
+    desc: Everything
+    cmds:
+      - go test ./... -count=1 -timeout 15m
+
+  verify:codegen:
+    desc: Fail if generated code is out of sync with protos
+    cmds:
+      - buf generate
+      - git diff --exit-code gen clients/ts/src/gen
+
+  verify:breaking:
+    desc: Fail on breaking proto changes vs origin/main
+    cmds:
+      - buf breaking --against '.git#branch=origin/main,subdir=.'
+
+  ts:install:
+    desc: Install TS client deps
+    dir: clients/ts
+    cmds:
+      - npm ci
+
+  ts:check:
+    desc: Typecheck the TS client
+    dir: clients/ts
+    cmds:
+      - npx tsc --noEmit
+
+  dev:
+    desc: Boot a local dev stack (postgres in docker + migrated ultrad)
+    cmds:
+      - docker start ultra-dev-pg 2>/dev/null || docker run -d --name ultra-dev-pg -e POSTGRES_PASSWORD=dev -p 5499:5432 postgres:17-alpine
+      - sleep 1
+      - DATABASE_URL=postgres://postgres:dev@localhost:5499/postgres?sslmode=disable
+        ULTRA_DEV_TOKENS=dev-token=dev@example.com
+        go run ./cmd/ultrad
