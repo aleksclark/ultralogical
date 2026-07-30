@@ -30,6 +30,97 @@ message Annotation {
   string text = 1;
 }
 
+// RunStarted marks an agent run's creation.
+message RunStarted {
+  string run_id = 1;
+  string prompt = 2;
+}
+
+// StepStarted marks the beginning of a step execution attempt. Attempt > 1
+// supersedes any partial deltas from earlier attempts of the same step.
+message StepStarted {
+  string run_id = 1;
+  int32 step_index = 2;
+  int32 attempt = 3;
+}
+
+// TextDelta is a batched chunk of streamed assistant text.
+message TextDelta {
+  string run_id = 1;
+  int32 step_index = 2;
+  int32 attempt = 3;
+  int32 delta_index = 4;
+  string text = 5;
+}
+
+// ReasoningDelta is a batched chunk of streamed reasoning text.
+message ReasoningDelta {
+  string run_id = 1;
+  int32 step_index = 2;
+  int32 attempt = 3;
+  int32 delta_index = 4;
+  string text = 5;
+}
+
+// ToolCallStarted records a completed tool invocation request.
+message ToolCallStarted {
+  string run_id = 1;
+  int32 step_index = 2;
+  string tool_call_id = 3;
+  string name = 4;
+  string input = 5; // JSON as sent by the model
+}
+
+// ToolResult records a tool execution result.
+message ToolResult {
+  string run_id = 1;
+  int32 step_index = 2;
+  string tool_call_id = 3;
+  string name = 4;
+  string content = 5;
+  bool is_error = 6;
+}
+
+// StepFinished closes a step with its usage audit.
+message StepFinished {
+  string run_id = 1;
+  int32 step_index = 2;
+  int64 tokens_in = 3;
+  int64 tokens_out = 4;
+  string finish_reason = 5;
+}
+
+// Question is a structured question an agent asks a human.
+message Question {
+  string text = 1;
+  repeated string choices = 2;
+}
+
+// RunAwaiting marks a run parked on human input.
+message RunAwaiting {
+  string run_id = 1;
+  Question question = 2;
+}
+
+// RunCompleted is a run's terminal success event.
+message RunCompleted {
+  string run_id = 1;
+  string final_text = 2;
+}
+
+// RunFailed is a run's terminal failure event. Reason is typed and
+// user-actionable; it never contains raw provider errors.
+message RunFailed {
+  string run_id = 1;
+  string reason = 2;
+  string message = 3;
+}
+
+// RunCancelled is a run's terminal cancellation event.
+message RunCancelled {
+  string run_id = 1;
+}
+
 // EventPayload is the typed payload of a session event. Every observable
 // thing in a session is one of these variants; later phases add variants
 // (additive only — enforced by breaking-change CI).
@@ -37,6 +128,17 @@ message EventPayload {
   oneof payload {
     UserMessage user_message = 10;
     Annotation annotation = 11;
+    RunStarted run_started = 12;
+    StepStarted step_started = 13;
+    TextDelta text_delta = 14;
+    ReasoningDelta reasoning_delta = 15;
+    ToolCallStarted tool_call_started = 16;
+    ToolResult tool_result = 17;
+    StepFinished step_finished = 18;
+    RunAwaiting run_awaiting = 19;
+    RunCompleted run_completed = 20;
+    RunFailed run_failed = 21;
+    RunCancelled run_cancelled = 22;
   }
 }
 

@@ -59,11 +59,26 @@ tasks:
     cmds:
       - npx tsc --noEmit
 
+  web:build:
+    desc: Typecheck and build the React SPA
+    dir: ui/web
+    cmds:
+      - npm run build
+
+  web:test:
+    desc: Run the Playwright golden suite (real backend via Go harness)
+    cmds:
+      - go test ./e2e/ -run TestA16 -v -timeout 5m
+
   dev:
-    desc: Boot a local dev stack (postgres in docker + migrated ultrad)
+    desc: Boot local Postgres + ultrad + worker (run ui/web separately)
     cmds:
       - docker start ultra-dev-pg 2>/dev/null || docker run -d --name ultra-dev-pg -e POSTGRES_PASSWORD=dev -p 5499:5432 postgres:17-alpine
       - sleep 1
-      - DATABASE_URL=postgres://postgres:dev@localhost:5499/postgres?sslmode=disable
-        ULTRA_DEV_TOKENS=dev-token=dev@example.com
-        go run ./cmd/ultrad
+      - |
+        test -n "$ULTRA_MASTER_KEY" || { echo "set ULTRA_MASTER_KEY to 64 hex chars"; exit 1; }
+        DATABASE_URL=postgres://postgres:dev@localhost:5499/postgres?sslmode=disable \
+        ULTRA_DEV_TOKENS=dev-token=dev@example.com \
+        go run ./cmd/ultrad &
+        DATABASE_URL=postgres://postgres:dev@localhost:5499/postgres?sslmode=disable \
+        go run ./cmd/worker

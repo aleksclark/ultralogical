@@ -591,6 +591,462 @@ func (x *ListMembersResponse) GetMembers() []*OrgMember {
 	return nil
 }
 
+type ListOrgsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListOrgsRequest) Reset() {
+	*x = ListOrgsRequest{}
+	mi := &file_ultra_v1_org_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListOrgsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListOrgsRequest) ProtoMessage() {}
+
+func (x *ListOrgsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListOrgsRequest.ProtoReflect.Descriptor instead.
+func (*ListOrgsRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{10}
+}
+
+type ListOrgsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Orgs the caller is a member of.
+	Orgs          []*Org `protobuf:"bytes,1,rep,name=orgs,proto3" json:"orgs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListOrgsResponse) Reset() {
+	*x = ListOrgsResponse{}
+	mi := &file_ultra_v1_org_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListOrgsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListOrgsResponse) ProtoMessage() {}
+
+func (x *ListOrgsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListOrgsResponse.ProtoReflect.Descriptor instead.
+func (*ListOrgsResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ListOrgsResponse) GetOrgs() []*Org {
+	if x != nil {
+		return x.Orgs
+	}
+	return nil
+}
+
+// CredentialInfo is the listable, secret-free view of a credential.
+// Payload values are write-only: they never appear in any response.
+type CredentialInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Kind          string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"` // e.g. inference:openai
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	RotatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=rotated_at,json=rotatedAt,proto3" json:"rotated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CredentialInfo) Reset() {
+	*x = CredentialInfo{}
+	mi := &file_ultra_v1_org_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CredentialInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CredentialInfo) ProtoMessage() {}
+
+func (x *CredentialInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CredentialInfo.ProtoReflect.Descriptor instead.
+func (*CredentialInfo) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *CredentialInfo) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *CredentialInfo) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CredentialInfo) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *CredentialInfo) GetRotatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RotatedAt
+	}
+	return nil
+}
+
+type PutCredentialRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	OrgId string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	Kind  string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"` // inference:openai | inference:anthropic | inference:bedrock
+	Name  string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"` // "default" if empty
+	// Write-only secret material.
+	ApiKey        string `protobuf:"bytes,4,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
+	BaseUrl       string `protobuf:"bytes,5,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"` // optional vendor endpoint override
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PutCredentialRequest) Reset() {
+	*x = PutCredentialRequest{}
+	mi := &file_ultra_v1_org_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PutCredentialRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PutCredentialRequest) ProtoMessage() {}
+
+func (x *PutCredentialRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PutCredentialRequest.ProtoReflect.Descriptor instead.
+func (*PutCredentialRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *PutCredentialRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *PutCredentialRequest) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *PutCredentialRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *PutCredentialRequest) GetApiKey() string {
+	if x != nil {
+		return x.ApiKey
+	}
+	return ""
+}
+
+func (x *PutCredentialRequest) GetBaseUrl() string {
+	if x != nil {
+		return x.BaseUrl
+	}
+	return ""
+}
+
+type PutCredentialResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Credential    *CredentialInfo        `protobuf:"bytes,1,opt,name=credential,proto3" json:"credential,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PutCredentialResponse) Reset() {
+	*x = PutCredentialResponse{}
+	mi := &file_ultra_v1_org_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PutCredentialResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PutCredentialResponse) ProtoMessage() {}
+
+func (x *PutCredentialResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PutCredentialResponse.ProtoReflect.Descriptor instead.
+func (*PutCredentialResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *PutCredentialResponse) GetCredential() *CredentialInfo {
+	if x != nil {
+		return x.Credential
+	}
+	return nil
+}
+
+type ListCredentialsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCredentialsRequest) Reset() {
+	*x = ListCredentialsRequest{}
+	mi := &file_ultra_v1_org_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCredentialsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCredentialsRequest) ProtoMessage() {}
+
+func (x *ListCredentialsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCredentialsRequest.ProtoReflect.Descriptor instead.
+func (*ListCredentialsRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ListCredentialsRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+type ListCredentialsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Credentials   []*CredentialInfo      `protobuf:"bytes,1,rep,name=credentials,proto3" json:"credentials,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCredentialsResponse) Reset() {
+	*x = ListCredentialsResponse{}
+	mi := &file_ultra_v1_org_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCredentialsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCredentialsResponse) ProtoMessage() {}
+
+func (x *ListCredentialsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCredentialsResponse.ProtoReflect.Descriptor instead.
+func (*ListCredentialsResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ListCredentialsResponse) GetCredentials() []*CredentialInfo {
+	if x != nil {
+		return x.Credentials
+	}
+	return nil
+}
+
+type DeleteCredentialRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteCredentialRequest) Reset() {
+	*x = DeleteCredentialRequest{}
+	mi := &file_ultra_v1_org_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteCredentialRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteCredentialRequest) ProtoMessage() {}
+
+func (x *DeleteCredentialRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteCredentialRequest.ProtoReflect.Descriptor instead.
+func (*DeleteCredentialRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *DeleteCredentialRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *DeleteCredentialRequest) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *DeleteCredentialRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type DeleteCredentialResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteCredentialResponse) Reset() {
+	*x = DeleteCredentialResponse{}
+	mi := &file_ultra_v1_org_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteCredentialResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteCredentialResponse) ProtoMessage() {}
+
+func (x *DeleteCredentialResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_org_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteCredentialResponse.ProtoReflect.Descriptor instead.
+func (*DeleteCredentialResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_org_proto_rawDescGZIP(), []int{18}
+}
+
 var File_ultra_v1_org_proto protoreflect.FileDescriptor
 
 const file_ultra_v1_org_proto_rawDesc = "" +
@@ -625,18 +1081,51 @@ const file_ultra_v1_org_proto_rawDesc = "" +
 	"\x12ListMembersRequest\x12\x15\n" +
 	"\x06org_id\x18\x01 \x01(\tR\x05orgId\"D\n" +
 	"\x13ListMembersResponse\x12-\n" +
-	"\amembers\x18\x01 \x03(\v2\x13.ultra.v1.OrgMemberR\amembers*`\n" +
+	"\amembers\x18\x01 \x03(\v2\x13.ultra.v1.OrgMemberR\amembers\"\x11\n" +
+	"\x0fListOrgsRequest\"5\n" +
+	"\x10ListOrgsResponse\x12!\n" +
+	"\x04orgs\x18\x01 \x03(\v2\r.ultra.v1.OrgR\x04orgs\"\xae\x01\n" +
+	"\x0eCredentialInfo\x12\x12\n" +
+	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x129\n" +
+	"\n" +
+	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"rotated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\"\x89\x01\n" +
+	"\x14PutCredentialRequest\x12\x15\n" +
+	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x17\n" +
+	"\aapi_key\x18\x04 \x01(\tR\x06apiKey\x12\x19\n" +
+	"\bbase_url\x18\x05 \x01(\tR\abaseUrl\"Q\n" +
+	"\x15PutCredentialResponse\x128\n" +
+	"\n" +
+	"credential\x18\x01 \x01(\v2\x18.ultra.v1.CredentialInfoR\n" +
+	"credential\"/\n" +
+	"\x16ListCredentialsRequest\x12\x15\n" +
+	"\x06org_id\x18\x01 \x01(\tR\x05orgId\"U\n" +
+	"\x17ListCredentialsResponse\x12:\n" +
+	"\vcredentials\x18\x01 \x03(\v2\x18.ultra.v1.CredentialInfoR\vcredentials\"X\n" +
+	"\x17DeleteCredentialRequest\x12\x15\n" +
+	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\"\x1a\n" +
+	"\x18DeleteCredentialResponse*`\n" +
 	"\aOrgRole\x12\x18\n" +
 	"\x14ORG_ROLE_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eORG_ROLE_OWNER\x10\x01\x12\x12\n" +
 	"\x0eORG_ROLE_ADMIN\x10\x02\x12\x13\n" +
-	"\x0fORG_ROLE_MEMBER\x10\x032\xaa\x02\n" +
+	"\x0fORG_ROLE_MEMBER\x10\x032\xf2\x04\n" +
 	"\n" +
 	"OrgService\x12D\n" +
 	"\tCreateOrg\x12\x1a.ultra.v1.CreateOrgRequest\x1a\x1b.ultra.v1.CreateOrgResponse\x12;\n" +
-	"\x06GetOrg\x12\x17.ultra.v1.GetOrgRequest\x1a\x18.ultra.v1.GetOrgResponse\x12M\n" +
+	"\x06GetOrg\x12\x17.ultra.v1.GetOrgRequest\x1a\x18.ultra.v1.GetOrgResponse\x12A\n" +
+	"\bListOrgs\x12\x19.ultra.v1.ListOrgsRequest\x1a\x1a.ultra.v1.ListOrgsResponse\x12M\n" +
 	"\fInviteMember\x12\x1d.ultra.v1.InviteMemberRequest\x1a\x1e.ultra.v1.InviteMemberResponse\x12J\n" +
-	"\vListMembers\x12\x1c.ultra.v1.ListMembersRequest\x1a\x1d.ultra.v1.ListMembersResponseB<Z:github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1b\x06proto3"
+	"\vListMembers\x12\x1c.ultra.v1.ListMembersRequest\x1a\x1d.ultra.v1.ListMembersResponse\x12P\n" +
+	"\rPutCredential\x12\x1e.ultra.v1.PutCredentialRequest\x1a\x1f.ultra.v1.PutCredentialResponse\x12V\n" +
+	"\x0fListCredentials\x12 .ultra.v1.ListCredentialsRequest\x1a!.ultra.v1.ListCredentialsResponse\x12Y\n" +
+	"\x10DeleteCredential\x12!.ultra.v1.DeleteCredentialRequest\x1a\".ultra.v1.DeleteCredentialResponseB<Z:github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1b\x06proto3"
 
 var (
 	file_ultra_v1_org_proto_rawDescOnce sync.Once
@@ -651,43 +1140,65 @@ func file_ultra_v1_org_proto_rawDescGZIP() []byte {
 }
 
 var file_ultra_v1_org_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ultra_v1_org_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_ultra_v1_org_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_ultra_v1_org_proto_goTypes = []any{
-	(OrgRole)(0),                  // 0: ultra.v1.OrgRole
-	(*Org)(nil),                   // 1: ultra.v1.Org
-	(*OrgMember)(nil),             // 2: ultra.v1.OrgMember
-	(*CreateOrgRequest)(nil),      // 3: ultra.v1.CreateOrgRequest
-	(*CreateOrgResponse)(nil),     // 4: ultra.v1.CreateOrgResponse
-	(*GetOrgRequest)(nil),         // 5: ultra.v1.GetOrgRequest
-	(*GetOrgResponse)(nil),        // 6: ultra.v1.GetOrgResponse
-	(*InviteMemberRequest)(nil),   // 7: ultra.v1.InviteMemberRequest
-	(*InviteMemberResponse)(nil),  // 8: ultra.v1.InviteMemberResponse
-	(*ListMembersRequest)(nil),    // 9: ultra.v1.ListMembersRequest
-	(*ListMembersResponse)(nil),   // 10: ultra.v1.ListMembersResponse
-	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
+	(OrgRole)(0),                     // 0: ultra.v1.OrgRole
+	(*Org)(nil),                      // 1: ultra.v1.Org
+	(*OrgMember)(nil),                // 2: ultra.v1.OrgMember
+	(*CreateOrgRequest)(nil),         // 3: ultra.v1.CreateOrgRequest
+	(*CreateOrgResponse)(nil),        // 4: ultra.v1.CreateOrgResponse
+	(*GetOrgRequest)(nil),            // 5: ultra.v1.GetOrgRequest
+	(*GetOrgResponse)(nil),           // 6: ultra.v1.GetOrgResponse
+	(*InviteMemberRequest)(nil),      // 7: ultra.v1.InviteMemberRequest
+	(*InviteMemberResponse)(nil),     // 8: ultra.v1.InviteMemberResponse
+	(*ListMembersRequest)(nil),       // 9: ultra.v1.ListMembersRequest
+	(*ListMembersResponse)(nil),      // 10: ultra.v1.ListMembersResponse
+	(*ListOrgsRequest)(nil),          // 11: ultra.v1.ListOrgsRequest
+	(*ListOrgsResponse)(nil),         // 12: ultra.v1.ListOrgsResponse
+	(*CredentialInfo)(nil),           // 13: ultra.v1.CredentialInfo
+	(*PutCredentialRequest)(nil),     // 14: ultra.v1.PutCredentialRequest
+	(*PutCredentialResponse)(nil),    // 15: ultra.v1.PutCredentialResponse
+	(*ListCredentialsRequest)(nil),   // 16: ultra.v1.ListCredentialsRequest
+	(*ListCredentialsResponse)(nil),  // 17: ultra.v1.ListCredentialsResponse
+	(*DeleteCredentialRequest)(nil),  // 18: ultra.v1.DeleteCredentialRequest
+	(*DeleteCredentialResponse)(nil), // 19: ultra.v1.DeleteCredentialResponse
+	(*timestamppb.Timestamp)(nil),    // 20: google.protobuf.Timestamp
 }
 var file_ultra_v1_org_proto_depIdxs = []int32{
-	11, // 0: ultra.v1.Org.created_at:type_name -> google.protobuf.Timestamp
+	20, // 0: ultra.v1.Org.created_at:type_name -> google.protobuf.Timestamp
 	0,  // 1: ultra.v1.OrgMember.role:type_name -> ultra.v1.OrgRole
-	11, // 2: ultra.v1.OrgMember.joined_at:type_name -> google.protobuf.Timestamp
+	20, // 2: ultra.v1.OrgMember.joined_at:type_name -> google.protobuf.Timestamp
 	1,  // 3: ultra.v1.CreateOrgResponse.org:type_name -> ultra.v1.Org
 	1,  // 4: ultra.v1.GetOrgResponse.org:type_name -> ultra.v1.Org
 	0,  // 5: ultra.v1.InviteMemberRequest.role:type_name -> ultra.v1.OrgRole
 	2,  // 6: ultra.v1.InviteMemberResponse.member:type_name -> ultra.v1.OrgMember
 	2,  // 7: ultra.v1.ListMembersResponse.members:type_name -> ultra.v1.OrgMember
-	3,  // 8: ultra.v1.OrgService.CreateOrg:input_type -> ultra.v1.CreateOrgRequest
-	5,  // 9: ultra.v1.OrgService.GetOrg:input_type -> ultra.v1.GetOrgRequest
-	7,  // 10: ultra.v1.OrgService.InviteMember:input_type -> ultra.v1.InviteMemberRequest
-	9,  // 11: ultra.v1.OrgService.ListMembers:input_type -> ultra.v1.ListMembersRequest
-	4,  // 12: ultra.v1.OrgService.CreateOrg:output_type -> ultra.v1.CreateOrgResponse
-	6,  // 13: ultra.v1.OrgService.GetOrg:output_type -> ultra.v1.GetOrgResponse
-	8,  // 14: ultra.v1.OrgService.InviteMember:output_type -> ultra.v1.InviteMemberResponse
-	10, // 15: ultra.v1.OrgService.ListMembers:output_type -> ultra.v1.ListMembersResponse
-	12, // [12:16] is the sub-list for method output_type
-	8,  // [8:12] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	1,  // 8: ultra.v1.ListOrgsResponse.orgs:type_name -> ultra.v1.Org
+	20, // 9: ultra.v1.CredentialInfo.created_at:type_name -> google.protobuf.Timestamp
+	20, // 10: ultra.v1.CredentialInfo.rotated_at:type_name -> google.protobuf.Timestamp
+	13, // 11: ultra.v1.PutCredentialResponse.credential:type_name -> ultra.v1.CredentialInfo
+	13, // 12: ultra.v1.ListCredentialsResponse.credentials:type_name -> ultra.v1.CredentialInfo
+	3,  // 13: ultra.v1.OrgService.CreateOrg:input_type -> ultra.v1.CreateOrgRequest
+	5,  // 14: ultra.v1.OrgService.GetOrg:input_type -> ultra.v1.GetOrgRequest
+	11, // 15: ultra.v1.OrgService.ListOrgs:input_type -> ultra.v1.ListOrgsRequest
+	7,  // 16: ultra.v1.OrgService.InviteMember:input_type -> ultra.v1.InviteMemberRequest
+	9,  // 17: ultra.v1.OrgService.ListMembers:input_type -> ultra.v1.ListMembersRequest
+	14, // 18: ultra.v1.OrgService.PutCredential:input_type -> ultra.v1.PutCredentialRequest
+	16, // 19: ultra.v1.OrgService.ListCredentials:input_type -> ultra.v1.ListCredentialsRequest
+	18, // 20: ultra.v1.OrgService.DeleteCredential:input_type -> ultra.v1.DeleteCredentialRequest
+	4,  // 21: ultra.v1.OrgService.CreateOrg:output_type -> ultra.v1.CreateOrgResponse
+	6,  // 22: ultra.v1.OrgService.GetOrg:output_type -> ultra.v1.GetOrgResponse
+	12, // 23: ultra.v1.OrgService.ListOrgs:output_type -> ultra.v1.ListOrgsResponse
+	8,  // 24: ultra.v1.OrgService.InviteMember:output_type -> ultra.v1.InviteMemberResponse
+	10, // 25: ultra.v1.OrgService.ListMembers:output_type -> ultra.v1.ListMembersResponse
+	15, // 26: ultra.v1.OrgService.PutCredential:output_type -> ultra.v1.PutCredentialResponse
+	17, // 27: ultra.v1.OrgService.ListCredentials:output_type -> ultra.v1.ListCredentialsResponse
+	19, // 28: ultra.v1.OrgService.DeleteCredential:output_type -> ultra.v1.DeleteCredentialResponse
+	21, // [21:29] is the sub-list for method output_type
+	13, // [13:21] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_org_proto_init() }
@@ -701,7 +1212,7 @@ func file_ultra_v1_org_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ultra_v1_org_proto_rawDesc), len(file_ultra_v1_org_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   10,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"connectrpc.com/connect"
@@ -9,11 +10,13 @@ import (
 
 	ultra "github.com/aleksclark/ultralogical"
 	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
+	"github.com/aleksclark/ultralogical/secrets"
 )
 
 // orgHandler implements ultrav1connect.OrgServiceHandler.
 type orgHandler struct {
-	store ultra.Store
+	store   ultra.Store
+	keyring secrets.Keyring
 }
 
 // requireMember returns the caller's role in the org, collapsing "no such
@@ -119,4 +122,111 @@ func (h *orgHandler) ListMembers(ctx context.Context, req *connect.Request[ultra
 		})
 	}
 	return connect.NewResponse(resp), nil
+}
+
+func (h *orgHandler) ListOrgs(ctx context.Context, _ *connect.Request[ultrav1.ListOrgsRequest]) (*connect.Response[ultrav1.ListOrgsResponse], error) {
+	user, ok := userFrom(ctx)
+	if !ok {
+		return nil, errUnauthenticated()
+	}
+	orgs, err := h.store.Orgs().ListForUser(ctx, user.ID)
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	resp := &ultrav1.ListOrgsResponse{}
+	for _, o := range orgs {
+		resp.Orgs = append(resp.Orgs, orgToProto(o))
+	}
+	return connect.NewResponse(resp), nil
+}
+
+// requireAdmin ensures the caller is an owner or admin of the org.
+func requireAdmin(ctx context.Context, store ultra.Store, org ultra.OrgID) error {
+	_, role, err := requireMember(ctx, store, org)
+	if err != nil {
+		return err
+	}
+	if role != ultra.OrgRoleOwner && role != ultra.OrgRoleAdmin {
+		return connect.NewError(connect.CodePermissionDenied, errors.New("requires owner or admin role"))
+	}
+	return nil
+}
+
+func validCredentialKind(kind string) bool {
+	switch kind {
+	case ultra.CredentialKindOpenAI, ultra.CredentialKindAnthropic, ultra.CredentialKindBedrock:
+		return true
+	default:
+		return false
+	}
+}
+
+func (h *orgHandler) PutCredential(ctx context.Context, req *connect.Request[ultrav1.PutCredentialRequest]) (*connect.Response[ultrav1.PutCredentialResponse], error) {
+	orgID := ultra.OrgID(req.Msg.GetOrgId())
+	if err := requireAdmin(ctx, h.store, orgID); err != nil {
+		return nil, err
+	}
+	if !validCredentialKind(req.Msg.GetKind()) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("unknown credential kind"))
+	}
+	if req.Msg.GetApiKey() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("api_key is required"))
+	}
+	// Register before downstream handling so unexpected errors are scrubbed
+	// from this process's logs too.
+	secrets.DefaultRedactor.Register(req.Msg.GetApiKey())
+	name := req.Msg.GetName()
+	if name == "" {
+		name = "default"
+	}
+	payload, err := json.Marshal(ultra.InferencePayload{
+		APIKey:  req.Msg.GetApiKey(),
+		BaseURL: req.Msg.GetBaseUrl(),
+	})
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	enc, err := h.keyring.Encrypt(payload)
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	if err := h.store.Org(orgID).Credentials().Put(ctx, ultra.Credential{
+		Kind: req.Msg.GetKind(), Name: name, EncPayload: enc,
+	}); err != nil {
+		return nil, mapStoreErr(err)
+	}
+	info, err := h.store.Org(orgID).Credentials().Get(ctx, req.Msg.GetKind(), name)
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	return connect.NewResponse(&ultrav1.PutCredentialResponse{Credential: credentialInfoToProto(ultra.CredentialInfo{
+		Kind: info.Kind, Name: info.Name, CreatedAt: info.CreatedAt, RotatedAt: info.RotatedAt,
+	})}), nil
+}
+
+func (h *orgHandler) ListCredentials(ctx context.Context, req *connect.Request[ultrav1.ListCredentialsRequest]) (*connect.Response[ultrav1.ListCredentialsResponse], error) {
+	orgID := ultra.OrgID(req.Msg.GetOrgId())
+	if _, _, err := requireMember(ctx, h.store, orgID); err != nil {
+		return nil, err
+	}
+	infos, err := h.store.Org(orgID).Credentials().List(ctx)
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	resp := &ultrav1.ListCredentialsResponse{}
+	for _, info := range infos {
+		resp.Credentials = append(resp.Credentials, credentialInfoToProto(info))
+	}
+	return connect.NewResponse(resp), nil
+}
+
+func (h *orgHandler) DeleteCredential(ctx context.Context, req *connect.Request[ultrav1.DeleteCredentialRequest]) (*connect.Response[ultrav1.DeleteCredentialResponse], error) {
+	orgID := ultra.OrgID(req.Msg.GetOrgId())
+	if err := requireAdmin(ctx, h.store, orgID); err != nil {
+		return nil, err
+	}
+	if err := h.store.Org(orgID).Credentials().Delete(ctx, req.Msg.GetKind(), req.Msg.GetName()); err != nil {
+		return nil, mapStoreErr(err)
+	}
+	return connect.NewResponse(&ultrav1.DeleteCredentialResponse{}), nil
 }

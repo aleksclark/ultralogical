@@ -4,6 +4,9 @@
 
 # Node
 node_modules/
+dist/
+test-results/
+playwright-report/
 
 # Editor/OS noise
 .DS_Store

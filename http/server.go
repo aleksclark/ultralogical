@@ -12,6 +12,8 @@ import (
 
 	ultra "github.com/aleksclark/ultralogical"
 	"github.com/aleksclark/ultralogical/gen/go/ultra/v1/ultrav1connect"
+	"github.com/aleksclark/ultralogical/loop"
+	"github.com/aleksclark/ultralogical/secrets"
 )
 
 // Config carries handler dependencies, injected by the main package.
@@ -20,6 +22,13 @@ type Config struct {
 	Auth  ultra.Authenticator
 	Bus   ultra.EventBus
 	Log   *slog.Logger
+	// Keyring encrypts credential payloads (write path only; decryption
+	// happens in workers).
+	Keyring secrets.Keyring
+	// Enqueue enqueues step jobs transactionally with run creation.
+	Enqueue loop.TxEnqueuer
+	// DefaultModel fills StartRun requests that omit a model config.
+	DefaultModel ultra.ModelConfig
 }
 
 // NewHandler builds the full ultrad http.Handler: all Connect services under
@@ -31,11 +40,16 @@ func NewHandler(cfg Config) http.Handler {
 
 	mux := http.NewServeMux()
 
-	orgPath, orgH := ultrav1connect.NewOrgServiceHandler(&orgHandler{store: cfg.Store}, interceptors)
+	orgPath, orgH := ultrav1connect.NewOrgServiceHandler(&orgHandler{store: cfg.Store, keyring: cfg.Keyring}, interceptors)
 	mux.Handle(orgPath, orgH)
 
 	sessPath, sessH := ultrav1connect.NewSessionServiceHandler(&sessionHandler{store: cfg.Store}, interceptors)
 	mux.Handle(sessPath, sessH)
+
+	agentPath, agentH := ultrav1connect.NewAgentServiceHandler(&agentHandler{
+		store: cfg.Store, enqueue: cfg.Enqueue, defaultModel: cfg.DefaultModel,
+	}, interceptors)
+	mux.Handle(agentPath, agentH)
 
 	// The unary interceptor covers Append; Subscribe is a streaming RPC and
 	// authenticates inside the handler.
@@ -47,5 +61,21 @@ func NewHandler(cfg Config) http.Handler {
 		_, _ = w.Write([]byte("ok"))
 	})
 
-	return mux
+	// Browser clients are first-class. Phase 0/1 allows any origin; hosted
+	// deployments restrict this via the edge proxy in Phase 7.
+	return cors(mux)
+}
+
+func cors(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Connect-Protocol-Version, Connect-Timeout-Ms")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Expose-Headers", "Connect-Accept-Encoding, Connect-Content-Encoding, Connect-Error-Code, Connect-Error-Message")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

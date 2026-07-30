@@ -2,7 +2,7 @@
 
 Ultralogical is a durable-session platform for agentic work. Full design +
 roadmap: [`plan/index.md`](../plan/index.md). This doc describes what exists
-in the codebase today (Phase 0) and the load-bearing patterns you must
+in the codebase today (Phase 1) and the load-bearing patterns you must
 preserve.
 
 Package organization follows the standard layout in
@@ -14,16 +14,16 @@ tests — see agent_docs/testing.md.)
 ## Components
 
 ```
-clients (gen/go, clients/ts, testkit/testclient)   UIs (ui/*, later phases)
+clients (gen/go, clients/ts, testkit/testclient)   ui/web (React)
         │  ConnectRPC over HTTP (h1 + unencrypted h2)
         ▼
 cmd/ultrad ──── http/ (transport adapter: handlers, auth, conversion)
-        │
-        ▼
-ultra (root: domain types + interfaces: Store, EventBus, Authenticator)
-        ▲                    ▲
-        │ implements         │ implements
-postgres/ (Store, EventBus, migrations)      jobqueue/ (river | inproc)
+        │                 │ transactional enqueue
+        ▼                 ▼
+ultra (domain)      jobqueue (river) ◄── cmd/worker (N replicas)
+        ▲                                    │ one fantasy step/job
+        │ implements                         ▼
+postgres/ (Store, EventBus, migrations)   LLM provider (org BYO creds)
         └──────────────── one Postgres ──────────────┘
 ```
 
@@ -43,12 +43,20 @@ postgres/ (Store, EventBus, migrations)      jobqueue/ (river | inproc)
 - **`jobqueue/`** — the queue seam (interface package, like stdlib `io`);
   `river/` (prod) and `inproc/` (tests) implementations grouped by
   dependency, `conformance/` shared suite.
-- **`cmd/ultrad`** — main package: wires postgres + http + eventbus together
-  (compile-time dependency injection). Env-configured (`DATABASE_URL`,
-  `ULTRA_ADDR`, `ULTRA_DEV_TOKENS`, `ULTRA_MIGRATE`).
-- **`testkit/`** — `pgtest` (shared PG container, DB per test), `harness`
-  (boots the real stack), `testclient` (wraps the generated client).
-- **`e2e/`** — the functional API suite (acceptance tests A0.x).
+- **`loop/`** — fantasy-based durable agent loop: versioned registry, history
+  envelopes, BYO model resolution, native `ask_user` / `post_event` tools,
+  and `StepWorker` (one queue job = one model step).
+- **`secrets/`** — AES-GCM credential encryption + process-wide log/error
+  redaction. Workers decrypt at point of use; secret values never reach
+  events, histories, logs, or RPC responses.
+- **`cmd/ultrad`** — main package: wires postgres + http + enqueue-only river
+  client together. Requires `DATABASE_URL`, `ULTRA_DEV_TOKENS`, and
+  `ULTRA_MASTER_KEY`.
+- **`cmd/worker`** — stateless worker: river + `loop.StepWorker`; N replicas
+  may work any run. Requires `DATABASE_URL` + `ULTRA_MASTER_KEY`.
+- **`testkit/`** — `pgtest`, `harness` (real ultrad + worker processes),
+  `testclient`, and `modelscript` (scripted OpenAI server, the only fake).
+- **`e2e/`** — functional API/UI suite (acceptance tests A0.x + A1.x).
 
 ## Clients & UIs
 
@@ -60,8 +68,8 @@ Two distinct trees, both consumers of the same protos:
   `clients/rust`. The Go client is the generated code in `gen/go` (shared
   with the server); `testkit/testclient` is its test-facing wrapper.
 - **`ui/<app>/`** — UI *applications*, each consuming a client library and
-  owning its golden functional suite: `ui/web` (React SPA + Playwright,
-  Phase 1), `ui/gpui` (rust native, Phase 8). UIs never reach around the
+  owning its golden functional suite: `ui/web` (React + Vite + Tailwind,
+  Playwright golden), `ui/gpui` (rust native, Phase 8). UIs never reach around the
   client API.
 - **`gen/go/`** — committed Go codegen (server handlers + client stubs).
   Regenerate with `task generate`; CI diffs it.

@@ -5,6 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	ultra "github.com/aleksclark/ultralogical"
@@ -93,7 +94,8 @@ func actorToProto(a ultra.Actor) *ultrav1.Actor {
 
 // payloadToDomain converts a proto EventPayload into (kind, JSON payload).
 // The event log stores kind + protojson so the domain stays proto-agnostic
-// while the wire representation round-trips exactly.
+// while the wire representation round-trips exactly. Only human-appendable
+// variants are accepted here; loop events are written by the worker.
 func payloadToDomain(p *ultrav1.EventPayload) (kind string, payload []byte, err error) {
 	if p == nil {
 		return "", nil, errors.New("missing payload")
@@ -110,23 +112,121 @@ func payloadToDomain(p *ultrav1.EventPayload) (kind string, payload []byte, err 
 	}
 }
 
+// decodeAs unmarshals stored JSON into a proto message and wraps it.
+func decodeAs[M proto.Message](payload []byte, m M, wrap func(M) *ultrav1.EventPayload) (*ultrav1.EventPayload, error) {
+	if err := protojson.Unmarshal(payload, m); err != nil {
+		return nil, err
+	}
+	return wrap(m), nil
+}
+
 // payloadFromDomain reconstructs the proto payload from kind + stored JSON.
+// Domain payload JSON field names match proto field names, so protojson
+// decodes them directly.
 func payloadFromDomain(kind string, payload []byte) (*ultrav1.EventPayload, error) {
 	switch kind {
 	case ultra.EventKindUserMessage:
-		var m ultrav1.UserMessage
-		if err := protojson.Unmarshal(payload, &m); err != nil {
-			return nil, err
-		}
-		return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_UserMessage{UserMessage: &m}}, nil
+		return decodeAs(payload, &ultrav1.UserMessage{}, func(m *ultrav1.UserMessage) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_UserMessage{UserMessage: m}}
+		})
 	case ultra.EventKindAnnotation:
-		var m ultrav1.Annotation
-		if err := protojson.Unmarshal(payload, &m); err != nil {
-			return nil, err
-		}
-		return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_Annotation{Annotation: &m}}, nil
+		return decodeAs(payload, &ultrav1.Annotation{}, func(m *ultrav1.Annotation) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_Annotation{Annotation: m}}
+		})
+	case ultra.EventKindRunStarted:
+		return decodeAs(payload, &ultrav1.RunStarted{}, func(m *ultrav1.RunStarted) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_RunStarted{RunStarted: m}}
+		})
+	case ultra.EventKindStepStarted:
+		return decodeAs(payload, &ultrav1.StepStarted{}, func(m *ultrav1.StepStarted) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_StepStarted{StepStarted: m}}
+		})
+	case ultra.EventKindTextDelta:
+		return decodeAs(payload, &ultrav1.TextDelta{}, func(m *ultrav1.TextDelta) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_TextDelta{TextDelta: m}}
+		})
+	case ultra.EventKindReasoningDelta:
+		return decodeAs(payload, &ultrav1.ReasoningDelta{}, func(m *ultrav1.ReasoningDelta) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_ReasoningDelta{ReasoningDelta: m}}
+		})
+	case ultra.EventKindToolCallStart:
+		return decodeAs(payload, &ultrav1.ToolCallStarted{}, func(m *ultrav1.ToolCallStarted) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_ToolCallStarted{ToolCallStarted: m}}
+		})
+	case ultra.EventKindToolResult:
+		return decodeAs(payload, &ultrav1.ToolResult{}, func(m *ultrav1.ToolResult) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_ToolResult{ToolResult: m}}
+		})
+	case ultra.EventKindStepFinished:
+		return decodeAs(payload, &ultrav1.StepFinished{}, func(m *ultrav1.StepFinished) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_StepFinished{StepFinished: m}}
+		})
+	case ultra.EventKindRunAwaiting:
+		return decodeAs(payload, &ultrav1.RunAwaiting{}, func(m *ultrav1.RunAwaiting) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_RunAwaiting{RunAwaiting: m}}
+		})
+	case ultra.EventKindRunCompleted:
+		return decodeAs(payload, &ultrav1.RunCompleted{}, func(m *ultrav1.RunCompleted) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_RunCompleted{RunCompleted: m}}
+		})
+	case ultra.EventKindRunFailed:
+		return decodeAs(payload, &ultrav1.RunFailed{}, func(m *ultrav1.RunFailed) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_RunFailed{RunFailed: m}}
+		})
+	case ultra.EventKindRunCancelled:
+		return decodeAs(payload, &ultrav1.RunCancelled{}, func(m *ultrav1.RunCancelled) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_RunCancelled{RunCancelled: m}}
+		})
 	default:
 		return nil, errors.New("unknown event kind " + kind)
+	}
+}
+
+func runStateToProto(s ultra.RunState) ultrav1.RunState {
+	switch s {
+	case ultra.RunPending:
+		return ultrav1.RunState_RUN_STATE_PENDING
+	case ultra.RunRunning:
+		return ultrav1.RunState_RUN_STATE_RUNNING
+	case ultra.RunAwaiting:
+		return ultrav1.RunState_RUN_STATE_AWAITING
+	case ultra.RunCompleted:
+		return ultrav1.RunState_RUN_STATE_COMPLETED
+	case ultra.RunFailed:
+		return ultrav1.RunState_RUN_STATE_FAILED
+	case ultra.RunCancelled:
+		return ultrav1.RunState_RUN_STATE_CANCELLED
+	default:
+		return ultrav1.RunState_RUN_STATE_UNSPECIFIED
+	}
+}
+
+func runToProto(r ultra.AgentRun) *ultrav1.AgentRun {
+	return &ultrav1.AgentRun{
+		Id:          string(r.ID),
+		SessionId:   string(r.SessionID),
+		State:       runStateToProto(r.State),
+		LoopKind:    r.LoopKind,
+		LoopVersion: int32(r.LoopVersion),
+		ModelConfig: &ultrav1.ModelConfig{
+			Provider:   r.ModelConfig.Provider,
+			ModelId:    r.ModelConfig.ModelID,
+			Credential: r.ModelConfig.Credential,
+		},
+		Prompt:         r.Prompt,
+		FailureReason:  r.FailureReason,
+		FailureMessage: r.FailureMessage,
+		CreatedAt:      timestamppb.New(r.CreatedAt),
+		UpdatedAt:      timestamppb.New(r.UpdatedAt),
+	}
+}
+
+func credentialInfoToProto(c ultra.CredentialInfo) *ultrav1.CredentialInfo {
+	return &ultrav1.CredentialInfo{
+		Kind:      c.Kind,
+		Name:      c.Name,
+		CreatedAt: timestamppb.New(c.CreatedAt),
+		RotatedAt: timestamppb.New(c.RotatedAt),
 	}
 }
 

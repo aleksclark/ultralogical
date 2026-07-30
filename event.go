@@ -24,8 +24,19 @@ type Actor struct {
 // per-session, gapless, monotonic sequence number. Streaming, multiplayer,
 // history replay, and test assertions all subscribe to the same log.
 const (
-	EventKindUserMessage = "user_message"
-	EventKindAnnotation  = "annotation"
+	EventKindUserMessage    = "user_message"
+	EventKindAnnotation     = "annotation"
+	EventKindRunStarted     = "run_started"
+	EventKindStepStarted    = "step_started"
+	EventKindTextDelta      = "text_delta"
+	EventKindReasoningDelta = "reasoning_delta"
+	EventKindToolCallStart  = "tool_call_started"
+	EventKindToolResult     = "tool_result"
+	EventKindStepFinished   = "step_finished"
+	EventKindRunAwaiting    = "run_awaiting"
+	EventKindRunCompleted   = "run_completed"
+	EventKindRunFailed      = "run_failed"
+	EventKindRunCancelled   = "run_cancelled"
 )
 
 // Event is one entry in a session's append-only event log. Payload is the
@@ -38,6 +49,116 @@ type Event struct {
 	Actor     Actor
 	Kind      string
 	Payload   []byte
+}
+
+// Typed event payloads. These are the domain-side shapes; the http package
+// maps them to and from the proto EventPayload oneof. JSON field names are
+// the storage contract — changing them is a breaking change.
+
+// UserMessagePayload is a human message into the session.
+type UserMessagePayload struct {
+	Text string `json:"text"`
+}
+
+// AnnotationPayload is a free-form note attached to the log.
+type AnnotationPayload struct {
+	Text string `json:"text"`
+}
+
+// RunStartedPayload marks a run's creation.
+type RunStartedPayload struct {
+	RunID  RunID  `json:"run_id"`
+	Prompt string `json:"prompt"`
+}
+
+// StepStartedPayload marks the beginning of a step execution attempt.
+// Attempt > 1 supersedes any partial deltas from earlier attempts of the
+// same step index.
+type StepStartedPayload struct {
+	RunID     RunID `json:"run_id"`
+	StepIndex int   `json:"step_index"`
+	Attempt   int   `json:"attempt"`
+}
+
+// TextDeltaPayload is a batched chunk of streamed assistant text.
+// (StepIndex, Attempt, DeltaIndex) makes ordering and supersession
+// unambiguous.
+type TextDeltaPayload struct {
+	RunID      RunID  `json:"run_id"`
+	StepIndex  int    `json:"step_index"`
+	Attempt    int    `json:"attempt"`
+	DeltaIndex int    `json:"delta_index"`
+	Text       string `json:"text"`
+}
+
+// ReasoningDeltaPayload is a batched chunk of streamed reasoning text.
+type ReasoningDeltaPayload struct {
+	RunID      RunID  `json:"run_id"`
+	StepIndex  int    `json:"step_index"`
+	Attempt    int    `json:"attempt"`
+	DeltaIndex int    `json:"delta_index"`
+	Text       string `json:"text"`
+}
+
+// ToolCallStartedPayload records a completed tool invocation request.
+type ToolCallStartedPayload struct {
+	RunID      RunID  `json:"run_id"`
+	StepIndex  int    `json:"step_index"`
+	ToolCallID string `json:"tool_call_id"`
+	Name       string `json:"name"`
+	Input      string `json:"input"` // JSON as sent by the model
+}
+
+// ToolResultPayload records a tool execution result.
+type ToolResultPayload struct {
+	RunID      RunID  `json:"run_id"`
+	StepIndex  int    `json:"step_index"`
+	ToolCallID string `json:"tool_call_id"`
+	Name       string `json:"name"`
+	Content    string `json:"content"`
+	IsError    bool   `json:"is_error"`
+}
+
+// StepFinishedPayload closes a step with its usage audit.
+type StepFinishedPayload struct {
+	RunID        RunID  `json:"run_id"`
+	StepIndex    int    `json:"step_index"`
+	TokensIn     int64  `json:"tokens_in"`
+	TokensOut    int64  `json:"tokens_out"`
+	FinishReason string `json:"finish_reason"`
+}
+
+// Question is a structured question an agent asks a human via ask_user.
+type Question struct {
+	Text    string   `json:"text"`
+	Choices []string `json:"choices,omitempty"`
+}
+
+// RunAwaitingPayload marks a run parked on human input. No worker slot is
+// held while awaiting; PromptRun resumes it.
+type RunAwaitingPayload struct {
+	RunID    RunID    `json:"run_id"`
+	Question Question `json:"question"`
+}
+
+// RunCompletedPayload is the run's terminal success event.
+type RunCompletedPayload struct {
+	RunID     RunID  `json:"run_id"`
+	FinalText string `json:"final_text"`
+}
+
+// RunFailedPayload is the run's terminal failure event. Reason is one of the
+// Failure* constants; Message is user-actionable and never contains raw
+// provider errors.
+type RunFailedPayload struct {
+	RunID   RunID  `json:"run_id"`
+	Reason  string `json:"reason"`
+	Message string `json:"message"`
+}
+
+// RunCancelledPayload is the run's terminal cancellation event.
+type RunCancelledPayload struct {
+	RunID RunID `json:"run_id"`
 }
 
 // EventBus delivers ordered, gapless per-session event streams: a catch-up
