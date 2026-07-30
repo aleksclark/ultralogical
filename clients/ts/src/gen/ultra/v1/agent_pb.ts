@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file ultra/v1/agent.proto.
  */
 export const file_ultra_v1_agent: GenFile = /*@__PURE__*/
-  fileDesc("ChR1bHRyYS92MS9hZ2VudC5wcm90bxIIdWx0cmEudjEiRQoLTW9kZWxDb25maWcSEAoIcHJvdmlkZXIYASABKAkSEAoIbW9kZWxfaWQYAiABKAkSEgoKY3JlZGVudGlhbBgDIAEoCSLEAgoIQWdlbnRSdW4SCgoCaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIhCgVzdGF0ZRgDIAEoDjISLnVsdHJhLnYxLlJ1blN0YXRlEhEKCWxvb3Bfa2luZBgEIAEoCRIUCgxsb29wX3ZlcnNpb24YBSABKAUSKwoMbW9kZWxfY29uZmlnGAYgASgLMhUudWx0cmEudjEuTW9kZWxDb25maWcSDgoGcHJvbXB0GAcgASgJEhYKDmZhaWx1cmVfcmVhc29uGAggASgJEhcKD2ZhaWx1cmVfbWVzc2FnZRgJIAEoCRIuCgpjcmVhdGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJiCg9TdGFydFJ1blJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIOCgZwcm9tcHQYAiABKAkSKwoMbW9kZWxfY29uZmlnGAMgASgLMhUudWx0cmEudjEuTW9kZWxDb25maWciRgoQU3RhcnRSdW5SZXNwb25zZRIfCgNydW4YASABKAsyEi51bHRyYS52MS5BZ2VudFJ1bhIRCglldmVudF9zZXEYAiABKAMiMwoQUHJvbXB0UnVuUmVxdWVzdBIOCgZydW5faWQYASABKAkSDwoHbWVzc2FnZRgCIAEoCSImChFQcm9tcHRSdW5SZXNwb25zZRIRCglldmVudF9zZXEYASABKAMiIgoQQ2FuY2VsUnVuUmVxdWVzdBIOCgZydW5faWQYASABKAkiEwoRQ2FuY2VsUnVuUmVzcG9uc2UiHwoNR2V0UnVuUmVxdWVzdBIOCgZydW5faWQYASABKAkiMQoOR2V0UnVuUmVzcG9uc2USHwoDcnVuGAEgASgLMhIudWx0cmEudjEuQWdlbnRSdW4iJQoPTGlzdFJ1bnNSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiNAoQTGlzdFJ1bnNSZXNwb25zZRIgCgRydW5zGAEgAygLMhIudWx0cmEudjEuQWdlbnRSdW4qswEKCFJ1blN0YXRlEhkKFVJVTl9TVEFURV9VTlNQRUNJRklFRBAAEhUKEVJVTl9TVEFURV9QRU5ESU5HEAESFQoRUlVOX1NUQVRFX1JVTk5JTkcQAhIWChJSVU5fU1RBVEVfQVdBSVRJTkcQAxIXChNSVU5fU1RBVEVfQ09NUExFVEVEEAQSFAoQUlVOX1NUQVRFX0ZBSUxFRBAFEhcKE1JVTl9TVEFURV9DQU5DRUxMRUQQBjLdAgoMQWdlbnRTZXJ2aWNlEkEKCFN0YXJ0UnVuEhkudWx0cmEudjEuU3RhcnRSdW5SZXF1ZXN0GhoudWx0cmEudjEuU3RhcnRSdW5SZXNwb25zZRJECglQcm9tcHRSdW4SGi51bHRyYS52MS5Qcm9tcHRSdW5SZXF1ZXN0GhsudWx0cmEudjEuUHJvbXB0UnVuUmVzcG9uc2USRAoJQ2FuY2VsUnVuEhoudWx0cmEudjEuQ2FuY2VsUnVuUmVxdWVzdBobLnVsdHJhLnYxLkNhbmNlbFJ1blJlc3BvbnNlEjsKBkdldFJ1bhIXLnVsdHJhLnYxLkdldFJ1blJlcXVlc3QaGC51bHRyYS52MS5HZXRSdW5SZXNwb25zZRJBCghMaXN0UnVucxIZLnVsdHJhLnYxLkxpc3RSdW5zUmVxdWVzdBoaLnVsdHJhLnYxLkxpc3RSdW5zUmVzcG9uc2VCPFo6Z2l0aHViLmNvbS9hbGVrc2NsYXJrL3VsdHJhbG9naWNhbC9nZW4vZ28vdWx0cmEvdjE7dWx0cmF2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChR1bHRyYS92MS9hZ2VudC5wcm90bxIIdWx0cmEudjEiRQoLTW9kZWxDb25maWcSEAoIcHJvdmlkZXIYASABKAkSEAoIbW9kZWxfaWQYAiABKAkSEgoKY3JlZGVudGlhbBgDIAEoCSL9AgoIQWdlbnRSdW4SCgoCaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIhCgVzdGF0ZRgDIAEoDjISLnVsdHJhLnYxLlJ1blN0YXRlEhEKCWxvb3Bfa2luZBgEIAEoCRIUCgxsb29wX3ZlcnNpb24YBSABKAUSKwoMbW9kZWxfY29uZmlnGAYgASgLMhUudWx0cmEudjEuTW9kZWxDb25maWcSDgoGcHJvbXB0GAcgASgJEhYKDmZhaWx1cmVfcmVhc29uGAggASgJEhcKD2ZhaWx1cmVfbWVzc2FnZRgJIAEoCRIuCgpjcmVhdGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIVCg1wYXJlbnRfcnVuX2lkGAwgASgJEiAKBmdyYW50cxgNIAEoCzIQLnVsdHJhLnYxLkdyYW50cyJiCgZHcmFudHMSDQoFdG9vbHMYASADKAkSDwoHZW52X2FsbBgCIAEoCBIPCgdlbnZfaWRzGAMgAygJEhEKCW1heV9zcGF3bhgEIAEoCBIUCgxtYXhfY2hpbGRyZW4YBSABKAUihAEKD1N0YXJ0UnVuUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEg4KBnByb21wdBgCIAEoCRIrCgxtb2RlbF9jb25maWcYAyABKAsyFS51bHRyYS52MS5Nb2RlbENvbmZpZxIgCgZncmFudHMYBCABKAsyEC51bHRyYS52MS5HcmFudHMiRgoQU3RhcnRSdW5SZXNwb25zZRIfCgNydW4YASABKAsyEi51bHRyYS52MS5BZ2VudFJ1bhIRCglldmVudF9zZXEYAiABKAMiMwoQUHJvbXB0UnVuUmVxdWVzdBIOCgZydW5faWQYASABKAkSDwoHbWVzc2FnZRgCIAEoCSImChFQcm9tcHRSdW5SZXNwb25zZRIRCglldmVudF9zZXEYASABKAMiIgoQQ2FuY2VsUnVuUmVxdWVzdBIOCgZydW5faWQYASABKAkiEwoRQ2FuY2VsUnVuUmVzcG9uc2UiHwoNR2V0UnVuUmVxdWVzdBIOCgZydW5faWQYASABKAkiMQoOR2V0UnVuUmVzcG9uc2USHwoDcnVuGAEgASgLMhIudWx0cmEudjEuQWdlbnRSdW4iJQoPTGlzdFJ1bnNSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiNAoQTGlzdFJ1bnNSZXNwb25zZRIgCgRydW5zGAEgAygLMhIudWx0cmEudjEuQWdlbnRSdW4qswEKCFJ1blN0YXRlEhkKFVJVTl9TVEFURV9VTlNQRUNJRklFRBAAEhUKEVJVTl9TVEFURV9QRU5ESU5HEAESFQoRUlVOX1NUQVRFX1JVTk5JTkcQAhIWChJSVU5fU1RBVEVfQVdBSVRJTkcQAxIXChNSVU5fU1RBVEVfQ09NUExFVEVEEAQSFAoQUlVOX1NUQVRFX0ZBSUxFRBAFEhcKE1JVTl9TVEFURV9DQU5DRUxMRUQQBjLdAgoMQWdlbnRTZXJ2aWNlEkEKCFN0YXJ0UnVuEhkudWx0cmEudjEuU3RhcnRSdW5SZXF1ZXN0GhoudWx0cmEudjEuU3RhcnRSdW5SZXNwb25zZRJECglQcm9tcHRSdW4SGi51bHRyYS52MS5Qcm9tcHRSdW5SZXF1ZXN0GhsudWx0cmEudjEuUHJvbXB0UnVuUmVzcG9uc2USRAoJQ2FuY2VsUnVuEhoudWx0cmEudjEuQ2FuY2VsUnVuUmVxdWVzdBobLnVsdHJhLnYxLkNhbmNlbFJ1blJlc3BvbnNlEjsKBkdldFJ1bhIXLnVsdHJhLnYxLkdldFJ1blJlcXVlc3QaGC51bHRyYS52MS5HZXRSdW5SZXNwb25zZRJBCghMaXN0UnVucxIZLnVsdHJhLnYxLkxpc3RSdW5zUmVxdWVzdBoaLnVsdHJhLnYxLkxpc3RSdW5zUmVzcG9uc2VCPFo6Z2l0aHViLmNvbS9hbGVrc2NsYXJrL3VsdHJhbG9naWNhbC9nZW4vZ28vdWx0cmEvdjE7dWx0cmF2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * ModelConfig names the model a run uses and which org credential pays for
@@ -112,6 +112,16 @@ export type AgentRun = Message<"ultra.v1.AgentRun"> & {
    * @generated from field: google.protobuf.Timestamp updated_at = 11;
    */
   updatedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: string parent_run_id = 12;
+   */
+  parentRunId: string;
+
+  /**
+   * @generated from field: ultra.v1.Grants grants = 13;
+   */
+  grants?: Grants | undefined;
 };
 
 /**
@@ -120,6 +130,43 @@ export type AgentRun = Message<"ultra.v1.AgentRun"> & {
  */
 export const AgentRunSchema: GenMessage<AgentRun> = /*@__PURE__*/
   messageDesc(file_ultra_v1_agent, 1);
+
+/**
+ * @generated from message ultra.v1.Grants
+ */
+export type Grants = Message<"ultra.v1.Grants"> & {
+  /**
+   * @generated from field: repeated string tools = 1;
+   */
+  tools: string[];
+
+  /**
+   * @generated from field: bool env_all = 2;
+   */
+  envAll: boolean;
+
+  /**
+   * @generated from field: repeated string env_ids = 3;
+   */
+  envIds: string[];
+
+  /**
+   * @generated from field: bool may_spawn = 4;
+   */
+  maySpawn: boolean;
+
+  /**
+   * @generated from field: int32 max_children = 5;
+   */
+  maxChildren: number;
+};
+
+/**
+ * Describes the message ultra.v1.Grants.
+ * Use `create(GrantsSchema)` to create a new message.
+ */
+export const GrantsSchema: GenMessage<Grants> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_agent, 2);
 
 /**
  * @generated from message ultra.v1.StartRunRequest
@@ -142,6 +189,14 @@ export type StartRunRequest = Message<"ultra.v1.StartRunRequest"> & {
    * @generated from field: ultra.v1.ModelConfig model_config = 3;
    */
   modelConfig?: ModelConfig | undefined;
+
+  /**
+   * Optional only for child-spawn internals; human StartRun ignores this
+   * and receives server-defined root grants.
+   *
+   * @generated from field: ultra.v1.Grants grants = 4;
+   */
+  grants?: Grants | undefined;
 };
 
 /**
@@ -149,7 +204,7 @@ export type StartRunRequest = Message<"ultra.v1.StartRunRequest"> & {
  * Use `create(StartRunRequestSchema)` to create a new message.
  */
 export const StartRunRequestSchema: GenMessage<StartRunRequest> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_agent, 2);
+  messageDesc(file_ultra_v1_agent, 3);
 
 /**
  * @generated from message ultra.v1.StartRunResponse
@@ -173,7 +228,7 @@ export type StartRunResponse = Message<"ultra.v1.StartRunResponse"> & {
  * Use `create(StartRunResponseSchema)` to create a new message.
  */
 export const StartRunResponseSchema: GenMessage<StartRunResponse> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_agent, 3);
+  messageDesc(file_ultra_v1_agent, 4);
 
 /**
  * PromptRun wakes an awaiting run with an answer, or starts a new turn on a
@@ -198,7 +253,7 @@ export type PromptRunRequest = Message<"ultra.v1.PromptRunRequest"> & {
  * Use `create(PromptRunRequestSchema)` to create a new message.
  */
 export const PromptRunRequestSchema: GenMessage<PromptRunRequest> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_agent, 4);
+  messageDesc(file_ultra_v1_agent, 5);
 
 /**
  * @generated from message ultra.v1.PromptRunResponse
@@ -215,7 +270,7 @@ export type PromptRunResponse = Message<"ultra.v1.PromptRunResponse"> & {
  * Use `create(PromptRunResponseSchema)` to create a new message.
  */
 export const PromptRunResponseSchema: GenMessage<PromptRunResponse> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_agent, 5);
+  messageDesc(file_ultra_v1_agent, 6);
 
 /**
  * @generated from message ultra.v1.CancelRunRequest
@@ -232,7 +287,7 @@ export type CancelRunRequest = Message<"ultra.v1.CancelRunRequest"> & {
  * Use `create(CancelRunRequestSchema)` to create a new message.
  */
 export const CancelRunRequestSchema: GenMessage<CancelRunRequest> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_agent, 6);
+  messageDesc(file_ultra_v1_agent, 7);
 
 /**
  * @generated from message ultra.v1.CancelRunResponse
@@ -245,7 +300,7 @@ export type CancelRunResponse = Message<"ultra.v1.CancelRunResponse"> & {
  * Use `create(CancelRunResponseSchema)` to create a new message.
  */
 export const CancelRunResponseSchema: GenMessage<CancelRunResponse> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_agent, 7);
+  messageDesc(file_ultra_v1_agent, 8);
 
 /**
  * @generated from message ultra.v1.GetRunRequest
@@ -262,7 +317,7 @@ export type GetRunRequest = Message<"ultra.v1.GetRunRequest"> & {
  * Use `create(GetRunRequestSchema)` to create a new message.
  */
 export const GetRunRequestSchema: GenMessage<GetRunRequest> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_agent, 8);
+  messageDesc(file_ultra_v1_agent, 9);
 
 /**
  * @generated from message ultra.v1.GetRunResponse
@@ -279,7 +334,7 @@ export type GetRunResponse = Message<"ultra.v1.GetRunResponse"> & {
  * Use `create(GetRunResponseSchema)` to create a new message.
  */
 export const GetRunResponseSchema: GenMessage<GetRunResponse> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_agent, 9);
+  messageDesc(file_ultra_v1_agent, 10);
 
 /**
  * @generated from message ultra.v1.ListRunsRequest
@@ -296,7 +351,7 @@ export type ListRunsRequest = Message<"ultra.v1.ListRunsRequest"> & {
  * Use `create(ListRunsRequestSchema)` to create a new message.
  */
 export const ListRunsRequestSchema: GenMessage<ListRunsRequest> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_agent, 10);
+  messageDesc(file_ultra_v1_agent, 11);
 
 /**
  * @generated from message ultra.v1.ListRunsResponse
@@ -313,7 +368,7 @@ export type ListRunsResponse = Message<"ultra.v1.ListRunsResponse"> & {
  * Use `create(ListRunsResponseSchema)` to create a new message.
  */
 export const ListRunsResponseSchema: GenMessage<ListRunsResponse> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_agent, 11);
+  messageDesc(file_ultra_v1_agent, 12);
 
 /**
  * RunState is the agent-run state machine.

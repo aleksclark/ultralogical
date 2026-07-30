@@ -13,13 +13,13 @@ import (
 
 type runStore struct{ scope *orgScope }
 
-const runColumns = `id, session_id, org_id, state, loop_kind, loop_version, model_config,
+const runColumns = `id, session_id, org_id, parent_run_id, grants, result, state, loop_kind, loop_version, model_config,
 	prompt, history, failure_reason, failure_message, cancel_requested_at, created_at, updated_at`
 
 func (r *runStore) scan(row pgx.Row) (ultra.AgentRun, error) {
 	var run ultra.AgentRun
-	var modelConfig []byte
-	err := row.Scan(&run.ID, &run.SessionID, &run.OrgID, &run.State, &run.LoopKind,
+	var modelConfig, grants []byte
+	err := row.Scan(&run.ID, &run.SessionID, &run.OrgID, &run.ParentRunID, &grants, &run.Result, &run.State, &run.LoopKind,
 		&run.LoopVersion, &modelConfig, &run.Prompt, &run.History, &run.FailureReason,
 		&run.FailureMessage, &run.CancelRequestedAt, &run.CreatedAt, &run.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -31,6 +31,9 @@ func (r *runStore) scan(row pgx.Row) (ultra.AgentRun, error) {
 	if err := json.Unmarshal(modelConfig, &run.ModelConfig); err != nil {
 		return ultra.AgentRun{}, fmt.Errorf("postgres: decode model config: %w", err)
 	}
+	if err := json.Unmarshal(grants, &run.Grants); err != nil {
+		return ultra.AgentRun{}, fmt.Errorf("postgres: decode grants: %w", err)
+	}
 	return run, nil
 }
 
@@ -39,6 +42,13 @@ func (r *runStore) Create(ctx context.Context, run ultra.AgentRun) error {
 	if err != nil {
 		return fmt.Errorf("postgres: encode model config: %w", err)
 	}
+	grants, err := json.Marshal(run.Grants)
+	if err != nil {
+		return err
+	}
+	if len(run.Grants.Tools) == 0 && !run.Grants.EnvAll && !run.Grants.MaySpawn {
+		grants, _ = json.Marshal(ultra.RootGrants())
+	}
 	history := run.History
 	if len(history) == 0 {
 		history = []byte(`{"v":1,"messages":[]}`)
@@ -46,10 +56,10 @@ func (r *runStore) Create(ctx context.Context, run ultra.AgentRun) error {
 	// Session ownership is enforced in the same statement: the insert only
 	// succeeds if the session belongs to this scope's org.
 	tag, err := r.scope.s.db().Exec(ctx,
-		`INSERT INTO agent_runs (id, session_id, org_id, state, loop_kind, loop_version, model_config, prompt, history)
-		 SELECT $1, s.id, s.org_id, $3, $4, $5, $6, $7, $8
-		   FROM sessions s WHERE s.id = $2 AND s.org_id = $9`,
-		string(run.ID), string(run.SessionID), string(ultra.RunPending), run.LoopKind,
+		`INSERT INTO agent_runs (id, session_id, org_id, parent_run_id, grants, state, loop_kind, loop_version, model_config, prompt, history)
+		 SELECT $1, s.id, s.org_id, $3, $4, $5, $6, $7, $8, $9, $10
+		   FROM sessions s WHERE s.id = $2 AND s.org_id = $11`,
+		string(run.ID), string(run.SessionID), run.ParentRunID, grants, string(ultra.RunPending), run.LoopKind,
 		run.LoopVersion, modelConfig, run.Prompt, history, string(r.scope.org))
 	if isUniqueViolation(err) {
 		return ultra.ErrAlreadyExists

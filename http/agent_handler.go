@@ -83,6 +83,7 @@ func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[ultrav
 		ModelConfig: modelConfig,
 		Prompt:      req.Msg.GetPrompt(),
 		History:     history,
+		Grants:      ultra.RootGrants(),
 	}
 
 	var eventSeq int64
@@ -113,6 +114,7 @@ func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[ultrav
 		return nil, mapStoreErr(err)
 	}
 
+	_, _ = h.store.Org(org).Participants().Join(ctx, ultra.Participant{SessionID: sessionID, Kind: ultra.ParticipantAgent, ParticipantID: string(run.ID), Display: "Agent"})
 	created, err := h.store.Org(org).Runs().Get(ctx, run.ID)
 	if err != nil {
 		return nil, mapStoreErr(err)

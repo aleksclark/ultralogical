@@ -42,6 +42,28 @@ const (
 	// SessionServiceListSessionsProcedure is the fully-qualified name of the SessionService's
 	// ListSessions RPC.
 	SessionServiceListSessionsProcedure = "/ultra.v1.SessionService/ListSessions"
+	// SessionServiceJoinProcedure is the fully-qualified name of the SessionService's Join RPC.
+	SessionServiceJoinProcedure = "/ultra.v1.SessionService/Join"
+	// SessionServiceLeaveProcedure is the fully-qualified name of the SessionService's Leave RPC.
+	SessionServiceLeaveProcedure = "/ultra.v1.SessionService/Leave"
+	// SessionServiceHeartbeatProcedure is the fully-qualified name of the SessionService's Heartbeat
+	// RPC.
+	SessionServiceHeartbeatProcedure = "/ultra.v1.SessionService/Heartbeat"
+	// SessionServiceListParticipantsProcedure is the fully-qualified name of the SessionService's
+	// ListParticipants RPC.
+	SessionServiceListParticipantsProcedure = "/ultra.v1.SessionService/ListParticipants"
+	// SessionServiceSetMemoryProcedure is the fully-qualified name of the SessionService's SetMemory
+	// RPC.
+	SessionServiceSetMemoryProcedure = "/ultra.v1.SessionService/SetMemory"
+	// SessionServiceGetMemoryProcedure is the fully-qualified name of the SessionService's GetMemory
+	// RPC.
+	SessionServiceGetMemoryProcedure = "/ultra.v1.SessionService/GetMemory"
+	// SessionServiceListMemoryProcedure is the fully-qualified name of the SessionService's ListMemory
+	// RPC.
+	SessionServiceListMemoryProcedure = "/ultra.v1.SessionService/ListMemory"
+	// SessionServiceDeleteMemoryProcedure is the fully-qualified name of the SessionService's
+	// DeleteMemory RPC.
+	SessionServiceDeleteMemoryProcedure = "/ultra.v1.SessionService/DeleteMemory"
 )
 
 // SessionServiceClient is a client for the ultra.v1.SessionService service.
@@ -49,6 +71,14 @@ type SessionServiceClient interface {
 	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
 	GetSession(context.Context, *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error)
 	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
+	Join(context.Context, *connect.Request[v1.JoinRequest]) (*connect.Response[v1.JoinResponse], error)
+	Leave(context.Context, *connect.Request[v1.LeaveRequest]) (*connect.Response[v1.LeaveResponse], error)
+	Heartbeat(context.Context, *connect.Request[v1.HeartbeatRequest]) (*connect.Response[v1.HeartbeatResponse], error)
+	ListParticipants(context.Context, *connect.Request[v1.ListParticipantsRequest]) (*connect.Response[v1.ListParticipantsResponse], error)
+	SetMemory(context.Context, *connect.Request[v1.SetMemoryRequest]) (*connect.Response[v1.SetMemoryResponse], error)
+	GetMemory(context.Context, *connect.Request[v1.GetMemoryRequest]) (*connect.Response[v1.GetMemoryResponse], error)
+	ListMemory(context.Context, *connect.Request[v1.ListMemoryRequest]) (*connect.Response[v1.ListMemoryResponse], error)
+	DeleteMemory(context.Context, *connect.Request[v1.DeleteMemoryRequest]) (*connect.Response[v1.DeleteMemoryResponse], error)
 }
 
 // NewSessionServiceClient constructs a client for the ultra.v1.SessionService service. By default,
@@ -80,14 +110,70 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("ListSessions")),
 			connect.WithClientOptions(opts...),
 		),
+		join: connect.NewClient[v1.JoinRequest, v1.JoinResponse](
+			httpClient,
+			baseURL+SessionServiceJoinProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("Join")),
+			connect.WithClientOptions(opts...),
+		),
+		leave: connect.NewClient[v1.LeaveRequest, v1.LeaveResponse](
+			httpClient,
+			baseURL+SessionServiceLeaveProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("Leave")),
+			connect.WithClientOptions(opts...),
+		),
+		heartbeat: connect.NewClient[v1.HeartbeatRequest, v1.HeartbeatResponse](
+			httpClient,
+			baseURL+SessionServiceHeartbeatProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("Heartbeat")),
+			connect.WithClientOptions(opts...),
+		),
+		listParticipants: connect.NewClient[v1.ListParticipantsRequest, v1.ListParticipantsResponse](
+			httpClient,
+			baseURL+SessionServiceListParticipantsProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("ListParticipants")),
+			connect.WithClientOptions(opts...),
+		),
+		setMemory: connect.NewClient[v1.SetMemoryRequest, v1.SetMemoryResponse](
+			httpClient,
+			baseURL+SessionServiceSetMemoryProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("SetMemory")),
+			connect.WithClientOptions(opts...),
+		),
+		getMemory: connect.NewClient[v1.GetMemoryRequest, v1.GetMemoryResponse](
+			httpClient,
+			baseURL+SessionServiceGetMemoryProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("GetMemory")),
+			connect.WithClientOptions(opts...),
+		),
+		listMemory: connect.NewClient[v1.ListMemoryRequest, v1.ListMemoryResponse](
+			httpClient,
+			baseURL+SessionServiceListMemoryProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("ListMemory")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteMemory: connect.NewClient[v1.DeleteMemoryRequest, v1.DeleteMemoryResponse](
+			httpClient,
+			baseURL+SessionServiceDeleteMemoryProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("DeleteMemory")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // sessionServiceClient implements SessionServiceClient.
 type sessionServiceClient struct {
-	createSession *connect.Client[v1.CreateSessionRequest, v1.CreateSessionResponse]
-	getSession    *connect.Client[v1.GetSessionRequest, v1.GetSessionResponse]
-	listSessions  *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
+	createSession    *connect.Client[v1.CreateSessionRequest, v1.CreateSessionResponse]
+	getSession       *connect.Client[v1.GetSessionRequest, v1.GetSessionResponse]
+	listSessions     *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
+	join             *connect.Client[v1.JoinRequest, v1.JoinResponse]
+	leave            *connect.Client[v1.LeaveRequest, v1.LeaveResponse]
+	heartbeat        *connect.Client[v1.HeartbeatRequest, v1.HeartbeatResponse]
+	listParticipants *connect.Client[v1.ListParticipantsRequest, v1.ListParticipantsResponse]
+	setMemory        *connect.Client[v1.SetMemoryRequest, v1.SetMemoryResponse]
+	getMemory        *connect.Client[v1.GetMemoryRequest, v1.GetMemoryResponse]
+	listMemory       *connect.Client[v1.ListMemoryRequest, v1.ListMemoryResponse]
+	deleteMemory     *connect.Client[v1.DeleteMemoryRequest, v1.DeleteMemoryResponse]
 }
 
 // CreateSession calls ultra.v1.SessionService.CreateSession.
@@ -105,11 +191,59 @@ func (c *sessionServiceClient) ListSessions(ctx context.Context, req *connect.Re
 	return c.listSessions.CallUnary(ctx, req)
 }
 
+// Join calls ultra.v1.SessionService.Join.
+func (c *sessionServiceClient) Join(ctx context.Context, req *connect.Request[v1.JoinRequest]) (*connect.Response[v1.JoinResponse], error) {
+	return c.join.CallUnary(ctx, req)
+}
+
+// Leave calls ultra.v1.SessionService.Leave.
+func (c *sessionServiceClient) Leave(ctx context.Context, req *connect.Request[v1.LeaveRequest]) (*connect.Response[v1.LeaveResponse], error) {
+	return c.leave.CallUnary(ctx, req)
+}
+
+// Heartbeat calls ultra.v1.SessionService.Heartbeat.
+func (c *sessionServiceClient) Heartbeat(ctx context.Context, req *connect.Request[v1.HeartbeatRequest]) (*connect.Response[v1.HeartbeatResponse], error) {
+	return c.heartbeat.CallUnary(ctx, req)
+}
+
+// ListParticipants calls ultra.v1.SessionService.ListParticipants.
+func (c *sessionServiceClient) ListParticipants(ctx context.Context, req *connect.Request[v1.ListParticipantsRequest]) (*connect.Response[v1.ListParticipantsResponse], error) {
+	return c.listParticipants.CallUnary(ctx, req)
+}
+
+// SetMemory calls ultra.v1.SessionService.SetMemory.
+func (c *sessionServiceClient) SetMemory(ctx context.Context, req *connect.Request[v1.SetMemoryRequest]) (*connect.Response[v1.SetMemoryResponse], error) {
+	return c.setMemory.CallUnary(ctx, req)
+}
+
+// GetMemory calls ultra.v1.SessionService.GetMemory.
+func (c *sessionServiceClient) GetMemory(ctx context.Context, req *connect.Request[v1.GetMemoryRequest]) (*connect.Response[v1.GetMemoryResponse], error) {
+	return c.getMemory.CallUnary(ctx, req)
+}
+
+// ListMemory calls ultra.v1.SessionService.ListMemory.
+func (c *sessionServiceClient) ListMemory(ctx context.Context, req *connect.Request[v1.ListMemoryRequest]) (*connect.Response[v1.ListMemoryResponse], error) {
+	return c.listMemory.CallUnary(ctx, req)
+}
+
+// DeleteMemory calls ultra.v1.SessionService.DeleteMemory.
+func (c *sessionServiceClient) DeleteMemory(ctx context.Context, req *connect.Request[v1.DeleteMemoryRequest]) (*connect.Response[v1.DeleteMemoryResponse], error) {
+	return c.deleteMemory.CallUnary(ctx, req)
+}
+
 // SessionServiceHandler is an implementation of the ultra.v1.SessionService service.
 type SessionServiceHandler interface {
 	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
 	GetSession(context.Context, *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error)
 	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
+	Join(context.Context, *connect.Request[v1.JoinRequest]) (*connect.Response[v1.JoinResponse], error)
+	Leave(context.Context, *connect.Request[v1.LeaveRequest]) (*connect.Response[v1.LeaveResponse], error)
+	Heartbeat(context.Context, *connect.Request[v1.HeartbeatRequest]) (*connect.Response[v1.HeartbeatResponse], error)
+	ListParticipants(context.Context, *connect.Request[v1.ListParticipantsRequest]) (*connect.Response[v1.ListParticipantsResponse], error)
+	SetMemory(context.Context, *connect.Request[v1.SetMemoryRequest]) (*connect.Response[v1.SetMemoryResponse], error)
+	GetMemory(context.Context, *connect.Request[v1.GetMemoryRequest]) (*connect.Response[v1.GetMemoryResponse], error)
+	ListMemory(context.Context, *connect.Request[v1.ListMemoryRequest]) (*connect.Response[v1.ListMemoryResponse], error)
+	DeleteMemory(context.Context, *connect.Request[v1.DeleteMemoryRequest]) (*connect.Response[v1.DeleteMemoryResponse], error)
 }
 
 // NewSessionServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -137,6 +271,54 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("ListSessions")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceJoinHandler := connect.NewUnaryHandler(
+		SessionServiceJoinProcedure,
+		svc.Join,
+		connect.WithSchema(sessionServiceMethods.ByName("Join")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceLeaveHandler := connect.NewUnaryHandler(
+		SessionServiceLeaveProcedure,
+		svc.Leave,
+		connect.WithSchema(sessionServiceMethods.ByName("Leave")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceHeartbeatHandler := connect.NewUnaryHandler(
+		SessionServiceHeartbeatProcedure,
+		svc.Heartbeat,
+		connect.WithSchema(sessionServiceMethods.ByName("Heartbeat")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceListParticipantsHandler := connect.NewUnaryHandler(
+		SessionServiceListParticipantsProcedure,
+		svc.ListParticipants,
+		connect.WithSchema(sessionServiceMethods.ByName("ListParticipants")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceSetMemoryHandler := connect.NewUnaryHandler(
+		SessionServiceSetMemoryProcedure,
+		svc.SetMemory,
+		connect.WithSchema(sessionServiceMethods.ByName("SetMemory")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceGetMemoryHandler := connect.NewUnaryHandler(
+		SessionServiceGetMemoryProcedure,
+		svc.GetMemory,
+		connect.WithSchema(sessionServiceMethods.ByName("GetMemory")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceListMemoryHandler := connect.NewUnaryHandler(
+		SessionServiceListMemoryProcedure,
+		svc.ListMemory,
+		connect.WithSchema(sessionServiceMethods.ByName("ListMemory")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceDeleteMemoryHandler := connect.NewUnaryHandler(
+		SessionServiceDeleteMemoryProcedure,
+		svc.DeleteMemory,
+		connect.WithSchema(sessionServiceMethods.ByName("DeleteMemory")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/ultra.v1.SessionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SessionServiceCreateSessionProcedure:
@@ -145,6 +327,22 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceGetSessionHandler.ServeHTTP(w, r)
 		case SessionServiceListSessionsProcedure:
 			sessionServiceListSessionsHandler.ServeHTTP(w, r)
+		case SessionServiceJoinProcedure:
+			sessionServiceJoinHandler.ServeHTTP(w, r)
+		case SessionServiceLeaveProcedure:
+			sessionServiceLeaveHandler.ServeHTTP(w, r)
+		case SessionServiceHeartbeatProcedure:
+			sessionServiceHeartbeatHandler.ServeHTTP(w, r)
+		case SessionServiceListParticipantsProcedure:
+			sessionServiceListParticipantsHandler.ServeHTTP(w, r)
+		case SessionServiceSetMemoryProcedure:
+			sessionServiceSetMemoryHandler.ServeHTTP(w, r)
+		case SessionServiceGetMemoryProcedure:
+			sessionServiceGetMemoryHandler.ServeHTTP(w, r)
+		case SessionServiceListMemoryProcedure:
+			sessionServiceListMemoryHandler.ServeHTTP(w, r)
+		case SessionServiceDeleteMemoryProcedure:
+			sessionServiceDeleteMemoryHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -164,4 +362,36 @@ func (UnimplementedSessionServiceHandler) GetSession(context.Context, *connect.R
 
 func (UnimplementedSessionServiceHandler) ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.SessionService.ListSessions is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) Join(context.Context, *connect.Request[v1.JoinRequest]) (*connect.Response[v1.JoinResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.SessionService.Join is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) Leave(context.Context, *connect.Request[v1.LeaveRequest]) (*connect.Response[v1.LeaveResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.SessionService.Leave is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) Heartbeat(context.Context, *connect.Request[v1.HeartbeatRequest]) (*connect.Response[v1.HeartbeatResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.SessionService.Heartbeat is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) ListParticipants(context.Context, *connect.Request[v1.ListParticipantsRequest]) (*connect.Response[v1.ListParticipantsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.SessionService.ListParticipants is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) SetMemory(context.Context, *connect.Request[v1.SetMemoryRequest]) (*connect.Response[v1.SetMemoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.SessionService.SetMemory is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) GetMemory(context.Context, *connect.Request[v1.GetMemoryRequest]) (*connect.Response[v1.GetMemoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.SessionService.GetMemory is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) ListMemory(context.Context, *connect.Request[v1.ListMemoryRequest]) (*connect.Response[v1.ListMemoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.SessionService.ListMemory is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) DeleteMemory(context.Context, *connect.Request[v1.DeleteMemoryRequest]) (*connect.Response[v1.DeleteMemoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.SessionService.DeleteMemory is not implemented"))
 }

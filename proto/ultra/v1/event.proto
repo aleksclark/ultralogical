@@ -135,6 +135,10 @@ message ExecPreviewRan {
   string output = 3;
   bool is_error = 4;
 }
+message ParticipantTransition { string kind=1; string participant_id=2; string display=3; }
+message RunSpawned { string parent_run_id=1; string child_run_id=2; }
+message MemoryChanged { string key=1; string updated_by_type=2; string updated_by_id=3; string value_json=4; }
+message PermissionDenied { string run_id=1; string tool=2; string env_id=3; string reason=4; }
 
 // EventPayload is the typed payload of a session event. Every observable
 // thing in a session is one of these variants; later phases add variants
@@ -161,6 +165,13 @@ message EventPayload {
     EnvLifecycle env_terminating = 27;
     EnvLifecycle env_terminated = 28;
     ExecPreviewRan exec_preview_ran = 29;
+    ParticipantTransition participant_joined = 30;
+    ParticipantTransition participant_left = 31;
+    ParticipantTransition participant_idle = 32;
+    RunSpawned run_spawned = 33;
+    MemoryChanged memory_set = 34;
+    MemoryChanged memory_deleted = 35;
+    PermissionDenied permission_denied = 36;
   }
 }
 

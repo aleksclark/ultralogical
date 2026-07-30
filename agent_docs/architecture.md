@@ -2,7 +2,7 @@
 
 Ultralogical is a durable-session platform for agentic work. Full design +
 roadmap: [`plan/index.md`](../plan/index.md). This doc describes what exists
-in the codebase today (Phase 2) and the load-bearing patterns you must
+in the codebase today (Phase 3) and the load-bearing patterns you must
 preserve.
 
 Package organization follows the standard layout in

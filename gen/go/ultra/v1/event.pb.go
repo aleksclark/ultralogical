@@ -1136,6 +1136,254 @@ func (x *ExecPreviewRan) GetIsError() bool {
 	return false
 }
 
+type ParticipantTransition struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Kind          string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
+	ParticipantId string                 `protobuf:"bytes,2,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	Display       string                 `protobuf:"bytes,3,opt,name=display,proto3" json:"display,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ParticipantTransition) Reset() {
+	*x = ParticipantTransition{}
+	mi := &file_ultra_v1_event_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ParticipantTransition) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ParticipantTransition) ProtoMessage() {}
+
+func (x *ParticipantTransition) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ParticipantTransition.ProtoReflect.Descriptor instead.
+func (*ParticipantTransition) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ParticipantTransition) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *ParticipantTransition) GetParticipantId() string {
+	if x != nil {
+		return x.ParticipantId
+	}
+	return ""
+}
+
+func (x *ParticipantTransition) GetDisplay() string {
+	if x != nil {
+		return x.Display
+	}
+	return ""
+}
+
+type RunSpawned struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ParentRunId   string                 `protobuf:"bytes,1,opt,name=parent_run_id,json=parentRunId,proto3" json:"parent_run_id,omitempty"`
+	ChildRunId    string                 `protobuf:"bytes,2,opt,name=child_run_id,json=childRunId,proto3" json:"child_run_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RunSpawned) Reset() {
+	*x = RunSpawned{}
+	mi := &file_ultra_v1_event_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunSpawned) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunSpawned) ProtoMessage() {}
+
+func (x *RunSpawned) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunSpawned.ProtoReflect.Descriptor instead.
+func (*RunSpawned) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *RunSpawned) GetParentRunId() string {
+	if x != nil {
+		return x.ParentRunId
+	}
+	return ""
+}
+
+func (x *RunSpawned) GetChildRunId() string {
+	if x != nil {
+		return x.ChildRunId
+	}
+	return ""
+}
+
+type MemoryChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	UpdatedByType string                 `protobuf:"bytes,2,opt,name=updated_by_type,json=updatedByType,proto3" json:"updated_by_type,omitempty"`
+	UpdatedById   string                 `protobuf:"bytes,3,opt,name=updated_by_id,json=updatedById,proto3" json:"updated_by_id,omitempty"`
+	ValueJson     string                 `protobuf:"bytes,4,opt,name=value_json,json=valueJson,proto3" json:"value_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MemoryChanged) Reset() {
+	*x = MemoryChanged{}
+	mi := &file_ultra_v1_event_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MemoryChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MemoryChanged) ProtoMessage() {}
+
+func (x *MemoryChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MemoryChanged.ProtoReflect.Descriptor instead.
+func (*MemoryChanged) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *MemoryChanged) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *MemoryChanged) GetUpdatedByType() string {
+	if x != nil {
+		return x.UpdatedByType
+	}
+	return ""
+}
+
+func (x *MemoryChanged) GetUpdatedById() string {
+	if x != nil {
+		return x.UpdatedById
+	}
+	return ""
+}
+
+func (x *MemoryChanged) GetValueJson() string {
+	if x != nil {
+		return x.ValueJson
+	}
+	return ""
+}
+
+type PermissionDenied struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Tool          string                 `protobuf:"bytes,2,opt,name=tool,proto3" json:"tool,omitempty"`
+	EnvId         string                 `protobuf:"bytes,3,opt,name=env_id,json=envId,proto3" json:"env_id,omitempty"`
+	Reason        string                 `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PermissionDenied) Reset() {
+	*x = PermissionDenied{}
+	mi := &file_ultra_v1_event_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PermissionDenied) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PermissionDenied) ProtoMessage() {}
+
+func (x *PermissionDenied) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PermissionDenied.ProtoReflect.Descriptor instead.
+func (*PermissionDenied) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *PermissionDenied) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *PermissionDenied) GetTool() string {
+	if x != nil {
+		return x.Tool
+	}
+	return ""
+}
+
+func (x *PermissionDenied) GetEnvId() string {
+	if x != nil {
+		return x.EnvId
+	}
+	return ""
+}
+
+func (x *PermissionDenied) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
 // EventPayload is the typed payload of a session event. Every observable
 // thing in a session is one of these variants; later phases add variants
 // (additive only — enforced by breaking-change CI).
@@ -1163,6 +1411,13 @@ type EventPayload struct {
 	//	*EventPayload_EnvTerminating
 	//	*EventPayload_EnvTerminated
 	//	*EventPayload_ExecPreviewRan
+	//	*EventPayload_ParticipantJoined
+	//	*EventPayload_ParticipantLeft
+	//	*EventPayload_ParticipantIdle
+	//	*EventPayload_RunSpawned
+	//	*EventPayload_MemorySet
+	//	*EventPayload_MemoryDeleted
+	//	*EventPayload_PermissionDenied
 	Payload       isEventPayload_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1170,7 +1425,7 @@ type EventPayload struct {
 
 func (x *EventPayload) Reset() {
 	*x = EventPayload{}
-	mi := &file_ultra_v1_event_proto_msgTypes[17]
+	mi := &file_ultra_v1_event_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1182,7 +1437,7 @@ func (x *EventPayload) String() string {
 func (*EventPayload) ProtoMessage() {}
 
 func (x *EventPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[17]
+	mi := &file_ultra_v1_event_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1195,7 +1450,7 @@ func (x *EventPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventPayload.ProtoReflect.Descriptor instead.
 func (*EventPayload) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{17}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *EventPayload) GetPayload() isEventPayload_Payload {
@@ -1385,6 +1640,69 @@ func (x *EventPayload) GetExecPreviewRan() *ExecPreviewRan {
 	return nil
 }
 
+func (x *EventPayload) GetParticipantJoined() *ParticipantTransition {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_ParticipantJoined); ok {
+			return x.ParticipantJoined
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetParticipantLeft() *ParticipantTransition {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_ParticipantLeft); ok {
+			return x.ParticipantLeft
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetParticipantIdle() *ParticipantTransition {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_ParticipantIdle); ok {
+			return x.ParticipantIdle
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetRunSpawned() *RunSpawned {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_RunSpawned); ok {
+			return x.RunSpawned
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetMemorySet() *MemoryChanged {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_MemorySet); ok {
+			return x.MemorySet
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetMemoryDeleted() *MemoryChanged {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_MemoryDeleted); ok {
+			return x.MemoryDeleted
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetPermissionDenied() *PermissionDenied {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_PermissionDenied); ok {
+			return x.PermissionDenied
+		}
+	}
+	return nil
+}
+
 type isEventPayload_Payload interface {
 	isEventPayload_Payload()
 }
@@ -1469,6 +1787,34 @@ type EventPayload_ExecPreviewRan struct {
 	ExecPreviewRan *ExecPreviewRan `protobuf:"bytes,29,opt,name=exec_preview_ran,json=execPreviewRan,proto3,oneof"`
 }
 
+type EventPayload_ParticipantJoined struct {
+	ParticipantJoined *ParticipantTransition `protobuf:"bytes,30,opt,name=participant_joined,json=participantJoined,proto3,oneof"`
+}
+
+type EventPayload_ParticipantLeft struct {
+	ParticipantLeft *ParticipantTransition `protobuf:"bytes,31,opt,name=participant_left,json=participantLeft,proto3,oneof"`
+}
+
+type EventPayload_ParticipantIdle struct {
+	ParticipantIdle *ParticipantTransition `protobuf:"bytes,32,opt,name=participant_idle,json=participantIdle,proto3,oneof"`
+}
+
+type EventPayload_RunSpawned struct {
+	RunSpawned *RunSpawned `protobuf:"bytes,33,opt,name=run_spawned,json=runSpawned,proto3,oneof"`
+}
+
+type EventPayload_MemorySet struct {
+	MemorySet *MemoryChanged `protobuf:"bytes,34,opt,name=memory_set,json=memorySet,proto3,oneof"`
+}
+
+type EventPayload_MemoryDeleted struct {
+	MemoryDeleted *MemoryChanged `protobuf:"bytes,35,opt,name=memory_deleted,json=memoryDeleted,proto3,oneof"`
+}
+
+type EventPayload_PermissionDenied struct {
+	PermissionDenied *PermissionDenied `protobuf:"bytes,36,opt,name=permission_denied,json=permissionDenied,proto3,oneof"`
+}
+
 func (*EventPayload_UserMessage) isEventPayload_Payload() {}
 
 func (*EventPayload_Annotation) isEventPayload_Payload() {}
@@ -1509,6 +1855,20 @@ func (*EventPayload_EnvTerminated) isEventPayload_Payload() {}
 
 func (*EventPayload_ExecPreviewRan) isEventPayload_Payload() {}
 
+func (*EventPayload_ParticipantJoined) isEventPayload_Payload() {}
+
+func (*EventPayload_ParticipantLeft) isEventPayload_Payload() {}
+
+func (*EventPayload_ParticipantIdle) isEventPayload_Payload() {}
+
+func (*EventPayload_RunSpawned) isEventPayload_Payload() {}
+
+func (*EventPayload_MemorySet) isEventPayload_Payload() {}
+
+func (*EventPayload_MemoryDeleted) isEventPayload_Payload() {}
+
+func (*EventPayload_PermissionDenied) isEventPayload_Payload() {}
+
 // SessionEvent is one entry in a session's append-only event log. Seq is
 // per-session, gapless, and monotonic; clients resume by seq.
 type SessionEvent struct {
@@ -1524,7 +1884,7 @@ type SessionEvent struct {
 
 func (x *SessionEvent) Reset() {
 	*x = SessionEvent{}
-	mi := &file_ultra_v1_event_proto_msgTypes[18]
+	mi := &file_ultra_v1_event_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1536,7 +1896,7 @@ func (x *SessionEvent) String() string {
 func (*SessionEvent) ProtoMessage() {}
 
 func (x *SessionEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[18]
+	mi := &file_ultra_v1_event_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1549,7 +1909,7 @@ func (x *SessionEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionEvent.ProtoReflect.Descriptor instead.
 func (*SessionEvent) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{18}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *SessionEvent) GetSessionId() string {
@@ -1597,7 +1957,7 @@ type AppendRequest struct {
 
 func (x *AppendRequest) Reset() {
 	*x = AppendRequest{}
-	mi := &file_ultra_v1_event_proto_msgTypes[19]
+	mi := &file_ultra_v1_event_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1609,7 +1969,7 @@ func (x *AppendRequest) String() string {
 func (*AppendRequest) ProtoMessage() {}
 
 func (x *AppendRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[19]
+	mi := &file_ultra_v1_event_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1622,7 +1982,7 @@ func (x *AppendRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendRequest.ProtoReflect.Descriptor instead.
 func (*AppendRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{19}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *AppendRequest) GetSessionId() string {
@@ -1650,7 +2010,7 @@ type AppendResponse struct {
 
 func (x *AppendResponse) Reset() {
 	*x = AppendResponse{}
-	mi := &file_ultra_v1_event_proto_msgTypes[20]
+	mi := &file_ultra_v1_event_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1662,7 +2022,7 @@ func (x *AppendResponse) String() string {
 func (*AppendResponse) ProtoMessage() {}
 
 func (x *AppendResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[20]
+	mi := &file_ultra_v1_event_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1675,7 +2035,7 @@ func (x *AppendResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendResponse.ProtoReflect.Descriptor instead.
 func (*AppendResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{20}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *AppendResponse) GetSeq() int64 {
@@ -1696,7 +2056,7 @@ type SubscribeRequest struct {
 
 func (x *SubscribeRequest) Reset() {
 	*x = SubscribeRequest{}
-	mi := &file_ultra_v1_event_proto_msgTypes[21]
+	mi := &file_ultra_v1_event_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1708,7 +2068,7 @@ func (x *SubscribeRequest) String() string {
 func (*SubscribeRequest) ProtoMessage() {}
 
 func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[21]
+	mi := &file_ultra_v1_event_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1721,7 +2081,7 @@ func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeRequest.ProtoReflect.Descriptor instead.
 func (*SubscribeRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{21}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *SubscribeRequest) GetSessionId() string {
@@ -1750,7 +2110,7 @@ type SubscribeResponse struct {
 
 func (x *SubscribeResponse) Reset() {
 	*x = SubscribeResponse{}
-	mi := &file_ultra_v1_event_proto_msgTypes[22]
+	mi := &file_ultra_v1_event_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1762,7 +2122,7 @@ func (x *SubscribeResponse) String() string {
 func (*SubscribeResponse) ProtoMessage() {}
 
 func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[22]
+	mi := &file_ultra_v1_event_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1775,7 +2135,7 @@ func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeResponse.ProtoReflect.Descriptor instead.
 func (*SubscribeResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{22}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *SubscribeResponse) GetEvent() *SessionEvent {
@@ -1875,7 +2235,27 @@ const file_ultra_v1_event_proto_rawDesc = "" +
 	"\x06env_id\x18\x01 \x01(\tR\x05envId\x12\x18\n" +
 	"\acommand\x18\x02 \x01(\tR\acommand\x12\x16\n" +
 	"\x06output\x18\x03 \x01(\tR\x06output\x12\x19\n" +
-	"\bis_error\x18\x04 \x01(\bR\aisError\"\xec\t\n" +
+	"\bis_error\x18\x04 \x01(\bR\aisError\"l\n" +
+	"\x15ParticipantTransition\x12\x12\n" +
+	"\x04kind\x18\x01 \x01(\tR\x04kind\x12%\n" +
+	"\x0eparticipant_id\x18\x02 \x01(\tR\rparticipantId\x12\x18\n" +
+	"\adisplay\x18\x03 \x01(\tR\adisplay\"R\n" +
+	"\n" +
+	"RunSpawned\x12\"\n" +
+	"\rparent_run_id\x18\x01 \x01(\tR\vparentRunId\x12 \n" +
+	"\fchild_run_id\x18\x02 \x01(\tR\n" +
+	"childRunId\"\x8c\x01\n" +
+	"\rMemoryChanged\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12&\n" +
+	"\x0fupdated_by_type\x18\x02 \x01(\tR\rupdatedByType\x12\"\n" +
+	"\rupdated_by_id\x18\x03 \x01(\tR\vupdatedById\x12\x1d\n" +
+	"\n" +
+	"value_json\x18\x04 \x01(\tR\tvalueJson\"l\n" +
+	"\x10PermissionDenied\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x12\n" +
+	"\x04tool\x18\x02 \x01(\tR\x04tool\x12\x15\n" +
+	"\x06env_id\x18\x03 \x01(\tR\x05envId\x12\x16\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\"\xda\r\n" +
 	"\fEventPayload\x12:\n" +
 	"\fuser_message\x18\n" +
 	" \x01(\v2\x15.ultra.v1.UserMessageH\x00R\vuserMessage\x126\n" +
@@ -1904,7 +2284,16 @@ const file_ultra_v1_event_proto_rawDesc = "" +
 	"env_failed\x18\x1a \x01(\v2\x16.ultra.v1.EnvLifecycleH\x00R\tenvFailed\x12A\n" +
 	"\x0fenv_terminating\x18\x1b \x01(\v2\x16.ultra.v1.EnvLifecycleH\x00R\x0eenvTerminating\x12?\n" +
 	"\x0eenv_terminated\x18\x1c \x01(\v2\x16.ultra.v1.EnvLifecycleH\x00R\renvTerminated\x12D\n" +
-	"\x10exec_preview_ran\x18\x1d \x01(\v2\x18.ultra.v1.ExecPreviewRanH\x00R\x0eexecPreviewRanB\t\n" +
+	"\x10exec_preview_ran\x18\x1d \x01(\v2\x18.ultra.v1.ExecPreviewRanH\x00R\x0eexecPreviewRan\x12P\n" +
+	"\x12participant_joined\x18\x1e \x01(\v2\x1f.ultra.v1.ParticipantTransitionH\x00R\x11participantJoined\x12L\n" +
+	"\x10participant_left\x18\x1f \x01(\v2\x1f.ultra.v1.ParticipantTransitionH\x00R\x0fparticipantLeft\x12L\n" +
+	"\x10participant_idle\x18  \x01(\v2\x1f.ultra.v1.ParticipantTransitionH\x00R\x0fparticipantIdle\x127\n" +
+	"\vrun_spawned\x18! \x01(\v2\x14.ultra.v1.RunSpawnedH\x00R\n" +
+	"runSpawned\x128\n" +
+	"\n" +
+	"memory_set\x18\" \x01(\v2\x17.ultra.v1.MemoryChangedH\x00R\tmemorySet\x12@\n" +
+	"\x0ememory_deleted\x18# \x01(\v2\x17.ultra.v1.MemoryChangedH\x00R\rmemoryDeleted\x12I\n" +
+	"\x11permission_denied\x18$ \x01(\v2\x1a.ultra.v1.PermissionDeniedH\x00R\x10permissionDeniedB\t\n" +
 	"\apayload\"\xc4\x01\n" +
 	"\fSessionEvent\x12\x1d\n" +
 	"\n" +
@@ -1947,7 +2336,7 @@ func file_ultra_v1_event_proto_rawDescGZIP() []byte {
 }
 
 var file_ultra_v1_event_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ultra_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_ultra_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_ultra_v1_event_proto_goTypes = []any{
 	(ActorType)(0),                // 0: ultra.v1.ActorType
 	(*Actor)(nil),                 // 1: ultra.v1.Actor
@@ -1967,13 +2356,17 @@ var file_ultra_v1_event_proto_goTypes = []any{
 	(*RunCancelled)(nil),          // 15: ultra.v1.RunCancelled
 	(*EnvLifecycle)(nil),          // 16: ultra.v1.EnvLifecycle
 	(*ExecPreviewRan)(nil),        // 17: ultra.v1.ExecPreviewRan
-	(*EventPayload)(nil),          // 18: ultra.v1.EventPayload
-	(*SessionEvent)(nil),          // 19: ultra.v1.SessionEvent
-	(*AppendRequest)(nil),         // 20: ultra.v1.AppendRequest
-	(*AppendResponse)(nil),        // 21: ultra.v1.AppendResponse
-	(*SubscribeRequest)(nil),      // 22: ultra.v1.SubscribeRequest
-	(*SubscribeResponse)(nil),     // 23: ultra.v1.SubscribeResponse
-	(*timestamppb.Timestamp)(nil), // 24: google.protobuf.Timestamp
+	(*ParticipantTransition)(nil), // 18: ultra.v1.ParticipantTransition
+	(*RunSpawned)(nil),            // 19: ultra.v1.RunSpawned
+	(*MemoryChanged)(nil),         // 20: ultra.v1.MemoryChanged
+	(*PermissionDenied)(nil),      // 21: ultra.v1.PermissionDenied
+	(*EventPayload)(nil),          // 22: ultra.v1.EventPayload
+	(*SessionEvent)(nil),          // 23: ultra.v1.SessionEvent
+	(*AppendRequest)(nil),         // 24: ultra.v1.AppendRequest
+	(*AppendResponse)(nil),        // 25: ultra.v1.AppendResponse
+	(*SubscribeRequest)(nil),      // 26: ultra.v1.SubscribeRequest
+	(*SubscribeResponse)(nil),     // 27: ultra.v1.SubscribeResponse
+	(*timestamppb.Timestamp)(nil), // 28: google.protobuf.Timestamp
 }
 var file_ultra_v1_event_proto_depIdxs = []int32{
 	0,  // 0: ultra.v1.Actor.type:type_name -> ultra.v1.ActorType
@@ -1998,20 +2391,27 @@ var file_ultra_v1_event_proto_depIdxs = []int32{
 	16, // 19: ultra.v1.EventPayload.env_terminating:type_name -> ultra.v1.EnvLifecycle
 	16, // 20: ultra.v1.EventPayload.env_terminated:type_name -> ultra.v1.EnvLifecycle
 	17, // 21: ultra.v1.EventPayload.exec_preview_ran:type_name -> ultra.v1.ExecPreviewRan
-	24, // 22: ultra.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
-	1,  // 23: ultra.v1.SessionEvent.actor:type_name -> ultra.v1.Actor
-	18, // 24: ultra.v1.SessionEvent.payload:type_name -> ultra.v1.EventPayload
-	18, // 25: ultra.v1.AppendRequest.payload:type_name -> ultra.v1.EventPayload
-	19, // 26: ultra.v1.SubscribeResponse.event:type_name -> ultra.v1.SessionEvent
-	20, // 27: ultra.v1.EventService.Append:input_type -> ultra.v1.AppendRequest
-	22, // 28: ultra.v1.EventService.Subscribe:input_type -> ultra.v1.SubscribeRequest
-	21, // 29: ultra.v1.EventService.Append:output_type -> ultra.v1.AppendResponse
-	23, // 30: ultra.v1.EventService.Subscribe:output_type -> ultra.v1.SubscribeResponse
-	29, // [29:31] is the sub-list for method output_type
-	27, // [27:29] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	18, // 22: ultra.v1.EventPayload.participant_joined:type_name -> ultra.v1.ParticipantTransition
+	18, // 23: ultra.v1.EventPayload.participant_left:type_name -> ultra.v1.ParticipantTransition
+	18, // 24: ultra.v1.EventPayload.participant_idle:type_name -> ultra.v1.ParticipantTransition
+	19, // 25: ultra.v1.EventPayload.run_spawned:type_name -> ultra.v1.RunSpawned
+	20, // 26: ultra.v1.EventPayload.memory_set:type_name -> ultra.v1.MemoryChanged
+	20, // 27: ultra.v1.EventPayload.memory_deleted:type_name -> ultra.v1.MemoryChanged
+	21, // 28: ultra.v1.EventPayload.permission_denied:type_name -> ultra.v1.PermissionDenied
+	28, // 29: ultra.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
+	1,  // 30: ultra.v1.SessionEvent.actor:type_name -> ultra.v1.Actor
+	22, // 31: ultra.v1.SessionEvent.payload:type_name -> ultra.v1.EventPayload
+	22, // 32: ultra.v1.AppendRequest.payload:type_name -> ultra.v1.EventPayload
+	23, // 33: ultra.v1.SubscribeResponse.event:type_name -> ultra.v1.SessionEvent
+	24, // 34: ultra.v1.EventService.Append:input_type -> ultra.v1.AppendRequest
+	26, // 35: ultra.v1.EventService.Subscribe:input_type -> ultra.v1.SubscribeRequest
+	25, // 36: ultra.v1.EventService.Append:output_type -> ultra.v1.AppendResponse
+	27, // 37: ultra.v1.EventService.Subscribe:output_type -> ultra.v1.SubscribeResponse
+	36, // [36:38] is the sub-list for method output_type
+	34, // [34:36] is the sub-list for method input_type
+	34, // [34:34] is the sub-list for extension type_name
+	34, // [34:34] is the sub-list for extension extendee
+	0,  // [0:34] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_event_proto_init() }
@@ -2019,7 +2419,7 @@ func file_ultra_v1_event_proto_init() {
 	if File_ultra_v1_event_proto != nil {
 		return
 	}
-	file_ultra_v1_event_proto_msgTypes[17].OneofWrappers = []any{
+	file_ultra_v1_event_proto_msgTypes[21].OneofWrappers = []any{
 		(*EventPayload_UserMessage)(nil),
 		(*EventPayload_Annotation)(nil),
 		(*EventPayload_RunStarted)(nil),
@@ -2040,6 +2440,13 @@ func file_ultra_v1_event_proto_init() {
 		(*EventPayload_EnvTerminating)(nil),
 		(*EventPayload_EnvTerminated)(nil),
 		(*EventPayload_ExecPreviewRan)(nil),
+		(*EventPayload_ParticipantJoined)(nil),
+		(*EventPayload_ParticipantLeft)(nil),
+		(*EventPayload_ParticipantIdle)(nil),
+		(*EventPayload_RunSpawned)(nil),
+		(*EventPayload_MemorySet)(nil),
+		(*EventPayload_MemoryDeleted)(nil),
+		(*EventPayload_PermissionDenied)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -2047,7 +2454,7 @@ func file_ultra_v1_event_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ultra_v1_event_proto_rawDesc), len(file_ultra_v1_event_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   23,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

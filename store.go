@@ -64,6 +64,9 @@ type OrgScope interface {
 	Envs() EnvStore
 	Providers() ProviderInstanceStore
 	Usage() UsageStore
+	Participants() ParticipantStore
+	Memory() SessionMemoryStore
+	Waits() RunWaitStore
 }
 
 // SessionStore manages sessions within one org.
