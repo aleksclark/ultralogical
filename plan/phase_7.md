@@ -48,7 +48,7 @@ proration, enterprise SSO/SCIM.
 
 ### Auth
 
-- `server/auth`: `Authenticator` interface (OIDC impl first: verify JWT, map to user →
+- `ultra.Authenticator` (root-package seam): OIDC impl first (verify JWT, map to user →
   org memberships); static-token impl retained for dev/harness.
 - Every RPC handler resolves `(identity, org, session, role)`; a table-driven policy
   maps RPC → minimum role (e.g. `Subscribe`: observer; `Append`/`StartRun`: member;

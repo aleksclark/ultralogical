@@ -27,22 +27,27 @@ task dev               # local postgres + ultrad
 2. **Tenancy is structural.** All tenant data access goes through
    `store.Org(id)`. Missing and cross-tenant must be indistinguishable
    (`not found`, same message).
-3. **Protos are the source of truth.** Edit `proto/`, run `task generate`,
+3. **Package layout is law.** Root package = domain types + interfaces only;
+   subpackages grouped by dependency (`postgres/`, `http/`, `jobqueue/*`);
+   main packages wire deps. See agent_docs/conventions.md.
+4. **Protos are the source of truth.** Edit `proto/`, run `task generate`,
    commit generated code in the same change. Schema changes are additive-only.
-4. **The event log is the contract.** Per-session gapless seq; NOTIFY is a
+5. **The event log is the contract.** Per-session gapless seq; NOTIFY is a
    wakeup hint, never a data channel; assert against `Subscribe` in tests.
-5. **Seams stay clean.** No river/pgx types past `jobqueue`; new seam impls
-   must pass the conformance suite unmodified.
-6. Follow the phase plan (`plan/`) — don't build ahead of the current phase
+6. **Seams stay clean.** No river/pgx types past `jobqueue`; handlers depend
+   only on root interfaces; new seam impls must pass the conformance suite
+   unmodified.
+7. Follow the phase plan (`plan/`) — don't build ahead of the current phase
    or invent stopgaps for unbuilt subsystems.
 
 ## Docs index
 
 | Doc | Read when |
 |---|---|
-| [agent_docs/architecture.md](agent_docs/architecture.md) | touching server, store, eventbus, tenancy, queue |
+| [agent_docs/architecture.md](agent_docs/architecture.md) | touching http, store, eventbus, tenancy, queue, clients/UIs |
+| [agent_docs/package_layout.md](agent_docs/package_layout.md) | deciding where new code goes |
 | [agent_docs/testing.md](agent_docs/testing.md) | writing/running tests, using the harness |
 | [agent_docs/codegen.md](agent_docs/codegen.md) | changing protos, adding events/RPCs |
-| [agent_docs/conventions.md](agent_docs/conventions.md) | code style, errors, migrations, never-do list |
+| [agent_docs/conventions.md](agent_docs/conventions.md) | code style, layout rules, errors, migrations, never-do list |
 | [plan/index.md](plan/index.md) | architecture rationale + full roadmap |
 | [plan/phase_1.md](plan/phase_1.md) | the next phase to implement |

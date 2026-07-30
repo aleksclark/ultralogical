@@ -1,9 +1,4 @@
-// Package eventbus fans session events out to subscribers. It combines a
-// catch-up read from the store with Postgres LISTEN/NOTIFY wakeups and a
-// periodic poll fallback, so delivery stays correct even when notifications
-// are dropped: the notify payload is only ever a hint to read forward from
-// the last delivered seq.
-package eventbus
+package postgres
 
 import (
 	"context"
@@ -15,11 +10,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/postgres"
 )
 
-// Bus delivers ordered, gapless per-session event streams.
-type Bus struct {
+// EventChannel is the Postgres NOTIFY channel used to wake event
+// subscribers. The payload is "<session_id>:<seq>" and is only a wakeup
+// hint; subscribers always read forward from their last delivered seq.
+const EventChannel = "session_events"
+
+// EventBus implements ultra.EventBus on Postgres: a catch-up read from the
+// store combined with LISTEN/NOTIFY wakeups and a periodic poll fallback, so
+// delivery stays correct even when notifications are dropped.
+type EventBus struct {
 	store    ultra.Store
 	pool     *pgxpool.Pool
 	log      *slog.Logger
@@ -32,12 +33,12 @@ type Bus struct {
 	done   chan struct{}
 }
 
-// New creates a Bus. pollTick defaults to 2s.
-func New(store ultra.Store, pool *pgxpool.Pool, log *slog.Logger, pollTick time.Duration) *Bus {
+// NewEventBus creates an EventBus. pollTick defaults to 2s.
+func NewEventBus(store ultra.Store, pool *pgxpool.Pool, log *slog.Logger, pollTick time.Duration) *EventBus {
 	if pollTick <= 0 {
 		pollTick = 2 * time.Second
 	}
-	return &Bus{
+	return &EventBus{
 		store:    store,
 		pool:     pool,
 		log:      log,
@@ -48,7 +49,7 @@ func New(store ultra.Store, pool *pgxpool.Pool, log *slog.Logger, pollTick time.
 
 // Start begins the LISTEN loop. Subscribers work without it (poll fallback),
 // just with higher latency.
-func (b *Bus) Start() {
+func (b *EventBus) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
 	b.cancel = cancel
 	b.done = make(chan struct{})
@@ -56,7 +57,7 @@ func (b *Bus) Start() {
 }
 
 // Stop terminates the LISTEN loop.
-func (b *Bus) Stop() {
+func (b *EventBus) Stop() {
 	if b.cancel == nil {
 		return
 	}
@@ -64,10 +65,8 @@ func (b *Bus) Stop() {
 	<-b.done
 }
 
-// Subscribe streams events for the session in the given org with seq >
-// fromSeq until ctx is cancelled. Authorization must be checked by the
-// caller; the read itself is org-scoped so a wrong org yields nothing.
-func (b *Bus) Subscribe(ctx context.Context, org ultra.OrgID, session ultra.SessionID, fromSeq int64) (<-chan ultra.Event, error) {
+// Subscribe implements ultra.EventBus.
+func (b *EventBus) Subscribe(ctx context.Context, org ultra.OrgID, session ultra.SessionID, fromSeq int64) (<-chan ultra.Event, error) {
 	wake := make(chan struct{}, 1)
 	b.addWaiter(session, wake)
 
@@ -106,7 +105,7 @@ func (b *Bus) Subscribe(ctx context.Context, org ultra.OrgID, session ultra.Sess
 	return out, nil
 }
 
-func (b *Bus) addWaiter(session ultra.SessionID, ch chan struct{}) {
+func (b *EventBus) addWaiter(session ultra.SessionID, ch chan struct{}) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.subs[session] == nil {
@@ -115,7 +114,7 @@ func (b *Bus) addWaiter(session ultra.SessionID, ch chan struct{}) {
 	b.subs[session][ch] = struct{}{}
 }
 
-func (b *Bus) removeWaiter(session ultra.SessionID, ch chan struct{}) {
+func (b *EventBus) removeWaiter(session ultra.SessionID, ch chan struct{}) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	delete(b.subs[session], ch)
@@ -124,7 +123,7 @@ func (b *Bus) removeWaiter(session ultra.SessionID, ch chan struct{}) {
 	}
 }
 
-func (b *Bus) wakeSession(session ultra.SessionID) {
+func (b *EventBus) wakeSession(session ultra.SessionID) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	for ch := range b.subs[session] {
@@ -135,10 +134,10 @@ func (b *Bus) wakeSession(session ultra.SessionID) {
 	}
 }
 
-// listenLoop holds a dedicated connection with LISTEN and dispatches wakeups.
-// On connection failure it retries with backoff; subscribers keep making
-// progress via the poll tick in the meantime.
-func (b *Bus) listenLoop(ctx context.Context) {
+// listenLoop holds a dedicated connection with LISTEN and dispatches
+// wakeups. On connection failure it retries with backoff; subscribers keep
+// making progress via the poll tick in the meantime.
+func (b *EventBus) listenLoop(ctx context.Context) {
 	defer close(b.done)
 	for {
 		if ctx.Err() != nil {
@@ -155,13 +154,13 @@ func (b *Bus) listenLoop(ctx context.Context) {
 	}
 }
 
-func (b *Bus) listenOnce(ctx context.Context) error {
+func (b *EventBus) listenOnce(ctx context.Context) error {
 	conn, err := b.pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
 	defer conn.Release()
-	if _, err := conn.Exec(ctx, "LISTEN "+postgres.EventChannel); err != nil {
+	if _, err := conn.Exec(ctx, "LISTEN "+EventChannel); err != nil {
 		return err
 	}
 	for {

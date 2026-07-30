@@ -18,9 +18,9 @@ import (
 	"syscall"
 	"time"
 
+	ultra "github.com/aleksclark/ultralogical"
+	ultrahttp "github.com/aleksclark/ultralogical/http"
 	"github.com/aleksclark/ultralogical/postgres"
-	"github.com/aleksclark/ultralogical/server"
-	"github.com/aleksclark/ultralogical/server/eventbus"
 )
 
 func main() {
@@ -43,7 +43,7 @@ func run(log *slog.Logger) error {
 	if addr == "" {
 		addr = ":8080"
 	}
-	devTokens := server.ParseDevTokens(os.Getenv("ULTRA_DEV_TOKENS"))
+	devTokens := ultra.ParseDevTokens(os.Getenv("ULTRA_DEV_TOKENS"))
 	if len(devTokens) == 0 {
 		return errors.New("ULTRA_DEV_TOKENS is required (no other authenticator is configured yet)")
 	}
@@ -61,13 +61,13 @@ func run(log *slog.Logger) error {
 	}
 	defer pool.Close()
 
-	bus := eventbus.New(store, pool, log, 0)
+	bus := postgres.NewEventBus(store, pool, log, 0)
 	bus.Start()
 	defer bus.Stop()
 
-	handler := server.NewHandler(server.Config{
+	handler := ultrahttp.NewHandler(ultrahttp.Config{
 		Store: store,
-		Auth:  server.NewDevTokenAuthenticator(store, devTokens),
+		Auth:  ultra.NewDevTokenAuthenticator(store, devTokens),
 		Bus:   bus,
 		Log:   log,
 	})

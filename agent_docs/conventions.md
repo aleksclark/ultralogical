@@ -1,17 +1,44 @@
 # Conventions
 
+## Package layout
+
+We follow the standard package layout in
+[`package_layout.md`](package_layout.md), adapted as follows:
+
+1. **Root package (`ultra`) is for domain types** — types (`Org`, `Session`,
+   `Event`, ...) and interfaces (`Store`, `EventBus`, `Authenticator`). It
+   depends on no other package in the app. Logic is allowed only when it
+   depends solely on domain types (e.g. `DevTokenAuthenticator`).
+2. **Subpackages are grouped by dependency** — `postgres/` owns everything
+   pgx/Postgres (Store impl, EventBus impl, migrations); `http/` isolates
+   all net/http + ConnectRPC code (the transport adapter);
+   `jobqueue/river/` and `jobqueue/inproc/` own their backends.
+   Cross-dependency communication happens only through root-package
+   interfaces. Small interface-only seam packages (`jobqueue`, like stdlib
+   `io`) are allowed when the seam's contract needs types (pgx.Tx) that
+   would pollute the root package.
+3. **Tenet 3 (shared mock subpackage) is deliberately replaced.** We do not
+   mock our own components; the connection points the layout creates are
+   exercised by real implementations under conformance suites and the
+   real-stack harness instead (see agent_docs/testing.md). Do not add a
+   `mock/` package.
+4. **Main packages tie dependencies together** — `cmd/ultrad` (and later
+   `cmd/worker`, `cmd/ultra`) do compile-time dependency injection and
+   nothing else.
+
+Client libraries live in `clients/<lang>/`; UI applications in `ui/<app>/`;
+committed Go codegen in `gen/go/` — see agent_docs/architecture.md
+("Clients & UIs").
+
 ## Go
 
-- Module `github.com/aleksclark/ultralogical`, root package `ultra`. Ben
-  Johnson layout: root = domain types + interfaces (no I/O); subpackages
-  implement (`postgres/`, `jobqueue/river/`, `server/`, ...).
-- Domain IDs are typed strings (`ultra.OrgID`, `ultra.SessionID`, ...) —
-  UUIDs minted with `google/uuid` at creation sites (handlers), not in the
-  store.
-- Errors: stores translate backend errors to the sentinels in `errors.go`
-  (`ErrNotFound`, `ErrAlreadyExists`, `ErrPermissionDenied`); handlers map
-  sentinels to Connect codes in `server/convert.go:mapStoreErr`. Internal
-  error details never reach clients.
+- Module `github.com/aleksclark/ultralogical`, root package `ultra`. Domain
+  IDs are typed strings (`ultra.OrgID`, `ultra.SessionID`, ...) — UUIDs
+  minted with `google/uuid` at creation sites (handlers), not in the store.
+- Errors: stores translate backend errors to the sentinels in the root
+  package (`ErrNotFound`, `ErrAlreadyExists`, `ErrPermissionDenied`);
+  handlers map sentinels to Connect codes in `http/convert.go:mapStoreErr`.
+  Internal error details never reach clients.
 - Wrap errors with package-prefixed context: `fmt.Errorf("postgres: create
   org: %w", err)`.
 - SQL lives inline in store methods (no ORM, no query builder). Every
@@ -22,8 +49,8 @@
   migration; add a new one.
 - Transactions: `Store.Tx(ctx, fn)`; nested calls reuse the outer tx. Use
   `(*postgres.Store).PgxTx()` to reach the pgx.Tx for `jobqueue.EnqueueTx`.
-- Interfaces own their seams: `jobqueue`, `server.Authenticator`,
-  `eventbus`. Backends/impls never leak types through a seam; new impls must
+- Interfaces own their seams: `Store`/`EventBus`/`Authenticator` (root),
+  `jobqueue`. Backends/impls never leak types through a seam; new impls must
   pass the seam's conformance suite.
 - `log/slog` for logging (JSON in ultrad). No `fmt.Print*`.
 - Lint: `golangci-lint` (config `.golangci.yml`) + `go vet` + `buf lint`,
@@ -52,7 +79,8 @@
   not-found).
 - Return different errors for "missing" vs "not yours" (existence oracle).
 - Import river/pgx types into handler or domain code across the jobqueue
-  seam.
-- Mock the store, the queue, the bus, or ultrad in tests.
+  seam; import `postgres` from `http` (handlers see only root interfaces).
+- Mock the store, the queue, the bus, or ultrad in tests; add a `mock/`
+  package.
 - Weaken a conformance suite to make an implementation pass.
 - Depend on NOTIFY payloads for event content (they are wakeup hints only).

@@ -1,7 +1,8 @@
-// Package server wires the Connect RPC handlers, authentication, and event
-// fan-out into an http.Handler. It is transport-only: all domain behavior
-// lives in the root package and its store implementations.
-package server
+// Package http is the transport adapter between the ultra domain and the
+// HTTP/ConnectRPC protocol. All HTTP and Connect code is isolated here
+// (dependency-grouped per agent_docs/package_layout.md); handlers are thin:
+// authenticate, resolve org, check membership, call the store, convert.
+package http
 
 import (
 	"log/slog"
@@ -11,14 +12,13 @@ import (
 
 	ultra "github.com/aleksclark/ultralogical"
 	"github.com/aleksclark/ultralogical/gen/go/ultra/v1/ultrav1connect"
-	"github.com/aleksclark/ultralogical/server/eventbus"
 )
 
-// Config carries server dependencies.
+// Config carries handler dependencies, injected by the main package.
 type Config struct {
 	Store ultra.Store
-	Auth  Authenticator
-	Bus   *eventbus.Bus
+	Auth  ultra.Authenticator
+	Bus   ultra.EventBus
 	Log   *slog.Logger
 }
 

@@ -1,4 +1,4 @@
-package server
+package http
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 
 	ultra "github.com/aleksclark/ultralogical"
 	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/server/eventbus"
 )
 
 // sessionHandler implements ultrav1connect.SessionServiceHandler.
@@ -83,8 +82,8 @@ func (h *sessionHandler) ListSessions(ctx context.Context, req *connect.Request[
 // eventHandler implements ultrav1connect.EventServiceHandler.
 type eventHandler struct {
 	store ultra.Store
-	auth  Authenticator
-	bus   *eventbus.Bus
+	auth  ultra.Authenticator
+	bus   ultra.EventBus
 }
 
 func (h *eventHandler) Append(ctx context.Context, req *connect.Request[ultrav1.AppendRequest]) (*connect.Response[ultrav1.AppendResponse], error) {

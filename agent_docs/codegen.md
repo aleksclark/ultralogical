@@ -46,7 +46,7 @@ remove, or retype).
    `proto/ultra/v1/event.proto`.
 2. `task generate`.
 3. Add the kind constant in `event.go` (root package).
-4. Add both directions in `server/convert.go` (`payloadToDomain`,
+4. Add both directions in `http/convert.go` (`payloadToDomain`,
    `payloadFromDomain`).
 5. Extend `testkit/testclient` helpers if tests need to produce/assert it.
 6. Functional test asserting it round-trips through Append/Subscribe.
@@ -54,9 +54,10 @@ remove, or retype).
 ## Adding an RPC/service
 
 1. Define in proto; `task generate`.
-2. Implement the handler in `server/` (thin: authenticate → resolve org →
-   check membership → call store → convert). Register it in
-   `server.NewHandler` — unary services take the auth interceptor;
-   streaming RPCs must authenticate inside the handler.
+2. Implement the handler in `http/` (thin: authenticate → resolve org →
+   check membership → call store → convert). Handlers depend only on root
+   interfaces (`ultra.Store`, `ultra.EventBus`, `ultra.Authenticator`).
+   Register it in `http.NewHandler` — unary services take the auth
+   interceptor; streaming RPCs must authenticate inside the handler.
 3. Wire testclient support + functional coverage, including the
    cross-tenant denial case (same not-found as missing).

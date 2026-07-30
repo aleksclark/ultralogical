@@ -18,7 +18,8 @@ refuse it.
 - Repo layout (see [index §2.9](index.md#29-repo-layout)), Go module, task runner, CI.
 - `proto/ultra/v1/` with `org.proto`, `session.proto`, `event.proto`; buf toolchain;
   committed codegen for Go and TypeScript.
-- Domain types + `Store` interface (root package, Ben Johnson layout); `postgres/`
+- Domain types + `Store` interface (root package, per the standard layout in
+  `agent_docs/package_layout.md`); `postgres/`
   implementation covering orgs, users, memberships, sessions, and events; goose
   migrations; pgx.
 - Tenancy scaffolding: `orgs`, `users`, `org_members` tables; every store access goes
@@ -30,7 +31,7 @@ refuse it.
 - `cmd/ultrad` serving `SessionService.{CreateSession,GetSession,ListSessions}` and
   `EventService.{Append,Subscribe}` via connect-go.
 - Event fan-out: Postgres LISTEN/NOTIFY per session with poll-from-seq fallback, behind
-  a `server/eventbus` interface.
+  the root-package `ultra.EventBus` interface (implemented in `postgres/`).
 - `testkit/harness` + `testkit/testclient`.
 - CI: lint (golangci-lint), `buf lint`, `buf breaking`, codegen-diff gate, unit tests,
   functional suite.
@@ -79,11 +80,13 @@ type EventStore interface {
   is not a high-contention entity) and guarantees gapless monotonic seq.
 - `Append` emits `NOTIFY session_events, '<session_id>:<seq>'` in the same transaction.
 
-### Event fan-out (`server/eventbus`)
+### Event fan-out (`ultra.EventBus`)
 
 ```go
-type Bus interface {
-    Subscribe(ctx context.Context, sessionID ID, fromSeq int64) (<-chan Event, error)
+// root package; implemented by postgres.EventBus (it depends on pgx, so the
+// impl lives with the Postgres dependency group)
+type EventBus interface {
+    Subscribe(ctx context.Context, org OrgID, session SessionID, fromSeq int64) (<-chan Event, error)
 }
 ```
 
@@ -116,10 +119,10 @@ same visibility contract as river.
 2. Protos + buf config + codegen commit + diff gate.
 3. Migrations + postgres store (orgs, users, members, sessions, events) + org-scope
    pattern + store tests against real Postgres.
-4. eventbus (LISTEN/NOTIFY + poll fallback) + tests.
+4. eventbus (LISTEN/NOTIFY + poll fallback, in `postgres/`) + tests.
 5. jobqueue interface, river impl, inproc impl, conformance suite.
-6. ultrad: connect handlers, dev token→(user,org) auth, org membership check on every
-   session RPC, graceful shutdown.
+6. ultrad (`cmd/ultrad` wiring the `http/` transport adapter): connect handlers, dev
+   token→(user,org) auth, org membership check on every session RPC, graceful shutdown.
 7. testkit harness (seeds two orgs + users by default) + testclient; wire functional
    suite into CI.
 8. TS client smoke test (node) in CI.

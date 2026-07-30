@@ -1,6 +1,9 @@
 package ultra
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // ActorType classifies who produced an event.
 type ActorType string
@@ -35,4 +38,12 @@ type Event struct {
 	Actor     Actor
 	Kind      string
 	Payload   []byte
+}
+
+// EventBus delivers ordered, gapless per-session event streams: a catch-up
+// read from the log followed by live delivery until ctx is cancelled.
+// Authorization must be checked by the caller; the read itself is org-scoped
+// so a wrong org yields nothing.
+type EventBus interface {
+	Subscribe(ctx context.Context, org OrgID, session SessionID, fromSeq int64) (<-chan Event, error)
 }

@@ -5,35 +5,66 @@ roadmap: [`plan/index.md`](../plan/index.md). This doc describes what exists
 in the codebase today (Phase 0) and the load-bearing patterns you must
 preserve.
 
+Package organization follows the standard layout in
+[`package_layout.md`](package_layout.md): root package = domain types,
+subpackages grouped by dependency, main packages wire everything. (Tenet 3,
+shared mocks, is deliberately replaced by conformance suites + real-backend
+tests — see agent_docs/testing.md.)
+
 ## Components
 
 ```
-clients (gen/go, clients/ts, testkit/testclient)
+clients (gen/go, clients/ts, testkit/testclient)   UIs (ui/*, later phases)
         │  ConnectRPC over HTTP (h1 + unencrypted h2)
         ▼
-cmd/ultrad ── server/ (handlers, auth) ── server/eventbus (fan-out)
+cmd/ultrad ──── http/ (transport adapter: handlers, auth, conversion)
         │
         ▼
-postgres/ (Store impl, goose migrations)      jobqueue/ (river | inproc)
-        └──────────── one Postgres ────────────────┘
+ultra (root: domain types + interfaces: Store, EventBus, Authenticator)
+        ▲                    ▲
+        │ implements         │ implements
+postgres/ (Store, EventBus, migrations)      jobqueue/ (river | inproc)
+        └──────────────── one Postgres ──────────────┘
 ```
 
-- **Root package `ultra`** — pure domain types + interfaces (`Store`,
-  `OrgScope`, `EventStore`, ...). No I/O, no deps beyond stdlib. Ben Johnson
-  layout: the root defines the domain, subpackages implement it.
-- **`postgres/`** — the only Store implementation. Migrations are embedded
-  (`postgres/migrations/*.sql`, goose format) and applied via
-  `postgres.Migrate`.
-- **`server/`** — Connect handlers, auth, proto↔domain conversion
-  (`convert.go`). Transport-only: no business logic.
-- **`server/eventbus`** — event fan-out (see below).
-- **`jobqueue/`** — the queue seam; `river/` (prod) and `inproc/` (tests)
-  implementations, `conformance/` shared suite.
-- **`cmd/ultrad`** — the API server binary. Env-configured (`DATABASE_URL`,
+- **Root package `ultra`** — the domain: types (`Org`, `User`, `Session`,
+  `Event`) and interfaces (`Store`, `OrgScope`, `EventStore`, `EventBus`,
+  `Authenticator`), plus domain-only logic (`DevTokenAuthenticator` — no
+  external deps). The root package depends on nothing else in the app.
+- **`postgres/`** — everything that depends on Postgres/pgx: the only `Store`
+  implementation, the `EventBus` implementation (LISTEN/NOTIFY), and embedded
+  goose migrations (`postgres/migrations/*.sql`, applied via
+  `postgres.Migrate`).
+- **`http/`** — the transport adapter between the domain and HTTP/ConnectRPC.
+  All Connect/net-http code is isolated here: handlers, auth interceptor,
+  proto↔domain conversion (`convert.go`). Transport-only: no business logic.
+  Handlers depend on domain interfaces (`ultra.Store`, `ultra.EventBus`,
+  `ultra.Authenticator`), never on `postgres` types.
+- **`jobqueue/`** — the queue seam (interface package, like stdlib `io`);
+  `river/` (prod) and `inproc/` (tests) implementations grouped by
+  dependency, `conformance/` shared suite.
+- **`cmd/ultrad`** — main package: wires postgres + http + eventbus together
+  (compile-time dependency injection). Env-configured (`DATABASE_URL`,
   `ULTRA_ADDR`, `ULTRA_DEV_TOKENS`, `ULTRA_MIGRATE`).
 - **`testkit/`** — `pgtest` (shared PG container, DB per test), `harness`
   (boots the real stack), `testclient` (wraps the generated client).
 - **`e2e/`** — the functional API suite (acceptance tests A0.x).
+
+## Clients & UIs
+
+Two distinct trees, both consumers of the same protos:
+
+- **`clients/<lang>/`** — client *libraries* per language. Generated code +
+  a thin ergonomic wrapper; published artifacts. Today: `clients/ts`
+  (protobuf-es under `clients/ts/src/gen`, smoke test). Phase 8 adds
+  `clients/rust`. The Go client is the generated code in `gen/go` (shared
+  with the server); `testkit/testclient` is its test-facing wrapper.
+- **`ui/<app>/`** — UI *applications*, each consuming a client library and
+  owning its golden functional suite: `ui/web` (React SPA + Playwright,
+  Phase 1), `ui/gpui` (rust native, Phase 8). UIs never reach around the
+  client API.
+- **`gen/go/`** — committed Go codegen (server handlers + client stubs).
+  Regenerate with `task generate`; CI diffs it.
 
 ## The event log (the core invariant)
 
@@ -46,11 +77,13 @@ a **per-session, gapless, monotonic seq**:
 - The same transaction `pg_notify`s channel `session_events` with payload
   `<session_id>:<seq>`. The payload is **only a wakeup hint**: subscribers
   always read forward from their last delivered seq via `Range`.
-- `eventbus.Bus.Subscribe` = catch-up read → LISTEN wakeups → 2s poll-tick
-  fallback. Delivery is correct even if every notification is dropped.
+- `eventbus`: the domain interface is `ultra.EventBus`; the Postgres
+  implementation (`postgres.EventBus`) = catch-up read → LISTEN wakeups →
+  2s poll-tick fallback. Delivery is correct even if every notification is
+  dropped.
 - Streaming, multiplayer, history replay, and test assertions are all the
   same mechanism: `EventService.Subscribe(from_seq)`.
-- Event payloads are stored as `(kind, protojson)`; `server/convert.go` maps
+- Event payloads are stored as `(kind, protojson)`; `http/convert.go` maps
   the proto `EventPayload` oneof to and from that pair. New event variants =
   new oneof field + kind constant + convert cases (see agent_docs/codegen.md).
 
@@ -73,11 +106,13 @@ arrive. Clients must skip event-less responses.
 
 ## Auth
 
-`server.Authenticator` seam. Current impl: static dev tokens
-(`ULTRA_DEV_TOKENS="token=email,..."`) resolved to existing user rows. Unary
-RPCs authenticate via interceptor; streaming RPCs authenticate inside the
-handler (interceptors don't cover them). OIDC replaces the impl in Phase 7
-behind the same interface.
+`ultra.Authenticator` seam (root package). Current impl:
+`ultra.DevTokenAuthenticator` — static dev tokens
+(`ULTRA_DEV_TOKENS="token=email,..."`) resolved to existing user rows. The
+http package extracts bearer tokens: unary RPCs authenticate via
+interceptor; streaming RPCs authenticate inside the handler (interceptors
+don't cover them). OIDC replaces the impl in Phase 7 behind the same
+interface.
 
 ## Queue seam
 

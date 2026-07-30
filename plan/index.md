@@ -325,29 +325,48 @@ zero per plan). This ledger is the billing source of truth.
 
 ### 2.9 Repo layout
 
+Go code follows the standard package layout (`agent_docs/package_layout.md`):
+the root package holds domain types and interfaces and depends on nothing in
+the app; subpackages are grouped by dependency and communicate only through
+root interfaces; main packages under `/cmd` wire dependencies together. The
+layout's mock tenet is replaced by conformance suites + real-backend tests
+(§3).
+
 ```
 /proto/ultra/v1/            *.proto, buf.yaml, buf.gen.yaml
-/gen/                       generated go / ts / rust client+server stubs (committed)
+/gen/go/                    committed Go codegen (server handlers + client stubs)
 /                           root Go module github.com/aleksclark/ultralogical
-  store.go, session.go, org.go, ... domain types + Store interface (Ben Johnson layout)
-  /postgres/                Store impl, migrations/
+  ultra.go, store.go, event.go, auth.go, ...
+                            domain types + interfaces (Store, EventBus,
+                            Authenticator, ...); no app dependencies
+  /postgres/                everything pgx/Postgres: Store impl, EventBus
+                            (LISTEN/NOTIFY) impl, migrations/
+  /http/                    transport adapter: all net/http + ConnectRPC code
+                            (handlers, auth interceptor, proto↔domain convert)
   /secrets/                 credential encryption (AES-GCM + KMS keyring), redaction
   /billing/                 metering ledger, Stripe adapter behind an interface
-  /jobqueue/  /jobqueue/river/  /jobqueue/inproc/
+  /jobqueue/                queue seam (interface pkg) /river/ /inproc/ /conformance/
   /loop/                    fantasy loop, loop registry, native tools, mcpTool adapter
   /envprovider/  /envprovider/local/  /envprovider/nomad/  /envprovider/k8s/
                  /envprovider/tunnel/ (cloudflared local connector, server side)
-  /cmd/ultra-env-agent/     user-side local provider + cloudflared dialer
-  /server/                  connect handlers, event fan-out
-  /cmd/ultrad/  /cmd/worker/  /cmd/ultra/ (CLI)
-/testkit/                   testclient (Go, consumes gen/go client), modelscript server,
-                            harness (compose up, seed, assert-on-events)
-/clients/ts/                published TS package wrapping gen/ts
-/clients/rust/              rust crate wrapping tonic-generated stubs
-/ui/web/                    React SPA: vite + shadcn/ui + tailwind; /ui/web/e2e/ playwright
-/ui/gpui/                   rust gpui app (Phase 8)
-/e2e/                       cross-stack golden suites
+  /cmd/ultrad/  /cmd/worker/  /cmd/ultra/ (CLI)  /cmd/ultra-env-agent/
+                            main packages: compile-time dependency injection only
+/testkit/                   pgtest (real PG for tests), harness (boots the real
+                            stack), testclient (wraps gen/go client), modelscript
+/clients/<lang>/            client LIBRARIES per language: generated code + thin
+                            ergonomic wrapper, published artifacts
+  /clients/ts/              @ultralogical/client: protobuf-es gen under src/gen + wrapper
+  /clients/rust/            crate wrapping tonic-generated stubs (Phase 8)
+/ui/<app>/                  UI APPLICATIONS, each consuming a client library and
+                            owning its golden functional suite
+  /ui/web/                  React SPA: vite + shadcn/ui + tailwind; /ui/web/e2e/ playwright
+  /ui/gpui/                 rust gpui app (Phase 8)
+/e2e/                       functional API suite + cross-stack golden suites
 ```
+
+Rule of thumb: `clients/` is what programs consume (typed libraries, one per
+language, generated from one schema); `ui/` is what people use (applications
+built on those libraries). UIs never bypass the client API.
 
 ---
 

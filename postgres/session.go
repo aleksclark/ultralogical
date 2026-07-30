@@ -10,11 +10,6 @@ import (
 	ultra "github.com/aleksclark/ultralogical"
 )
 
-// EventChannel is the Postgres NOTIFY channel used to wake event subscribers.
-// The payload is "<session_id>:<seq>" and is only a wakeup hint; subscribers
-// always read forward from their last delivered seq.
-const EventChannel = "session_events"
-
 // orgScope filters every query by org id, making cross-tenant access
 // structurally impossible at this layer.
 type orgScope struct {

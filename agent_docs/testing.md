@@ -4,6 +4,13 @@ The drift defense. Full strategy: [`plan/index.md §3`](../plan/index.md).
 Non-negotiable principle: **tests exercise the real system through its real
 boundaries. No mocks of our own components, ever.**
 
+This consciously replaces tenet 3 (shared mock subpackage) of
+[`package_layout.md`](package_layout.md): the domain-interface connection
+points that layout creates are exactly where we plug in *real*
+implementations (postgres, river, inproc) validated by conformance suites —
+not mocks. The isolation benefit is preserved; the drift risk of mocks is
+not.
+
 ## Layers
 
 | Layer | Where | What's real |
