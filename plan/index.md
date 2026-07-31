@@ -360,8 +360,9 @@ layout's mock tenet is replaced by conformance suites + real-backend tests
   /clients/rust/            crate wrapping tonic-generated stubs (Phase 8)
 /ui/<app>/                  UI APPLICATIONS, each consuming a client library and
                             owning its golden functional suite
-  /ui/web/                  React SPA: vite + shadcn/ui + tailwind; /ui/web/e2e/ playwright
-  /ui/gpui/                 rust gpui app (Phase 8)
+  /ui/web/                  React SPA: Vite + Tailwind + shadcn/ui, dark-mode theme;
+                            /ui/web/e2e/ Playwright
+  /ui/gpui/                 Rust GPUI desktop app, dark-mode theme
 /e2e/                       functional API suite + cross-stack golden suites
 ```
 
@@ -418,8 +419,7 @@ only when all of these are true:
    tenancy paths.
 2. A Playwright test drives the shipped React application (not raw HTTP) and
    asserts the visible outcome, replay/reconnect behavior, and errors.
-3. A Rust desktop test drives the same desktop client/state core used by the
-   native entrypoint and asserts reduced state—not merely successful RPCs.
+3. A Rust desktop test drives the actual dark-mode GPUI application path (which may share a client/state core with tests) and asserts visible/reduced state—not merely successful RPCs or a headless shell.
 4. Coverage references point to existing, executed tests; CI validates them.
 5. The phase acceptance audit compares the plan, actual proto/UI/client
    surface, and matrix. Planned-but-unbuilt items stay explicitly incomplete;

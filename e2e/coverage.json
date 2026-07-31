@@ -60,13 +60,15 @@
     }
   },
   "session_memory": {
-    "web": {
-      "file": "multiplayer.spec.ts",
-      "test": "shows presence and session memory"
-    },
-    "rust": {
-      "file": "desktop_e2e.rs",
-      "test": "session_memory"
-    }
+    "web": {"file": "multiplayer.spec.ts", "test": "shows presence and session memory"},
+    "rust": {"file": "desktop_e2e.rs", "test": "session_memory"}
+  },
+  "provider_registration_kinds": {
+    "web": {"file": "providers.spec.ts", "test": "registers provider kinds in dark-mode shadcn settings"},
+    "rust": {"file": "provider_e2e.rs", "test": "registers_provider_kinds"}
+  },
+  "provider_failure_validation": {
+    "web": {"file": "providers.spec.ts", "test": "shows provider validation errors"},
+    "rust": {"file": "provider_e2e.rs", "test": "rejects_invalid_provider_config"}
   }
 }

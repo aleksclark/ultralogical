@@ -68,8 +68,10 @@ Two distinct trees, both consumers of the same protos:
   `clients/rust`. The Go client is the generated code in `gen/go` (shared
   with the server); `testkit/testclient` is its test-facing wrapper.
 - **`ui/<app>/`** — UI *applications*, each consuming a client library and
-  owning its golden functional suite: `ui/web` (React + Vite + Tailwind,
-  Playwright golden), `ui/gpui` (rust native, Phase 8). UIs never reach around the
+  owning its golden functional suite: `ui/web` (React + Vite + Tailwind +
+  shadcn/ui, dark-mode only, Playwright golden), `ui/gpui` (Rust GPUI,
+  dark-mode only). The existing desktop core belongs under the GPUI app; a
+  headless core is not a substitute for a GPUI application. UIs never reach around the
   client API.
 - **`gen/go/`** — committed Go codegen (server handlers + client stubs).
   Regenerate with `task generate`; CI diffs it.

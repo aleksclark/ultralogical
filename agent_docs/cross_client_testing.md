@@ -33,10 +33,8 @@ During implementation:
 
 - Add/extend the Go real-stack functional test first; assert the event log and
   durable state, not private helpers.
-- Add Playwright coverage through visible controls and rendered output.
-- Add Rust desktop coverage through `DesktopClient`/`DesktopState` used by the
-  native entrypoint; fold and assert events rather than bypassing the desktop
-  core with raw stubs.
+- Add Playwright coverage through the actual dark-mode shadcn web application, visible controls, and rendered output.
+- Add Rust desktop coverage through the actual dark-mode GPUI application path. `DesktopClient`/`DesktopState` may be shared underneath it, but tests must drive GPUI actions/state used by the native entrypoint; raw stubs or a print-only shell do not count.
 - Add the capability to `e2e/coverage.json` only after both client tests exist.
 
 Before merge:

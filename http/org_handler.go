@@ -16,8 +16,9 @@ import (
 
 // orgHandler implements ultrav1connect.OrgServiceHandler.
 type orgHandler struct {
-	store   ultra.Store
-	keyring secrets.Keyring
+	store         ultra.Store
+	keyring       secrets.Keyring
+	providerKinds map[string]func(context.Context, []byte) error
 }
 
 // requireMember returns the caller's role in the org, collapsing "no such
@@ -253,7 +254,11 @@ func (h *orgHandler) RegisterProvider(ctx context.Context, req *connect.Request[
 	if err := requireAdmin(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
-	if req.Msg.GetKind() != ultra.ProviderKindLocalDocker {
+	validate, enabled := h.providerKinds[req.Msg.GetKind()]
+	if h.providerKinds == nil && req.Msg.GetKind() == ultra.ProviderKindLocalDocker {
+		enabled = true
+	}
+	if !enabled {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("provider kind is not enabled"))
 	}
 	name := req.Msg.GetName()
@@ -267,7 +272,16 @@ func (h *orgHandler) RegisterProvider(ctx context.Context, req *connect.Request[
 	if !json.Valid(config) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("config_json is invalid"))
 	}
-	p := ultra.ProviderInstance{ID: ultra.ProviderInstanceID(uuid.NewString()), OrgID: orgID, Kind: req.Msg.GetKind(), Name: name, Config: config, RateClass: ultra.RateClassBYO, State: "ready"}
+	if validate != nil {
+		if err := validate(ctx, config); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+	}
+	rateClass := ultra.RateClassBYO
+	if req.Msg.GetKind() == ultra.ProviderKindHostedEKS {
+		rateClass = ultra.RateClassHosted
+	}
+	p := ultra.ProviderInstance{ID: ultra.ProviderInstanceID(uuid.NewString()), OrgID: orgID, Kind: req.Msg.GetKind(), Name: name, Config: config, RateClass: rateClass, State: "ready"}
 	if err := h.store.Org(orgID).Providers().Create(ctx, p); err != nil {
 		return nil, mapStoreErr(err)
 	}
