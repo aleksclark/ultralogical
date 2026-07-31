@@ -61,7 +61,7 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Unit, store, provider, and jobqueue conformance tests
-        run: go test ./... -count=1 -skip 'TestA0' -timeout 30m
+        run: go test $(go list ./... | grep -v '/e2e$') -count=1 -timeout 30m
 
   dev-stack:
     runs-on: ubuntu-latest
@@ -112,11 +112,16 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      # GPUI links against xkbcommon's X11 companion library, which
+      # libxkbcommon-dev alone does not provide.
       - name: Install GPUI system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libxkbcommon-dev libwayland-dev libxcb1-dev \
-            libx11-dev libasound2-dev libfontconfig1-dev
+          sudo apt-get install -y \
+            libxkbcommon-dev libxkbcommon-x11-dev \
+            libwayland-dev libxcb1-dev libx11-xcb-dev libx11-dev \
+            libasound2-dev libfontconfig-dev libvulkan1 \
+            cmake clang lld llvm
       - name: Build Rust client and desktop application
         run: cargo test --manifest-path ui/desktop/Cargo.toml --no-run
       - name: Verify rust codegen output covers every proto

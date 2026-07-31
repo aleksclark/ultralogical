@@ -22,9 +22,11 @@ tasks:
       - golangci-lint run
 
   test:
-    desc: Unit + store + jobqueue tests (real Postgres via testcontainers)
+    desc: Unit + store + queue + provider tests (real Postgres via testcontainers)
     cmds:
-      - go test ./... -count=1 -skip 'TestA0' -timeout 15m
+      # Excludes e2e/: the real-stack acceptance suite is task test:functional,
+      # which additionally needs browser and Rust toolchains.
+      - go test $(go list ./... | grep -v '/e2e$') -count=1 -timeout 30m
 
   test:functional:
     desc: Functional API suite (real stack, generated clients)
