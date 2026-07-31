@@ -30,12 +30,22 @@ machines via a cloudflared-connected local provider.
 | [Phase 5](phase_5.md) | BYO & hosted providers: nomad, k8s, cloudflared local, hosted EKS | 2–3 weeks | 2 (parallel with 4) |
 | [Phase 6](phase_6.md) | Advanced loop & tool ergonomics | 2 weeks | 4 |
 | [Phase 6.5](phase_6_5.md) | Advanced-loop validation and e2e audit | 1 week | 6 |
-| [Phase 7](phase_7.md) | Production hardening, billing & queue-swap proof | 2–3 weeks | 6.5 |
-| [Phase 8](phase_8.md) | Rust/gpui UI | 3–4 weeks | 4 (parallelizable) |
+| [Phase 6.6](phase_6_6.md) | Advanced-loop remediation | bounded | 6.5 |
+| [Phase 6.7](phase_6_7.md) | Security-critical orchestration remediation | bounded | 6.6 |
+| [Phase 7](phase_7.md) | Foundations, evidence, and dev-environment completion | 2–3 weeks | 6.7 |
+| [Phase 8](phase_8.md) | Durable orchestration and distributed sessions | 2–3 weeks | 7 |
+| [Phase 9](phase_9.md) | Complete versioned flows | 2 weeks | 8 |
+| [Phase 10](phase_10.md) | Real remote environment providers | 3–4 weeks | 9 |
+| [Phase 11](phase_11.md) | Advanced loop, integrations, automation, and tracing | 3 weeks | 10 |
+| [Phase 12](phase_12.md) | Production security, billing, operations, and queue-swap proof | 3–4 weeks | 11 |
+| [Phase 13](phase_13.md) | Desktop distribution and cross-application release proof | 2 weeks | 12 |
 
 Every phase ships a **vertical slice**: backend + client + UI + tests. A phase is done
-when its acceptance tests pass in CI. No phase builds backend surface that isn't
-exercised end-to-end within that phase.
+only when all of its acceptance tests pass in required CI and an independent audit
+finds no open scoped bullet. Groundwork, schemas, CRUD, aliases, compilation, and
+smoke tests are not substitutes for the behavior named by a phase. Public behavior
+must be exercised end-to-end through the generated Go API, rendered dark shadcn web
+application, and rendered dark GPUI application within the owning phase.
 
 ---
 
@@ -167,10 +177,9 @@ Built directly on `charm.land/fantasy` (pinned; it is WIP upstream — track API
 3. **Integration tools** (MCP-HTTP passthrough to switchboard when attached):
    search/execute meta-tools pattern preserved.
 
-**Advanced loop features** (post-MVP, from crush-modules learnings): hooks (background
-event processors reacting to the session event log), periodic prompts, sub-agent
-definitions as data (markdown/frontmatter-equivalent stored in flow configs), OTLP
-tracing of runs/steps/tool-calls from day one.
+**Advanced loop target features** (to be completed in Phase 11): durable hooks over
+the session event log, periodic prompt firing, sub-agent definitions stored in flow
+configs, and OTLP tracing of runs, steps, and tool calls.
 
 ### 2.4 Security & tenancy model
 
@@ -178,7 +187,7 @@ tracing of runs/steps/tool-calls from day one.
 session); every store method takes an org-scoped handle; every RPC resolves
 `(identity → org membership → role)` before touching data. Cross-org access is
 structurally impossible at the store layer (scoped queries), not just checked at the
-handler layer — and a generated cross-tenant fuzz sweep (A7.3) proves it per-RPC.
+handler layer — and a generated cross-tenant fuzz sweep (A12.1) proves it per-RPC.
 
 From ARP: **monotonically decreasing privilege**. Every run holds a token scoped to
 `(org, session, grants)`. `spawn_agent` mints a child token that can only narrow (subset
@@ -303,10 +312,11 @@ Providers are instantiated per **provider instance** — an org-scoped registrat
   docker provider that dials out via cloudflared, so the platform reaches env endpoints
   through the tunnel with no inbound firewall holes.
 
-A **reconciler job** (queue-scheduled) drives desired→actual state and detects dead envs
-(bezalel `/health`). A **provider conformance suite** (provision → health → exec bash →
-edit file → terminate → verify gone) runs against every provider; local in CI always,
-nomad/k8s in CI via kind + nomad-dev-agent, plus nightly against real clusters.
+The target architecture uses a queue-scheduled reconciler to drive desired→actual
+state and detect dead environments through Bezalel health. Phase 7 completes this
+contract and conformance for local Docker. Phase 10 implements real Kubernetes,
+Nomad, hosted-EKS, and tunnel adapters and runs provider-native CI plus scheduled
+real-cluster conformance.
 
 **Metering:** every env's `ready → terminated` wall time is recorded in the `env_usage`
 ledger (opened at `EnvReady`, closed at terminal state, heartbeat-ticked so a crash
@@ -358,12 +368,12 @@ layout's mock tenet is replaced by conformance suites + real-backend tests
 /clients/<lang>/            client LIBRARIES per language: generated code + thin
                             ergonomic wrapper, published artifacts
   /clients/ts/              @ultralogical/client: protobuf-es gen under src/gen + wrapper
-  /clients/rust/            crate wrapping tonic-generated stubs (Phase 8)
+  /clients/rust/            tonic client used by GPUI; release parity in Phase 13
 /ui/<app>/                  UI APPLICATIONS, each consuming a client library and
                             owning its golden functional suite
   /ui/web/                  React SPA: Vite + Tailwind + shadcn/ui, dark-mode theme;
                             /ui/web/e2e/ Playwright
-  /ui/gpui/                 Rust GPUI desktop app, dark-mode theme
+  /ui/desktop/              Rust GPUI desktop app, dark-mode theme
 /e2e/                       functional API suite + cross-stack golden suites
 ```
 
@@ -443,8 +453,8 @@ independent capability audit. See `agent_docs/cross_client_testing.md`.
 |---|---|
 | fantasy API churn (WIP upstream) | Pin exact version; isolate behind `/loop`; loop registry versioning means upgrades only affect new runs. |
 | One-job-per-step latency | Acceptable for v1; batch N steps per job behind a wall-clock budget later — the seam already allows it. |
-| Event log growth | seq-indexed, append-only; retention/archival in Phase 7; deltas can be coalesced at read time for history rendering. |
-| Rust Connect support maturity | tonic speaks gRPC to ultrad (connect-go serves both protocols); A8.1 verifies parity early in Phase 8, fallback is pure gRPC. |
+| Event log growth | seq-indexed, append-only; retention/archival in Phase 12; deltas can be coalesced at read time for history rendering. |
+| Rust Connect support maturity | tonic speaks gRPC to ultrad (connect-go serves both protocols); application-path evidence is required from Phase 7 onward and full client/release parity is proven in Phase 13. |
 | LISTEN/NOTIFY fan-out limits | Interface-isolated; poll-from-seq fallback is always correct; NATS/Redis swap-in is additive. |
 | BYO creds are a breach magnet | KMS-envelope encryption, decrypt only in workers at point of use, redaction layer over events/logs/traces with tests that grep for planted canary secrets (A1.7, A2.4, A6.1). |
 | Tunnel-local envs are flaky/slow | Tunnel provider is capability-flagged; reconciler treats tunnel loss as `suspended` not `failed` (resumable); tool-call deadlines already structural (Phase 2). |

@@ -155,7 +155,7 @@ func (h *flowHandler) InvokeFlow(ctx context.Context, req *connect.Request[ultra
 			if cfg.Provider == "" {
 				cfg = h.defaultModel
 			}
-			run := ultra.AgentRun{ID: ultra.RunID(uuid.NewString()), SessionID: session, OrgID: org, LoopKind: loop.DefaultLoopKind, LoopVersion: loop.DefaultLoopVersion, ModelConfig: cfg, Prompt: rendered.String(), History: history, Grants: ultra.RootGrants()}
+			run := ultra.AgentRun{ID: ultra.RunID(uuid.NewString()), SessionID: session, OrgID: org, FlowInvocationID: &inv.ID, LoopKind: loop.DefaultLoopKind, LoopVersion: loop.DefaultLoopVersion, ModelConfig: cfg, Prompt: rendered.String(), History: history, Grants: ultra.RootGrants()}
 			if err := scope.Runs().Create(ctx, run); err != nil {
 				return err
 			}

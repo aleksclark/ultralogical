@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"charm.land/fantasy"
+	"github.com/google/uuid"
 
 	ultra "github.com/aleksclark/ultralogical"
 	"github.com/aleksclark/ultralogical/jobqueue"
@@ -167,6 +168,7 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 		newPostEventTool(events, sessionID, runID),
 	}
 	tools = append(tools, memoryTools(w.Store, run)...)
+	tools = append(tools, w.spawnTools(run, job, rec)...)
 	if w.ToolResolver != nil {
 		dynamic, err := w.ToolResolver.Tools(ctx, run)
 		if err != nil {
@@ -460,6 +462,19 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 		}
 
 		switch {
+		case len(rec.waitRunIDs) > 0:
+			members := make([]ultra.RunWaitMember, 0, len(rec.waitRunIDs))
+			waitID := uuid.NewString()
+			for i, id := range rec.waitRunIDs {
+				members = append(members, ultra.RunWaitMember{WaitID: waitID, RunID: id, Ordinal: i})
+			}
+			if err := scope.Waits().Create(ctx, ultra.RunWait{ID: waitID, ParentRunID: runID, StepIndex: job.StepIndex, ToolCallID: rec.waitToolCallID, State: "open", Deadline: time.Now().Add(rec.waitTimeout)}, members); err != nil {
+				return err
+			}
+			if err := scope.Runs().SetState(ctx, runID, ultra.RunAwaiting, "", ""); err != nil {
+				return err
+			}
+			return appendTx(ultra.EventKindRunAwaiting, ultra.RunAwaitingPayload{RunID: runID, Question: ultra.Question{Text: "Waiting for child agents"}})
 		case rec.question != nil:
 			// Await: no job parked; PromptRun resumes.
 			if err := scope.Runs().SetState(ctx, runID, ultra.RunAwaiting, "", ""); err != nil {
@@ -478,9 +493,10 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 			if err := scope.Runs().SetState(ctx, runID, ultra.RunCompleted, "", ""); err != nil {
 				return err
 			}
-			return appendTx(ultra.EventKindRunCompleted, ultra.RunCompletedPayload{
-				RunID: runID, FinalText: finalText(result),
-			})
+			if err := appendTx(ultra.EventKindRunCompleted, ultra.RunCompletedPayload{RunID: runID, FinalText: finalText(result)}); err != nil {
+				return err
+			}
+			return w.resolveChildWaits(ctx, txs, run)
 		}
 	})
 	if errors.Is(err, errStale) {

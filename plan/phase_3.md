@@ -29,7 +29,7 @@ horizontal-scaling claims become tested facts.
 
 **Out:** flows (Phase 4), cross-session anything, cross-org anything (participants are
 always members of the session's org — enforced since Phase 0), full OIDC + role policy
-sweep (Phase 7).
+sweep (Phase 12).
 
 ## Design details
 
@@ -91,7 +91,7 @@ Run tokens carry `grants = {tools: set, envs: set|*, may_spawn: bool, max_childr
 ### Multi-replica harness
 
 `harness.Up(t, harness.WithReplicas(2, 2))`: 2 ultrad behind a tiny round-robin proxy,
-2 workers on one queue. Used by A3.1/A3.6 and reused in Phase 7 chaos tests.
+2 workers on one queue. Phase 8 must complete it for reuse in Phase 12 chaos/load tests.
 
 ## Work breakdown
 

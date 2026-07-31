@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	ultra "github.com/aleksclark/ultralogical"
 	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
 	"github.com/aleksclark/ultralogical/testkit/harness"
 	"github.com/aleksclark/ultralogical/testkit/modelscript"
@@ -33,6 +34,16 @@ func TestA41_A42_FlowInvocationAndVersioning(t *testing.T) {
 		t.Fatal("no entry run")
 	}
 	c.AwaitRunState(t, inv.Msg.GetRunIds()[0], ultrav1.RunState_RUN_STATE_COMPLETED, 30*time.Second)
+	stored, err := stack.Store.Org(stack.OrgA.ID).Runs().Get(ctx, ultra.RunID(inv.Msg.GetRunIds()[0]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stored.FlowInvocationID == nil || string(*stored.FlowInvocationID) != inv.Msg.GetInvocationId() {
+		t.Fatal("flow provenance missing")
+	}
+	if stored.Prompt != "Review database" {
+		t.Fatalf("rendered prompt=%q", stored.Prompt)
+	}
 	definition2 := `{"agents":{"entry":{"prompt":"New prompt","entry":true}}}`
 	v2, err := c.Flows.PutFlow(ctx, connect.NewRequest(&ultrav1.PutFlowRequest{OrgId: string(stack.OrgA.ID), Name: "review", DefinitionJson: definition2}))
 	if err != nil || v2.Msg.GetFlow().GetVersion() != 2 {

@@ -44,8 +44,8 @@ pairs), billing, web UI.
 ### Proto & codegen
 
 - `buf.gen.yaml` targets: `connect-go` (server + client), `connect-es` + `protobuf-es`
-  (TS client). Rust deferred to Phase 8 but proto style must stay tonic-compatible
-  (no Connect-only extensions).
+  (TS client). Rust application groundwork is scheduled for Phase 7 and full client
+  conformance/release packaging for Phase 13; proto style stays tonic-compatible.
 - `SessionEvent` is a message with `session_id`, `seq`, `ts`, `actor`, and a `oneof
   payload` — starting variants: `UserMessage`, `Annotation`. Every later phase adds
   variants; `buf breaking` guarantees additive-only evolution.

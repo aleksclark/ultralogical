@@ -4,96 +4,123 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"charm.land/fantasy"
-
 	ultra "github.com/aleksclark/ultralogical"
 	"github.com/aleksclark/ultralogical/envwork"
 	"github.com/aleksclark/ultralogical/mcp"
 )
 
-// ToolResolver resolves dynamic tools for a run on every step.
 type ToolResolver interface {
 	Tools(context.Context, ultra.AgentRun) ([]fantasy.AgentTool, error)
 }
-
-// EnvTools exposes session environments and their Bezalel MCP tools.
 type EnvTools struct {
 	Store ultra.Store
 	Envs  *envwork.Service
 }
 
+func (r *EnvTools) deny(ctx context.Context, run ultra.AgentRun, tool string, envID *ultra.EnvID, reason string) fantasy.ToolResponse {
+	payload, _ := json.Marshal(ultra.PermissionDeniedPayload{RunID: run.ID, Tool: tool, EnvID: envID, Reason: reason})
+	_, _ = r.Store.Org(run.OrgID).Events().Append(ctx, run.SessionID, ultra.Event{Actor: ultra.Actor{Type: ultra.ActorSystem}, Kind: ultra.EventKindPermissionDenied, Payload: payload})
+	return fantasy.NewTextErrorResponse("permission denied")
+}
 func (r *EnvTools) Tools(ctx context.Context, run ultra.AgentRun) ([]fantasy.AgentTool, error) {
 	envs, err := r.Store.Org(run.OrgID).Envs().List(ctx, run.SessionID)
 	if err != nil {
 		return nil, err
 	}
-	ready := make([]ultra.DevEnv, 0, len(envs))
+	var tools []fantasy.AgentTool
+	if run.Grants.AllowsTool("provision_env") {
+		type input struct {
+			Name             string `json:"name"`
+			ProviderInstance string `json:"provider_instance,omitempty"`
+			Image            string `json:"image,omitempty"`
+		}
+		tools = append(tools, fantasy.NewAgentTool("provision_env", "Provision a development environment.", func(ctx context.Context, in input, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			if !run.Grants.AllowsTool("provision_env") {
+				return r.deny(ctx, run, "provision_env", nil, "tool not granted"), nil
+			}
+			id := run.ID
+			env, _, err := r.Envs.Request(ctx, run.OrgID, run.SessionID, ultra.EnvSpec{Name: in.Name, Image: in.Image, Workdir: "/work"}, in.ProviderInstance, &id)
+			if err != nil {
+				return fantasy.NewTextErrorResponse("provision failed"), nil
+			}
+			ticker := time.NewTicker(200 * time.Millisecond)
+			defer ticker.Stop()
+			for {
+				current, e := r.Store.Org(run.OrgID).Envs().Get(ctx, env.ID)
+				if e != nil {
+					return fantasy.NewTextErrorResponse("lookup failed"), nil
+				}
+				if current.State == ultra.EnvReady {
+					b, _ := json.Marshal(map[string]string{"env_id": string(env.ID)})
+					return fantasy.NewTextResponse(string(b)), nil
+				}
+				if current.State == ultra.EnvFailed {
+					return fantasy.NewTextErrorResponse(current.FailureMessage), nil
+				}
+				select {
+				case <-ctx.Done():
+					return fantasy.ToolResponse{}, ctx.Err()
+				case <-ticker.C:
+				}
+			}
+		}))
+	}
+	if run.Grants.AllowsTool("list_envs") {
+		tools = append(tools, fantasy.NewAgentTool("list_envs", "List granted environments.", func(ctx context.Context, _ struct{}, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			if !run.Grants.AllowsTool("list_envs") {
+				return r.deny(ctx, run, "list_envs", nil, "tool not granted"), nil
+			}
+			var allowed []ultra.DevEnv
+			for _, e := range envs {
+				if run.Grants.AllowsEnv(e.ID) {
+					allowed = append(allowed, e)
+				}
+			}
+			b, _ := json.Marshal(allowed)
+			return fantasy.NewTextResponse(string(b)), nil
+		}))
+	}
+	if run.Grants.AllowsTool("terminate_env") {
+		type input struct {
+			EnvID string `json:"env_id"`
+		}
+		tools = append(tools, fantasy.NewAgentTool("terminate_env", "Terminate a granted environment.", func(ctx context.Context, in input, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			id := ultra.EnvID(in.EnvID)
+			if !run.Grants.AllowsTool("terminate_env") || !run.Grants.AllowsEnv(id) {
+				return r.deny(ctx, run, "terminate_env", &id, "environment or tool not granted"), nil
+			}
+			if err := r.Envs.RequestTerminate(ctx, run.OrgID, id); err != nil {
+				return fantasy.NewTextErrorResponse("terminate failed"), nil
+			}
+			return fantasy.NewTextResponse("termination requested"), nil
+		}))
+	}
+	var ready []ultra.DevEnv
 	for _, e := range envs {
-		if e.State == ultra.EnvReady {
+		if e.State == ultra.EnvReady && run.Grants.AllowsEnv(e.ID) {
 			ready = append(ready, e)
 		}
 	}
-	var tools []fantasy.AgentTool
-	// Provision is always available.
-	type provisionInput struct {
-		Name             string `json:"name"`
-		ProviderInstance string `json:"provider_instance,omitempty"`
-		Image            string `json:"image,omitempty"`
-	}
-	tools = append(tools, fantasy.NewAgentTool("provision_env", "Provision a development environment for this session and wait until it is ready.", func(ctx context.Context, in provisionInput, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-		id := run.ID
-		env, _, err := r.Envs.Request(ctx, run.OrgID, run.SessionID, ultra.EnvSpec{Name: in.Name, Image: in.Image, Workdir: "/work"}, in.ProviderInstance, &id)
-		if err != nil {
-			return fantasy.NewTextErrorResponse("provision request failed"), nil
-		}
-		for {
-			current, err := r.Store.Org(run.OrgID).Envs().Get(ctx, env.ID)
-			if err != nil {
-				return fantasy.NewTextErrorResponse("environment lookup failed"), nil
-			}
-			switch current.State {
-			case ultra.EnvReady:
-				b, _ := json.Marshal(map[string]string{"env_id": string(current.ID), "name": current.Spec.Name})
-				return fantasy.NewTextResponse(string(b)), nil
-			case ultra.EnvFailed:
-				return fantasy.NewTextErrorResponse(current.FailureMessage), nil
-			}
-			select {
-			case <-ctx.Done():
-				return fantasy.ToolResponse{}, ctx.Err()
-			default:
-			}
-		}
-	}))
-	type listInput struct{}
-	tools = append(tools, fantasy.NewAgentTool("list_envs", "List development environments in this session.", func(context.Context, listInput, fantasy.ToolCall) (fantasy.ToolResponse, error) {
-		b, _ := json.Marshal(envs)
-		return fantasy.NewTextResponse(string(b)), nil
-	}))
-	type terminateInput struct {
-		EnvID string `json:"env_id"`
-	}
-	tools = append(tools, fantasy.NewAgentTool("terminate_env", "Terminate a development environment.", func(ctx context.Context, in terminateInput, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-		if err := r.Envs.RequestTerminate(ctx, run.OrgID, ultra.EnvID(in.EnvID)); err != nil {
-			return fantasy.NewTextErrorResponse("terminate failed"), nil
-		}
-		return fantasy.NewTextResponse("termination requested"), nil
-	}))
 	for _, env := range ready {
-		clear, err := r.Envs.ClearTokenForTools(env)
-		if err != nil {
-			return nil, err
+		clear, e := r.Envs.ClearTokenForTools(env)
+		if e != nil {
+			return nil, e
 		}
 		client := mcp.NewClient(env.Endpoint, clear)
-		if err := client.Initialize(ctx); err != nil {
+		if client.Initialize(ctx) != nil {
 			continue
 		}
-		discovered, err := client.Tools(ctx)
-		if err != nil {
+		discovered, e := client.Tools(ctx)
+		if e != nil {
 			continue
 		}
 		for _, dt := range discovered {
+			if !run.Grants.AllowsTool(dt.Name) {
+				continue
+			}
 			name := dt.Name
 			if len(ready) > 1 {
 				name = "env:" + env.Spec.Name + "/" + dt.Name

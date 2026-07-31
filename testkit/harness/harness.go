@@ -48,7 +48,9 @@ type Options struct {
 	// credential pointing at the modelscript server. Default true.
 	SeedCredential bool
 	// WorkerEnv adds environment variables to the worker process.
-	WorkerEnv []string
+	WorkerEnv      []string
+	UltradReplicas int
+	WorkerReplicas int
 }
 
 // Opt mutates Options.
@@ -58,6 +60,10 @@ type Opt func(*Options)
 func WithoutSeedCredential() Opt { return func(o *Options) { o.SeedCredential = false } }
 
 // WithWorkerEnv adds env vars to the worker process.
+func WithReplicas(ultrad, workers int) Opt {
+	return func(o *Options) { o.UltradReplicas = ultrad; o.WorkerReplicas = workers }
+}
+
 func WithWorkerEnv(kv ...string) Opt {
 	return func(o *Options) { o.WorkerEnv = append(o.WorkerEnv, kv...) }
 }
@@ -75,12 +81,15 @@ type Stack struct {
 	Store       *postgres.Store
 	Model       *modelscript.Server
 
-	workerMu  sync.Mutex
-	workerCmd *exec.Cmd
-	workerEnv []string
-	ultradBin string
-	workerBin string
-	t         *testing.T
+	workerMu        sync.Mutex
+	workerCmd       *exec.Cmd
+	workerCmds      []*exec.Cmd
+	ultradCmds      []*exec.Cmd
+	ReplicaBaseURLs []string
+	workerEnv       []string
+	ultradBin       string
+	workerBin       string
+	t               *testing.T
 }
 
 const BezalelImage = "ultralogical/bezalel:phase2-test"
@@ -148,7 +157,7 @@ func freePort(t *testing.T) int {
 // Up boots a full stack and registers cleanup on the test.
 func Up(t *testing.T, opts ...Opt) *Stack {
 	t.Helper()
-	options := Options{SeedCredential: true}
+	options := Options{SeedCredential: true, UltradReplicas: 1, WorkerReplicas: 1}
 	for _, opt := range opts {
 		opt(&options)
 	}
@@ -187,6 +196,7 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 
 	port := freePort(t)
 	stack.BaseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
+	stack.ReplicaBaseURLs = append(stack.ReplicaBaseURLs, stack.BaseURL)
 
 	ultradCmd := exec.Command(ultradBin)
 	ultradCmd.Env = append(os.Environ(),
@@ -207,7 +217,25 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 		_, _ = ultradCmd.Process.Wait()
 	})
 
-	stack.StartWorker()
+	stack.ultradCmds = append(stack.ultradCmds, ultradCmd)
+	for i := 1; i < options.UltradReplicas; i++ {
+		p := freePort(t)
+		base := fmt.Sprintf("http://127.0.0.1:%d", p)
+		cmd := exec.Command(ultradBin)
+		cmd.Env = append(os.Environ(), "DATABASE_URL="+dbURL, fmt.Sprintf("ULTRA_ADDR=127.0.0.1:%d", p), fmt.Sprintf("ULTRA_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob), "ULTRA_MASTER_KEY="+masterKey, "ULTRA_DEFAULT_MODEL=mock-model", "ULTRA_MIGRATE=false")
+		cmd.Stdout = os.Stderr
+		cmd.Stderr = os.Stderr
+		if err := cmd.Start(); err != nil {
+			t.Fatal(err)
+		}
+		stack.ultradCmds = append(stack.ultradCmds, cmd)
+		stack.ReplicaBaseURLs = append(stack.ReplicaBaseURLs, base)
+		t.Cleanup(func() { _ = cmd.Process.Kill(); _, _ = cmd.Process.Wait() })
+		waitHealthy(t, base)
+	}
+	for i := 0; i < options.WorkerReplicas; i++ {
+		stack.StartWorker()
+	}
 	waitHealthy(t, stack.BaseURL)
 	return stack
 }

@@ -36,13 +36,14 @@ func (otherJob) Kind() string { return "conformance_other" }
 
 // recorder collects worked markers with timestamps, thread-safe.
 type recorder struct {
-	mu    sync.Mutex
-	seen  map[string][]time.Time
-	failN map[string]*atomic.Int32 // remaining failures per marker
+	mu     sync.Mutex
+	seen   map[string][]time.Time
+	failN  map[string]*atomic.Int32 // remaining failures per marker
+	panicN map[string]*atomic.Int32
 }
 
 func newRecorder() *recorder {
-	return &recorder{seen: map[string][]time.Time{}, failN: map[string]*atomic.Int32{}}
+	return &recorder{seen: map[string][]time.Time{}, failN: map[string]*atomic.Int32{}, panicN: map[string]*atomic.Int32{}}
 }
 
 func (r *recorder) failFirst(marker string, n int32) {
@@ -53,11 +54,22 @@ func (r *recorder) failFirst(marker string, n int32) {
 	r.mu.Unlock()
 }
 
+func (r *recorder) panicFirst(marker string, n int32) {
+	c := &atomic.Int32{}
+	c.Store(n)
+	r.mu.Lock()
+	r.panicN[marker] = c
+	r.mu.Unlock()
+}
 func (r *recorder) record(marker string) error {
 	r.mu.Lock()
 	r.seen[marker] = append(r.seen[marker], time.Now())
 	c := r.failN[marker]
+	p := r.panicN[marker]
 	r.mu.Unlock()
+	if p != nil && p.Add(-1) >= 0 {
+		panic("conformance: induced panic")
+	}
 	if c != nil && c.Add(-1) >= 0 {
 		return errors.New("conformance: induced failure")
 	}
@@ -152,6 +164,15 @@ func Run(t *testing.T, pool *pgxpool.Pool, factory Factory) {
 		if gap < retryDelay/2 {
 			t.Fatalf("retry gap %s below promised delay %s", gap, retryDelay)
 		}
+	})
+
+	t.Run("PanicRedelivery", func(t *testing.T) {
+		q, _ := factory(t)
+		rec := newRecorder()
+		rec.panicFirst("panic-me", 1)
+		jobqueue.Register(q, jobqueue.WorkerFunc[testJob](func(_ context.Context, j testJob) error { return rec.record(j.Marker) }))
+		enqueue(t, pool, q, testJob{Marker: "panic-me"})
+		rec.waitAttempts(t, "panic-me", 2, 30*time.Second)
 	})
 
 	t.Run("KindRouting", func(t *testing.T) {

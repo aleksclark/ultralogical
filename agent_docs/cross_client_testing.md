@@ -26,8 +26,10 @@ Before implementation:
   success, failure, replay/reconnect, tenancy, and multi-client effects.
 - Identify which clients expose it. If a supported client cannot expose it,
   implementation is incomplete—not exempt from testing.
-- Add acceptance IDs to the current phase plan and draft the web + Rust test
-  names before production code.
+- Add acceptance IDs to the owning completion phase and draft the web + GPUI
+  application test names before production code. The ownership map is
+  `agent_docs/phases_0_6_audit.md`; do not move a hard behavior into a later
+  phase merely because groundwork exists.
 
 During implementation:
 
@@ -62,8 +64,10 @@ either client. Never skip because the backend test passes.
 
 ## Audit requirement at phase boundaries
 
-At the end of each phase, independently compare actual public proto RPCs,
-client controls/commands, event variants, and lifecycle states against the
-matrix. List uncovered or unimplemented items honestly. The phase cannot be
-called complete while implemented functionality lacks real client evidence or
-while planned acceptance bullets are silently absent.
+At the end of each phase, an independent reviewer compares the owning plan and
+inherited audit rows with actual proto RPCs, client actions, event variants,
+lifecycle states, database invariants, CI jobs, and the matrix. List uncovered
+or unimplemented items honestly. The phase cannot be called complete while any
+scoped bullet is open, implemented functionality lacks real client evidence,
+or an acceptance claim is represented only by groundwork, CRUD, an adapter
+alias, compilation, or a smoke test.

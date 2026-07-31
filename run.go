@@ -54,6 +54,7 @@ type AgentRun struct {
 	SessionID         SessionID
 	OrgID             OrgID
 	ParentRunID       *RunID
+	FlowInvocationID  *FlowInvocationID
 	Grants            Grants
 	Result            json.RawMessage
 	State             RunState
