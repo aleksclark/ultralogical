@@ -47,9 +47,13 @@ func runScript(t *testing.T, timeout time.Duration, name string, args ...string)
 // deliberate proto/output mismatch, and the restored tree passes. The queue
 // half of A7.1 is the shared conformance suite, which both river and inproc run
 // in the unit job.
+//
+// Required CI runs this gate in its own `gates` job, which installs the
+// generator. Here it self-skips when the generator is absent, so the gate is
+// never silently unenforced: `gates` is the job that must stay green.
 func TestA71_CodegenDriftGate(t *testing.T) {
 	if _, err := exec.LookPath("buf"); err != nil {
-		t.Skip("buf unavailable")
+		t.Skip("buf unavailable; the required CI 'gates' job enforces this")
 	}
 	out, err := runScript(t, 30*time.Minute, "scripts/mutate-codegen-gate.sh")
 	if err != nil {

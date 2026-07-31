@@ -3,6 +3,8 @@ import { expect, test, type Page } from "@playwright/test";
 async function openSession(page: Page, title: string) {
   await page.addInitScript((token) => localStorage.setItem("ultra-token", token), process.env.ULTRA_TOKEN ?? "tok-alice");
   await page.goto("/");
+  // Wait for the initial load: creating a session needs the selected org.
+  await expect(page.getByLabel("Organization").locator("option")).not.toHaveCount(0);
   await page.getByLabel("New session title").fill(title);
   await page.getByRole("button", { name: "Create session" }).click();
   await expect(page.getByTestId("environment-panel")).toBeVisible();

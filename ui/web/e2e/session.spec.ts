@@ -4,6 +4,9 @@ async function signIn(page: Page) {
   await page.addInitScript((token) => localStorage.setItem("ultra-token", token), process.env.ULTRA_TOKEN ?? "tok-alice");
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Ultralogical" })).toBeVisible();
+  // The org selector is populated from ListOrgs, so waiting for it means the
+  // application has finished its initial load rather than merely mounted.
+  await expect(page.getByLabel("Organization").locator("option")).not.toHaveCount(0);
 }
 
 async function createSession(page: Page, title: string) {
