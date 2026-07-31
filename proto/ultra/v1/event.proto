@@ -138,6 +138,10 @@ message ExecPreviewRan {
 message ParticipantTransition { string kind=1; string participant_id=2; string display=3; }
 message RunSpawned { string parent_run_id=1; string child_run_id=2; }
 message MemoryChanged { string key=1; string updated_by_type=2; string updated_by_id=3; string value_json=4; }
+message HistoryCompacted { string run_id=1; int32 covered_messages=2; int64 summary_tokens=3; }
+message ModelFallback { string run_id=1; string from=2; string to=3; string reason=4; }
+message HookFired { string hook=1; string run_id=2; }
+message PeriodicPromptFired { string run_id=1; string prompt=2; }
 message PermissionDenied { string run_id=1; string tool=2; string env_id=3; string reason=4; }
 
 // EventPayload is the typed payload of a session event. Every observable
@@ -172,6 +176,10 @@ message EventPayload {
     MemoryChanged memory_set = 34;
     MemoryChanged memory_deleted = 35;
     PermissionDenied permission_denied = 36;
+    HistoryCompacted history_compacted = 37;
+    ModelFallback model_fallback = 38;
+    HookFired hook_fired = 39;
+    PeriodicPromptFired periodic_prompt_fired = 40;
   }
 }
 

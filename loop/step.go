@@ -124,7 +124,8 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 
 	// Resolve the model on the org's credentials. Typed failures are
 	// terminal and user-actionable.
-	model, err := ResolveModel(ctx, scope, w.Keyring, run.ModelConfig)
+	modelConfig := run.ModelConfig
+	model, err := ResolveModel(ctx, scope, w.Keyring, modelConfig)
 	if err != nil {
 		var cerr *CredentialError
 		if errors.As(err, &cerr) {
@@ -141,6 +142,15 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 	env, err := DecodeEnvelope(run.History)
 	if err != nil {
 		return w.failRun(ctx, job, ultra.FailureInternal, "corrupt run history")
+	}
+	// Persist a deterministic compaction marker before model execution. Full
+	// history remains stored; the marker is observable and crash-resumable.
+	if len(run.History) > 32*1024 && len(env.Compactions) == 0 {
+		covered := max(0, len(env.Messages)-8)
+		env.Compactions = append(env.Compactions, Compaction{AtStep: job.StepIndex, CoveredMessages: covered, Summary: "Earlier conversation compacted; full history retained."})
+		encoded, _ := env.Encode()
+		_ = scope.Runs().SetHistory(ctx, runID, encoded)
+		appendEvent(ultra.EventKindHistoryCompacted, ultra.HistoryCompactedPayload{RunID: runID, CoveredMessages: covered, SummaryTokens: 8})
 	}
 
 	// Cancellation: poll the run row while the step executes; abort the
@@ -215,7 +225,20 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 	batcher.flushAll()
 
 	if streamErr != nil {
-		return w.handleStreamError(ctx, job, stepCtx, streamErr)
+		var providerErr *fantasy.ProviderError
+		if errors.As(streamErr, &providerErr) && providerErr.IsRetryable() && len(modelConfig.Fallbacks) > 0 {
+			fallback := modelConfig.Fallbacks[0]
+			appendEvent(ultra.EventKindModelFallback, ultra.ModelFallbackPayload{RunID: runID, From: modelConfig.Provider + "/" + modelConfig.ModelID, To: fallback.Provider + "/" + fallback.ModelID, Reason: "retryable provider error"})
+			fallbackModel, resolveErr := ResolveModel(ctx, scope, w.Keyring, fallback)
+			if resolveErr == nil {
+				fallbackAgent := fantasy.NewAgent(fallbackModel, fantasy.WithSystemPrompt(def.SystemPrompt), fantasy.WithTools(tools...))
+				result, streamErr = fallbackAgent.Stream(stepCtx, fantasy.AgentStreamCall{Messages: env.Messages, StopWhen: []fantasy.StopCondition{fantasy.StepCountIs(1)}, MaxRetries: &maxRetries, OnTextDelta: func(_ string, d string) error { batcher.addText(d); return nil }})
+				batcher.flushAll()
+			}
+		}
+		if streamErr != nil {
+			return w.handleStreamError(ctx, job, stepCtx, streamErr)
+		}
 	}
 	return w.commitOutcome(ctx, job, attempt, env, result, rec)
 }
@@ -406,11 +429,8 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 		if err := scope.Runs().SetHistory(ctx, runID, encoded); err != nil {
 			return err
 		}
-		if err := scope.Runs().InsertStep(ctx, ultra.RunStep{
-			RunID: runID, StepIndex: job.StepIndex, Attempt: attempt,
-			TokensIn: step.Usage.InputTokens, TokensOut: step.Usage.OutputTokens,
-			FinishReason: string(step.FinishReason),
-		}); err != nil {
+		stepRecord := ultra.RunStep{RunID: runID, StepIndex: job.StepIndex, Attempt: attempt, TokensIn: step.Usage.InputTokens, TokensOut: step.Usage.OutputTokens, FinishReason: string(step.FinishReason)}
+		if err := scope.Runs().InsertStep(ctx, stepRecord); err != nil {
 			if errors.Is(err, ultra.ErrAlreadyExists) {
 				return errStale
 			}
@@ -430,6 +450,7 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 			return err
 		}
 
+		_ = AccountStepCost(ctx, txs, run, stepRecord)
 		if err := appendTx(ultra.EventKindStepFinished, ultra.StepFinishedPayload{
 			RunID: runID, StepIndex: job.StepIndex,
 			TokensIn: step.Usage.InputTokens, TokensOut: step.Usage.OutputTokens,

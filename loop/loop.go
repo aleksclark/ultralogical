@@ -27,9 +27,15 @@ Be concise. Use the ask_user tool when you need human input; use the
 post_event tool to leave notes in the session log.`
 
 // Envelope is the versioned persisted message history.
+type Compaction struct {
+	AtStep          int    `json:"at_step"`
+	CoveredMessages int    `json:"covered_messages"`
+	Summary         string `json:"summary"`
+}
 type Envelope struct {
-	V        int               `json:"v"`
-	Messages []fantasy.Message `json:"messages"`
+	V           int               `json:"v"`
+	Messages    []fantasy.Message `json:"messages"`
+	Compactions []Compaction      `json:"compactions,omitempty"`
 }
 
 // DecodeEnvelope parses a run's history.
@@ -41,7 +47,7 @@ func DecodeEnvelope(raw json.RawMessage) (Envelope, error) {
 	if err := json.Unmarshal(raw, &env); err != nil {
 		return Envelope{}, fmt.Errorf("loop: decode envelope: %w", err)
 	}
-	if env.V != 1 {
+	if env.V != 1 && env.V != 2 {
 		return Envelope{}, fmt.Errorf("loop: unsupported envelope version %d", env.V)
 	}
 	return env, nil
@@ -49,7 +55,11 @@ func DecodeEnvelope(raw json.RawMessage) (Envelope, error) {
 
 // Encode serializes the envelope.
 func (e Envelope) Encode() (json.RawMessage, error) {
-	e.V = 1
+	if len(e.Compactions) > 0 {
+		e.V = 2
+	} else if e.V == 0 {
+		e.V = 1
+	}
 	b, err := json.Marshal(e)
 	if err != nil {
 		return nil, fmt.Errorf("loop: encode envelope: %w", err)

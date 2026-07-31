@@ -2,7 +2,7 @@
 
 Ultralogical: a durable-session platform for agentic work — multi-tenant,
 event-sourced sessions that humans and agents share. Go backend, ConnectRPC
-API, Postgres, React/gpui UIs. Currently at **Phase 5** (BYO and hosted environment providers;
+API, Postgres, React/gpui UIs. Currently at **Phase 6** (BYO and hosted environment providers;
 versioned flows invoke durable agents into shared sessions).
 
 ## Cheatsheet
@@ -62,5 +62,5 @@ task dev               # local postgres + ultrad + worker
 | [agent_docs/codegen.md](agent_docs/codegen.md) | changing protos, adding events/RPCs |
 | [agent_docs/conventions.md](agent_docs/conventions.md) | code style, layout rules, errors, migrations, never-do list |
 | [plan/index.md](plan/index.md) | architecture rationale + full roadmap |
-| [plan/phase_5.md](plan/phase_5.md) | current provider phase |
-| [plan/phase_6.md](plan/phase_6.md) | the next product phase |
+| [plan/phase_6.md](plan/phase_6.md) | current advanced-loop phase |
+| [plan/phase_6_5.md](plan/phase_6_5.md) | next validation phase |

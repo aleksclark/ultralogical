@@ -87,8 +87,8 @@ func TestA11_HappyPathSequence(t *testing.T) {
 	events := sub.CollectUntil(t, 30*time.Second, isTerminalRunEvent)
 	assertSequence(t, kinds(events), []string{
 		"run_started",
-		"step_started", "text_delta+", "tool_call_started", "annotation", "tool_result", "step_finished",
-		"step_started", "text_delta+", "step_finished",
+		"step_started", "text_delta+", "tool_call_started", "annotation", "tool_result", "hook_fired", "step_finished",
+		"step_started", "text_delta+", "hook_fired", "step_finished",
 		"run_completed",
 	})
 

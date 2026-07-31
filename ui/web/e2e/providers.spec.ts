@@ -17,7 +17,8 @@ test("shows provider validation errors", async ({ page }) => {
   await page.getByRole("button", { name: "Settings" }).click();
   await page.getByRole("combobox", { name: "Provider kind" }).selectOption("byo_k8s");
   await page.getByLabel("Provider name").fill("broken-k8s");
-  await page.getByLabel("Provider config JSON").fill("not-json");
+  await page.getByLabel("Provider config JSON").fill("{");
+  await expect(page.getByLabel("Provider config JSON")).toHaveValue("{");
   await page.getByRole("button", { name: "Register provider" }).click();
   await expect(page.getByRole("alert")).toContainText(/invalid|JSON/i);
 });

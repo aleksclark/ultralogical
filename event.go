@@ -25,33 +25,37 @@ type Actor struct {
 // per-session, gapless, monotonic sequence number. Streaming, multiplayer,
 // history replay, and test assertions all subscribe to the same log.
 const (
-	EventKindUserMessage       = "user_message"
-	EventKindAnnotation        = "annotation"
-	EventKindRunStarted        = "run_started"
-	EventKindStepStarted       = "step_started"
-	EventKindTextDelta         = "text_delta"
-	EventKindReasoningDelta    = "reasoning_delta"
-	EventKindToolCallStart     = "tool_call_started"
-	EventKindToolResult        = "tool_result"
-	EventKindStepFinished      = "step_finished"
-	EventKindRunAwaiting       = "run_awaiting"
-	EventKindRunCompleted      = "run_completed"
-	EventKindRunFailed         = "run_failed"
-	EventKindRunCancelled      = "run_cancelled"
-	EventKindEnvRequested      = "env_requested"
-	EventKindEnvProvisioning   = "env_provisioning"
-	EventKindEnvReady          = "env_ready"
-	EventKindEnvFailed         = "env_failed"
-	EventKindEnvTerminating    = "env_terminating"
-	EventKindEnvTerminated     = "env_terminated"
-	EventKindExecPreviewRan    = "exec_preview_ran"
-	EventKindParticipantJoined = "participant_joined"
-	EventKindParticipantLeft   = "participant_left"
-	EventKindParticipantIdle   = "participant_idle"
-	EventKindRunSpawned        = "run_spawned"
-	EventKindMemorySet         = "memory_set"
-	EventKindMemoryDeleted     = "memory_deleted"
-	EventKindPermissionDenied  = "permission_denied"
+	EventKindUserMessage         = "user_message"
+	EventKindAnnotation          = "annotation"
+	EventKindRunStarted          = "run_started"
+	EventKindStepStarted         = "step_started"
+	EventKindTextDelta           = "text_delta"
+	EventKindReasoningDelta      = "reasoning_delta"
+	EventKindToolCallStart       = "tool_call_started"
+	EventKindToolResult          = "tool_result"
+	EventKindStepFinished        = "step_finished"
+	EventKindRunAwaiting         = "run_awaiting"
+	EventKindRunCompleted        = "run_completed"
+	EventKindRunFailed           = "run_failed"
+	EventKindRunCancelled        = "run_cancelled"
+	EventKindEnvRequested        = "env_requested"
+	EventKindEnvProvisioning     = "env_provisioning"
+	EventKindEnvReady            = "env_ready"
+	EventKindEnvFailed           = "env_failed"
+	EventKindEnvTerminating      = "env_terminating"
+	EventKindEnvTerminated       = "env_terminated"
+	EventKindExecPreviewRan      = "exec_preview_ran"
+	EventKindParticipantJoined   = "participant_joined"
+	EventKindParticipantLeft     = "participant_left"
+	EventKindParticipantIdle     = "participant_idle"
+	EventKindRunSpawned          = "run_spawned"
+	EventKindMemorySet           = "memory_set"
+	EventKindMemoryDeleted       = "memory_deleted"
+	EventKindPermissionDenied    = "permission_denied"
+	EventKindHistoryCompacted    = "history_compacted"
+	EventKindModelFallback       = "model_fallback"
+	EventKindHookFired           = "hook_fired"
+	EventKindPeriodicPromptFired = "periodic_prompt_fired"
 )
 
 // Event is one entry in a session's append-only event log. Payload is the
@@ -207,6 +211,26 @@ type MemoryEventPayload struct {
 	UpdatedBy Actor           `json:"updated_by"`
 	Value     json.RawMessage `json:"value,omitempty"`
 }
+type HistoryCompactedPayload struct {
+	RunID           RunID `json:"run_id"`
+	CoveredMessages int   `json:"covered_messages"`
+	SummaryTokens   int64 `json:"summary_tokens"`
+}
+type ModelFallbackPayload struct {
+	RunID  RunID  `json:"run_id"`
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Reason string `json:"reason"`
+}
+type HookFiredPayload struct {
+	Hook  string `json:"hook"`
+	RunID RunID  `json:"run_id,omitempty"`
+}
+type PeriodicPromptFiredPayload struct {
+	RunID  RunID  `json:"run_id"`
+	Prompt string `json:"prompt"`
+}
+
 type PermissionDeniedPayload struct {
 	RunID  RunID  `json:"run_id"`
 	Tool   string `json:"tool"`
