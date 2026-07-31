@@ -180,13 +180,16 @@ type RunCancelledPayload struct {
 	RunID RunID `json:"run_id"`
 }
 
-// EnvEventPayload is shared by environment lifecycle events.
+// EnvEventPayload is shared by environment lifecycle events. Epoch is the
+// environment's token generation: it increments on restart so subscribers and
+// tool caches can distinguish a restarted environment from its predecessor.
 type EnvEventPayload struct {
 	EnvID              EnvID              `json:"env_id"`
 	Name               string             `json:"name,omitempty"`
 	ProviderInstanceID ProviderInstanceID `json:"provider_instance_id,omitempty"`
 	Endpoint           string             `json:"endpoint,omitempty"`
 	Message            string             `json:"message,omitempty"`
+	Epoch              int                `json:"epoch,omitempty"`
 }
 
 // ExecPreviewRanPayload records a human command and its real output.

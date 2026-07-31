@@ -1,10 +1,12 @@
 # Phases 0–6 implementation audit
 
-The independent audit found material planned work still incomplete after Phase 6.6. Phase 6.7 owns the security-critical remediation currently underway; completion-scoped Phases 7–11 own the remaining historical backlog.
+The independent audit found material planned work still incomplete after Phase 6.6. Phase 6.7 owned the security-critical remediation; completion-scoped Phases 7–11 own the remaining historical backlog.
+
+**Phase 7 is closed.** Every Phase 0–2 row below now names passing evidence; see [phase_7_audit.md](phase_7_audit.md) for the independent verification. Phase 3–6 rows remain open and are owned by Phases 8–11.
 
 ## Phase 6.7 remediation status
 
-Implementation is present or substantially present, but acceptance remains pending until each owning test passes:
+Implementation is present or substantially present, but acceptance remains pending until each owning test passes. Phase 7 did not adopt these rows:
 
 | Remediation | Status | Owning acceptance |
 |---|---|---|
@@ -21,15 +23,15 @@ No row is closed merely because code exists. Phase 6.7 closes only under its pla
 
 | Original phase | Remaining audited work | Owning acceptance IDs |
 |---|---|---|
-| Phase 0 | Deliberate generated-code drift mutation gate. Queue retry/rollback/shutdown regression semantics beyond A6.7.4. | A7.1 |
-| Phase 1 | Browser and GPUI incremental rendering. | A7.2 |
-| Phase 1 | Complete secret redaction sweep. | A7.3 |
-| Phase 1 | Complete shadcn conversion, real GPUI foundation, and one-command full stack. | A7.8 |
-| Phase 2 | Docker durability and restart token/cache invalidation. | A7.4 |
-| Phase 2 | Continued-run environment failure and reconciliation. | A7.5 |
-| Phase 2 | Metering, usage, and tenancy evidence. | A7.6 |
-| Phase 2 | Complete local-provider conformance. | A7.7 |
-| Cross-phase evidence | Reject false coverage claims and direct-RPC UI substitutes. | A7.9 |
+| Phase 0 | Deliberate generated-code drift mutation gate. Queue retry/rollback/shutdown regression semantics beyond A6.7.4. | A7.1 — **closed** |
+| Phase 1 | Browser and GPUI incremental rendering. | A7.2 — **closed** |
+| Phase 1 | Complete secret redaction sweep. | A7.3 — **closed** |
+| Phase 1 | Complete shadcn conversion, real GPUI foundation, and one-command full stack. | A7.8 — **closed** |
+| Phase 2 | Docker durability and restart token/cache invalidation. | A7.4 — **closed** |
+| Phase 2 | Continued-run environment failure and reconciliation. | A7.5 — **closed** |
+| Phase 2 | Metering, usage, and tenancy evidence. | A7.6 — **closed** |
+| Phase 2 | Complete local-provider conformance. | A7.7 — **closed** |
+| Cross-phase evidence | Reject false coverage claims and direct-RPC UI substitutes. | A7.9 — **closed** |
 | Phase 3 | Spawn durability and real grant-enforcement acceptance. | A8.1 |
 | Phase 3 | Wait timeout, exact result correlation, cancellation/failure, race, and duplicate-delivery matrix. | A8.2 |
 | Phase 3 | Complete `run_agent_cohort` fan-out/fan-in. | A8.3 |
@@ -59,7 +61,7 @@ Production authentication, billing, retention, queue-swap proof, graceful operat
 
 ## Evidence integrity requirements
 
-Current Rust evidence often drives tonic or a headless state core rather than a rendered GPUI application. Several web tests assert controls or final states without the claimed lifecycle, failure, replay, or intermediate behavior. Coverage validation currently checks declarations more strongly than assertion semantics.
+Rust evidence once drove tonic or a headless state core rather than a rendered GPUI application, several web tests asserted controls or final states without the claimed lifecycle behavior, and coverage validation checked declarations more strongly than assertion semantics. Phase 7 closed all three: `scripts/verify-coverage.py` now requires declared assertion strings to appear in the referenced test, requires required CI to execute it, and rejects Rust rows that never inspect a rendered GPUI frame. `scripts/mutate-coverage-gate.sh` proves each rejection in CI.
 
 For every completion phase:
 

@@ -122,6 +122,25 @@ func (h *envHandler) TerminateEnv(ctx context.Context, req *connect.Request[ultr
 	}
 	return connect.NewResponse(&ultrav1.TerminateEnvResponse{}), nil
 }
+func (h *envHandler) RestartEnv(ctx context.Context, req *connect.Request[ultrav1.RestartEnvRequest]) (*connect.Response[ultrav1.RestartEnvResponse], error) {
+	e, err := h.resolve(ctx, ultra.EnvID(req.Msg.GetEnvId()))
+	if err != nil {
+		return nil, err
+	}
+	seq, err := h.envs.RequestRestart(ctx, e.OrgID, e.ID)
+	if err != nil {
+		if errors.Is(err, ultra.ErrNotFound) {
+			return nil, errNotFound()
+		}
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("environment cannot be restarted"))
+	}
+	restarted, err := h.store.Org(e.OrgID).Envs().Get(ctx, e.ID)
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	return connect.NewResponse(&ultrav1.RestartEnvResponse{Env: envToProto(restarted), EventSeq: seq}), nil
+}
+
 func (h *envHandler) ExecPreview(ctx context.Context, req *connect.Request[ultrav1.ExecPreviewRequest]) (*connect.Response[ultrav1.ExecPreviewResponse], error) {
 	e, err := h.resolve(ctx, ultra.EnvID(req.Msg.GetEnvId()))
 	if err != nil {
@@ -159,7 +178,7 @@ func (h *billingHandler) GetUsage(ctx context.Context, req *connect.Request[ultr
 	}
 	resp := &ultrav1.GetUsageResponse{}
 	for _, u := range items {
-		p := &ultrav1.UsageInterval{EnvId: string(u.EnvID), ProviderInstanceId: string(u.ProviderInstanceID), StartedAt: timestamppb.New(u.StartedAt), Seconds: u.Seconds, RateClass: u.RateClass}
+		p := &ultrav1.UsageInterval{EnvId: string(u.EnvID), ProviderInstanceId: string(u.ProviderInstanceID), StartedAt: timestamppb.New(u.StartedAt), Seconds: u.Seconds, RateClass: u.RateClass, LastMeteredAt: timestamppb.New(u.LastMeteredAt), Open: u.EndedAt == nil}
 		if u.EndedAt != nil {
 			p.EndedAt = timestamppb.New(*u.EndedAt)
 		}

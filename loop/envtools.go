@@ -105,12 +105,11 @@ func (r *EnvTools) Tools(ctx context.Context, run ultra.AgentRun) ([]fantasy.Age
 		}
 	}
 	for _, env := range ready {
-		clear, e := r.Envs.ClearTokenForTools(env)
+		// Discovery goes through the epoch-keyed client cache: a restarted
+		// environment yields a fresh client and revokes the previous one,
+		// so a rotated token can never be reused.
+		client, e := r.Envs.ToolClient(ctx, env)
 		if e != nil {
-			return nil, e
-		}
-		client := mcp.NewClient(env.Endpoint, clear)
-		if client.Initialize(ctx) != nil {
 			continue
 		}
 		discovered, e := client.Tools(ctx)
@@ -155,9 +154,22 @@ func newMCPTool(name string, t mcp.Tool, c *mcp.Client) fantasy.AgentTool {
 func (t *mcpTool) Info() fantasy.ToolInfo                     { return t.info }
 func (t *mcpTool) ProviderOptions() fantasy.ProviderOptions   { return nil }
 func (t *mcpTool) SetProviderOptions(fantasy.ProviderOptions) {}
+
+// toolCallTimeout bounds one environment tool call. It matches Bezalel's
+// long-command window: a wedged or vanished environment must produce a typed
+// error response, never a hung step.
+const toolCallTimeout = 5 * time.Minute
+
 func (t *mcpTool) Run(ctx context.Context, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
-	result, err := t.client.Call(ctx, t.remote, json.RawMessage(call.Input))
+	callCtx, cancel := context.WithTimeout(ctx, toolCallTimeout)
+	defer cancel()
+	result, err := t.client.Call(callCtx, t.remote, json.RawMessage(call.Input))
 	if err != nil {
+		// The environment is gone, revoked, or too slow. The step
+		// continues with a typed error so the model can react.
+		if ctx.Err() != nil {
+			return fantasy.ToolResponse{}, ctx.Err()
+		}
 		return fantasy.NewTextErrorResponse(fmt.Sprintf("environment unavailable: %v", err)), nil
 	}
 	resp := fantasy.NewTextResponse(result.Text)

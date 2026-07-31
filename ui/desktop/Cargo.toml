@@ -13,3 +13,4 @@ gpui = { version = "0.2.2", default-features = false }
 
 [dev-dependencies]
 uuid = { version = "1", features = ["v4"] }
+gpui = { version = "0.2.2", default-features = false, features = ["test-support"] }

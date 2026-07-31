@@ -18,6 +18,20 @@ Merely rendering a control, compiling a client, calling an RPC without
 asserting results, pointing several rows at one omnibus smoke test, or naming a
 nonexistent file **does not count**.
 
+`scripts/verify-coverage.py` enforces this mechanically. Each row declares an
+`asserts` list, and verification fails when:
+
+- the referenced file or test does not exist;
+- a declared assertion string is absent from the referenced test body;
+- no Go functional test launches the referenced client suite, or the Go test
+  that does is not executed by required CI;
+- a Rust row does not open the GPUI window (`gpui::test` + `open_app`) or never
+  inspects a rendered frame (`await_rendered`/`debug_bounds`);
+- one named scenario backs more than three capabilities.
+
+`scripts/mutate-coverage-gate.sh` proves each of those rejections still works by
+introducing them deliberately and restoring the tree; it runs in required CI.
+
 ## Required workflow for every public change
 
 Before implementation:
@@ -43,9 +57,11 @@ Before merge:
 
 ```sh
 python3 scripts/verify-coverage.py
+bash scripts/mutate-coverage-gate.sh
 npm run build --prefix ui/web
 cargo test --manifest-path ui/desktop/Cargo.toml --no-run
-go test ./... -count=1 -timeout 15m
+go test ./... -count=1 -timeout 30m
+go test ./e2e/ -count=1 -timeout 45m
 ```
 
 Also run the Playwright and Rust real-stack scenarios explicitly when changing
@@ -54,7 +70,8 @@ either client. Never skip because the backend test passes.
 ## Coverage matrix rules
 
 - Keys describe one bounded observable capability, not an entire phase.
-- Values reference real files under `ui/web/e2e/` and `ui/desktop/tests/`.
+- Values reference real files under `ui/web/e2e/` and `ui/desktop/tests/`, and
+  name the assertion strings inside them that prove the capability.
 - Do not add unimplemented planned behavior to the matrix. Track it in the
   phase plan as incomplete instead.
 - Do not remove a row to make CI pass unless the product capability is removed

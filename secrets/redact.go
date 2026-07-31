@@ -2,7 +2,11 @@ package secrets
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"log/slog"
+	"net/url"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -19,14 +23,45 @@ type Redactor struct {
 var DefaultRedactor = &Redactor{}
 
 // Register adds secret values to scrub. Empty and short (<6 chars) values
-// are ignored to avoid degenerate replacements.
+// are ignored to avoid degenerate replacements. Each value is registered
+// alongside the encodings it can acquire on the way to a log line or an error
+// message — URL query escaping, JSON string escaping, and base64 — because a
+// secret that only survives redaction in its literal form is still leaked.
 func (r *Redactor) Register(values ...string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, v := range values {
-		if len(v) >= 6 {
-			r.secrets = append(r.secrets, v)
+		if len(v) < 6 {
+			continue
 		}
+		for _, form := range encodings(v) {
+			if len(form) >= 6 && !slices.Contains(r.secrets, form) {
+				r.secrets = append(r.secrets, form)
+			}
+		}
+	}
+}
+
+// Encodings returns the literal value plus every encoded form the redactor
+// scrubs. Leak sweeps use it so a test checks the same forms production
+// redacts, instead of guessing.
+func Encodings(value string) []string { return encodings(value) }
+
+// encodings returns the literal value plus the encoded forms it can take in
+// transports and structured logs.
+func encodings(value string) []string {
+	quoted, err := json.Marshal(value)
+	jsonForm := ""
+	if err == nil && len(quoted) >= 2 {
+		jsonForm = string(quoted[1 : len(quoted)-1])
+	}
+	return []string{
+		value,
+		url.QueryEscape(value),
+		url.PathEscape(value),
+		base64.StdEncoding.EncodeToString([]byte(value)),
+		base64.RawURLEncoding.EncodeToString([]byte(value)),
+		jsonForm,
 	}
 }
 
@@ -50,6 +85,12 @@ type RedactingHandler struct {
 // NewRedactingHandler wraps a handler with the default redactor.
 func NewRedactingHandler(inner slog.Handler) *RedactingHandler {
 	return &RedactingHandler{inner: inner, redactor: DefaultRedactor}
+}
+
+// NewRedactingHandlerWith wraps a handler with an explicit redactor, so tests
+// can assert the production scrubbing behavior without mutating global state.
+func NewRedactingHandlerWith(inner slog.Handler, redactor *Redactor) *RedactingHandler {
+	return &RedactingHandler{inner: inner, redactor: redactor}
 }
 
 // Enabled implements slog.Handler.

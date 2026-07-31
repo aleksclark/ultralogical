@@ -216,6 +216,63 @@ func ContainerID(handle ultra.ProviderHandle) (string, error) {
 	return d.ContainerID, err
 }
 
+// Adopt implements ultra.EnvAdopter. Containers are labelled and named by
+// environment id, so a provision retry after a control-plane death finds the
+// container it already created instead of starting a second one.
+func (p *Provider) Adopt(ctx context.Context, id ultra.EnvID) (ultra.ProviderHandle, bool, error) {
+	list, err := p.docker.ContainerList(ctx, containertypes.ListOptions{
+		All:     true,
+		Filters: filters.NewArgs(filters.Arg("label", labelEnvID+"="+string(id))),
+	})
+	if err != nil {
+		return ultra.ProviderHandle{}, false, fmt.Errorf("localdocker: adopt list: %w", err)
+	}
+	if len(list) == 0 {
+		return ultra.ProviderHandle{}, false, nil
+	}
+	// An adopted container may have been created but never started if the
+	// worker died mid-provision; start it before publishing a handle.
+	info, err := p.docker.ContainerInspect(ctx, list[0].ID)
+	if err != nil {
+		return ultra.ProviderHandle{}, false, fmt.Errorf("localdocker: adopt inspect: %w", err)
+	}
+	if !info.State.Running {
+		if err := p.docker.ContainerStart(ctx, list[0].ID, containertypes.StartOptions{}); err != nil {
+			return ultra.ProviderHandle{}, false, fmt.Errorf("localdocker: adopt start: %w", err)
+		}
+	}
+	data, err := p.inspect(ctx, list[0].ID, volumeName(id))
+	if err != nil {
+		return ultra.ProviderHandle{}, false, err
+	}
+	handle, err := encodeHandle(data)
+	return handle, err == nil, err
+}
+
+// Resources implements ultra.EnvResourceLister: it enumerates the containers
+// and volumes still labelled for an environment so leak checks can prove
+// termination released them.
+func (p *Provider) Resources(ctx context.Context, id ultra.EnvID) ([]string, error) {
+	var out []string
+	containers, err := p.docker.ContainerList(ctx, containertypes.ListOptions{
+		All:     true,
+		Filters: filters.NewArgs(filters.Arg("label", labelEnvID+"="+string(id))),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("localdocker: list containers: %w", err)
+	}
+	for _, c := range containers {
+		out = append(out, "container:"+c.ID)
+	}
+	name := volumeName(id)
+	if _, err := p.docker.VolumeInspect(ctx, name); err == nil {
+		out = append(out, "volume:"+name)
+	} else if !cerrdefs.IsNotFound(err) {
+		return nil, fmt.Errorf("localdocker: inspect volume: %w", err)
+	}
+	return out, nil
+}
+
 // KillByEnvID kills the provider resource, used by reconciliation tests.
 func (p *Provider) KillByEnvID(ctx context.Context, id ultra.EnvID) error {
 	list, err := p.docker.ContainerList(ctx, containertypes.ListOptions{All: true, Filters: filters.NewArgs(filters.Arg("label", labelEnvID+"="+string(id)))})

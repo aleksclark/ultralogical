@@ -999,8 +999,11 @@ type EnvLifecycle struct {
 	ProviderInstanceId string                 `protobuf:"bytes,3,opt,name=provider_instance_id,json=providerInstanceId,proto3" json:"provider_instance_id,omitempty"`
 	Endpoint           string                 `protobuf:"bytes,4,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
 	Message            string                 `protobuf:"bytes,5,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// epoch increments on every environment token rotation, so clients and
+	// tool caches can tell a restarted environment from its earlier identity.
+	Epoch         int32 `protobuf:"varint,6,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EnvLifecycle) Reset() {
@@ -1066,6 +1069,13 @@ func (x *EnvLifecycle) GetMessage() string {
 		return x.Message
 	}
 	return ""
+}
+
+func (x *EnvLifecycle) GetEpoch() int32 {
+	if x != nil {
+		return x.Epoch
+	}
+	return 0
 }
 
 type ExecPreviewRan struct {
@@ -2520,13 +2530,14 @@ const file_ultra_v1_event_proto_rawDesc = "" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x18\n" +
 	"\amessage\x18\x03 \x01(\tR\amessage\"%\n" +
 	"\fRunCancelled\x12\x15\n" +
-	"\x06run_id\x18\x01 \x01(\tR\x05runId\"\xa1\x01\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\"\xb7\x01\n" +
 	"\fEnvLifecycle\x12\x15\n" +
 	"\x06env_id\x18\x01 \x01(\tR\x05envId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x120\n" +
 	"\x14provider_instance_id\x18\x03 \x01(\tR\x12providerInstanceId\x12\x1a\n" +
 	"\bendpoint\x18\x04 \x01(\tR\bendpoint\x12\x18\n" +
-	"\amessage\x18\x05 \x01(\tR\amessage\"t\n" +
+	"\amessage\x18\x05 \x01(\tR\amessage\x12\x14\n" +
+	"\x05epoch\x18\x06 \x01(\x05R\x05epoch\"t\n" +
 	"\x0eExecPreviewRan\x12\x15\n" +
 	"\x06env_id\x18\x01 \x01(\tR\x05envId\x12\x18\n" +
 	"\acommand\x18\x02 \x01(\tR\acommand\x12\x16\n" +

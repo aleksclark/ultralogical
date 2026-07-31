@@ -127,6 +127,9 @@ message EnvLifecycle {
   string provider_instance_id = 3;
   string endpoint = 4;
   string message = 5;
+  // epoch increments on every environment token rotation, so clients and
+  // tool caches can tell a restarted environment from its earlier identity.
+  int32 epoch = 6;
 }
 
 message ExecPreviewRan {

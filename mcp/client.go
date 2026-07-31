@@ -34,6 +34,7 @@ type Client struct {
 	Token    string
 	HTTP     *http.Client
 	nextID   atomic.Int64
+	revoked  atomic.Bool
 }
 
 // NewClient creates a client with a five-minute request timeout.
@@ -59,6 +60,9 @@ type response struct {
 }
 
 func (c *Client) rpc(ctx context.Context, method string, params any, out any) error {
+	if err := c.guard(ctx); err != nil {
+		return err
+	}
 	id := c.nextID.Add(1)
 	body, err := json.Marshal(request{JSONRPC: "2.0", ID: id, Method: method, Params: params})
 	if err != nil {
