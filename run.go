@@ -40,9 +40,10 @@ const (
 // ModelConfig names the model a run uses and which org credential pays for
 // it. Inference is always on org credentials; there is no platform fallback.
 type ModelConfig struct {
-	Provider   string `json:"provider"`   // openai | anthropic | bedrock
-	ModelID    string `json:"model_id"`   //
-	Credential string `json:"credential"` // credential name within the org
+	Provider   string        `json:"provider"` // openai | anthropic | bedrock
+	ModelID    string        `json:"model_id"`
+	Credential string        `json:"credential"` // credential name within the org
+	Fallbacks  []ModelConfig `json:"fallbacks,omitempty"`
 }
 
 // AgentRun is one durable agent loop bound to a session. Its message history

@@ -1316,6 +1316,238 @@ func (x *MemoryChanged) GetValueJson() string {
 	return ""
 }
 
+type HistoryCompacted struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	RunId           string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	CoveredMessages int32                  `protobuf:"varint,2,opt,name=covered_messages,json=coveredMessages,proto3" json:"covered_messages,omitempty"`
+	SummaryTokens   int64                  `protobuf:"varint,3,opt,name=summary_tokens,json=summaryTokens,proto3" json:"summary_tokens,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *HistoryCompacted) Reset() {
+	*x = HistoryCompacted{}
+	mi := &file_ultra_v1_event_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HistoryCompacted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HistoryCompacted) ProtoMessage() {}
+
+func (x *HistoryCompacted) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HistoryCompacted.ProtoReflect.Descriptor instead.
+func (*HistoryCompacted) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *HistoryCompacted) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *HistoryCompacted) GetCoveredMessages() int32 {
+	if x != nil {
+		return x.CoveredMessages
+	}
+	return 0
+}
+
+func (x *HistoryCompacted) GetSummaryTokens() int64 {
+	if x != nil {
+		return x.SummaryTokens
+	}
+	return 0
+}
+
+type ModelFallback struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	From          string                 `protobuf:"bytes,2,opt,name=from,proto3" json:"from,omitempty"`
+	To            string                 `protobuf:"bytes,3,opt,name=to,proto3" json:"to,omitempty"`
+	Reason        string                 `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ModelFallback) Reset() {
+	*x = ModelFallback{}
+	mi := &file_ultra_v1_event_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelFallback) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelFallback) ProtoMessage() {}
+
+func (x *ModelFallback) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelFallback.ProtoReflect.Descriptor instead.
+func (*ModelFallback) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ModelFallback) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *ModelFallback) GetFrom() string {
+	if x != nil {
+		return x.From
+	}
+	return ""
+}
+
+func (x *ModelFallback) GetTo() string {
+	if x != nil {
+		return x.To
+	}
+	return ""
+}
+
+func (x *ModelFallback) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type HookFired struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Hook          string                 `protobuf:"bytes,1,opt,name=hook,proto3" json:"hook,omitempty"`
+	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HookFired) Reset() {
+	*x = HookFired{}
+	mi := &file_ultra_v1_event_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HookFired) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HookFired) ProtoMessage() {}
+
+func (x *HookFired) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HookFired.ProtoReflect.Descriptor instead.
+func (*HookFired) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *HookFired) GetHook() string {
+	if x != nil {
+		return x.Hook
+	}
+	return ""
+}
+
+func (x *HookFired) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+type PeriodicPromptFired struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Prompt        string                 `protobuf:"bytes,2,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PeriodicPromptFired) Reset() {
+	*x = PeriodicPromptFired{}
+	mi := &file_ultra_v1_event_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PeriodicPromptFired) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PeriodicPromptFired) ProtoMessage() {}
+
+func (x *PeriodicPromptFired) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PeriodicPromptFired.ProtoReflect.Descriptor instead.
+func (*PeriodicPromptFired) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *PeriodicPromptFired) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *PeriodicPromptFired) GetPrompt() string {
+	if x != nil {
+		return x.Prompt
+	}
+	return ""
+}
+
 type PermissionDenied struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
@@ -1328,7 +1560,7 @@ type PermissionDenied struct {
 
 func (x *PermissionDenied) Reset() {
 	*x = PermissionDenied{}
-	mi := &file_ultra_v1_event_proto_msgTypes[20]
+	mi := &file_ultra_v1_event_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1340,7 +1572,7 @@ func (x *PermissionDenied) String() string {
 func (*PermissionDenied) ProtoMessage() {}
 
 func (x *PermissionDenied) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[20]
+	mi := &file_ultra_v1_event_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1353,7 +1585,7 @@ func (x *PermissionDenied) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PermissionDenied.ProtoReflect.Descriptor instead.
 func (*PermissionDenied) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{20}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *PermissionDenied) GetRunId() string {
@@ -1418,6 +1650,10 @@ type EventPayload struct {
 	//	*EventPayload_MemorySet
 	//	*EventPayload_MemoryDeleted
 	//	*EventPayload_PermissionDenied
+	//	*EventPayload_HistoryCompacted
+	//	*EventPayload_ModelFallback
+	//	*EventPayload_HookFired
+	//	*EventPayload_PeriodicPromptFired
 	Payload       isEventPayload_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1425,7 +1661,7 @@ type EventPayload struct {
 
 func (x *EventPayload) Reset() {
 	*x = EventPayload{}
-	mi := &file_ultra_v1_event_proto_msgTypes[21]
+	mi := &file_ultra_v1_event_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1437,7 +1673,7 @@ func (x *EventPayload) String() string {
 func (*EventPayload) ProtoMessage() {}
 
 func (x *EventPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[21]
+	mi := &file_ultra_v1_event_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1450,7 +1686,7 @@ func (x *EventPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventPayload.ProtoReflect.Descriptor instead.
 func (*EventPayload) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{21}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *EventPayload) GetPayload() isEventPayload_Payload {
@@ -1703,6 +1939,42 @@ func (x *EventPayload) GetPermissionDenied() *PermissionDenied {
 	return nil
 }
 
+func (x *EventPayload) GetHistoryCompacted() *HistoryCompacted {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_HistoryCompacted); ok {
+			return x.HistoryCompacted
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetModelFallback() *ModelFallback {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_ModelFallback); ok {
+			return x.ModelFallback
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetHookFired() *HookFired {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_HookFired); ok {
+			return x.HookFired
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetPeriodicPromptFired() *PeriodicPromptFired {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_PeriodicPromptFired); ok {
+			return x.PeriodicPromptFired
+		}
+	}
+	return nil
+}
+
 type isEventPayload_Payload interface {
 	isEventPayload_Payload()
 }
@@ -1815,6 +2087,22 @@ type EventPayload_PermissionDenied struct {
 	PermissionDenied *PermissionDenied `protobuf:"bytes,36,opt,name=permission_denied,json=permissionDenied,proto3,oneof"`
 }
 
+type EventPayload_HistoryCompacted struct {
+	HistoryCompacted *HistoryCompacted `protobuf:"bytes,37,opt,name=history_compacted,json=historyCompacted,proto3,oneof"`
+}
+
+type EventPayload_ModelFallback struct {
+	ModelFallback *ModelFallback `protobuf:"bytes,38,opt,name=model_fallback,json=modelFallback,proto3,oneof"`
+}
+
+type EventPayload_HookFired struct {
+	HookFired *HookFired `protobuf:"bytes,39,opt,name=hook_fired,json=hookFired,proto3,oneof"`
+}
+
+type EventPayload_PeriodicPromptFired struct {
+	PeriodicPromptFired *PeriodicPromptFired `protobuf:"bytes,40,opt,name=periodic_prompt_fired,json=periodicPromptFired,proto3,oneof"`
+}
+
 func (*EventPayload_UserMessage) isEventPayload_Payload() {}
 
 func (*EventPayload_Annotation) isEventPayload_Payload() {}
@@ -1869,6 +2157,14 @@ func (*EventPayload_MemoryDeleted) isEventPayload_Payload() {}
 
 func (*EventPayload_PermissionDenied) isEventPayload_Payload() {}
 
+func (*EventPayload_HistoryCompacted) isEventPayload_Payload() {}
+
+func (*EventPayload_ModelFallback) isEventPayload_Payload() {}
+
+func (*EventPayload_HookFired) isEventPayload_Payload() {}
+
+func (*EventPayload_PeriodicPromptFired) isEventPayload_Payload() {}
+
 // SessionEvent is one entry in a session's append-only event log. Seq is
 // per-session, gapless, and monotonic; clients resume by seq.
 type SessionEvent struct {
@@ -1884,7 +2180,7 @@ type SessionEvent struct {
 
 func (x *SessionEvent) Reset() {
 	*x = SessionEvent{}
-	mi := &file_ultra_v1_event_proto_msgTypes[22]
+	mi := &file_ultra_v1_event_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1896,7 +2192,7 @@ func (x *SessionEvent) String() string {
 func (*SessionEvent) ProtoMessage() {}
 
 func (x *SessionEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[22]
+	mi := &file_ultra_v1_event_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1909,7 +2205,7 @@ func (x *SessionEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionEvent.ProtoReflect.Descriptor instead.
 func (*SessionEvent) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{22}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *SessionEvent) GetSessionId() string {
@@ -1957,7 +2253,7 @@ type AppendRequest struct {
 
 func (x *AppendRequest) Reset() {
 	*x = AppendRequest{}
-	mi := &file_ultra_v1_event_proto_msgTypes[23]
+	mi := &file_ultra_v1_event_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1969,7 +2265,7 @@ func (x *AppendRequest) String() string {
 func (*AppendRequest) ProtoMessage() {}
 
 func (x *AppendRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[23]
+	mi := &file_ultra_v1_event_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1982,7 +2278,7 @@ func (x *AppendRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendRequest.ProtoReflect.Descriptor instead.
 func (*AppendRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{23}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *AppendRequest) GetSessionId() string {
@@ -2010,7 +2306,7 @@ type AppendResponse struct {
 
 func (x *AppendResponse) Reset() {
 	*x = AppendResponse{}
-	mi := &file_ultra_v1_event_proto_msgTypes[24]
+	mi := &file_ultra_v1_event_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2022,7 +2318,7 @@ func (x *AppendResponse) String() string {
 func (*AppendResponse) ProtoMessage() {}
 
 func (x *AppendResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[24]
+	mi := &file_ultra_v1_event_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2035,7 +2331,7 @@ func (x *AppendResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendResponse.ProtoReflect.Descriptor instead.
 func (*AppendResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{24}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *AppendResponse) GetSeq() int64 {
@@ -2056,7 +2352,7 @@ type SubscribeRequest struct {
 
 func (x *SubscribeRequest) Reset() {
 	*x = SubscribeRequest{}
-	mi := &file_ultra_v1_event_proto_msgTypes[25]
+	mi := &file_ultra_v1_event_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2068,7 +2364,7 @@ func (x *SubscribeRequest) String() string {
 func (*SubscribeRequest) ProtoMessage() {}
 
 func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[25]
+	mi := &file_ultra_v1_event_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2081,7 +2377,7 @@ func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeRequest.ProtoReflect.Descriptor instead.
 func (*SubscribeRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{25}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *SubscribeRequest) GetSessionId() string {
@@ -2110,7 +2406,7 @@ type SubscribeResponse struct {
 
 func (x *SubscribeResponse) Reset() {
 	*x = SubscribeResponse{}
-	mi := &file_ultra_v1_event_proto_msgTypes[26]
+	mi := &file_ultra_v1_event_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2122,7 +2418,7 @@ func (x *SubscribeResponse) String() string {
 func (*SubscribeResponse) ProtoMessage() {}
 
 func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[26]
+	mi := &file_ultra_v1_event_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2135,7 +2431,7 @@ func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeResponse.ProtoReflect.Descriptor instead.
 func (*SubscribeResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{26}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *SubscribeResponse) GetEvent() *SessionEvent {
@@ -2250,12 +2546,27 @@ const file_ultra_v1_event_proto_rawDesc = "" +
 	"\x0fupdated_by_type\x18\x02 \x01(\tR\rupdatedByType\x12\"\n" +
 	"\rupdated_by_id\x18\x03 \x01(\tR\vupdatedById\x12\x1d\n" +
 	"\n" +
-	"value_json\x18\x04 \x01(\tR\tvalueJson\"l\n" +
+	"value_json\x18\x04 \x01(\tR\tvalueJson\"{\n" +
+	"\x10HistoryCompacted\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12)\n" +
+	"\x10covered_messages\x18\x02 \x01(\x05R\x0fcoveredMessages\x12%\n" +
+	"\x0esummary_tokens\x18\x03 \x01(\x03R\rsummaryTokens\"b\n" +
+	"\rModelFallback\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x12\n" +
+	"\x04from\x18\x02 \x01(\tR\x04from\x12\x0e\n" +
+	"\x02to\x18\x03 \x01(\tR\x02to\x12\x16\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\"6\n" +
+	"\tHookFired\x12\x12\n" +
+	"\x04hook\x18\x01 \x01(\tR\x04hook\x12\x15\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\"D\n" +
+	"\x13PeriodicPromptFired\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x16\n" +
+	"\x06prompt\x18\x02 \x01(\tR\x06prompt\"l\n" +
 	"\x10PermissionDenied\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x12\n" +
 	"\x04tool\x18\x02 \x01(\tR\x04tool\x12\x15\n" +
 	"\x06env_id\x18\x03 \x01(\tR\x05envId\x12\x16\n" +
-	"\x06reason\x18\x04 \x01(\tR\x06reason\"\xda\r\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\"\xf2\x0f\n" +
 	"\fEventPayload\x12:\n" +
 	"\fuser_message\x18\n" +
 	" \x01(\v2\x15.ultra.v1.UserMessageH\x00R\vuserMessage\x126\n" +
@@ -2293,7 +2604,12 @@ const file_ultra_v1_event_proto_rawDesc = "" +
 	"\n" +
 	"memory_set\x18\" \x01(\v2\x17.ultra.v1.MemoryChangedH\x00R\tmemorySet\x12@\n" +
 	"\x0ememory_deleted\x18# \x01(\v2\x17.ultra.v1.MemoryChangedH\x00R\rmemoryDeleted\x12I\n" +
-	"\x11permission_denied\x18$ \x01(\v2\x1a.ultra.v1.PermissionDeniedH\x00R\x10permissionDeniedB\t\n" +
+	"\x11permission_denied\x18$ \x01(\v2\x1a.ultra.v1.PermissionDeniedH\x00R\x10permissionDenied\x12I\n" +
+	"\x11history_compacted\x18% \x01(\v2\x1a.ultra.v1.HistoryCompactedH\x00R\x10historyCompacted\x12@\n" +
+	"\x0emodel_fallback\x18& \x01(\v2\x17.ultra.v1.ModelFallbackH\x00R\rmodelFallback\x124\n" +
+	"\n" +
+	"hook_fired\x18' \x01(\v2\x13.ultra.v1.HookFiredH\x00R\thookFired\x12S\n" +
+	"\x15periodic_prompt_fired\x18( \x01(\v2\x1d.ultra.v1.PeriodicPromptFiredH\x00R\x13periodicPromptFiredB\t\n" +
 	"\apayload\"\xc4\x01\n" +
 	"\fSessionEvent\x12\x1d\n" +
 	"\n" +
@@ -2336,7 +2652,7 @@ func file_ultra_v1_event_proto_rawDescGZIP() []byte {
 }
 
 var file_ultra_v1_event_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ultra_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_ultra_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_ultra_v1_event_proto_goTypes = []any{
 	(ActorType)(0),                // 0: ultra.v1.ActorType
 	(*Actor)(nil),                 // 1: ultra.v1.Actor
@@ -2359,14 +2675,18 @@ var file_ultra_v1_event_proto_goTypes = []any{
 	(*ParticipantTransition)(nil), // 18: ultra.v1.ParticipantTransition
 	(*RunSpawned)(nil),            // 19: ultra.v1.RunSpawned
 	(*MemoryChanged)(nil),         // 20: ultra.v1.MemoryChanged
-	(*PermissionDenied)(nil),      // 21: ultra.v1.PermissionDenied
-	(*EventPayload)(nil),          // 22: ultra.v1.EventPayload
-	(*SessionEvent)(nil),          // 23: ultra.v1.SessionEvent
-	(*AppendRequest)(nil),         // 24: ultra.v1.AppendRequest
-	(*AppendResponse)(nil),        // 25: ultra.v1.AppendResponse
-	(*SubscribeRequest)(nil),      // 26: ultra.v1.SubscribeRequest
-	(*SubscribeResponse)(nil),     // 27: ultra.v1.SubscribeResponse
-	(*timestamppb.Timestamp)(nil), // 28: google.protobuf.Timestamp
+	(*HistoryCompacted)(nil),      // 21: ultra.v1.HistoryCompacted
+	(*ModelFallback)(nil),         // 22: ultra.v1.ModelFallback
+	(*HookFired)(nil),             // 23: ultra.v1.HookFired
+	(*PeriodicPromptFired)(nil),   // 24: ultra.v1.PeriodicPromptFired
+	(*PermissionDenied)(nil),      // 25: ultra.v1.PermissionDenied
+	(*EventPayload)(nil),          // 26: ultra.v1.EventPayload
+	(*SessionEvent)(nil),          // 27: ultra.v1.SessionEvent
+	(*AppendRequest)(nil),         // 28: ultra.v1.AppendRequest
+	(*AppendResponse)(nil),        // 29: ultra.v1.AppendResponse
+	(*SubscribeRequest)(nil),      // 30: ultra.v1.SubscribeRequest
+	(*SubscribeResponse)(nil),     // 31: ultra.v1.SubscribeResponse
+	(*timestamppb.Timestamp)(nil), // 32: google.protobuf.Timestamp
 }
 var file_ultra_v1_event_proto_depIdxs = []int32{
 	0,  // 0: ultra.v1.Actor.type:type_name -> ultra.v1.ActorType
@@ -2397,21 +2717,25 @@ var file_ultra_v1_event_proto_depIdxs = []int32{
 	19, // 25: ultra.v1.EventPayload.run_spawned:type_name -> ultra.v1.RunSpawned
 	20, // 26: ultra.v1.EventPayload.memory_set:type_name -> ultra.v1.MemoryChanged
 	20, // 27: ultra.v1.EventPayload.memory_deleted:type_name -> ultra.v1.MemoryChanged
-	21, // 28: ultra.v1.EventPayload.permission_denied:type_name -> ultra.v1.PermissionDenied
-	28, // 29: ultra.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
-	1,  // 30: ultra.v1.SessionEvent.actor:type_name -> ultra.v1.Actor
-	22, // 31: ultra.v1.SessionEvent.payload:type_name -> ultra.v1.EventPayload
-	22, // 32: ultra.v1.AppendRequest.payload:type_name -> ultra.v1.EventPayload
-	23, // 33: ultra.v1.SubscribeResponse.event:type_name -> ultra.v1.SessionEvent
-	24, // 34: ultra.v1.EventService.Append:input_type -> ultra.v1.AppendRequest
-	26, // 35: ultra.v1.EventService.Subscribe:input_type -> ultra.v1.SubscribeRequest
-	25, // 36: ultra.v1.EventService.Append:output_type -> ultra.v1.AppendResponse
-	27, // 37: ultra.v1.EventService.Subscribe:output_type -> ultra.v1.SubscribeResponse
-	36, // [36:38] is the sub-list for method output_type
-	34, // [34:36] is the sub-list for method input_type
-	34, // [34:34] is the sub-list for extension type_name
-	34, // [34:34] is the sub-list for extension extendee
-	0,  // [0:34] is the sub-list for field type_name
+	25, // 28: ultra.v1.EventPayload.permission_denied:type_name -> ultra.v1.PermissionDenied
+	21, // 29: ultra.v1.EventPayload.history_compacted:type_name -> ultra.v1.HistoryCompacted
+	22, // 30: ultra.v1.EventPayload.model_fallback:type_name -> ultra.v1.ModelFallback
+	23, // 31: ultra.v1.EventPayload.hook_fired:type_name -> ultra.v1.HookFired
+	24, // 32: ultra.v1.EventPayload.periodic_prompt_fired:type_name -> ultra.v1.PeriodicPromptFired
+	32, // 33: ultra.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
+	1,  // 34: ultra.v1.SessionEvent.actor:type_name -> ultra.v1.Actor
+	26, // 35: ultra.v1.SessionEvent.payload:type_name -> ultra.v1.EventPayload
+	26, // 36: ultra.v1.AppendRequest.payload:type_name -> ultra.v1.EventPayload
+	27, // 37: ultra.v1.SubscribeResponse.event:type_name -> ultra.v1.SessionEvent
+	28, // 38: ultra.v1.EventService.Append:input_type -> ultra.v1.AppendRequest
+	30, // 39: ultra.v1.EventService.Subscribe:input_type -> ultra.v1.SubscribeRequest
+	29, // 40: ultra.v1.EventService.Append:output_type -> ultra.v1.AppendResponse
+	31, // 41: ultra.v1.EventService.Subscribe:output_type -> ultra.v1.SubscribeResponse
+	40, // [40:42] is the sub-list for method output_type
+	38, // [38:40] is the sub-list for method input_type
+	38, // [38:38] is the sub-list for extension type_name
+	38, // [38:38] is the sub-list for extension extendee
+	0,  // [0:38] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_event_proto_init() }
@@ -2419,7 +2743,7 @@ func file_ultra_v1_event_proto_init() {
 	if File_ultra_v1_event_proto != nil {
 		return
 	}
-	file_ultra_v1_event_proto_msgTypes[21].OneofWrappers = []any{
+	file_ultra_v1_event_proto_msgTypes[25].OneofWrappers = []any{
 		(*EventPayload_UserMessage)(nil),
 		(*EventPayload_Annotation)(nil),
 		(*EventPayload_RunStarted)(nil),
@@ -2447,6 +2771,10 @@ func file_ultra_v1_event_proto_init() {
 		(*EventPayload_MemorySet)(nil),
 		(*EventPayload_MemoryDeleted)(nil),
 		(*EventPayload_PermissionDenied)(nil),
+		(*EventPayload_HistoryCompacted)(nil),
+		(*EventPayload_ModelFallback)(nil),
+		(*EventPayload_HookFired)(nil),
+		(*EventPayload_PeriodicPromptFired)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -2454,7 +2782,7 @@ func file_ultra_v1_event_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ultra_v1_event_proto_rawDesc), len(file_ultra_v1_event_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   27,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

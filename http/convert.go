@@ -229,6 +229,22 @@ func payloadFromDomain(kind string, payload []byte) (*ultrav1.EventPayload, erro
 		return decodeAs(payload, &ultrav1.MemoryChanged{}, func(m *ultrav1.MemoryChanged) *ultrav1.EventPayload {
 			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_MemoryDeleted{MemoryDeleted: m}}
 		})
+	case ultra.EventKindHistoryCompacted:
+		return decodeAs(payload, &ultrav1.HistoryCompacted{}, func(m *ultrav1.HistoryCompacted) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_HistoryCompacted{HistoryCompacted: m}}
+		})
+	case ultra.EventKindModelFallback:
+		return decodeAs(payload, &ultrav1.ModelFallback{}, func(m *ultrav1.ModelFallback) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_ModelFallback{ModelFallback: m}}
+		})
+	case ultra.EventKindHookFired:
+		return decodeAs(payload, &ultrav1.HookFired{}, func(m *ultrav1.HookFired) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_HookFired{HookFired: m}}
+		})
+	case ultra.EventKindPeriodicPromptFired:
+		return decodeAs(payload, &ultrav1.PeriodicPromptFired{}, func(m *ultrav1.PeriodicPromptFired) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_PeriodicPromptFired{PeriodicPromptFired: m}}
+		})
 	case ultra.EventKindPermissionDenied:
 		return decodeAs(payload, &ultrav1.PermissionDenied{}, func(m *ultrav1.PermissionDenied) *ultrav1.EventPayload {
 			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_PermissionDenied{PermissionDenied: m}}

@@ -23,6 +23,7 @@ message ModelConfig {
   string provider = 1;   // openai | anthropic | bedrock
   string model_id = 2;
   string credential = 3; // credential name within the org; "default" if empty
+  repeated ModelConfig fallbacks = 4;
 }
 
 // AgentRun is one durable agent loop bound to a session.

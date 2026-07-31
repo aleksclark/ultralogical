@@ -209,6 +209,14 @@ func Kind(ev *ultrav1.SessionEvent) string {
 		return "env_terminated"
 	case *ultrav1.EventPayload_ExecPreviewRan:
 		return "exec_preview_ran"
+	case *ultrav1.EventPayload_HistoryCompacted:
+		return "history_compacted"
+	case *ultrav1.EventPayload_ModelFallback:
+		return "model_fallback"
+	case *ultrav1.EventPayload_HookFired:
+		return "hook_fired"
+	case *ultrav1.EventPayload_PeriodicPromptFired:
+		return "periodic_prompt_fired"
 	default:
 		return "unknown"
 	}

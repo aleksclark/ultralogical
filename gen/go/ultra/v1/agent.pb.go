@@ -91,6 +91,7 @@ type ModelConfig struct {
 	Provider      string                 `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"` // openai | anthropic | bedrock
 	ModelId       string                 `protobuf:"bytes,2,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
 	Credential    string                 `protobuf:"bytes,3,opt,name=credential,proto3" json:"credential,omitempty"` // credential name within the org; "default" if empty
+	Fallbacks     []*ModelConfig         `protobuf:"bytes,4,rep,name=fallbacks,proto3" json:"fallbacks,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -144,6 +145,13 @@ func (x *ModelConfig) GetCredential() string {
 		return x.Credential
 	}
 	return ""
+}
+
+func (x *ModelConfig) GetFallbacks() []*ModelConfig {
+	if x != nil {
+		return x.Fallbacks
+	}
+	return nil
 }
 
 // AgentRun is one durable agent loop bound to a session.
@@ -846,13 +854,14 @@ var File_ultra_v1_agent_proto protoreflect.FileDescriptor
 
 const file_ultra_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x14ultra/v1/agent.proto\x12\bultra.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"d\n" +
+	"\x14ultra/v1/agent.proto\x12\bultra.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x99\x01\n" +
 	"\vModelConfig\x12\x1a\n" +
 	"\bprovider\x18\x01 \x01(\tR\bprovider\x12\x19\n" +
 	"\bmodel_id\x18\x02 \x01(\tR\amodelId\x12\x1e\n" +
 	"\n" +
 	"credential\x18\x03 \x01(\tR\n" +
-	"credential\"\x89\x04\n" +
+	"credential\x123\n" +
+	"\tfallbacks\x18\x04 \x03(\v2\x15.ultra.v1.ModelConfigR\tfallbacks\"\x89\x04\n" +
 	"\bAgentRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -950,31 +959,32 @@ var file_ultra_v1_agent_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
 }
 var file_ultra_v1_agent_proto_depIdxs = []int32{
-	0,  // 0: ultra.v1.AgentRun.state:type_name -> ultra.v1.RunState
-	1,  // 1: ultra.v1.AgentRun.model_config:type_name -> ultra.v1.ModelConfig
-	14, // 2: ultra.v1.AgentRun.created_at:type_name -> google.protobuf.Timestamp
-	14, // 3: ultra.v1.AgentRun.updated_at:type_name -> google.protobuf.Timestamp
-	3,  // 4: ultra.v1.AgentRun.grants:type_name -> ultra.v1.Grants
-	1,  // 5: ultra.v1.StartRunRequest.model_config:type_name -> ultra.v1.ModelConfig
-	3,  // 6: ultra.v1.StartRunRequest.grants:type_name -> ultra.v1.Grants
-	2,  // 7: ultra.v1.StartRunResponse.run:type_name -> ultra.v1.AgentRun
-	2,  // 8: ultra.v1.GetRunResponse.run:type_name -> ultra.v1.AgentRun
-	2,  // 9: ultra.v1.ListRunsResponse.runs:type_name -> ultra.v1.AgentRun
-	4,  // 10: ultra.v1.AgentService.StartRun:input_type -> ultra.v1.StartRunRequest
-	6,  // 11: ultra.v1.AgentService.PromptRun:input_type -> ultra.v1.PromptRunRequest
-	8,  // 12: ultra.v1.AgentService.CancelRun:input_type -> ultra.v1.CancelRunRequest
-	10, // 13: ultra.v1.AgentService.GetRun:input_type -> ultra.v1.GetRunRequest
-	12, // 14: ultra.v1.AgentService.ListRuns:input_type -> ultra.v1.ListRunsRequest
-	5,  // 15: ultra.v1.AgentService.StartRun:output_type -> ultra.v1.StartRunResponse
-	7,  // 16: ultra.v1.AgentService.PromptRun:output_type -> ultra.v1.PromptRunResponse
-	9,  // 17: ultra.v1.AgentService.CancelRun:output_type -> ultra.v1.CancelRunResponse
-	11, // 18: ultra.v1.AgentService.GetRun:output_type -> ultra.v1.GetRunResponse
-	13, // 19: ultra.v1.AgentService.ListRuns:output_type -> ultra.v1.ListRunsResponse
-	15, // [15:20] is the sub-list for method output_type
-	10, // [10:15] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	1,  // 0: ultra.v1.ModelConfig.fallbacks:type_name -> ultra.v1.ModelConfig
+	0,  // 1: ultra.v1.AgentRun.state:type_name -> ultra.v1.RunState
+	1,  // 2: ultra.v1.AgentRun.model_config:type_name -> ultra.v1.ModelConfig
+	14, // 3: ultra.v1.AgentRun.created_at:type_name -> google.protobuf.Timestamp
+	14, // 4: ultra.v1.AgentRun.updated_at:type_name -> google.protobuf.Timestamp
+	3,  // 5: ultra.v1.AgentRun.grants:type_name -> ultra.v1.Grants
+	1,  // 6: ultra.v1.StartRunRequest.model_config:type_name -> ultra.v1.ModelConfig
+	3,  // 7: ultra.v1.StartRunRequest.grants:type_name -> ultra.v1.Grants
+	2,  // 8: ultra.v1.StartRunResponse.run:type_name -> ultra.v1.AgentRun
+	2,  // 9: ultra.v1.GetRunResponse.run:type_name -> ultra.v1.AgentRun
+	2,  // 10: ultra.v1.ListRunsResponse.runs:type_name -> ultra.v1.AgentRun
+	4,  // 11: ultra.v1.AgentService.StartRun:input_type -> ultra.v1.StartRunRequest
+	6,  // 12: ultra.v1.AgentService.PromptRun:input_type -> ultra.v1.PromptRunRequest
+	8,  // 13: ultra.v1.AgentService.CancelRun:input_type -> ultra.v1.CancelRunRequest
+	10, // 14: ultra.v1.AgentService.GetRun:input_type -> ultra.v1.GetRunRequest
+	12, // 15: ultra.v1.AgentService.ListRuns:input_type -> ultra.v1.ListRunsRequest
+	5,  // 16: ultra.v1.AgentService.StartRun:output_type -> ultra.v1.StartRunResponse
+	7,  // 17: ultra.v1.AgentService.PromptRun:output_type -> ultra.v1.PromptRunResponse
+	9,  // 18: ultra.v1.AgentService.CancelRun:output_type -> ultra.v1.CancelRunResponse
+	11, // 19: ultra.v1.AgentService.GetRun:output_type -> ultra.v1.GetRunResponse
+	13, // 20: ultra.v1.AgentService.ListRuns:output_type -> ultra.v1.ListRunsResponse
+	16, // [16:21] is the sub-list for method output_type
+	11, // [11:16] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_agent_proto_init() }
