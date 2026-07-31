@@ -12,12 +12,11 @@ provider.
 
 ## Status
 
-**Phase 2 complete**: multi-tenant ConnectRPC platform with a durable
-Fantasy loop, encrypted BYO inference credentials, and session-owned
-development environments. The local provider launches real Bezalel Docker
-containers with persistent workspaces, exposes MCP tools to agents, supports
-human ExecPreview, reconciles failures, and records usage intervals. React
-and generated Go/TypeScript clients consume the same typed event stream.
+**Phase 6.7 remediation in progress**: the platform includes durable sessions,
+agent loops, development environments, multiplayer, flows, and advanced-loop
+groundwork, but the independent Phase 0–6 audit found material completion gaps.
+`agent_docs/phases_0_6_audit.md` assigns those gaps to completion-scoped
+Phases 7–11; production hardening and release proof follow in Phases 12–13.
 
 See [`plan/index.md`](plan/index.md) for the architecture and roadmap, and
 [`AGENTS.md`](AGENTS.md) for the contributor/agent cheatsheet.

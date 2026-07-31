@@ -2,8 +2,8 @@
 
 Ultralogical: a durable-session platform for agentic work — multi-tenant,
 event-sourced sessions that humans and agents share. Go backend, ConnectRPC
-API, Postgres, React/gpui UIs. Currently at **Phase 6.7** (BYO and hosted environment providers;
-versioned flows invoke durable agents into shared sessions).
+API, Postgres, React/gpui UIs. Currently at **Phase 6.7** security-critical
+orchestration remediation; completion-scoped backlog phases begin at Phase 7.
 
 ## Cheatsheet
 
@@ -44,7 +44,9 @@ task dev               # local postgres + ultrad + worker
 8. **Capability coverage is a merge gate.** Any public/API/UI capability added or changed must be exercised through the real Go functional suite and every supported first-party client (currently web Playwright + Rust desktop). Update `e2e/coverage.json` with existing test files; CI must validate references and run them. A filename or smoke test is not evidence—assert observable behavior, failure paths, replay, and tenancy.
 9. **Never claim unimplemented coverage.** Before coding a phase, inventory its acceptance bullets against actual implementation. Mark unbuilt bullets explicitly; do not rename partial work “complete,” map nonexistent tests, or let an omnibus test stand in for capabilities it does not assert.
 10. Follow the phase plan (`plan/`) — don't build ahead of the current phase
-   or invent stopgaps for unbuilt subsystems.
+   or invent stopgaps for unbuilt subsystems. A phase closes only when every
+   scoped acceptance test and its independent completion audit pass; groundwork,
+   CRUD, aliases, compilation, and smoke tests are not completion evidence.
 
 ## Docs index
 
@@ -65,5 +67,11 @@ task dev               # local postgres + ultrad + worker
 | [agent_docs/codegen.md](agent_docs/codegen.md) | changing protos, adding events/RPCs |
 | [agent_docs/conventions.md](agent_docs/conventions.md) | code style, layout rules, errors, migrations, never-do list |
 | [plan/index.md](plan/index.md) | architecture rationale + full roadmap |
-| [plan/phase_6_7.md](plan/phase_6_7.md) | current audit-remediation phase |
-| [plan/phase_7.md](plan/phase_7.md) | next product phase |
+| [plan/phase_6_7.md](plan/phase_6_7.md) | current security-critical remediation phase |
+| [plan/phase_7.md](plan/phase_7.md) | next phase: Phase 0–2 completion |
+| [plan/phase_8.md](plan/phase_8.md) | orchestration and distributed-session completion |
+| [plan/phase_9.md](plan/phase_9.md) | flow completion |
+| [plan/phase_10.md](plan/phase_10.md) | real remote providers |
+| [plan/phase_11.md](plan/phase_11.md) | advanced loop and automation completion |
+| [plan/phase_12.md](plan/phase_12.md) | production hardening and billing |
+| [plan/phase_13.md](plan/phase_13.md) | desktop distribution and release proof |

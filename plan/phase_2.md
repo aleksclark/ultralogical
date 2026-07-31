@@ -37,8 +37,8 @@ nomad/k8s (Phase 5) are additive.
   diffs), ExecPreview command box.
 
 **Out:** nomad/k8s/hosted-EKS/tunnel providers (Phase 5), billing on the ledger
-(Phase 7 — this phase only records), switchboard attachment (Phase 6), suspend/resume
-(post-v1; state machine reserves the states).
+(Phase 12 — this phase only records usage), switchboard attachment (Phase 6),
+suspend/resume (post-v1; state machine reserves the states).
 
 ## Design details
 

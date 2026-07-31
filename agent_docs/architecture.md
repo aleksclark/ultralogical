@@ -1,9 +1,9 @@
 # Architecture
 
 Ultralogical is a durable-session platform for agentic work. Full design +
-roadmap: [`plan/index.md`](../plan/index.md). This doc describes what exists
-in the codebase today (Phase 3) and the load-bearing patterns you must
-preserve.
+roadmap: [`plan/index.md`](../plan/index.md). This doc describes the current
+Phase 6.7 implementation snapshot and load-bearing patterns. Incomplete
+capabilities are governed by `phases_0_6_audit.md`.
 
 Package organization follows the standard layout in
 [`package_layout.md`](package_layout.md): root package = domain types,
@@ -56,20 +56,20 @@ postgres/ (Store, EventBus, migrations)   LLM provider (org BYO creds)
   may work any run. Requires `DATABASE_URL` + `ULTRA_MASTER_KEY`.
 - **`testkit/`** — `pgtest`, `harness` (real ultrad + worker processes),
   `testclient`, and `modelscript` (scripted OpenAI server, the only fake).
-- **`e2e/`** — functional API/UI suite (acceptance tests A0.x + A1.x).
+- **`e2e/`** — real-stack functional API suite spanning implemented acceptance capabilities.
 
 ## Clients & UIs
 
 Two distinct trees, both consumers of the same protos:
 
 - **`clients/<lang>/`** — client *libraries* per language. Generated code +
-  a thin ergonomic wrapper; published artifacts. Today: `clients/ts`
-  (protobuf-es under `clients/ts/src/gen`, smoke test). Phase 8 adds
-  `clients/rust`. The Go client is the generated code in `gen/go` (shared
-  with the server); `testkit/testclient` is its test-facing wrapper.
+  a thin ergonomic wrapper; published artifacts. Today: `clients/ts` and
+  `clients/rust`; full Rust conformance and release packaging must be completed
+  in Phase 13. The Go client is the generated code in `gen/go` (shared with the
+  server); `testkit/testclient` is its test-facing wrapper.
 - **`ui/<app>/`** — UI *applications*, each consuming a client library and
   owning its golden functional suite: `ui/web` (React + Vite + Tailwind +
-  shadcn/ui, dark-mode only, Playwright golden), `ui/gpui` (Rust GPUI,
+  shadcn/ui, dark-mode only, Playwright golden), `ui/desktop` (Rust GPUI,
   dark-mode only). The existing desktop core belongs under the GPUI app; a
   headless core is not a substitute for a GPUI application. UIs never reach around the
   client API.
@@ -121,7 +121,7 @@ arrive. Clients must skip event-less responses.
 (`ULTRA_DEV_TOKENS="token=email,..."`) resolved to existing user rows. The
 http package extracts bearer tokens: unary RPCs authenticate via
 interceptor; streaming RPCs authenticate inside the handler (interceptors
-don't cover them). OIDC replaces the impl in Phase 7 behind the same
+don't cover them). OIDC replaces the impl in Phase 12 behind the same
 interface.
 
 ## Queue seam
@@ -133,8 +133,11 @@ tx commits. This is the mechanism for atomic entity-creation + first-job
 envelope kind and dispatches by inner kind. Any new backend must pass
 `jobqueue/conformance` — that suite is the contract, not river's behavior.
 
-## State snapshot (what is NOT built yet)
+## State snapshot and roadmap authority
 
-Agent runs, dev envs, flows, memory, presence, billing, the web UI — all in
-later phases (`plan/phase_1.md`+). Don't invent stopgaps for them; follow the
-plan docs.
+Agent runs, environments, flows, memory, presence, automation, and both clients
+have partial implementations. The authoritative gap inventory is
+`agent_docs/phases_0_6_audit.md`; completion-scoped work is assigned to
+Phases 7–11, production hardening to Phase 12, and desktop release proof to
+Phase 13. Do not infer completeness from schema, CRUD, aliases, compilation, or
+smoke tests; follow each owning phase's acceptance and audit gates.
