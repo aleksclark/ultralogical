@@ -53,6 +53,8 @@ func NewHandler(cfg Config) http.Handler {
 		store: cfg.Store, enqueue: cfg.Enqueue, defaultModel: cfg.DefaultModel,
 	}, interceptors)
 	mux.Handle(agentPath, agentH)
+	flowPath, flowH := ultrav1connect.NewFlowServiceHandler(&flowHandler{store: cfg.Store, enqueue: cfg.Enqueue, defaultModel: cfg.DefaultModel}, interceptors)
+	mux.Handle(flowPath, flowH)
 
 	if cfg.Envs != nil {
 		envPath, envH := ultrav1connect.NewEnvServiceHandler(&envHandler{store: cfg.Store, envs: cfg.Envs}, interceptors)

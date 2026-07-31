@@ -1,0 +1,50 @@
+syntax = "proto3";
+package ultra.v1;
+
+option go_package = "github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1";
+message Flow {
+  string id = 1;
+  string org_id = 2;
+  string name = 3;
+  int32 version = 4;
+  string definition_json = 5;
+}
+message PutFlowRequest {
+  string org_id = 1;
+  string name = 2;
+  string definition_json = 3;
+}
+message PutFlowResponse {
+  Flow flow = 1;
+}
+message GetFlowRequest {
+  string org_id = 1;
+  string name = 2;
+  int32 version = 3;
+}
+message GetFlowResponse {
+  Flow flow = 1;
+}
+message ListFlowsRequest {
+  string org_id = 1;
+}
+message ListFlowsResponse {
+  repeated Flow flows = 1;
+}
+message InvokeFlowRequest {
+  string session_id = 1;
+  string name = 2;
+  int32 version = 3;
+  string params_json = 4;
+}
+message InvokeFlowResponse {
+  string invocation_id = 1;
+  repeated string run_ids = 2;
+  int64 event_seq = 3;
+}
+service FlowService {
+  rpc PutFlow(PutFlowRequest) returns (PutFlowResponse);
+  rpc GetFlow(GetFlowRequest) returns (GetFlowResponse);
+  rpc ListFlows(ListFlowsRequest) returns (ListFlowsResponse);
+  rpc InvokeFlow(InvokeFlowRequest) returns (InvokeFlowResponse);
+}

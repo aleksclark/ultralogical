@@ -407,6 +407,33 @@ mocks of our own components, ever. The layers:
 (ultrad, worker, postgres, modelscript) with random ports, returns a connected
 testclient. Target: full functional suite < 5 min.
 
+### Capability-completeness rule for every phase
+
+Every phase must maintain a machine-readable inventory of **implemented,
+user-observable capabilities** in `e2e/coverage.json`. An item is complete
+only when all of these are true:
+
+1. A Go functional test drives the generated public API against the real
+   harness stack and asserts durable/event behavior plus relevant failure and
+   tenancy paths.
+2. A Playwright test drives the shipped React application (not raw HTTP) and
+   asserts the visible outcome, replay/reconnect behavior, and errors.
+3. A Rust desktop test drives the same desktop client/state core used by the
+   native entrypoint and asserts reduced state—not merely successful RPCs.
+4. Coverage references point to existing, executed tests; CI validates them.
+5. The phase acceptance audit compares the plan, actual proto/UI/client
+   surface, and matrix. Planned-but-unbuilt items stay explicitly incomplete;
+   they are never silently omitted or described as delivered.
+
+Smoke tests, compilation, rendering a control, unasserted API calls, test-only
+shortcuts, nonexistent filenames, or one omnibus test that does not assert a
+specific capability do not satisfy coverage. Any new first-party client must
+supply evidence for every existing matrix row before becoming supported.
+
+Each future phase's work breakdown starts with test names and observable
+assertions, implements the tests alongside production code, and ends with the
+independent capability audit. See `agent_docs/cross_client_testing.md`.
+
 ---
 
 ## 4. Key risks & mitigations

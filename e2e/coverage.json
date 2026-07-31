@@ -1,9 +1,72 @@
 {
-  "auth_org_sessions": {"web": "session.spec.ts", "rust": "desktop_e2e.rs"},
-  "event_replay": {"web": "session.spec.ts", "rust": "desktop_e2e.rs"},
-  "agent_stream_and_await": {"web": "session.spec.ts", "rust": "desktop_e2e.rs"},
-  "credential_gateway_fields": {"web": "settings.spec.ts", "rust": "desktop_e2e.rs"},
-  "dev_env_exec_usage": {"web": "environment.spec.ts", "rust": "desktop_e2e.rs"},
-  "presence": {"web": "multiplayer.spec.ts", "rust": "desktop_e2e.rs"},
-  "session_memory": {"web": "multiplayer.spec.ts", "rust": "desktop_e2e.rs"}
+  "auth_org_sessions": {
+    "web": {
+      "file": "session.spec.ts",
+      "test": "create session, stream, answer, and reload history"
+    },
+    "rust": {
+      "file": "desktop_e2e.rs",
+      "test": "auth_org_sessions"
+    }
+  },
+  "event_replay": {
+    "web": {
+      "file": "session.spec.ts",
+      "test": "create session, stream, answer, and reload history"
+    },
+    "rust": {
+      "file": "desktop_e2e.rs",
+      "test": "event_replay"
+    }
+  },
+  "agent_stream_and_await": {
+    "web": {
+      "file": "session.spec.ts",
+      "test": "create session, stream, answer, and reload history"
+    },
+    "rust": {
+      "file": "desktop_e2e.rs",
+      "test": "agent_stream_and_await"
+    }
+  },
+  "credential_gateway_fields": {
+    "web": {
+      "file": "settings.spec.ts",
+      "test": "settings supports API key, base URL, and extra headers"
+    },
+    "rust": {
+      "file": "desktop_e2e.rs",
+      "test": "credential_gateway_fields"
+    }
+  },
+  "dev_env_exec_usage": {
+    "web": {
+      "file": "environment.spec.ts",
+      "test": "provisions a real environment and runs ExecPreview"
+    },
+    "rust": {
+      "file": "desktop_e2e.rs",
+      "test": "dev_env_exec_usage"
+    }
+  },
+  "presence": {
+    "web": {
+      "file": "multiplayer.spec.ts",
+      "test": "shows presence and session memory"
+    },
+    "rust": {
+      "file": "desktop_e2e.rs",
+      "test": "presence"
+    }
+  },
+  "session_memory": {
+    "web": {
+      "file": "multiplayer.spec.ts",
+      "test": "shows presence and session memory"
+    },
+    "rust": {
+      "file": "desktop_e2e.rs",
+      "test": "session_memory"
+    }
+  }
 }

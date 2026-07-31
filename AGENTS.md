@@ -2,8 +2,8 @@
 
 Ultralogical: a durable-session platform for agentic work — multi-tenant,
 event-sourced sessions that humans and agents share. Go backend, ConnectRPC
-API, Postgres, React/gpui UIs. Currently at **Phase 3.5** (durable fantasy
-agent loop + session-owned Bezalel dev environments + React SPA).
+API, Postgres, React/gpui UIs. Currently at **Phase 4** (versioned flows
+invoking durable agents into shared sessions).
 
 ## Cheatsheet
 
@@ -40,7 +40,9 @@ task dev               # local postgres + ultrad + worker
 6. **Seams stay clean.** No river/pgx types past `jobqueue`; handlers depend
    only on root interfaces; new seam impls must pass the conformance suite
    unmodified.
-7. Follow the phase plan (`plan/`) — don't build ahead of the current phase
+7. **Capability coverage is a merge gate.** Any public/API/UI capability added or changed must be exercised through the real Go functional suite and every supported first-party client (currently web Playwright + Rust desktop). Update `e2e/coverage.json` with existing test files; CI must validate references and run them. A filename or smoke test is not evidence—assert observable behavior, failure paths, replay, and tenancy.
+8. **Never claim unimplemented coverage.** Before coding a phase, inventory its acceptance bullets against actual implementation. Mark unbuilt bullets explicitly; do not rename partial work “complete,” map nonexistent tests, or let an omnibus test stand in for capabilities it does not assert.
+9. Follow the phase plan (`plan/`) — don't build ahead of the current phase
    or invent stopgaps for unbuilt subsystems.
 
 ## Docs index
@@ -51,11 +53,12 @@ task dev               # local postgres + ultrad + worker
 | [agent_docs/agent_loop.md](agent_docs/agent_loop.md) | touching fantasy, step jobs, credentials, modelscript |
 | [agent_docs/dev_environments.md](agent_docs/dev_environments.md) | touching providers, env lifecycle, MCP, metering |
 | [agent_docs/multiplayer.md](agent_docs/multiplayer.md) | touching presence, grants, run trees, memory |
+| [agent_docs/flows.md](agent_docs/flows.md) | touching flow definitions, validation, invocation |
 | [agent_docs/cross_client_testing.md](agent_docs/cross_client_testing.md) | adding public capabilities or client tests |
 | [agent_docs/package_layout.md](agent_docs/package_layout.md) | deciding where new code goes |
 | [agent_docs/testing.md](agent_docs/testing.md) | writing/running tests, using the harness |
 | [agent_docs/codegen.md](agent_docs/codegen.md) | changing protos, adding events/RPCs |
 | [agent_docs/conventions.md](agent_docs/conventions.md) | code style, layout rules, errors, migrations, never-do list |
 | [plan/index.md](plan/index.md) | architecture rationale + full roadmap |
-| [plan/phase_3_5.md](plan/phase_3_5.md) | current cross-client completeness phase |
-| [plan/phase_4.md](plan/phase_4.md) | the next product phase |
+| [plan/phase_4.md](plan/phase_4.md) | current flows phase |
+| [plan/phase_5.md](plan/phase_5.md) | the next product phase |

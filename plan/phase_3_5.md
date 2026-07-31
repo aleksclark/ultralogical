@@ -33,9 +33,38 @@ River, Bezalel; modelscript is the only fake) and exercise:
 - A machine-readable `e2e/coverage.json` mapping each capability to web and
   Rust tests; CI fails if either side is missing.
 
+## Evidence standard and audit procedure
+
+This phase is the template for every future phase. A matrix row is evidence
+only when the referenced tests exist, are executed in required CI, drive the
+shipped application/client over the real harness stack, and assert the
+specific observable capability. Compilation, UI-element presence, successful
+but unasserted RPC calls, raw-client bypasses of application state, and
+nonexistent/planned test filenames are invalid evidence.
+
+Before declaring the phase complete:
+
+1. Enumerate actual public RPCs, event variants, UI controls, desktop
+   commands, and lifecycle states implemented through Phase 3.
+2. For each capability, inspect the referenced web and Rust tests and cite the
+   assertion that proves success, replay/failure behavior, and tenancy where
+   applicable.
+3. Remove claims for behavior that is not implemented; keep those acceptance
+   bullets explicitly open in the owning phase plan.
+4. Run `python3 scripts/verify-coverage.py`, all Playwright scenarios, the Rust
+   desktop real-stack suite, and `go test ./... -count=1`.
+5. Perform an independent review focused on false positives: nonexistent
+   files, omnibus tests, controls without actions, and RPCs without outcome
+   assertions.
+
 ## Exit criteria
 
-- Every matrix row has a passing web and Rust test against the real stack.
+- Every matrix row has a passing, capability-specific web and Rust test
+  against the real stack; referenced files and test bodies are validated.
+- The matrix contains no planned-but-unimplemented capability and no claim
+  broader than its assertions.
 - Protobuf codegen for Go, TypeScript, and Rust is reproducible and drift-
   checked.
 - Full API, web, and Rust suites are required checks for merge.
+- The phase-boundary capability audit is recorded in the PR description and
+  finds no implemented public capability without client evidence.

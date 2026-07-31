@@ -96,6 +96,12 @@ event stream to the terminal, rendering the same typed events the SPA renders.
 
 ## Work breakdown
 
+0. **Write capability evidence first.** Add bounded Flow capabilities to
+   `e2e/coverage.json`; create named Go, Playwright, and Rust desktop tests
+   asserting catalog listing, successful invocation/rendering, provenance,
+   version pinning, validation failures, replay, and cross-tenant denial.
+   Test files must exist and fail for the missing implementation before the
+   capability is considered in progress.
 1. Definition schema + validator + tests (table-driven over invalid fixtures).
 2. Migrations + store for flows/invocations; proto additions + codegen.
 3. PutFlow/GetFlow/ListFlows with server-assigned versioning.
@@ -134,7 +140,12 @@ event stream to the terminal, rendering the same typed events the SPA renders.
 
 ## Exit criteria
 
-- A4.1–A4.5 green in CI.
+- A4.1–A4.5 green in the Go real-stack suite **and** each implemented Flow
+  capability has capability-specific Playwright and Rust desktop evidence in
+  `e2e/coverage.json`. Backend-only green tests do not complete the phase.
+- `scripts/verify-coverage.py` passes, all referenced tests exist/run, and an
+  audit confirms their assertions match the capability claims (no placeholder
+  filenames, unasserted calls, or UI-control-only checks).
 - `docs/flows.md`: definition schema reference + two example flows checked into
   `examples/flows/` and used as test fixtures (docs proven by tests).
 - CLI released as part of the standard build.

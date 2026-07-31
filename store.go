@@ -67,6 +67,7 @@ type OrgScope interface {
 	Participants() ParticipantStore
 	Memory() SessionMemoryStore
 	Waits() RunWaitStore
+	Flows() FlowStore
 }
 
 // SessionStore manages sessions within one org.

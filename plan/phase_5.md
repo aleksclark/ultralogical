@@ -126,6 +126,8 @@ existing env records.
 
 ## Work breakdown
 
+0. **Define and implement capability evidence first.** Inventory every public behavior this phase will add/change (success, failure, replay/reconnect, tenancy, and distributed failure where applicable). Create capability-specific Go real-stack, Playwright web, and Rust desktop tests using shipped client/application paths. Add `e2e/coverage.json` references only after those existing tests assert observable outcomes. Smoke tests, control presence, unasserted RPCs, test-only shortcuts, and nonexistent filenames are not evidence.
+
 1. Capability flags + conformance parameterization (flags swap *how*, never *whether*,
    a claimed behavior is verified).
 2. Provider registry + instance factory plumbing + registration dry-run framework.
@@ -172,6 +174,9 @@ existing env records.
   error (no pod created); usage ledger rows carry `hosted` rate class.
 
 ## Exit criteria
+
+- **Capability-completeness audit passes:** compare this plan with actual proto RPCs, event variants, UI controls, desktop commands, and lifecycle states. Every implemented capability has capability-specific Go real-stack + Playwright + Rust desktop evidence and a truthful `e2e/coverage.json` entry whose files exist and run in required CI.
+- Planned-but-unbuilt acceptance bullets remain explicitly incomplete; they are never silently omitted, renamed as complete, or represented by broader tests that do not assert them. `python3 scripts/verify-coverage.py` and all referenced suites pass.
 
 - A5.1–A5.7 green; kind + nomad + tunnel legs required for merge; nightly EKS +
   cloudflared job scheduled.
