@@ -79,6 +79,10 @@
       "test": "registers_provider_kinds"
     }
   },
+  "periodic_prompt_configuration": {
+    "web": {"file": "automation.spec.ts", "test": "shows advanced automation in the dark shadcn client"},
+    "rust": {"file": "desktop_e2e.rs", "test": "agent_stream_and_await"}
+  },
   "provider_failure_validation": {
     "web": {
       "file": "providers.spec.ts",

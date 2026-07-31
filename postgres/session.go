@@ -17,17 +17,18 @@ type orgScope struct {
 	org ultra.OrgID
 }
 
-func (o *orgScope) Sessions() ultra.SessionStore           { return &sessionStore{o} }
-func (o *orgScope) Events() ultra.EventStore               { return &eventStore{o} }
-func (o *orgScope) Runs() ultra.RunStore                   { return &runStore{o} }
-func (o *orgScope) Credentials() ultra.CredentialStore     { return &credentialStore{o} }
-func (o *orgScope) Envs() ultra.EnvStore                   { return &envStore{o} }
-func (o *orgScope) Providers() ultra.ProviderInstanceStore { return &providerStore{o} }
-func (o *orgScope) Usage() ultra.UsageStore                { return &usageStore{o} }
-func (o *orgScope) Participants() ultra.ParticipantStore   { return &participantStore{o} }
-func (o *orgScope) Memory() ultra.SessionMemoryStore       { return &memoryStore{o} }
-func (o *orgScope) Waits() ultra.RunWaitStore              { return &waitStore{o} }
-func (o *orgScope) Flows() ultra.FlowStore                 { return &flowStore{o} }
+func (o *orgScope) Sessions() ultra.SessionStore               { return &sessionStore{o} }
+func (o *orgScope) Events() ultra.EventStore                   { return &eventStore{o} }
+func (o *orgScope) Runs() ultra.RunStore                       { return &runStore{o} }
+func (o *orgScope) Credentials() ultra.CredentialStore         { return &credentialStore{o} }
+func (o *orgScope) Envs() ultra.EnvStore                       { return &envStore{o} }
+func (o *orgScope) Providers() ultra.ProviderInstanceStore     { return &providerStore{o} }
+func (o *orgScope) Usage() ultra.UsageStore                    { return &usageStore{o} }
+func (o *orgScope) Participants() ultra.ParticipantStore       { return &participantStore{o} }
+func (o *orgScope) Memory() ultra.SessionMemoryStore           { return &memoryStore{o} }
+func (o *orgScope) Waits() ultra.RunWaitStore                  { return &waitStore{o} }
+func (o *orgScope) Flows() ultra.FlowStore                     { return &flowStore{o} }
+func (o *orgScope) PeriodicPrompts() ultra.PeriodicPromptStore { return &periodicStore{o} }
 
 type sessionStore struct{ scope *orgScope }
 

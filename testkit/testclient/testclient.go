@@ -19,13 +19,14 @@ import (
 
 // Client is an authenticated API client for one user.
 type Client struct {
-	Orgs     ultrav1connect.OrgServiceClient
-	Sessions ultrav1connect.SessionServiceClient
-	Events   ultrav1connect.EventServiceClient
-	Agents   ultrav1connect.AgentServiceClient
-	Envs     ultrav1connect.EnvServiceClient
-	Billing  ultrav1connect.BillingServiceClient
-	Flows    ultrav1connect.FlowServiceClient
+	Orgs       ultrav1connect.OrgServiceClient
+	Sessions   ultrav1connect.SessionServiceClient
+	Events     ultrav1connect.EventServiceClient
+	Agents     ultrav1connect.AgentServiceClient
+	Envs       ultrav1connect.EnvServiceClient
+	Billing    ultrav1connect.BillingServiceClient
+	Flows      ultrav1connect.FlowServiceClient
+	Automation ultrav1connect.AutomationServiceClient
 }
 
 type authTransport struct {
@@ -46,13 +47,14 @@ func New(baseURL, token string) *Client {
 		Transport: &authTransport{token: token, base: http.DefaultTransport},
 	}
 	return &Client{
-		Orgs:     ultrav1connect.NewOrgServiceClient(httpClient, baseURL),
-		Sessions: ultrav1connect.NewSessionServiceClient(httpClient, baseURL),
-		Events:   ultrav1connect.NewEventServiceClient(httpClient, baseURL),
-		Agents:   ultrav1connect.NewAgentServiceClient(httpClient, baseURL),
-		Envs:     ultrav1connect.NewEnvServiceClient(httpClient, baseURL),
-		Billing:  ultrav1connect.NewBillingServiceClient(httpClient, baseURL),
-		Flows:    ultrav1connect.NewFlowServiceClient(httpClient, baseURL),
+		Orgs:       ultrav1connect.NewOrgServiceClient(httpClient, baseURL),
+		Sessions:   ultrav1connect.NewSessionServiceClient(httpClient, baseURL),
+		Events:     ultrav1connect.NewEventServiceClient(httpClient, baseURL),
+		Agents:     ultrav1connect.NewAgentServiceClient(httpClient, baseURL),
+		Envs:       ultrav1connect.NewEnvServiceClient(httpClient, baseURL),
+		Billing:    ultrav1connect.NewBillingServiceClient(httpClient, baseURL),
+		Flows:      ultrav1connect.NewFlowServiceClient(httpClient, baseURL),
+		Automation: ultrav1connect.NewAutomationServiceClient(httpClient, baseURL),
 	}
 }
 
