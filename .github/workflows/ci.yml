@@ -24,13 +24,34 @@ jobs:
           git fetch origin ${{ github.base_ref }}
           buf breaking --against ".git#branch=origin/${{ github.base_ref }},subdir=."
       - name: codegen diff (drift gate A0.5)
-        run: |
-          buf generate
-          git diff --exit-code gen clients/ts/src/gen
+        run: bash scripts/verify-codegen.sh
+      - name: rust codegen coverage (drift gate A7.1)
+        run: python3 scripts/verify-codegen-rust.py
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
           version: latest
+
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+      # A7.1: prove the codegen drift gates fail for the intended reason.
+      - name: codegen drift mutation gate (A7.1)
+        run: bash scripts/mutate-codegen-gate.sh
+      # A7.9: prove coverage verification rejects false evidence claims.
+      - name: evidence integrity mutation gate (A7.9)
+        run: bash scripts/mutate-coverage-gate.sh
+      - name: coverage matrix
+        run: python3 scripts/verify-coverage.py
+      - name: no stray tree changes after the mutation gates
+        run: git diff --exit-code
 
   test:
     runs-on: ubuntu-latest
@@ -39,8 +60,28 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Unit, store, and jobqueue conformance tests
-        run: go test ./... -count=1 -skip 'TestA0' -timeout 15m
+      - name: Unit, store, provider, and jobqueue conformance tests
+        run: go test ./... -count=1 -skip 'TestA0' -timeout 30m
+
+  dev-stack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build the pinned Bezalel image
+        run: docker build -t ultralogical/bezalel:phase2-test https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120
+      # A7.8: the documented one-command stack boots, works, and leaks nothing.
+      - name: One-command dev stack smoke
+        run: bash scripts/dev-stack.sh smoke
+      - name: Assert no leaked containers
+        run: |
+          leaked=$(docker ps -aq --filter "label=ultralogical.env_id")
+          if [ -n "$leaked" ]; then
+            echo "leaked environment containers: $leaked" >&2
+            exit 1
+          fi
 
   functional:
     runs-on: ubuntu-latest
@@ -71,9 +112,16 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-      - name: Build Rust client and desktop
+      - name: Install GPUI system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxkbcommon-dev libwayland-dev libxcb1-dev \
+            libx11-dev libasound2-dev libfontconfig1-dev
+      - name: Build Rust client and desktop application
         run: cargo test --manifest-path ui/desktop/Cargo.toml --no-run
+      - name: Verify rust codegen output covers every proto
+        run: python3 scripts/verify-codegen-rust.py --require-generated
       - name: Validate cross-client coverage matrix
         run: python3 scripts/verify-coverage.py
-      - name: Functional API + web + Rust desktop suite (real stack)
-        run: go test ./e2e/ -count=1 -v -timeout 20m
+      - name: Functional API + web + GPUI desktop suite (real stack)
+        run: go test ./e2e/ -count=1 -v -timeout 45m

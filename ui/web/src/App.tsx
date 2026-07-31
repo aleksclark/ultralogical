@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import type { Org } from "@client/gen/ultra/v1/org_pb";
 import type { Session } from "@client/gen/ultra/v1/session_pb";
-import type { DevEnv } from "@client/gen/ultra/v1/env_pb";
+import type { DevEnv, UsageInterval } from "@client/gen/ultra/v1/env_pb";
+import { EnvState } from "@client/gen/ultra/v1/env_pb";
 import { clients } from "./api";
-import { foldEvent, initialView, type TimelineItem } from "./reducer";
-import { Button } from "./components/ui/button";
+import { foldEvent, initialView } from "./reducer";
+import { EnvironmentPanel } from "@/components/environment-panel";
+import { SessionSidebar, type ConnectionState } from "@/components/session-sidebar";
+import { SettingsView, type CredentialForm, type ProviderForm } from "@/components/settings-view";
+import { Timeline } from "@/components/timeline";
+import { UsagePanel } from "@/components/usage-panel";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const apiBaseUrl = import.meta.env.VITE_ULTRAD_URL ?? "http://localhost:8080";
 const initialToken = localStorage.getItem("ultra-token") ?? "dev-token";
@@ -17,20 +25,18 @@ export function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [session, setSession] = useState<Session>();
   const [view, dispatch] = useReducer(foldEvent, initialView);
+  const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [prompt, setPrompt] = useState("");
   const [title, setTitle] = useState("");
   const [settings, setSettings] = useState(false);
   const [envs, setEnvs] = useState<DevEnv[]>([]);
-  const [command, setCommand] = useState("");
   const [envOutput, setEnvOutput] = useState("");
+  const [usage, setUsage] = useState<UsageInterval[]>([]);
+  const [usageTotal, setUsageTotal] = useState(0n);
   const [participants, setParticipants] = useState<string[]>([]);
-  const [memory, setMemory] = useState<{key:string,valueJson:string}[]>([]);
-  const [key, setKey] = useState("");
-  const [credentialBaseUrl, setCredentialBaseUrl] = useState("");
-  const [extraHeaders, setExtraHeaders] = useState("{}");
-  const [providerKind,setProviderKind]=useState("byo_k8s");
-  const [providerName,setProviderName]=useState("");
-  const [providerConfig,setProviderConfig]=useState("{\"mode\":\"loopback\"}");
+  const [memory, setMemory] = useState<{ key: string; valueJson: string }[]>([]);
+  const [credential, setCredential] = useState<CredentialForm>({ apiKey: "", baseUrl: "", extraHeaders: "{}" });
+  const [provider, setProvider] = useState<ProviderForm>({ kind: "byo_k8s", name: "", config: '{"mode":"loopback"}' });
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -41,29 +47,80 @@ export function App() {
       setOrg(selected);
       if (selected) setSessions((await api.sessions.listSessions({ orgId: selected.id })).sessions);
       setError("");
-    } catch (e) { setError(String(e)); }
+    } catch (e) {
+      setError(String(e));
+    }
   }, [api, org]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  useEffect(() => { if(session){void api.sessions.join({sessionId:session.id,display:"You"}).then(refreshMultiplayer);void refreshEnvs();} }, [session]);
+  const refreshEnvs = useCallback(async () => {
+    if (!session) return;
+    setEnvs((await api.envs.listEnvs({ sessionId: session.id })).envs);
+  }, [api, session]);
+
+  const refreshUsage = useCallback(async () => {
+    if (!org) return;
+    const resp = await api.billing.getUsage({ orgId: org.id });
+    setUsage(resp.intervals);
+    setUsageTotal(resp.totalSeconds);
+  }, [api, org]);
+
+  const refreshMultiplayer = useCallback(async () => {
+    if (!session) return;
+    const p = await api.sessions.listParticipants({ sessionId: session.id });
+    setParticipants(p.participants.filter((x) => x.state === "active").map((x) => x.display || x.participantId));
+    const m = await api.sessions.listMemory({ sessionId: session.id });
+    setMemory(m.entries);
+  }, [api, session]);
+
+  useEffect(() => {
+    if (!session) return;
+    void api.sessions.join({ sessionId: session.id, display: "You" }).then(refreshMultiplayer);
+    void refreshEnvs();
+    void refreshUsage();
+  }, [session, api, refreshMultiplayer, refreshEnvs, refreshUsage]);
 
   useEffect(() => {
     if (!session) return;
     const abort = new AbortController();
+    setConnection("connecting");
     (async () => {
       try {
         for await (const resp of api.events.subscribe({ sessionId: session.id, fromSeq: 0n }, { signal: abort.signal })) {
+          setConnection("live");
           if (resp.event) dispatch(resp.event);
         }
-      } catch (e) { if (!abort.signal.aborted) setError(String(e)); }
+        if (!abort.signal.aborted) setConnection("offline");
+      } catch (e) {
+        if (!abort.signal.aborted) {
+          setConnection("offline");
+          setError(String(e));
+        }
+      }
     })();
     return () => abort.abort();
   }, [api, session]);
 
+  // Environment lifecycle arrives as events; keep the panel and the ledger in
+  // step with them rather than polling on a timer.
+  const envSignature = Object.values(view.envs)
+    .map((e) => `${e.envId}:${e.phase}:${e.epoch}`)
+    .join(",");
+  useEffect(() => {
+    if (!envSignature) return;
+    void refreshEnvs();
+    void refreshUsage();
+  }, [envSignature, refreshEnvs, refreshUsage]);
+
   async function createSession() {
     if (!org) return;
     const created = await api.sessions.createSession({ orgId: org.id, title: title || "New session" });
-    if (created.session) { setSessions((s) => [created.session!, ...s]); setSession(created.session); }
+    if (created.session) {
+      setSessions((s) => [created.session!, ...s]);
+      setSession(created.session);
+    }
     setTitle("");
   }
   async function sendPrompt() {
@@ -72,56 +129,159 @@ export function App() {
     await api.agents.startRun({ sessionId: session.id, prompt });
     setPrompt("");
   }
-  async function answer(runId: string, message: string) { await api.agents.promptRun({ runId, message }); }
-  async function refreshEnvs() { if(session) setEnvs((await api.envs.listEnvs({sessionId:session.id})).envs); }
-  async function refreshMultiplayer() { if(!session)return; const p=await api.sessions.listParticipants({sessionId:session.id});setParticipants(p.participants.filter(x=>x.state==="active").map(x=>x.display||x.participantId));const m=await api.sessions.listMemory({sessionId:session.id});setMemory(m.entries); }
-  async function provisionEnv() { if(!session)return; await api.envs.provisionEnv({sessionId:session.id,spec:{name:"main",workdir:"/work",env:{},metadata:{}},providerInstance:"default"}); await refreshEnvs(); setTimeout(refreshEnvs,1000); }
-  async function execPreview() { const env=envs.find(e=>e.state===3);if(!env||!command)return;const r=await api.envs.execPreview({envId:env.id,command});setEnvOutput(r.output);setCommand(""); }
-  async function saveKey() {
-    if (!org || !key) return;
+  async function answer(runId: string, message: string) {
+    await api.agents.promptRun({ runId, message });
+  }
+  async function provisionEnv() {
+    if (!session) return;
+    await api.envs.provisionEnv({
+      sessionId: session.id,
+      spec: { name: "main", workdir: "/work", env: {}, metadata: {} },
+      providerInstance: "default",
+    });
+    await refreshEnvs();
+  }
+  async function restartEnv(envId: string) {
     try {
-      const parsed = JSON.parse(extraHeaders);
-      if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object" || Object.values(parsed).some(v => typeof v !== "string")) throw new Error("Headers must be a JSON object of string values");
-      await api.orgs.putCredential({ orgId: org.id, kind: "inference:openai", name: "default", apiKey: key, baseUrl: credentialBaseUrl, extraHeadersJson: JSON.stringify(parsed) });
-      setKey(""); setSettings(false); setError("");
-    } catch (e) { setError(String(e)); }
+      await api.envs.restartEnv({ envId });
+      await refreshEnvs();
+      setError("");
+    } catch (e) {
+      setError(String(e));
+    }
   }
-  async function registerProvider(){if(!org)return;try{JSON.parse(providerConfig);await api.orgs.registerProvider({orgId:org.id,kind:providerKind,name:providerName,configJson:providerConfig});setError("");}catch(e){setError(String(e));}}
-  function changeToken(value: string) { localStorage.setItem("ultra-token", value); setToken(value); }
-
-  return <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
-    <aside className="w-72 border-r border-zinc-800 p-4 flex flex-col gap-4">
-      <h1 className="font-semibold tracking-tight text-xl">Ultralogical</h1>
-      <select aria-label="Organization" className="bg-zinc-900 border border-zinc-700 rounded px-2 py-2" value={org?.id ?? ""}
-        onChange={(e) => setOrg(orgs.find((o) => o.id === e.target.value))}>
-        {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-      </select>
-      <div className="flex gap-2"><input aria-label="New session title" className="min-w-0 flex-1 bg-zinc-900 border border-zinc-700 rounded px-2" value={title} onChange={(e) => setTitle(e.target.value)} /><button className="bg-white text-black rounded px-3 py-2" onClick={createSession}>+</button></div>
-      <nav className="flex flex-col gap-1 overflow-auto">
-        {sessions.map((s) => <button key={s.id} onClick={() => setSession(s)} className={`text-left rounded px-3 py-2 ${session?.id === s.id ? "bg-zinc-800" : "hover:bg-zinc-900"}`}>{s.title || "Untitled"}</button>)}
-      </nav>
-      <div className="mt-auto flex gap-2"><button className="text-sm text-zinc-400" onClick={() => setSettings(!settings)}>Settings</button><input aria-label="API token" className="w-28 text-xs bg-zinc-900 border border-zinc-800 rounded px-2" value={token} onChange={(e) => changeToken(e.target.value)} /></div>
-    </aside>
-    <main className="flex-1 max-w-4xl mx-auto p-6 flex flex-col h-screen">
-      {settings ? <section className="space-y-4"><h2 className="text-2xl font-semibold">Org settings</h2><p className="text-zinc-400">Inference credentials are write-only and encrypted at rest.</p><label className="block space-y-1"><span>OpenAI API key</span><input aria-label="OpenAI API key" type="password" value={key} onChange={(e) => setKey(e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded p-3" /></label><label className="block space-y-1"><span>Base URL</span><input aria-label="Base URL" value={credentialBaseUrl} onChange={(e)=>setCredentialBaseUrl(e.target.value)} placeholder="https://gateway.example.com/v1" className="w-full bg-zinc-900 border border-zinc-700 rounded p-3" /></label><label className="block space-y-1"><span>Extra headers (JSON)</span><textarea aria-label="Extra headers JSON" value={extraHeaders} onChange={(e)=>setExtraHeaders(e.target.value)} rows={7} className="w-full font-mono text-sm bg-zinc-900 border border-zinc-700 rounded p-3" /><span className="text-xs text-zinc-500">Example: {`{"cf-aig-collect-log-payload":"false","cf-aig-metadata":"{\\"tier\\":\\"fast\\"}"}`}</span></label><button onClick={saveKey} className="bg-white text-black rounded px-4 py-2">Save credential</button><hr className="border-zinc-800"/><h3 className="text-lg">Provider instances</h3><select aria-label="Provider kind" value={providerKind} onChange={e=>setProviderKind(e.target.value)} className="bg-zinc-900 border rounded p-2"><option value="byo_k8s">Kubernetes</option><option value="hosted_eks">Hosted EKS</option><option value="byo_nomad">Nomad</option><option value="tunnel_local">Local tunnel</option></select><input aria-label="Provider name" value={providerName} onChange={e=>setProviderName(e.target.value)} className="w-full bg-zinc-900 border rounded p-3"/><textarea aria-label="Provider config JSON" value={providerConfig} onChange={e=>setProviderConfig(e.target.value)} className="w-full bg-zinc-900 border rounded p-3 font-mono"/><Button onClick={registerProvider}>Register provider</Button></section>
-      : session ? <><header className="border-b border-zinc-800 pb-4 flex justify-between"><div><h2 className="text-xl font-medium">{session.title}</h2><div data-testid="presence" className="text-xs text-zinc-500">{participants.join(", ")}</div></div><button onClick={provisionEnv} className="border border-zinc-700 rounded px-3 text-sm">New environment</button></header><div className="py-2 flex gap-2 items-center">{envs.map(e=><span key={e.id} className="text-xs border border-zinc-700 rounded px-2 py-1">{e.spec?.name}: {e.state}</span>)}<input aria-label="Environment command" value={command} onChange={e=>setCommand(e.target.value)} className="ml-auto bg-zinc-900 border border-zinc-700 rounded px-2"/><button onClick={execPreview} className="text-sm border rounded px-2">Run</button></div>{envOutput&&<pre data-testid="env-output" className="text-xs bg-zinc-900 p-2">{envOutput}</pre>}{memory.length>0&&<details className="text-xs"><summary>Session memory ({memory.length})</summary>{memory.map(m=><pre key={m.key}>{m.key}: {m.valueJson}</pre>)}</details>}<section data-testid="timeline" className="flex-1 overflow-auto py-4 space-y-3">{view.items.map((item, i) => <Timeline key={i} item={item} onAnswer={answer} />)}</section><div className="flex gap-2 border-t border-zinc-800 pt-4"><input aria-label="Prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void sendPrompt(); }} className="flex-1 bg-zinc-900 border border-zinc-700 rounded p-3" placeholder="Ask an agent…" /><button onClick={sendPrompt} className="bg-white text-black rounded px-5">Send</button></div></> : <div className="m-auto text-zinc-500">Create or select a session</div>}
-      {error && <div role="alert" className="fixed right-4 bottom-4 bg-red-950 border border-red-800 rounded p-3 text-sm">{error}</div>}
-    </main>
-  </div>;
-}
-
-function Timeline({ item, onAnswer }: { item: TimelineItem; onAnswer: (runId: string, message: string) => Promise<void> }) {
-  switch (item.type) {
-    case "user": return <div className="ml-auto max-w-xl bg-zinc-800 rounded-xl p-3" data-kind="user">{item.text}</div>;
-    case "assistant": return <div className="max-w-2xl whitespace-pre-wrap" data-kind="assistant">{item.text}{item.streaming && <span className="animate-pulse">▍</span>}</div>;
-    case "tool": return <details className="border border-zinc-800 bg-zinc-900 rounded p-3" data-kind="tool"><summary className="cursor-pointer font-mono text-sm">{item.name}</summary><pre className="text-xs overflow-auto text-zinc-400 mt-2">{item.input}{item.output && `\n→ ${item.output}`}</pre></details>;
-    case "question": return <div className="border border-amber-800 bg-amber-950/30 rounded p-4 space-y-3" data-kind="question"><p>{item.text}</p><div className="flex gap-2">{item.choices.map((c) => <button key={c} onClick={() => onAnswer(item.runId, c)} className="border border-amber-700 rounded px-3 py-1">{c}</button>)}<AnswerForm onAnswer={(v) => onAnswer(item.runId, v)} /></div></div>;
-    case "status": return <div className="text-xs uppercase tracking-wide text-zinc-500" data-status={item.status}>{item.status}{item.message && `: ${item.message}`}</div>;
-    case "annotation": return <div className="text-sm italic text-zinc-400">Note: {item.text}</div>;
+  async function terminateEnv(envId: string) {
+    try {
+      await api.envs.terminateEnv({ envId });
+      await refreshEnvs();
+      setError("");
+    } catch (e) {
+      setError(String(e));
+    }
   }
-}
+  async function execPreview(command: string) {
+    const env = envs.find((e) => e.state === EnvState.READY);
+    if (!env || !command) return;
+    try {
+      const r = await api.envs.execPreview({ envId: env.id, command });
+      setEnvOutput(r.output);
+      setError("");
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+  async function saveCredential() {
+    if (!org || !credential.apiKey) return;
+    try {
+      const parsed = JSON.parse(credential.extraHeaders);
+      if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object" || Object.values(parsed).some((v) => typeof v !== "string")) {
+        throw new Error("Headers must be a JSON object of string values");
+      }
+      await api.orgs.putCredential({
+        orgId: org.id,
+        kind: "inference:openai",
+        name: "default",
+        apiKey: credential.apiKey,
+        baseUrl: credential.baseUrl,
+        extraHeadersJson: JSON.stringify(parsed),
+      });
+      setCredential({ apiKey: "", baseUrl: "", extraHeaders: "{}" });
+      setSettings(false);
+      setError("");
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+  async function registerProvider() {
+    if (!org) return;
+    try {
+      JSON.parse(provider.config);
+      await api.orgs.registerProvider({ orgId: org.id, kind: provider.kind, name: provider.name, configJson: provider.config });
+      setError("");
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+  function changeToken(value: string) {
+    localStorage.setItem("ultra-token", value);
+    setToken(value);
+  }
 
-function AnswerForm({ onAnswer }: { onAnswer: (v: string) => Promise<void> }) {
-  const [value, setValue] = useState("");
-  return <><input aria-label="Answer" value={value} onChange={(e) => setValue(e.target.value)} className="bg-zinc-900 border border-zinc-700 rounded px-2" /><button onClick={() => onAnswer(value)} className="bg-amber-700 rounded px-3">Answer</button></>;
+  return (
+    <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
+      <SessionSidebar
+        orgs={orgs}
+        org={org}
+        onSelectOrg={(id) => setOrg(orgs.find((o) => o.id === id))}
+        sessions={sessions}
+        session={session}
+        onSelectSession={setSession}
+        title={title}
+        onTitleChange={setTitle}
+        onCreateSession={createSession}
+        connection={connection}
+        token={token}
+        onTokenChange={changeToken}
+        onToggleSettings={() => setSettings(!settings)}
+      />
+      <main className="mx-auto flex h-screen max-w-4xl flex-1 flex-col gap-4 p-6">
+        {settings ? (
+          <SettingsView
+            credential={credential}
+            onCredentialChange={setCredential}
+            onSaveCredential={saveCredential}
+            provider={provider}
+            onProviderChange={setProvider}
+            onRegisterProvider={registerProvider}
+          />
+        ) : session ? (
+          <>
+            <header className="flex items-start justify-between border-b border-zinc-800 pb-4">
+              <div>
+                <h2 className="text-xl font-medium">{session.title}</h2>
+                <div data-testid="presence" className="text-xs text-zinc-500">
+                  {participants.join(", ")}
+                </div>
+              </div>
+            </header>
+            <EnvironmentPanel
+              envs={envs}
+              output={envOutput}
+              onProvision={provisionEnv}
+              onRestart={restartEnv}
+              onTerminate={terminateEnv}
+              onExec={execPreview}
+            />
+            <UsagePanel intervals={usage} totalSeconds={usageTotal} onRefresh={refreshUsage} />
+            {memory.length > 0 && (
+              <details className="text-xs" data-testid="session-memory">
+                <summary>Session memory ({memory.length})</summary>
+                {memory.map((m) => (
+                  <pre key={m.key}>
+                    {m.key}: {m.valueJson}
+                  </pre>
+                ))}
+              </details>
+            )}
+            <Timeline items={view.items} onAnswer={answer} deltaFrames={view.deltaFrames} />
+            <div className="flex gap-2 border-t border-zinc-800 pt-4">
+              <Input
+                aria-label="Prompt"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void sendPrompt();
+                }}
+                placeholder="Ask an agent…"
+              />
+              <Button onClick={sendPrompt}>Send</Button>
+            </div>
+          </>
+        ) : (
+          <div className="m-auto text-zinc-500">Create or select a session</div>
+        )}
+        {error && <Alert className="fixed bottom-4 right-4 max-w-md">{error}</Alert>}
+      </main>
+    </div>
+  );
 }

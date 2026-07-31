@@ -6,6 +6,7 @@
 package harness
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -83,14 +84,39 @@ type Stack struct {
 
 	workerMu        sync.Mutex
 	workerCmd       *exec.Cmd
-	workerCmds      []*exec.Cmd
 	ultradCmds      []*exec.Cmd
 	ReplicaBaseURLs []string
 	workerEnv       []string
 	ultradBin       string
 	workerBin       string
+	logs            *logCapture
 	t               *testing.T
 }
+
+// logCapture tees a child process's stderr into memory so leak sweeps can
+// assert on everything ultrad and the workers logged, while still forwarding
+// output for debugging.
+type logCapture struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (c *logCapture) Write(p []byte) (int, error) {
+	c.mu.Lock()
+	c.buf.Write(p)
+	c.mu.Unlock()
+	return os.Stderr.Write(p)
+}
+
+func (c *logCapture) String() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.buf.String()
+}
+
+// Logs returns everything ultrad and worker processes have written to stderr
+// so far. Used by the redaction sweep.
+func (s *Stack) Logs() string { return s.logs.String() }
 
 const BezalelImage = "ultralogical/bezalel:phase2-test"
 
@@ -189,6 +215,7 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 		ultradBin:   ultradBin,
 		workerBin:   workerBin,
 		workerEnv:   options.WorkerEnv,
+		logs:        &logCapture{},
 		t:           t,
 	}
 	t.Cleanup(stack.Model.Close)
@@ -207,8 +234,8 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 		"ULTRA_DEFAULT_MODEL=mock-model",
 		"ULTRA_MIGRATE=false",
 	)
-	ultradCmd.Stdout = os.Stderr
-	ultradCmd.Stderr = os.Stderr
+	ultradCmd.Stdout = stack.logs
+	ultradCmd.Stderr = stack.logs
 	if err := ultradCmd.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -223,8 +250,8 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 		base := fmt.Sprintf("http://127.0.0.1:%d", p)
 		cmd := exec.Command(ultradBin)
 		cmd.Env = append(os.Environ(), "DATABASE_URL="+dbURL, fmt.Sprintf("ULTRA_ADDR=127.0.0.1:%d", p), fmt.Sprintf("ULTRA_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob), "ULTRA_MASTER_KEY="+masterKey, "ULTRA_DEFAULT_MODEL=mock-model", "ULTRA_MIGRATE=false")
-		cmd.Stdout = os.Stderr
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = stack.logs
+		cmd.Stderr = stack.logs
 		if err := cmd.Start(); err != nil {
 			t.Fatal(err)
 		}
@@ -256,8 +283,8 @@ func (s *Stack) StartWorker() {
 		"ULTRA_PROVISION_TIMEOUT=45s",
 	)
 	cmd.Env = append(cmd.Env, s.workerEnv...)
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = s.logs
+	cmd.Stderr = s.logs
 	if err := cmd.Start(); err != nil {
 		s.t.Fatal(err)
 	}

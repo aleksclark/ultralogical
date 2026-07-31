@@ -4,7 +4,7 @@ test("shows advanced loop hook events in the dark shadcn timeline", async ({ pag
   await page.goto("/");
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.getByLabel("New session title").fill("Advanced loop");
-  await page.getByRole("button",{name:"+"}).click();
+  await page.getByRole("button",{name:"Create session"}).click();
   await expect(page.getByLabel("Prompt")).toBeVisible();
   await expect(page.getByTestId("timeline")).toBeVisible();
 });

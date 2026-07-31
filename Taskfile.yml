@@ -24,23 +24,38 @@ tasks:
   test:
     desc: Unit + store + jobqueue tests (real Postgres via testcontainers)
     cmds:
-      - go test ./... -count=1 -skip 'TestA0' -timeout 10m
+      - go test ./... -count=1 -skip 'TestA0' -timeout 15m
 
   test:functional:
     desc: Functional API suite (real stack, generated clients)
     cmds:
-      - go test ./e2e/ -count=1 -timeout 10m
+      - go test ./e2e/ -count=1 -timeout 40m
 
   test:all:
     desc: Everything
     cmds:
-      - go test ./... -count=1 -timeout 15m
+      - go test ./... -count=1 -timeout 45m
 
   verify:codegen:
     desc: Fail if generated code is out of sync with protos
     cmds:
-      - buf generate
-      - git diff --exit-code gen clients/ts/src/gen
+      - bash scripts/verify-codegen.sh
+      - python3 scripts/verify-codegen-rust.py
+
+  verify:codegen:mutation:
+    desc: Prove the codegen drift gates fail on deliberate drift, then restore
+    cmds:
+      - bash scripts/mutate-codegen-gate.sh
+
+  verify:coverage:
+    desc: Validate the cross-client capability coverage matrix
+    cmds:
+      - python3 scripts/verify-coverage.py
+
+  verify:coverage:mutation:
+    desc: Prove coverage verification rejects false evidence claims
+    cmds:
+      - bash scripts/mutate-coverage-gate.sh
 
   verify:breaking:
     desc: Fail on breaking proto changes vs origin/main
@@ -68,19 +83,19 @@ tasks:
   web:test:
     desc: Run the Playwright golden suite (real backend via Go harness)
     cmds:
-      - go test ./e2e/ -run TestA16 -v -timeout 5m
+      - go test ./e2e/ -run TestA16 -v -timeout 20m
+
+  desktop:test:
+    desc: Run the GPUI desktop suites (real backend via Go harness)
+    cmds:
+      - go test ./e2e/ -run TestRustDesktop -v -timeout 30m
 
   dev:
-    desc: Boot local Postgres + ultrad + worker (run ui/web separately)
+    desc: Boot the full local stack in one command (Postgres, model, ultrad, worker, web)
     cmds:
-      - docker start ultra-dev-pg 2>/dev/null || docker run -d --name ultra-dev-pg -e POSTGRES_PASSWORD=dev -p 5499:5432 postgres:17-alpine
-      - sleep 1
-      - |
-        test -n "$ULTRA_MASTER_KEY" || { echo "set ULTRA_MASTER_KEY to 64 hex chars"; exit 1; }
-        DATABASE_URL=postgres://postgres:dev@localhost:5499/postgres?sslmode=disable \
-        ULTRA_DEV_TOKENS=dev-token=dev@example.com \
-        go run ./cmd/ultrad &
-        DATABASE_URL=postgres://postgres:dev@localhost:5499/postgres?sslmode=disable \
-        ULTRA_MASTER_KEY=$ULTRA_MASTER_KEY \
-        ULTRA_BEZALEL_IMAGE=${ULTRA_BEZALEL_IMAGE:-ultralogical/bezalel:local} \
-        go run ./cmd/worker
+      - bash scripts/dev-stack.sh
+
+  dev:smoke:
+    desc: Boot the stack, run the noninteractive smoke, and tear everything down
+    cmds:
+      - bash scripts/dev-stack.sh smoke

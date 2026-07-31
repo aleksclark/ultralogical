@@ -2,8 +2,8 @@
 
 Ultralogical: a durable-session platform for agentic work — multi-tenant,
 event-sourced sessions that humans and agents share. Go backend, ConnectRPC
-API, Postgres, React/gpui UIs. Currently at **Phase 6.7** security-critical
-orchestration remediation; completion-scoped backlog phases begin at Phase 7.
+API, Postgres, React/gpui UIs. **Phase 7** (Phase 0–2 completion) is closed;
+Phase 8 owns orchestration and distributed-session completion.
 
 ## Cheatsheet
 
@@ -11,12 +11,15 @@ orchestration remediation; completion-scoped backlog phases begin at Phase 7.
 task build             # go build ./...
 task lint              # buf lint + go vet + golangci-lint
 task generate          # regen from protos (commit the output!)
-task test              # unit + store + queue tests (needs docker)
+task test              # unit + store + queue + provider conformance (docker)
 task test:functional   # e2e/ acceptance suite (real stack)
-task verify:codegen    # fail if gen/ is stale
-task dev               # local postgres + ultrad + worker
- task web:build         # typecheck + build React SPA
- task web:test          # Playwright golden on real stack
+task verify:codegen    # fail if generated output is stale
+task verify:coverage   # capability coverage matrix
+task dev               # one-command stack: pg + model + ultrad + worker + web
+task dev:smoke         # boot, smoke, tear down with leak checks
+task web:build         # typecheck + build React SPA
+task web:test          # Playwright golden on real stack
+task desktop:test      # GPUI golden on real stack
 ```
 
 - Go 1.25+ (toolchain auto-downloads), `buf`, `docker`, `task`, node 22
@@ -61,15 +64,17 @@ task dev               # local postgres + ultrad + worker
 | [agent_docs/phase_6_5_audit.md](agent_docs/phase_6_5_audit.md) | Phase 6 implemented/incomplete capability audit |
 | [agent_docs/phase_6_6.md](agent_docs/phase_6_6.md) | Phase 6.6 implemented/deferred status |
 | [agent_docs/phases_0_6_audit.md](agent_docs/phases_0_6_audit.md) | authoritative incomplete-work audit |
+| [agent_docs/phase_7_inventory.md](agent_docs/phase_7_inventory.md) | Phase 7 behavior-to-test inventory |
+| [agent_docs/phase_7_audit.md](agent_docs/phase_7_audit.md) | Phase 7 independent completion audit |
 | [agent_docs/cross_client_testing.md](agent_docs/cross_client_testing.md) | adding public capabilities or client tests |
 | [agent_docs/package_layout.md](agent_docs/package_layout.md) | deciding where new code goes |
 | [agent_docs/testing.md](agent_docs/testing.md) | writing/running tests, using the harness |
 | [agent_docs/codegen.md](agent_docs/codegen.md) | changing protos, adding events/RPCs |
 | [agent_docs/conventions.md](agent_docs/conventions.md) | code style, layout rules, errors, migrations, never-do list |
 | [plan/index.md](plan/index.md) | architecture rationale + full roadmap |
-| [plan/phase_6_7.md](plan/phase_6_7.md) | current security-critical remediation phase |
-| [plan/phase_7.md](plan/phase_7.md) | next phase: Phase 0–2 completion |
-| [plan/phase_8.md](plan/phase_8.md) | orchestration and distributed-session completion |
+| [plan/phase_6_7.md](plan/phase_6_7.md) | security-critical remediation phase |
+| [plan/phase_7.md](plan/phase_7.md) | Phase 0–2 completion (closed) |
+| [plan/phase_8.md](plan/phase_8.md) | current phase: orchestration and distributed-session completion |
 | [plan/phase_9.md](plan/phase_9.md) | flow completion |
 | [plan/phase_10.md](plan/phase_10.md) | real remote providers |
 | [plan/phase_11.md](plan/phase_11.md) | advanced loop and automation completion |

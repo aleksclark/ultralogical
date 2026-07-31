@@ -70,9 +70,14 @@ Two distinct trees, both consumers of the same protos:
 - **`ui/<app>/`** — UI *applications*, each consuming a client library and
   owning its golden functional suite: `ui/web` (React + Vite + Tailwind +
   shadcn/ui, dark-mode only, Playwright golden), `ui/desktop` (Rust GPUI,
-  dark-mode only). The existing desktop core belongs under the GPUI app; a
-  headless core is not a substitute for a GPUI application. UIs never reach around the
-  client API.
+  dark-mode only, GPUI golden). UIs never reach around the client API.
+  `ui/web/src/components/ui` holds the reusable shadcn primitives; feature
+  components compose them. `ui/desktop` is a real GPUI application: `window.rs`
+  renders the only view, `state.rs` holds view state derived from the event log,
+  `client.rs` owns the generated tonic clients and every action the window can
+  perform, and `runtime.rs` owns the Tokio runtime network work runs on. The
+  native entrypoint and the UI tests open the same window and dispatch the same
+  actions; a headless core is not a substitute for a GPUI application.
 - **`gen/go/`** — committed Go codegen (server handlers + client stubs).
   Regenerate with `task generate`; CI diffs it.
 

@@ -774,6 +774,105 @@ func (x *ExecPreviewResponse) GetEventSeq() int64 {
 	return 0
 }
 
+// RestartEnv replaces the environment's runtime while preserving its
+// workspace, mints a new bearer token, and increments epoch. The prior token
+// stops working and cached tool clients bound to the old epoch are invalid.
+type RestartEnvRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EnvId         string                 `protobuf:"bytes,1,opt,name=env_id,json=envId,proto3" json:"env_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestartEnvRequest) Reset() {
+	*x = RestartEnvRequest{}
+	mi := &file_ultra_v1_env_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestartEnvRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestartEnvRequest) ProtoMessage() {}
+
+func (x *RestartEnvRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_env_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestartEnvRequest.ProtoReflect.Descriptor instead.
+func (*RestartEnvRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_env_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RestartEnvRequest) GetEnvId() string {
+	if x != nil {
+		return x.EnvId
+	}
+	return ""
+}
+
+type RestartEnvResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Env           *DevEnv                `protobuf:"bytes,1,opt,name=env,proto3" json:"env,omitempty"`
+	EventSeq      int64                  `protobuf:"varint,2,opt,name=event_seq,json=eventSeq,proto3" json:"event_seq,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestartEnvResponse) Reset() {
+	*x = RestartEnvResponse{}
+	mi := &file_ultra_v1_env_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestartEnvResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestartEnvResponse) ProtoMessage() {}
+
+func (x *RestartEnvResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_env_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestartEnvResponse.ProtoReflect.Descriptor instead.
+func (*RestartEnvResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_env_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *RestartEnvResponse) GetEnv() *DevEnv {
+	if x != nil {
+		return x.Env
+	}
+	return nil
+}
+
+func (x *RestartEnvResponse) GetEventSeq() int64 {
+	if x != nil {
+		return x.EventSeq
+	}
+	return 0
+}
+
 type GetUsageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
@@ -785,7 +884,7 @@ type GetUsageRequest struct {
 
 func (x *GetUsageRequest) Reset() {
 	*x = GetUsageRequest{}
-	mi := &file_ultra_v1_env_proto_msgTypes[12]
+	mi := &file_ultra_v1_env_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -797,7 +896,7 @@ func (x *GetUsageRequest) String() string {
 func (*GetUsageRequest) ProtoMessage() {}
 
 func (x *GetUsageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_env_proto_msgTypes[12]
+	mi := &file_ultra_v1_env_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -810,7 +909,7 @@ func (x *GetUsageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUsageRequest.ProtoReflect.Descriptor instead.
 func (*GetUsageRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_env_proto_rawDescGZIP(), []int{12}
+	return file_ultra_v1_env_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetUsageRequest) GetOrgId() string {
@@ -834,6 +933,9 @@ func (x *GetUsageRequest) GetTo() *timestamppb.Timestamp {
 	return nil
 }
 
+// UsageInterval is one metering interval. last_metered_at is the crash-safe
+// watermark: a control-plane death can under-count by at most one heartbeat
+// and can never over-count.
 type UsageInterval struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	EnvId              string                 `protobuf:"bytes,1,opt,name=env_id,json=envId,proto3" json:"env_id,omitempty"`
@@ -842,13 +944,15 @@ type UsageInterval struct {
 	EndedAt            *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=ended_at,json=endedAt,proto3" json:"ended_at,omitempty"`
 	Seconds            int64                  `protobuf:"varint,5,opt,name=seconds,proto3" json:"seconds,omitempty"`
 	RateClass          string                 `protobuf:"bytes,6,opt,name=rate_class,json=rateClass,proto3" json:"rate_class,omitempty"`
+	LastMeteredAt      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_metered_at,json=lastMeteredAt,proto3" json:"last_metered_at,omitempty"`
+	Open               bool                   `protobuf:"varint,8,opt,name=open,proto3" json:"open,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *UsageInterval) Reset() {
 	*x = UsageInterval{}
-	mi := &file_ultra_v1_env_proto_msgTypes[13]
+	mi := &file_ultra_v1_env_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -860,7 +964,7 @@ func (x *UsageInterval) String() string {
 func (*UsageInterval) ProtoMessage() {}
 
 func (x *UsageInterval) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_env_proto_msgTypes[13]
+	mi := &file_ultra_v1_env_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -873,7 +977,7 @@ func (x *UsageInterval) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UsageInterval.ProtoReflect.Descriptor instead.
 func (*UsageInterval) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_env_proto_rawDescGZIP(), []int{13}
+	return file_ultra_v1_env_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UsageInterval) GetEnvId() string {
@@ -918,6 +1022,20 @@ func (x *UsageInterval) GetRateClass() string {
 	return ""
 }
 
+func (x *UsageInterval) GetLastMeteredAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastMeteredAt
+	}
+	return nil
+}
+
+func (x *UsageInterval) GetOpen() bool {
+	if x != nil {
+		return x.Open
+	}
+	return false
+}
+
 type GetUsageResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Intervals     []*UsageInterval       `protobuf:"bytes,1,rep,name=intervals,proto3" json:"intervals,omitempty"`
@@ -928,7 +1046,7 @@ type GetUsageResponse struct {
 
 func (x *GetUsageResponse) Reset() {
 	*x = GetUsageResponse{}
-	mi := &file_ultra_v1_env_proto_msgTypes[14]
+	mi := &file_ultra_v1_env_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -940,7 +1058,7 @@ func (x *GetUsageResponse) String() string {
 func (*GetUsageResponse) ProtoMessage() {}
 
 func (x *GetUsageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_env_proto_msgTypes[14]
+	mi := &file_ultra_v1_env_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -953,7 +1071,7 @@ func (x *GetUsageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUsageResponse.ProtoReflect.Descriptor instead.
 func (*GetUsageResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_env_proto_rawDescGZIP(), []int{14}
+	return file_ultra_v1_env_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetUsageResponse) GetIntervals() []*UsageInterval {
@@ -1030,11 +1148,16 @@ const file_ultra_v1_env_proto_rawDesc = "" +
 	"\x13ExecPreviewResponse\x12\x16\n" +
 	"\x06output\x18\x01 \x01(\tR\x06output\x12\x19\n" +
 	"\bis_error\x18\x02 \x01(\bR\aisError\x12\x1b\n" +
-	"\tevent_seq\x18\x03 \x01(\x03R\beventSeq\"\x84\x01\n" +
+	"\tevent_seq\x18\x03 \x01(\x03R\beventSeq\"*\n" +
+	"\x11RestartEnvRequest\x12\x15\n" +
+	"\x06env_id\x18\x01 \x01(\tR\x05envId\"U\n" +
+	"\x12RestartEnvResponse\x12\"\n" +
+	"\x03env\x18\x01 \x01(\v2\x10.ultra.v1.DevEnvR\x03env\x12\x1b\n" +
+	"\tevent_seq\x18\x02 \x01(\x03R\beventSeq\"\x84\x01\n" +
 	"\x0fGetUsageRequest\x12\x15\n" +
 	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12.\n" +
 	"\x04from\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04from\x12*\n" +
-	"\x02to\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x02to\"\x83\x02\n" +
+	"\x02to\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x02to\"\xdb\x02\n" +
 	"\rUsageInterval\x12\x15\n" +
 	"\x06env_id\x18\x01 \x01(\tR\x05envId\x120\n" +
 	"\x14provider_instance_id\x18\x02 \x01(\tR\x12providerInstanceId\x129\n" +
@@ -1043,7 +1166,9 @@ const file_ultra_v1_env_proto_rawDesc = "" +
 	"\bended_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\aendedAt\x12\x18\n" +
 	"\aseconds\x18\x05 \x01(\x03R\aseconds\x12\x1d\n" +
 	"\n" +
-	"rate_class\x18\x06 \x01(\tR\trateClass\"n\n" +
+	"rate_class\x18\x06 \x01(\tR\trateClass\x12B\n" +
+	"\x0flast_metered_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\rlastMeteredAt\x12\x12\n" +
+	"\x04open\x18\b \x01(\bR\x04open\"n\n" +
 	"\x10GetUsageResponse\x125\n" +
 	"\tintervals\x18\x01 \x03(\v2\x17.ultra.v1.UsageIntervalR\tintervals\x12#\n" +
 	"\rtotal_seconds\x18\x02 \x01(\x03R\ftotalSeconds*\xd3\x01\n" +
@@ -1055,14 +1180,16 @@ const file_ultra_v1_env_proto_rawDesc = "" +
 	"\x13ENV_STATE_SUSPENDED\x10\x04\x12\x19\n" +
 	"\x15ENV_STATE_TERMINATING\x10\x05\x12\x18\n" +
 	"\x14ENV_STATE_TERMINATED\x10\x06\x12\x14\n" +
-	"\x10ENV_STATE_FAILED\x10\a2\xf6\x02\n" +
+	"\x10ENV_STATE_FAILED\x10\a2\xbf\x03\n" +
 	"\n" +
 	"EnvService\x12M\n" +
 	"\fProvisionEnv\x12\x1d.ultra.v1.ProvisionEnvRequest\x1a\x1e.ultra.v1.ProvisionEnvResponse\x12;\n" +
 	"\x06GetEnv\x12\x17.ultra.v1.GetEnvRequest\x1a\x18.ultra.v1.GetEnvResponse\x12A\n" +
 	"\bListEnvs\x12\x19.ultra.v1.ListEnvsRequest\x1a\x1a.ultra.v1.ListEnvsResponse\x12M\n" +
 	"\fTerminateEnv\x12\x1d.ultra.v1.TerminateEnvRequest\x1a\x1e.ultra.v1.TerminateEnvResponse\x12J\n" +
-	"\vExecPreview\x12\x1c.ultra.v1.ExecPreviewRequest\x1a\x1d.ultra.v1.ExecPreviewResponse2S\n" +
+	"\vExecPreview\x12\x1c.ultra.v1.ExecPreviewRequest\x1a\x1d.ultra.v1.ExecPreviewResponse\x12G\n" +
+	"\n" +
+	"RestartEnv\x12\x1b.ultra.v1.RestartEnvRequest\x1a\x1c.ultra.v1.RestartEnvResponse2S\n" +
 	"\x0eBillingService\x12A\n" +
 	"\bGetUsage\x12\x19.ultra.v1.GetUsageRequest\x1a\x1a.ultra.v1.GetUsageResponseB<Z:github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1b\x06proto3"
 
@@ -1079,7 +1206,7 @@ func file_ultra_v1_env_proto_rawDescGZIP() []byte {
 }
 
 var file_ultra_v1_env_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ultra_v1_env_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_ultra_v1_env_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_ultra_v1_env_proto_goTypes = []any{
 	(EnvState)(0),                 // 0: ultra.v1.EnvState
 	(*EnvSpec)(nil),               // 1: ultra.v1.EnvSpec
@@ -1094,48 +1221,54 @@ var file_ultra_v1_env_proto_goTypes = []any{
 	(*TerminateEnvResponse)(nil),  // 10: ultra.v1.TerminateEnvResponse
 	(*ExecPreviewRequest)(nil),    // 11: ultra.v1.ExecPreviewRequest
 	(*ExecPreviewResponse)(nil),   // 12: ultra.v1.ExecPreviewResponse
-	(*GetUsageRequest)(nil),       // 13: ultra.v1.GetUsageRequest
-	(*UsageInterval)(nil),         // 14: ultra.v1.UsageInterval
-	(*GetUsageResponse)(nil),      // 15: ultra.v1.GetUsageResponse
-	nil,                           // 16: ultra.v1.EnvSpec.EnvEntry
-	nil,                           // 17: ultra.v1.EnvSpec.MetadataEntry
-	(*timestamppb.Timestamp)(nil), // 18: google.protobuf.Timestamp
+	(*RestartEnvRequest)(nil),     // 13: ultra.v1.RestartEnvRequest
+	(*RestartEnvResponse)(nil),    // 14: ultra.v1.RestartEnvResponse
+	(*GetUsageRequest)(nil),       // 15: ultra.v1.GetUsageRequest
+	(*UsageInterval)(nil),         // 16: ultra.v1.UsageInterval
+	(*GetUsageResponse)(nil),      // 17: ultra.v1.GetUsageResponse
+	nil,                           // 18: ultra.v1.EnvSpec.EnvEntry
+	nil,                           // 19: ultra.v1.EnvSpec.MetadataEntry
+	(*timestamppb.Timestamp)(nil), // 20: google.protobuf.Timestamp
 }
 var file_ultra_v1_env_proto_depIdxs = []int32{
-	16, // 0: ultra.v1.EnvSpec.env:type_name -> ultra.v1.EnvSpec.EnvEntry
-	17, // 1: ultra.v1.EnvSpec.metadata:type_name -> ultra.v1.EnvSpec.MetadataEntry
+	18, // 0: ultra.v1.EnvSpec.env:type_name -> ultra.v1.EnvSpec.EnvEntry
+	19, // 1: ultra.v1.EnvSpec.metadata:type_name -> ultra.v1.EnvSpec.MetadataEntry
 	0,  // 2: ultra.v1.DevEnv.state:type_name -> ultra.v1.EnvState
 	1,  // 3: ultra.v1.DevEnv.spec:type_name -> ultra.v1.EnvSpec
-	18, // 4: ultra.v1.DevEnv.created_at:type_name -> google.protobuf.Timestamp
-	18, // 5: ultra.v1.DevEnv.updated_at:type_name -> google.protobuf.Timestamp
-	18, // 6: ultra.v1.DevEnv.ready_at:type_name -> google.protobuf.Timestamp
-	18, // 7: ultra.v1.DevEnv.terminated_at:type_name -> google.protobuf.Timestamp
+	20, // 4: ultra.v1.DevEnv.created_at:type_name -> google.protobuf.Timestamp
+	20, // 5: ultra.v1.DevEnv.updated_at:type_name -> google.protobuf.Timestamp
+	20, // 6: ultra.v1.DevEnv.ready_at:type_name -> google.protobuf.Timestamp
+	20, // 7: ultra.v1.DevEnv.terminated_at:type_name -> google.protobuf.Timestamp
 	1,  // 8: ultra.v1.ProvisionEnvRequest.spec:type_name -> ultra.v1.EnvSpec
 	2,  // 9: ultra.v1.ProvisionEnvResponse.env:type_name -> ultra.v1.DevEnv
 	2,  // 10: ultra.v1.GetEnvResponse.env:type_name -> ultra.v1.DevEnv
 	2,  // 11: ultra.v1.ListEnvsResponse.envs:type_name -> ultra.v1.DevEnv
-	18, // 12: ultra.v1.GetUsageRequest.from:type_name -> google.protobuf.Timestamp
-	18, // 13: ultra.v1.GetUsageRequest.to:type_name -> google.protobuf.Timestamp
-	18, // 14: ultra.v1.UsageInterval.started_at:type_name -> google.protobuf.Timestamp
-	18, // 15: ultra.v1.UsageInterval.ended_at:type_name -> google.protobuf.Timestamp
-	14, // 16: ultra.v1.GetUsageResponse.intervals:type_name -> ultra.v1.UsageInterval
-	3,  // 17: ultra.v1.EnvService.ProvisionEnv:input_type -> ultra.v1.ProvisionEnvRequest
-	5,  // 18: ultra.v1.EnvService.GetEnv:input_type -> ultra.v1.GetEnvRequest
-	7,  // 19: ultra.v1.EnvService.ListEnvs:input_type -> ultra.v1.ListEnvsRequest
-	9,  // 20: ultra.v1.EnvService.TerminateEnv:input_type -> ultra.v1.TerminateEnvRequest
-	11, // 21: ultra.v1.EnvService.ExecPreview:input_type -> ultra.v1.ExecPreviewRequest
-	13, // 22: ultra.v1.BillingService.GetUsage:input_type -> ultra.v1.GetUsageRequest
-	4,  // 23: ultra.v1.EnvService.ProvisionEnv:output_type -> ultra.v1.ProvisionEnvResponse
-	6,  // 24: ultra.v1.EnvService.GetEnv:output_type -> ultra.v1.GetEnvResponse
-	8,  // 25: ultra.v1.EnvService.ListEnvs:output_type -> ultra.v1.ListEnvsResponse
-	10, // 26: ultra.v1.EnvService.TerminateEnv:output_type -> ultra.v1.TerminateEnvResponse
-	12, // 27: ultra.v1.EnvService.ExecPreview:output_type -> ultra.v1.ExecPreviewResponse
-	15, // 28: ultra.v1.BillingService.GetUsage:output_type -> ultra.v1.GetUsageResponse
-	23, // [23:29] is the sub-list for method output_type
-	17, // [17:23] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	2,  // 12: ultra.v1.RestartEnvResponse.env:type_name -> ultra.v1.DevEnv
+	20, // 13: ultra.v1.GetUsageRequest.from:type_name -> google.protobuf.Timestamp
+	20, // 14: ultra.v1.GetUsageRequest.to:type_name -> google.protobuf.Timestamp
+	20, // 15: ultra.v1.UsageInterval.started_at:type_name -> google.protobuf.Timestamp
+	20, // 16: ultra.v1.UsageInterval.ended_at:type_name -> google.protobuf.Timestamp
+	20, // 17: ultra.v1.UsageInterval.last_metered_at:type_name -> google.protobuf.Timestamp
+	16, // 18: ultra.v1.GetUsageResponse.intervals:type_name -> ultra.v1.UsageInterval
+	3,  // 19: ultra.v1.EnvService.ProvisionEnv:input_type -> ultra.v1.ProvisionEnvRequest
+	5,  // 20: ultra.v1.EnvService.GetEnv:input_type -> ultra.v1.GetEnvRequest
+	7,  // 21: ultra.v1.EnvService.ListEnvs:input_type -> ultra.v1.ListEnvsRequest
+	9,  // 22: ultra.v1.EnvService.TerminateEnv:input_type -> ultra.v1.TerminateEnvRequest
+	11, // 23: ultra.v1.EnvService.ExecPreview:input_type -> ultra.v1.ExecPreviewRequest
+	13, // 24: ultra.v1.EnvService.RestartEnv:input_type -> ultra.v1.RestartEnvRequest
+	15, // 25: ultra.v1.BillingService.GetUsage:input_type -> ultra.v1.GetUsageRequest
+	4,  // 26: ultra.v1.EnvService.ProvisionEnv:output_type -> ultra.v1.ProvisionEnvResponse
+	6,  // 27: ultra.v1.EnvService.GetEnv:output_type -> ultra.v1.GetEnvResponse
+	8,  // 28: ultra.v1.EnvService.ListEnvs:output_type -> ultra.v1.ListEnvsResponse
+	10, // 29: ultra.v1.EnvService.TerminateEnv:output_type -> ultra.v1.TerminateEnvResponse
+	12, // 30: ultra.v1.EnvService.ExecPreview:output_type -> ultra.v1.ExecPreviewResponse
+	14, // 31: ultra.v1.EnvService.RestartEnv:output_type -> ultra.v1.RestartEnvResponse
+	17, // 32: ultra.v1.BillingService.GetUsage:output_type -> ultra.v1.GetUsageResponse
+	26, // [26:33] is the sub-list for method output_type
+	19, // [19:26] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_env_proto_init() }
@@ -1149,7 +1282,7 @@ func file_ultra_v1_env_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ultra_v1_env_proto_rawDesc), len(file_ultra_v1_env_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   17,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

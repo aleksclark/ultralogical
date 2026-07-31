@@ -60,6 +60,23 @@ type EnvProvider interface {
 	Terminate(ctx context.Context, handle ProviderHandle) error
 }
 
+// EnvAdopter is the optional recovery seam. Provisioning is a two-step
+// operation — create the resource, then persist its handle — so a control
+// plane that dies between the steps would otherwise create a second resource
+// on retry. A provider that can find the resource it already created for an
+// environment lets the retry adopt it instead of duplicating it.
+type EnvAdopter interface {
+	Adopt(ctx context.Context, envID EnvID) (handle ProviderHandle, found bool, err error)
+}
+
+// EnvResourceLister is the optional leak-check seam: a provider that can
+// enumerate the concrete resources it owns for an environment lets the
+// conformance suite prove termination actually released them. Returning an
+// empty slice means nothing is left.
+type EnvResourceLister interface {
+	Resources(ctx context.Context, envID EnvID) ([]string, error)
+}
+
 // DevEnv is one session-owned environment.
 type DevEnv struct {
 	ID                 EnvID
@@ -127,6 +144,10 @@ type EnvStore interface {
 	List(ctx context.Context, session SessionID) ([]DevEnv, error)
 	ListActive(ctx context.Context) ([]DevEnv, error)
 	SetProvisioning(ctx context.Context, id EnvID) error
+	// SetHandle records the provider handle before readiness so an
+	// interrupted provisioning can adopt its resource instead of creating
+	// a duplicate one.
+	SetHandle(ctx context.Context, id EnvID, handle ProviderHandle) error
 	SetReady(ctx context.Context, id EnvID, handle ProviderHandle, endpoint string) error
 	SetFailed(ctx context.Context, id EnvID, message string) error
 	SetTerminating(ctx context.Context, id EnvID) error
@@ -144,10 +165,19 @@ type ProviderInstanceStore interface {
 	MarkHealthy(ctx context.Context, id ProviderInstanceID) error
 }
 
-// UsageStore manages the environment metering ledger within one org.
+// UsageStore manages the environment metering ledger within one org. The
+// ledger is append-only: corrections are compensating rows, never edits.
 type UsageStore interface {
 	Open(ctx context.Context, usage EnvUsage) error
 	Tick(ctx context.Context, envID EnvID, at time.Time) error
 	Close(ctx context.Context, envID EnvID, at time.Time) error
+	// CloseAtWatermark closes any open interval at its persisted heartbeat
+	// rather than at wall time. It is the crash-recovery path: a control
+	// plane that died between an environment's terminal transition and its
+	// interval close must under-count by at most one heartbeat, never
+	// over-count for the time it was dead.
+	CloseAtWatermark(ctx context.Context, envID EnvID) error
+	// ListOpen returns intervals with no end, for reconciliation.
+	ListOpen(ctx context.Context) ([]EnvUsage, error)
 	List(ctx context.Context, from, to time.Time) ([]EnvUsage, error)
 }

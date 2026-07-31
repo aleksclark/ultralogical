@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file ultra/v1/env.proto.
  */
 export const file_ultra_v1_env: GenFile = /*@__PURE__*/
-  fileDesc("ChJ1bHRyYS92MS9lbnYucHJvdG8SCHVsdHJhLnYxIvABCgdFbnZTcGVjEgwKBG5hbWUYASABKAkSDQoFaW1hZ2UYAiABKAkSDwoHd29ya2RpchgDIAEoCRInCgNlbnYYBCADKAsyGi51bHRyYS52MS5FbnZTcGVjLkVudkVudHJ5EjEKCG1ldGFkYXRhGAUgAygLMh8udWx0cmEudjEuRW52U3BlYy5NZXRhZGF0YUVudHJ5GioKCEVudkVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEaLwoNTWV0YWRhdGFFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIoUDCgZEZXZFbnYSCgoCaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIcChRwcm92aWRlcl9pbnN0YW5jZV9pZBgDIAEoCRIhCgVzdGF0ZRgEIAEoDjISLnVsdHJhLnYxLkVudlN0YXRlEh8KBHNwZWMYBSABKAsyES51bHRyYS52MS5FbnZTcGVjEhAKCGVuZHBvaW50GAYgASgJEg0KBWVwb2NoGAcgASgFEhcKD2ZhaWx1cmVfbWVzc2FnZRgIIAEoCRIuCgpjcmVhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIsCghyZWFkeV9hdBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNdGVybWluYXRlZF9hdBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiZQoTUHJvdmlzaW9uRW52UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEh8KBHNwZWMYAiABKAsyES51bHRyYS52MS5FbnZTcGVjEhkKEXByb3ZpZGVyX2luc3RhbmNlGAMgASgJIkgKFFByb3Zpc2lvbkVudlJlc3BvbnNlEh0KA2VudhgBIAEoCzIQLnVsdHJhLnYxLkRldkVudhIRCglldmVudF9zZXEYAiABKAMiHwoNR2V0RW52UmVxdWVzdBIOCgZlbnZfaWQYASABKAkiLwoOR2V0RW52UmVzcG9uc2USHQoDZW52GAEgASgLMhAudWx0cmEudjEuRGV2RW52IiUKD0xpc3RFbnZzUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIjIKEExpc3RFbnZzUmVzcG9uc2USHgoEZW52cxgBIAMoCzIQLnVsdHJhLnYxLkRldkVudiIlChNUZXJtaW5hdGVFbnZSZXF1ZXN0Eg4KBmVudl9pZBgBIAEoCSIWChRUZXJtaW5hdGVFbnZSZXNwb25zZSI1ChJFeGVjUHJldmlld1JlcXVlc3QSDgoGZW52X2lkGAEgASgJEg8KB2NvbW1hbmQYAiABKAkiSgoTRXhlY1ByZXZpZXdSZXNwb25zZRIOCgZvdXRwdXQYASABKAkSEAoIaXNfZXJyb3IYAiABKAgSEQoJZXZlbnRfc2VxGAMgASgDInMKD0dldFVzYWdlUmVxdWVzdBIOCgZvcmdfaWQYASABKAkSKAoEZnJvbRgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJgoCdG8YAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIsABCg1Vc2FnZUludGVydmFsEg4KBmVudl9pZBgBIAEoCRIcChRwcm92aWRlcl9pbnN0YW5jZV9pZBgCIAEoCRIuCgpzdGFydGVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIsCghlbmRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDwoHc2Vjb25kcxgFIAEoAxISCgpyYXRlX2NsYXNzGAYgASgJIlUKEEdldFVzYWdlUmVzcG9uc2USKgoJaW50ZXJ2YWxzGAEgAygLMhcudWx0cmEudjEuVXNhZ2VJbnRlcnZhbBIVCg10b3RhbF9zZWNvbmRzGAIgASgDKtMBCghFbnZTdGF0ZRIZChVFTlZfU1RBVEVfVU5TUEVDSUZJRUQQABIXChNFTlZfU1RBVEVfUkVRVUVTVEVEEAESGgoWRU5WX1NUQVRFX1BST1ZJU0lPTklORxACEhMKD0VOVl9TVEFURV9SRUFEWRADEhcKE0VOVl9TVEFURV9TVVNQRU5ERUQQBBIZChVFTlZfU1RBVEVfVEVSTUlOQVRJTkcQBRIYChRFTlZfU1RBVEVfVEVSTUlOQVRFRBAGEhQKEEVOVl9TVEFURV9GQUlMRUQQBzL2AgoKRW52U2VydmljZRJNCgxQcm92aXNpb25FbnYSHS51bHRyYS52MS5Qcm92aXNpb25FbnZSZXF1ZXN0Gh4udWx0cmEudjEuUHJvdmlzaW9uRW52UmVzcG9uc2USOwoGR2V0RW52EhcudWx0cmEudjEuR2V0RW52UmVxdWVzdBoYLnVsdHJhLnYxLkdldEVudlJlc3BvbnNlEkEKCExpc3RFbnZzEhkudWx0cmEudjEuTGlzdEVudnNSZXF1ZXN0GhoudWx0cmEudjEuTGlzdEVudnNSZXNwb25zZRJNCgxUZXJtaW5hdGVFbnYSHS51bHRyYS52MS5UZXJtaW5hdGVFbnZSZXF1ZXN0Gh4udWx0cmEudjEuVGVybWluYXRlRW52UmVzcG9uc2USSgoLRXhlY1ByZXZpZXcSHC51bHRyYS52MS5FeGVjUHJldmlld1JlcXVlc3QaHS51bHRyYS52MS5FeGVjUHJldmlld1Jlc3BvbnNlMlMKDkJpbGxpbmdTZXJ2aWNlEkEKCEdldFVzYWdlEhkudWx0cmEudjEuR2V0VXNhZ2VSZXF1ZXN0GhoudWx0cmEudjEuR2V0VXNhZ2VSZXNwb25zZUI8WjpnaXRodWIuY29tL2FsZWtzY2xhcmsvdWx0cmFsb2dpY2FsL2dlbi9nby91bHRyYS92MTt1bHRyYXYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChJ1bHRyYS92MS9lbnYucHJvdG8SCHVsdHJhLnYxIvABCgdFbnZTcGVjEgwKBG5hbWUYASABKAkSDQoFaW1hZ2UYAiABKAkSDwoHd29ya2RpchgDIAEoCRInCgNlbnYYBCADKAsyGi51bHRyYS52MS5FbnZTcGVjLkVudkVudHJ5EjEKCG1ldGFkYXRhGAUgAygLMh8udWx0cmEudjEuRW52U3BlYy5NZXRhZGF0YUVudHJ5GioKCEVudkVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEaLwoNTWV0YWRhdGFFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIoUDCgZEZXZFbnYSCgoCaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIcChRwcm92aWRlcl9pbnN0YW5jZV9pZBgDIAEoCRIhCgVzdGF0ZRgEIAEoDjISLnVsdHJhLnYxLkVudlN0YXRlEh8KBHNwZWMYBSABKAsyES51bHRyYS52MS5FbnZTcGVjEhAKCGVuZHBvaW50GAYgASgJEg0KBWVwb2NoGAcgASgFEhcKD2ZhaWx1cmVfbWVzc2FnZRgIIAEoCRIuCgpjcmVhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIsCghyZWFkeV9hdBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNdGVybWluYXRlZF9hdBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiZQoTUHJvdmlzaW9uRW52UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEh8KBHNwZWMYAiABKAsyES51bHRyYS52MS5FbnZTcGVjEhkKEXByb3ZpZGVyX2luc3RhbmNlGAMgASgJIkgKFFByb3Zpc2lvbkVudlJlc3BvbnNlEh0KA2VudhgBIAEoCzIQLnVsdHJhLnYxLkRldkVudhIRCglldmVudF9zZXEYAiABKAMiHwoNR2V0RW52UmVxdWVzdBIOCgZlbnZfaWQYASABKAkiLwoOR2V0RW52UmVzcG9uc2USHQoDZW52GAEgASgLMhAudWx0cmEudjEuRGV2RW52IiUKD0xpc3RFbnZzUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIjIKEExpc3RFbnZzUmVzcG9uc2USHgoEZW52cxgBIAMoCzIQLnVsdHJhLnYxLkRldkVudiIlChNUZXJtaW5hdGVFbnZSZXF1ZXN0Eg4KBmVudl9pZBgBIAEoCSIWChRUZXJtaW5hdGVFbnZSZXNwb25zZSI1ChJFeGVjUHJldmlld1JlcXVlc3QSDgoGZW52X2lkGAEgASgJEg8KB2NvbW1hbmQYAiABKAkiSgoTRXhlY1ByZXZpZXdSZXNwb25zZRIOCgZvdXRwdXQYASABKAkSEAoIaXNfZXJyb3IYAiABKAgSEQoJZXZlbnRfc2VxGAMgASgDIiMKEVJlc3RhcnRFbnZSZXF1ZXN0Eg4KBmVudl9pZBgBIAEoCSJGChJSZXN0YXJ0RW52UmVzcG9uc2USHQoDZW52GAEgASgLMhAudWx0cmEudjEuRGV2RW52EhEKCWV2ZW50X3NlcRgCIAEoAyJzCg9HZXRVc2FnZVJlcXVlc3QSDgoGb3JnX2lkGAEgASgJEigKBGZyb20YAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiYKAnRvGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKDAgoNVXNhZ2VJbnRlcnZhbBIOCgZlbnZfaWQYASABKAkSHAoUcHJvdmlkZXJfaW5zdGFuY2VfaWQYAiABKAkSLgoKc3RhcnRlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLAoIZW5kZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg8KB3NlY29uZHMYBSABKAMSEgoKcmF0ZV9jbGFzcxgGIAEoCRIzCg9sYXN0X21ldGVyZWRfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBG9wZW4YCCABKAgiVQoQR2V0VXNhZ2VSZXNwb25zZRIqCglpbnRlcnZhbHMYASADKAsyFy51bHRyYS52MS5Vc2FnZUludGVydmFsEhUKDXRvdGFsX3NlY29uZHMYAiABKAMq0wEKCEVudlN0YXRlEhkKFUVOVl9TVEFURV9VTlNQRUNJRklFRBAAEhcKE0VOVl9TVEFURV9SRVFVRVNURUQQARIaChZFTlZfU1RBVEVfUFJPVklTSU9OSU5HEAISEwoPRU5WX1NUQVRFX1JFQURZEAMSFwoTRU5WX1NUQVRFX1NVU1BFTkRFRBAEEhkKFUVOVl9TVEFURV9URVJNSU5BVElORxAFEhgKFEVOVl9TVEFURV9URVJNSU5BVEVEEAYSFAoQRU5WX1NUQVRFX0ZBSUxFRBAHMr8DCgpFbnZTZXJ2aWNlEk0KDFByb3Zpc2lvbkVudhIdLnVsdHJhLnYxLlByb3Zpc2lvbkVudlJlcXVlc3QaHi51bHRyYS52MS5Qcm92aXNpb25FbnZSZXNwb25zZRI7CgZHZXRFbnYSFy51bHRyYS52MS5HZXRFbnZSZXF1ZXN0GhgudWx0cmEudjEuR2V0RW52UmVzcG9uc2USQQoITGlzdEVudnMSGS51bHRyYS52MS5MaXN0RW52c1JlcXVlc3QaGi51bHRyYS52MS5MaXN0RW52c1Jlc3BvbnNlEk0KDFRlcm1pbmF0ZUVudhIdLnVsdHJhLnYxLlRlcm1pbmF0ZUVudlJlcXVlc3QaHi51bHRyYS52MS5UZXJtaW5hdGVFbnZSZXNwb25zZRJKCgtFeGVjUHJldmlldxIcLnVsdHJhLnYxLkV4ZWNQcmV2aWV3UmVxdWVzdBodLnVsdHJhLnYxLkV4ZWNQcmV2aWV3UmVzcG9uc2USRwoKUmVzdGFydEVudhIbLnVsdHJhLnYxLlJlc3RhcnRFbnZSZXF1ZXN0GhwudWx0cmEudjEuUmVzdGFydEVudlJlc3BvbnNlMlMKDkJpbGxpbmdTZXJ2aWNlEkEKCEdldFVzYWdlEhkudWx0cmEudjEuR2V0VXNhZ2VSZXF1ZXN0GhoudWx0cmEudjEuR2V0VXNhZ2VSZXNwb25zZUI8WjpnaXRodWIuY29tL2FsZWtzY2xhcmsvdWx0cmFsb2dpY2FsL2dlbi9nby91bHRyYS92MTt1bHRyYXYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message ultra.v1.EnvSpec
@@ -320,6 +320,49 @@ export const ExecPreviewResponseSchema: GenMessage<ExecPreviewResponse> = /*@__P
   messageDesc(file_ultra_v1_env, 11);
 
 /**
+ * RestartEnv replaces the environment's runtime while preserving its
+ * workspace, mints a new bearer token, and increments epoch. The prior token
+ * stops working and cached tool clients bound to the old epoch are invalid.
+ *
+ * @generated from message ultra.v1.RestartEnvRequest
+ */
+export type RestartEnvRequest = Message<"ultra.v1.RestartEnvRequest"> & {
+  /**
+   * @generated from field: string env_id = 1;
+   */
+  envId: string;
+};
+
+/**
+ * Describes the message ultra.v1.RestartEnvRequest.
+ * Use `create(RestartEnvRequestSchema)` to create a new message.
+ */
+export const RestartEnvRequestSchema: GenMessage<RestartEnvRequest> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_env, 12);
+
+/**
+ * @generated from message ultra.v1.RestartEnvResponse
+ */
+export type RestartEnvResponse = Message<"ultra.v1.RestartEnvResponse"> & {
+  /**
+   * @generated from field: ultra.v1.DevEnv env = 1;
+   */
+  env?: DevEnv | undefined;
+
+  /**
+   * @generated from field: int64 event_seq = 2;
+   */
+  eventSeq: bigint;
+};
+
+/**
+ * Describes the message ultra.v1.RestartEnvResponse.
+ * Use `create(RestartEnvResponseSchema)` to create a new message.
+ */
+export const RestartEnvResponseSchema: GenMessage<RestartEnvResponse> = /*@__PURE__*/
+  messageDesc(file_ultra_v1_env, 13);
+
+/**
  * @generated from message ultra.v1.GetUsageRequest
  */
 export type GetUsageRequest = Message<"ultra.v1.GetUsageRequest"> & {
@@ -344,9 +387,13 @@ export type GetUsageRequest = Message<"ultra.v1.GetUsageRequest"> & {
  * Use `create(GetUsageRequestSchema)` to create a new message.
  */
 export const GetUsageRequestSchema: GenMessage<GetUsageRequest> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_env, 12);
+  messageDesc(file_ultra_v1_env, 14);
 
 /**
+ * UsageInterval is one metering interval. last_metered_at is the crash-safe
+ * watermark: a control-plane death can under-count by at most one heartbeat
+ * and can never over-count.
+ *
  * @generated from message ultra.v1.UsageInterval
  */
 export type UsageInterval = Message<"ultra.v1.UsageInterval"> & {
@@ -379,6 +426,16 @@ export type UsageInterval = Message<"ultra.v1.UsageInterval"> & {
    * @generated from field: string rate_class = 6;
    */
   rateClass: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp last_metered_at = 7;
+   */
+  lastMeteredAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: bool open = 8;
+   */
+  open: boolean;
 };
 
 /**
@@ -386,7 +443,7 @@ export type UsageInterval = Message<"ultra.v1.UsageInterval"> & {
  * Use `create(UsageIntervalSchema)` to create a new message.
  */
 export const UsageIntervalSchema: GenMessage<UsageInterval> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_env, 13);
+  messageDesc(file_ultra_v1_env, 15);
 
 /**
  * @generated from message ultra.v1.GetUsageResponse
@@ -408,7 +465,7 @@ export type GetUsageResponse = Message<"ultra.v1.GetUsageResponse"> & {
  * Use `create(GetUsageResponseSchema)` to create a new message.
  */
 export const GetUsageResponseSchema: GenMessage<GetUsageResponse> = /*@__PURE__*/
-  messageDesc(file_ultra_v1_env, 14);
+  messageDesc(file_ultra_v1_env, 16);
 
 /**
  * @generated from enum ultra.v1.EnvState
@@ -504,6 +561,14 @@ export const EnvService: GenService<{
     methodKind: "unary";
     input: typeof ExecPreviewRequestSchema;
     output: typeof ExecPreviewResponseSchema;
+  },
+  /**
+   * @generated from rpc ultra.v1.EnvService.RestartEnv
+   */
+  restartEnv: {
+    methodKind: "unary";
+    input: typeof RestartEnvRequestSchema;
+    output: typeof RestartEnvResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_ultra_v1_env, 0);

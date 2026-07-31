@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@client": fileURLToPath(new URL("../../clients/ts/src", import.meta.url)),
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
   server: { port: 5173, fs: { allow: ["../.."] } },

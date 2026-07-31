@@ -92,6 +92,7 @@ func run(log *slog.Logger) error {
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.ProvisionJob](envs.Provision))
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.TerminateJob](envs.Terminate))
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.ReconcileJob](envs.Reconcile))
+	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.RestartJob](envs.Restart))
 
 	if err := queue.Start(ctx); err != nil {
 		return err

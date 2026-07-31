@@ -128,6 +128,15 @@ func (s *envStore) SetProvisioning(ctx context.Context, id ultra.EnvID) error {
 		WHERE id=$1 AND org_id=$2`)
 }
 
+func (s *envStore) SetHandle(ctx context.Context, id ultra.EnvID, handle ultra.ProviderHandle) error {
+	h, err := json.Marshal(handle)
+	if err != nil {
+		return err
+	}
+	return s.update(ctx, id, `UPDATE dev_envs SET handle=$3, updated_at=now()
+		WHERE id=$1 AND org_id=$2`, h)
+}
+
 func (s *envStore) SetReady(ctx context.Context, id ultra.EnvID, handle ultra.ProviderHandle, endpoint string) error {
 	h, err := json.Marshal(handle)
 	if err != nil {
@@ -274,11 +283,32 @@ func (s *usageStore) Close(ctx context.Context, envID ultra.EnvID, at time.Time)
 	return err
 }
 
+// CloseAtWatermark closes an open interval at its persisted heartbeat. It
+// adds no seconds: whatever was not heartbeat-confirmed before the crash is
+// deliberately forfeited so the ledger can never over-count.
+func (s *usageStore) CloseAtWatermark(ctx context.Context, envID ultra.EnvID) error {
+	_, err := s.scope.s.db().Exec(ctx, `UPDATE env_usage SET ended_at=last_metered_at
+		WHERE env_id=$1 AND org_id=$2 AND ended_at IS NULL`,
+		string(envID), string(s.scope.org))
+	return err
+}
+
+const usageColumns = `id, org_id, env_id, provider_instance_id,
+		started_at, last_metered_at, ended_at, seconds, rate_class`
+
+func (s *usageStore) ListOpen(ctx context.Context) ([]ultra.EnvUsage, error) {
+	return s.query(ctx, `SELECT `+usageColumns+` FROM env_usage
+		WHERE org_id=$1 AND ended_at IS NULL ORDER BY started_at`, string(s.scope.org))
+}
+
 func (s *usageStore) List(ctx context.Context, from, to time.Time) ([]ultra.EnvUsage, error) {
-	rows, err := s.scope.s.db().Query(ctx, `SELECT id, org_id, env_id, provider_instance_id,
-		started_at, last_metered_at, ended_at, seconds, rate_class FROM env_usage
+	return s.query(ctx, `SELECT `+usageColumns+` FROM env_usage
 		WHERE org_id=$1 AND started_at < $3 AND COALESCE(ended_at, now()) >= $2 ORDER BY started_at`,
 		string(s.scope.org), from, to)
+}
+
+func (s *usageStore) query(ctx context.Context, sql string, args ...any) ([]ultra.EnvUsage, error) {
+	rows, err := s.scope.s.db().Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}

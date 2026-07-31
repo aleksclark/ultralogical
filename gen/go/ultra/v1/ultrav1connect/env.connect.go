@@ -45,6 +45,8 @@ const (
 	EnvServiceTerminateEnvProcedure = "/ultra.v1.EnvService/TerminateEnv"
 	// EnvServiceExecPreviewProcedure is the fully-qualified name of the EnvService's ExecPreview RPC.
 	EnvServiceExecPreviewProcedure = "/ultra.v1.EnvService/ExecPreview"
+	// EnvServiceRestartEnvProcedure is the fully-qualified name of the EnvService's RestartEnv RPC.
+	EnvServiceRestartEnvProcedure = "/ultra.v1.EnvService/RestartEnv"
 	// BillingServiceGetUsageProcedure is the fully-qualified name of the BillingService's GetUsage RPC.
 	BillingServiceGetUsageProcedure = "/ultra.v1.BillingService/GetUsage"
 )
@@ -56,6 +58,7 @@ type EnvServiceClient interface {
 	ListEnvs(context.Context, *connect.Request[v1.ListEnvsRequest]) (*connect.Response[v1.ListEnvsResponse], error)
 	TerminateEnv(context.Context, *connect.Request[v1.TerminateEnvRequest]) (*connect.Response[v1.TerminateEnvResponse], error)
 	ExecPreview(context.Context, *connect.Request[v1.ExecPreviewRequest]) (*connect.Response[v1.ExecPreviewResponse], error)
+	RestartEnv(context.Context, *connect.Request[v1.RestartEnvRequest]) (*connect.Response[v1.RestartEnvResponse], error)
 }
 
 // NewEnvServiceClient constructs a client for the ultra.v1.EnvService service. By default, it uses
@@ -99,6 +102,12 @@ func NewEnvServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(envServiceMethods.ByName("ExecPreview")),
 			connect.WithClientOptions(opts...),
 		),
+		restartEnv: connect.NewClient[v1.RestartEnvRequest, v1.RestartEnvResponse](
+			httpClient,
+			baseURL+EnvServiceRestartEnvProcedure,
+			connect.WithSchema(envServiceMethods.ByName("RestartEnv")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -109,6 +118,7 @@ type envServiceClient struct {
 	listEnvs     *connect.Client[v1.ListEnvsRequest, v1.ListEnvsResponse]
 	terminateEnv *connect.Client[v1.TerminateEnvRequest, v1.TerminateEnvResponse]
 	execPreview  *connect.Client[v1.ExecPreviewRequest, v1.ExecPreviewResponse]
+	restartEnv   *connect.Client[v1.RestartEnvRequest, v1.RestartEnvResponse]
 }
 
 // ProvisionEnv calls ultra.v1.EnvService.ProvisionEnv.
@@ -136,6 +146,11 @@ func (c *envServiceClient) ExecPreview(ctx context.Context, req *connect.Request
 	return c.execPreview.CallUnary(ctx, req)
 }
 
+// RestartEnv calls ultra.v1.EnvService.RestartEnv.
+func (c *envServiceClient) RestartEnv(ctx context.Context, req *connect.Request[v1.RestartEnvRequest]) (*connect.Response[v1.RestartEnvResponse], error) {
+	return c.restartEnv.CallUnary(ctx, req)
+}
+
 // EnvServiceHandler is an implementation of the ultra.v1.EnvService service.
 type EnvServiceHandler interface {
 	ProvisionEnv(context.Context, *connect.Request[v1.ProvisionEnvRequest]) (*connect.Response[v1.ProvisionEnvResponse], error)
@@ -143,6 +158,7 @@ type EnvServiceHandler interface {
 	ListEnvs(context.Context, *connect.Request[v1.ListEnvsRequest]) (*connect.Response[v1.ListEnvsResponse], error)
 	TerminateEnv(context.Context, *connect.Request[v1.TerminateEnvRequest]) (*connect.Response[v1.TerminateEnvResponse], error)
 	ExecPreview(context.Context, *connect.Request[v1.ExecPreviewRequest]) (*connect.Response[v1.ExecPreviewResponse], error)
+	RestartEnv(context.Context, *connect.Request[v1.RestartEnvRequest]) (*connect.Response[v1.RestartEnvResponse], error)
 }
 
 // NewEnvServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -182,6 +198,12 @@ func NewEnvServiceHandler(svc EnvServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(envServiceMethods.ByName("ExecPreview")),
 		connect.WithHandlerOptions(opts...),
 	)
+	envServiceRestartEnvHandler := connect.NewUnaryHandler(
+		EnvServiceRestartEnvProcedure,
+		svc.RestartEnv,
+		connect.WithSchema(envServiceMethods.ByName("RestartEnv")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/ultra.v1.EnvService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case EnvServiceProvisionEnvProcedure:
@@ -194,6 +216,8 @@ func NewEnvServiceHandler(svc EnvServiceHandler, opts ...connect.HandlerOption) 
 			envServiceTerminateEnvHandler.ServeHTTP(w, r)
 		case EnvServiceExecPreviewProcedure:
 			envServiceExecPreviewHandler.ServeHTTP(w, r)
+		case EnvServiceRestartEnvProcedure:
+			envServiceRestartEnvHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -221,6 +245,10 @@ func (UnimplementedEnvServiceHandler) TerminateEnv(context.Context, *connect.Req
 
 func (UnimplementedEnvServiceHandler) ExecPreview(context.Context, *connect.Request[v1.ExecPreviewRequest]) (*connect.Response[v1.ExecPreviewResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.EnvService.ExecPreview is not implemented"))
+}
+
+func (UnimplementedEnvServiceHandler) RestartEnv(context.Context, *connect.Request[v1.RestartEnvRequest]) (*connect.Response[v1.RestartEnvResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.EnvService.RestartEnv is not implemented"))
 }
 
 // BillingServiceClient is a client for the ultra.v1.BillingService service.

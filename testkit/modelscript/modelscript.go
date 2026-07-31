@@ -93,6 +93,12 @@ type Turn struct {
 	// Status, when non-zero, makes the server respond with this HTTP status
 	// and no body (for auth/fallback tests).
 	Status int
+	// Sticky keeps a matched turn available for later requests instead of
+	// consuming it. A suite that drives several independent scenarios against
+	// one server (a browser suite whose specs each start their own run, for
+	// example) declares sticky matcher-selected turns so scenario order
+	// cannot change which response a prompt receives.
+	Sticky bool
 }
 
 // Script is an ordered set of turns.
@@ -207,8 +213,18 @@ func (s *Server) selectTurn(req Request) (Turn, error) {
 		}
 	}
 	if hasMatchers {
+		// Sticky turns are matched from the whole script and never
+		// consumed, so they answer the same prompt in any scenario order.
+		for _, t := range s.script.Turns {
+			if t.Sticky && t.Match != nil && t.Match(req.Messages) {
+				return t, nil
+			}
+		}
 		for i := s.nextTurn; i < len(s.script.Turns); i++ {
 			t := s.script.Turns[i]
+			if t.Sticky {
+				continue
+			}
 			if t.Match == nil || t.Match(req.Messages) {
 				s.nextTurn = i + 1
 				return t, nil

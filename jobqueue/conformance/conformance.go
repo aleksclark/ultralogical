@@ -1,8 +1,10 @@
 // Package conformance is the shared black-box suite every jobqueue backend
 // must pass. It asserts the seam's contract: transactional enqueue
-// visibility, at-least-once redelivery with retry delay, and kind routing.
-// New backends get added to the CI matrix by passing this suite — nothing
-// else in the system may depend on backend-specific behavior.
+// visibility, rollback invisibility, at-least-once redelivery with bounded
+// retry accounting and backoff, panic redelivery, shutdown redelivery, and
+// kind routing. New backends get added to the CI matrix by passing this
+// suite — nothing else in the system may depend on backend-specific
+// behavior.
 package conformance
 
 import (
@@ -144,6 +146,96 @@ func Run(t *testing.T, pool *pgxpool.Pool, factory Factory) {
 		}
 	})
 
+	t.Run("RollbackInvisibility", func(t *testing.T) {
+		// A rolled back transaction must leave no trace: not delivered
+		// now, and not resurrected later by any backend maintenance.
+		q, _ := factory(t)
+		rec := newRecorder()
+		jobqueue.Register(q, jobqueue.WorkerFunc[testJob](func(_ context.Context, j testJob) error {
+			return rec.record(j.Marker)
+		}))
+
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := q.EnqueueTx(ctx, tx, testJob{Marker: "never-committed"}); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Rollback(ctx); err != nil {
+			t.Fatal(err)
+		}
+		// A committed control job proves the queue is live during the
+		// window, so "nothing was delivered" is not a false negative.
+		enqueue(t, pool, q, testJob{Marker: "control"})
+		rec.waitAttempts(t, "control", 1, 10*time.Second)
+		time.Sleep(2 * time.Second)
+		if got := rec.attempts("never-committed"); len(got) != 0 {
+			t.Fatalf("rolled-back job delivered %d times", len(got))
+		}
+	})
+
+	t.Run("RetryAttemptAccounting", func(t *testing.T) {
+		// A permanently failing job is attempted exactly MaxAttempts
+		// times: at-least-once delivery is bounded, not infinite.
+		q, retryDelay := factory(t)
+		rec := newRecorder()
+		rec.failFirst("bounded", 1000)
+		jobqueue.Register(q, jobqueue.WorkerFunc[testJob](func(_ context.Context, j testJob) error {
+			return rec.record(j.Marker)
+		}))
+
+		enqueue(t, pool, q, testJob{Marker: "bounded"}, jobqueue.WithMaxAttempts(3))
+		attempts := rec.waitAttempts(t, "bounded", 3, 60*time.Second)
+		if len(attempts) != 3 {
+			t.Fatalf("wanted exactly 3 attempts, got %d", len(attempts))
+		}
+		// Every retry respects the promised minimum backoff.
+		for i := 1; i < len(attempts); i++ {
+			if gap := attempts[i].Sub(attempts[i-1]); gap < retryDelay/2 {
+				t.Fatalf("retry gap %d = %s, below promised delay %s", i, gap, retryDelay)
+			}
+		}
+		// No further deliveries once the attempt budget is exhausted.
+		time.Sleep(4 * retryDelay)
+		if got := rec.attempts("bounded"); len(got) != 3 {
+			t.Fatalf("job delivered %d times, want 3 (MaxAttempts not enforced)", len(got))
+		}
+	})
+
+	t.Run("ShutdownRedelivery", func(t *testing.T) {
+		// A job that failed on one queue instance survives that
+		// instance's shutdown and is redelivered to a replacement
+		// instance on the same database — the contract that lets any
+		// worker resume any job after a deploy or crash.
+		first, _ := factory(t)
+		rec := newRecorder()
+		rec.failFirst("survives-shutdown:first", 1000)
+		jobqueue.Register(first, jobqueue.WorkerFunc[testJob](func(_ context.Context, _ testJob) error {
+			return rec.record("survives-shutdown:first")
+		}))
+
+		enqueue(t, pool, first, testJob{Marker: "survives-shutdown"}, jobqueue.WithMaxAttempts(20))
+		rec.waitAttempts(t, "survives-shutdown:first", 1, 30*time.Second)
+
+		stopCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+		if err := first.Stop(stopCtx); err != nil {
+			t.Fatalf("stop first queue: %v", err)
+		}
+		before := len(rec.attempts("survives-shutdown:first"))
+
+		second, _ := factory(t)
+		jobqueue.Register(second, jobqueue.WorkerFunc[testJob](func(_ context.Context, _ testJob) error {
+			return rec.record("survives-shutdown:second")
+		}))
+		rec.waitAttempts(t, "survives-shutdown:second", 1, 60*time.Second)
+
+		if after := len(rec.attempts("survives-shutdown:first")); after > before+1 {
+			t.Fatalf("stopped queue kept working jobs: %d → %d attempts", before, after)
+		}
+	})
+
 	t.Run("AtLeastOnceRedelivery", func(t *testing.T) {
 		q, retryDelay := factory(t)
 		rec := newRecorder()
@@ -203,14 +295,14 @@ func Run(t *testing.T, pool *pgxpool.Pool, factory Factory) {
 	})
 }
 
-func enqueue(t *testing.T, pool *pgxpool.Pool, q jobqueue.Queue, job jobqueue.Job) {
+func enqueue(t *testing.T, pool *pgxpool.Pool, q jobqueue.Queue, job jobqueue.Job, opts ...jobqueue.Opt) {
 	t.Helper()
 	ctx := context.Background()
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := q.EnqueueTx(ctx, tx, job); err != nil {
+	if err := q.EnqueueTx(ctx, tx, job, opts...); err != nil {
 		t.Fatal(err)
 	}
 	if err := tx.Commit(ctx); err != nil {

@@ -20,7 +20,11 @@ not.
 | Queue conformance | `jobqueue/conformance` | real Postgres, real backend |
 | Functional (first line) | `e2e/` | real Postgres + real `ultrad` + real `worker` child processes + generated clients |
 | TS smoke | `clients/ts/smoke.test.ts` | same real stack, driven from `e2e/ts_smoke_test.go` |
-| Web golden | `ui/web/e2e/` | real React SPA in Chromium + same real backend stack |
+| Provider conformance | `envprovider/conformance` | real Bezalel containers via the real provider |
+| Web golden | `ui/web/e2e/` | real shadcn SPA in Chromium + same real backend stack |
+| GPUI golden | `ui/desktop/tests/` | real GPUI window rendering + same real backend stack |
+| Dev-stack smoke | `scripts/dev-stack.sh smoke` | the documented one-command stack end to end |
+| Gate mutation | `scripts/mutate-*.sh` | the real gates, deliberately broken then restored |
 
 The only substituted component anywhere is the LLM vendor (`modelscript` —
 a real HTTP/SSE server speaking the OpenAI API at the network boundary).
@@ -29,14 +33,24 @@ Fantasy, River, Postgres, ultrad, worker, clients, and UI are always real.
 ## Running
 
 ```sh
-task test              # unit + store + queue (skips functional A0.x tests)
-task test:functional   # e2e/ — the acceptance suite
-task test:all          # everything
-go test ./e2e/ -run TestA02 -v   # one acceptance test
+task test                       # unit + store + queue + provider conformance
+task test:functional            # e2e/ — the acceptance suite
+task test:all                   # everything
+task web:test                   # Playwright golden on the real stack
+task desktop:test               # GPUI golden on the real stack
+task dev:smoke                  # one-command stack smoke, then full teardown
+task verify:codegen             # generated output matches the protos
+task verify:codegen:mutation    # prove the codegen gates fail on drift
+task verify:coverage            # capability coverage matrix
+task verify:coverage:mutation   # prove coverage rejects false evidence
+go test ./e2e/ -run TestA02 -v  # one acceptance test
 ```
 
 Requirements: docker running (testcontainers), `npx` + `npm ci` in
-`clients/ts` for the TS smoke (it self-skips when missing).
+`clients/ts` and `ui/web`, and a Rust toolchain for the GPUI suites.
+Local-only gates self-skip unless enabled: set `ULTRA_WEB_TESTS=1` for
+Playwright without CI browsers configured and `ULTRA_DEV_STACK_TESTS=1` for the
+dev-stack smoke.
 
 ## Test infrastructure
 
@@ -46,7 +60,9 @@ Requirements: docker running (testcontainers), `npx` + `npm ci` in
 - **`testkit/harness`** — `harness.Up(t)` returns a `*Stack`: migrated fresh
   DB, seeded identities/credential, modelscript, and `ultrad` + `worker`
   running as **real child processes** (binaries built once). It exposes
-  KillWorker/StartWorker for crash tests. Cleanup is automatic.
+  KillWorker/StartWorker for crash tests, and `Logs()` returning everything
+  ultrad and the workers wrote to stderr (used by the redaction sweep).
+  Cleanup is automatic.
   Seeded fixtures: OrgA/alice (`harness.TokenAlice`), OrgB/bob
   (`harness.TokenBob`) — two orgs so tenant isolation is always testable.
 - **`testkit/testclient`** — wraps the generated Connect client (the same
@@ -73,8 +89,10 @@ command, state transition, provider/tool, or billing behavior must include:
 
 - a Go real-stack functional assertion;
 - a Playwright scenario using the web application;
-- a Rust desktop scenario using the shipped desktop core;
-- a coverage-matrix row (or update) referencing those real tests.
+- a GPUI scenario that opens the real desktop window and asserts on the frame it
+  rendered (`await_rendered`/`debug_bounds`), not on a headless state core;
+- a coverage-matrix row (or update) naming those tests *and* the specific
+  assertion strings that prove the capability.
 
 If any client surface is not yet implemented, the capability is not complete
 and the phase exit criterion remains open.
@@ -91,6 +109,10 @@ and the phase exit criterion remains open.
 - Tests use `t.Parallel()` and per-test databases; never share mutable
   fixtures across tests.
 - `-count=1` always in CI (no cached test results).
+- Gates are themselves tested. `scripts/mutate-codegen-gate.sh` and
+  `scripts/mutate-coverage-gate.sh` deliberately break each gate, assert it
+  fails for the intended reason, and restore the tree; a gate nobody has seen
+  fail is not a gate.
 
 ## CI gates (.github/workflows/ci.yml)
 
