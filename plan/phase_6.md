@@ -146,6 +146,10 @@ type Hook interface {
   tool call's server-side span (bezalel is traced or the client span carries the env
   attribution) links to the step trace; token usage attributes match step rows.
 
+## Phase 6.5 audit status
+
+Phase 6 shipped groundwork only. A6.1, full A6.2 summarization/recovery, A6.3 sticky fallback, A6.4 durable hooks/auto-title, and A6.5 tracing remain **incomplete**. See `agent_docs/phase_6_5_audit.md`; none are claimed in the coverage matrix until real Go + shadcn + GPUI evidence exists.
+
 ## Exit criteria
 
 - **Capability-completeness audit passes:** compare this plan with actual proto RPCs, event variants, UI controls, desktop commands, and lifecycle states. Every implemented capability has capability-specific Go real-stack + Playwright + Rust desktop evidence and a truthful `e2e/coverage.json` entry whose files exist and run in required CI.

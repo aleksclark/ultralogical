@@ -2,7 +2,7 @@
 
 Ultralogical: a durable-session platform for agentic work — multi-tenant,
 event-sourced sessions that humans and agents share. Go backend, ConnectRPC
-API, Postgres, React/gpui UIs. Currently at **Phase 6** (BYO and hosted environment providers;
+API, Postgres, React/gpui UIs. Currently at **Phase 6.5** (BYO and hosted environment providers;
 versioned flows invoke durable agents into shared sessions).
 
 ## Cheatsheet
@@ -56,11 +56,12 @@ task dev               # local postgres + ultrad + worker
 | [agent_docs/providers.md](agent_docs/providers.md) | touching BYO/hosted provider registration and transport |
 | [agent_docs/multiplayer.md](agent_docs/multiplayer.md) | touching presence, grants, run trees, memory |
 | [agent_docs/flows.md](agent_docs/flows.md) | touching flow definitions, validation, invocation |
+| [agent_docs/phase_6_5_audit.md](agent_docs/phase_6_5_audit.md) | Phase 6 implemented/incomplete capability audit |
 | [agent_docs/cross_client_testing.md](agent_docs/cross_client_testing.md) | adding public capabilities or client tests |
 | [agent_docs/package_layout.md](agent_docs/package_layout.md) | deciding where new code goes |
 | [agent_docs/testing.md](agent_docs/testing.md) | writing/running tests, using the harness |
 | [agent_docs/codegen.md](agent_docs/codegen.md) | changing protos, adding events/RPCs |
 | [agent_docs/conventions.md](agent_docs/conventions.md) | code style, layout rules, errors, migrations, never-do list |
 | [plan/index.md](plan/index.md) | architecture rationale + full roadmap |
-| [plan/phase_6.md](plan/phase_6.md) | current advanced-loop phase |
-| [plan/phase_6_5.md](plan/phase_6_5.md) | next validation phase |
+| [plan/phase_6_5.md](plan/phase_6_5.md) | current validation phase |
+| [plan/phase_7.md](plan/phase_7.md) | next product phase |
