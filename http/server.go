@@ -5,6 +5,7 @@
 package http
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
@@ -19,10 +20,11 @@ import (
 
 // Config carries handler dependencies, injected by the main package.
 type Config struct {
-	Store ultra.Store
-	Auth  ultra.Authenticator
-	Bus   ultra.EventBus
-	Log   *slog.Logger
+	Store         ultra.Store
+	ProviderKinds map[string]func(context.Context, []byte) error
+	Auth          ultra.Authenticator
+	Bus           ultra.EventBus
+	Log           *slog.Logger
 	// Keyring encrypts credential payloads (write path only; decryption
 	// happens in workers).
 	Keyring secrets.Keyring
@@ -43,7 +45,7 @@ func NewHandler(cfg Config) http.Handler {
 
 	mux := http.NewServeMux()
 
-	orgPath, orgH := ultrav1connect.NewOrgServiceHandler(&orgHandler{store: cfg.Store, keyring: cfg.Keyring}, interceptors)
+	orgPath, orgH := ultrav1connect.NewOrgServiceHandler(&orgHandler{store: cfg.Store, keyring: cfg.Keyring, providerKinds: cfg.ProviderKinds}, interceptors)
 	mux.Handle(orgPath, orgH)
 
 	sessPath, sessH := ultrav1connect.NewSessionServiceHandler(&sessionHandler{store: cfg.Store}, interceptors)

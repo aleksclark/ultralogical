@@ -129,7 +129,7 @@ HTTP errors (for Phase 6 fallback tests), request capture for assertions.
 
 ### React SPA v1
 
-- Stack: vite, react, typescript, tailwind, shadcn/ui, `@connectrpc/connect-web` with
+- Stack: Vite, React, TypeScript, Tailwind, shadcn/ui in a required dark-mode theme, `@connectrpc/connect-web` with
   the generated `clients/ts` package.
 - State model: a per-session event reducer — the UI holds `lastSeq` and folds typed
   events into view state (message list, run states, streaming buffers). Reload =

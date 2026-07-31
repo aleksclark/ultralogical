@@ -1,5 +1,17 @@
+use gpui::Hsla;
 use ultralogical_client::{Auth, ultra::v1};
 use tonic::transport::Channel;
+
+pub struct DarkTheme;
+impl DarkTheme {
+    pub const BACKGROUND: Hsla = Hsla { h: 0.66, s: 0.10, l: 0.04, a: 1.0 };
+    pub const SURFACE: Hsla = Hsla { h: 0.66, s: 0.08, l: 0.10, a: 1.0 };
+    pub const TEXT: Hsla = Hsla { h: 0.0, s: 0.0, l: 0.98, a: 1.0 };
+}
+
+#[derive(Default, Debug)]
+pub struct GpuiDesktopState { pub core: DesktopState, pub active_panel: String, pub provider_kinds: Vec<String> }
+impl GpuiDesktopState { pub fn dark_theme(&self) -> Hsla { DarkTheme::BACKGROUND } }
 
 pub struct DesktopClient {
     auth: Auth,

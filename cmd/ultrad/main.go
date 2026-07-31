@@ -19,6 +19,7 @@ import (
 	"time"
 
 	ultra "github.com/aleksclark/ultralogical"
+	"github.com/aleksclark/ultralogical/envprovider/proxy"
 	"github.com/aleksclark/ultralogical/envwork"
 	ultrahttp "github.com/aleksclark/ultralogical/http"
 	riverqueue "github.com/aleksclark/ultralogical/jobqueue/river"
@@ -86,15 +87,27 @@ func run(log *slog.Logger) error {
 		Credential: "default",
 	}
 
+	providerKinds := map[string]func(context.Context, []byte) error{ultra.ProviderKindLocalDocker: func(context.Context, []byte) error { return nil }}
+	for _, kind := range []string{ultra.ProviderKindBYOKubernetes, ultra.ProviderKindHostedEKS, ultra.ProviderKindBYONomad, ultra.ProviderKindTunnelLocal} {
+		k := kind
+		providerKinds[k] = func(ctx context.Context, raw []byte) error {
+			p, err := proxy.New(raw, k, nil)
+			if err != nil {
+				return err
+			}
+			return p.Validate(ctx)
+		}
+	}
 	handler := ultrahttp.NewHandler(ultrahttp.Config{
-		Store:        store,
-		Auth:         ultra.NewDevTokenAuthenticator(store, devTokens),
-		Bus:          bus,
-		Log:          log,
-		Keyring:      keyring,
-		Enqueue:      postgres.TxEnqueuer{Queue: queue},
-		DefaultModel: defaultModel,
-		Envs:         envs,
+		Store:         store,
+		ProviderKinds: providerKinds,
+		Auth:          ultra.NewDevTokenAuthenticator(store, devTokens),
+		Bus:           bus,
+		Log:           log,
+		Keyring:       keyring,
+		Enqueue:       postgres.TxEnqueuer{Queue: queue},
+		DefaultModel:  defaultModel,
+		Envs:          envs,
 	})
 
 	protocols := new(http.Protocols)

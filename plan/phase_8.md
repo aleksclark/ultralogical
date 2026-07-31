@@ -4,8 +4,8 @@
 
 ## Goal
 
-The second UI, proving the UI-agnostic constraint for real: a native rust/gpui app with
-feature parity to web v1 (Phases 1–3 scope), built on a rust client generated from the
+The second UI, proving the UI-agnostic constraint for real: a native Rust/GPUI app with
+a required dark-mode theme and feature parity to web v1 (Phases 1–3 scope), built on a rust client generated from the
 same protos, verified by its own golden functional suite against the same real backend
 stack — and by a cross-UI multiplayer test where web and native share a session.
 

@@ -20,6 +20,7 @@ import (
 
 	ultra "github.com/aleksclark/ultralogical"
 	"github.com/aleksclark/ultralogical/envprovider/localdocker"
+	"github.com/aleksclark/ultralogical/envprovider/proxy"
 	"github.com/aleksclark/ultralogical/envwork"
 	"github.com/aleksclark/ultralogical/jobqueue"
 	riverqueue "github.com/aleksclark/ultralogical/jobqueue/river"
@@ -74,8 +75,13 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	defer func() { _ = local.Close() }()
+	providers := envwork.Registry{ultra.ProviderKindLocalDocker: local}
+	for _, kind := range []string{ultra.ProviderKindBYOKubernetes, ultra.ProviderKindHostedEKS, ultra.ProviderKindBYONomad, ultra.ProviderKindTunnelLocal} {
+		p, _ := proxy.New([]byte(`{"mode":"loopback"}`), kind, local)
+		providers[kind] = p
+	}
 	envs := &envwork.Service{Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Keyring: keyring,
-		Providers: envwork.Registry{ultra.ProviderKindLocalDocker: local}, Log: log,
+		Providers: providers, Log: log,
 		ReconcileInterval: envDuration("ULTRA_RECONCILE_INTERVAL", 5*time.Second),
 		ProvisionTimeout:  envDuration("ULTRA_PROVISION_TIMEOUT", time.Minute)}
 	stepWorker := &loop.StepWorker{

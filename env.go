@@ -95,9 +95,13 @@ type ProviderInstance struct {
 }
 
 const (
-	ProviderKindLocalDocker = "local_docker"
-	RateClassBYO            = "byo"
-	RateClassHosted         = "hosted"
+	ProviderKindLocalDocker   = "local_docker"
+	ProviderKindBYOKubernetes = "byo_k8s"
+	ProviderKindHostedEKS     = "hosted_eks"
+	ProviderKindBYONomad      = "byo_nomad"
+	ProviderKindTunnelLocal   = "tunnel_local"
+	RateClassBYO              = "byo"
+	RateClassHosted           = "hosted"
 )
 
 // EnvUsage is one append-only metering interval. Ready opens it; a

@@ -28,7 +28,10 @@ We follow the standard package layout in
 
 Client libraries live in `clients/<lang>/`; UI applications in `ui/<app>/`;
 committed Go codegen in `gen/go/` — see agent_docs/architecture.md
-("Clients & UIs").
+("Clients & UIs"). The web UI must use shadcn/ui components on Tailwind in a
+dark-mode theme; do not introduce a competing component system. The Rust
+desktop UI must use GPUI in a dark-mode theme; headless state/client code is
+shared implementation, not the desktop UI itself.
 
 ## Go
 
