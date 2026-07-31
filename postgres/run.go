@@ -13,13 +13,13 @@ import (
 
 type runStore struct{ scope *orgScope }
 
-const runColumns = `id, session_id, org_id, parent_run_id, grants, result, state, loop_kind, loop_version, model_config,
+const runColumns = `id, session_id, org_id, parent_run_id, flow_invocation_id, grants, result, state, loop_kind, loop_version, model_config,
 	prompt, history, failure_reason, failure_message, cancel_requested_at, created_at, updated_at`
 
 func (r *runStore) scan(row pgx.Row) (ultra.AgentRun, error) {
 	var run ultra.AgentRun
 	var modelConfig, grants []byte
-	err := row.Scan(&run.ID, &run.SessionID, &run.OrgID, &run.ParentRunID, &grants, &run.Result, &run.State, &run.LoopKind,
+	err := row.Scan(&run.ID, &run.SessionID, &run.OrgID, &run.ParentRunID, &run.FlowInvocationID, &grants, &run.Result, &run.State, &run.LoopKind,
 		&run.LoopVersion, &modelConfig, &run.Prompt, &run.History, &run.FailureReason,
 		&run.FailureMessage, &run.CancelRequestedAt, &run.CreatedAt, &run.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -56,10 +56,10 @@ func (r *runStore) Create(ctx context.Context, run ultra.AgentRun) error {
 	// Session ownership is enforced in the same statement: the insert only
 	// succeeds if the session belongs to this scope's org.
 	tag, err := r.scope.s.db().Exec(ctx,
-		`INSERT INTO agent_runs (id, session_id, org_id, parent_run_id, grants, state, loop_kind, loop_version, model_config, prompt, history)
-		 SELECT $1, s.id, s.org_id, $3, $4, $5, $6, $7, $8, $9, $10
-		   FROM sessions s WHERE s.id = $2 AND s.org_id = $11`,
-		string(run.ID), string(run.SessionID), run.ParentRunID, grants, string(ultra.RunPending), run.LoopKind,
+		`INSERT INTO agent_runs (id, session_id, org_id, parent_run_id, flow_invocation_id, grants, state, loop_kind, loop_version, model_config, prompt, history)
+		 SELECT $1, s.id, s.org_id, $3, $4, $5, $6, $7, $8, $9, $10, $11
+		   FROM sessions s WHERE s.id = $2 AND s.org_id = $12`,
+		string(run.ID), string(run.SessionID), run.ParentRunID, run.FlowInvocationID, grants, string(ultra.RunPending), run.LoopKind,
 		run.LoopVersion, modelConfig, run.Prompt, history, string(r.scope.org))
 	if isUniqueViolation(err) {
 		return ultra.ErrAlreadyExists

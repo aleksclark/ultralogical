@@ -30,7 +30,8 @@ machines via a cloudflared-connected local provider.
 | [Phase 5](phase_5.md) | BYO & hosted providers: nomad, k8s, cloudflared local, hosted EKS | 2–3 weeks | 2 (parallel with 4) |
 | [Phase 6](phase_6.md) | Advanced loop & tool ergonomics | 2 weeks | 4 |
 | [Phase 6.5](phase_6_5.md) | Advanced-loop validation and e2e audit | 1 week | 6 |
-| [Phase 7](phase_7.md) | Production hardening, billing & queue-swap proof | 2–3 weeks | 6.5 |
+| [Phase 6.7](phase_6_7.md) | Complete audited Phase 0–6 gaps | iterative | 6.6 |
+| [Phase 7](phase_7.md) | Production hardening, billing & queue-swap proof | 2–3 weeks | 6.7 |
 | [Phase 8](phase_8.md) | Rust/gpui UI | 3–4 weeks | 4 (parallelizable) |
 
 Every phase ships a **vertical slice**: backend + client + UI + tests. A phase is done

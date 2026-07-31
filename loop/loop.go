@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"charm.land/fantasy"
 
@@ -117,8 +118,11 @@ func (r *Registry) Resolve(kind string, version int) (Definition, error) {
 
 // stepRecorder captures per-step tool activity the outcome classifier needs.
 type stepRecorder struct {
-	question    *ultra.Question
-	toolsCalled int
+	question       *ultra.Question
+	waitRunIDs     []ultra.RunID
+	waitToolCallID string
+	waitTimeout    time.Duration
+	toolsCalled    int
 }
 
 // newAskUserTool returns the ask_user native tool. Calling it parks the run
