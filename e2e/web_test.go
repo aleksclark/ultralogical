@@ -4,6 +4,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/aleksclark/ultralogical/testkit/harness"
@@ -75,4 +77,64 @@ func TestA16_WebGolden(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Playwright failed: %v\n%s", err, out)
 	}
+	// A run that silently executed nothing, or quietly skipped a spec, would
+	// otherwise pass. Require every declared spec to have actually passed.
+	declared := countWebSpecs(t, webDir)
+	if skipped := webCount(string(out), "skipped"); skipped > 0 {
+		t.Fatalf("Playwright skipped %d browser tests; browser evidence must run:\n%s", skipped, out)
+	}
+	passed := webCount(string(out), "passed")
+	if passed != declared {
+		t.Fatalf("Playwright reported %d passing tests but %d are declared:\n%s", passed, declared, out)
+	}
+	t.Logf("Playwright passed %d/%d declared browser tests", passed, declared)
+}
+
+// countWebSpecs counts declared Playwright tests across the spec directory.
+func countWebSpecs(t *testing.T, webDir string) int {
+	t.Helper()
+	specs, err := filepath.Glob(filepath.Join(webDir, "e2e", "*.spec.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(specs) == 0 {
+		t.Fatal("no Playwright spec files found")
+	}
+	declared := 0
+	for _, spec := range specs {
+		body, err := os.ReadFile(spec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		declared += len(webTestDecl.FindAllString(string(body), -1))
+		// A disabled spec is not evidence: fail loudly rather than quietly
+		// shrinking the expected count.
+		if disabled := webTestDisabled.FindAllString(string(body), -1); len(disabled) > 0 {
+			t.Fatalf("%s disables %d test(s) with %v; browser evidence cannot be skipped",
+				filepath.Base(spec), len(disabled), disabled)
+		}
+	}
+	if declared == 0 {
+		t.Fatal("Playwright spec files declare no tests")
+	}
+	return declared
+}
+
+var (
+	webTestDecl     = regexp.MustCompile(`(?m)^test\s*\(`)
+	webTestDisabled = regexp.MustCompile(`(?m)^test\.(skip|fixme|only)\s*\(`)
+)
+
+// webCount extracts a labelled count from Playwright's summary line, for
+// example the 14 in "14 passed".
+func webCount(out, label string) int {
+	match := regexp.MustCompile(`(\d+) ` + regexp.QuoteMeta(label)).FindStringSubmatch(out)
+	if match == nil {
+		return 0
+	}
+	n, err := strconv.Atoi(match[1])
+	if err != nil {
+		return 0
+	}
+	return n
 }
