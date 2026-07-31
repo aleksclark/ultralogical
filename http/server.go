@@ -55,6 +55,8 @@ func NewHandler(cfg Config) http.Handler {
 		store: cfg.Store, enqueue: cfg.Enqueue, defaultModel: cfg.DefaultModel,
 	}, interceptors)
 	mux.Handle(agentPath, agentH)
+	automationPath, automationH := ultrav1connect.NewAutomationServiceHandler(&automationHandler{store: cfg.Store}, interceptors)
+	mux.Handle(automationPath, automationH)
 	flowPath, flowH := ultrav1connect.NewFlowServiceHandler(&flowHandler{store: cfg.Store, enqueue: cfg.Enqueue, defaultModel: cfg.DefaultModel}, interceptors)
 	mux.Handle(flowPath, flowH)
 

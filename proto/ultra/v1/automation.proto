@@ -1,0 +1,37 @@
+syntax = "proto3";
+package ultra.v1;
+
+option go_package = "github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1";
+message PeriodicPrompt {
+  string id = 1;
+  string session_id = 2;
+  string run_id = 3;
+  string schedule = 4;
+  string prompt = 5;
+  bool enabled = 6;
+}
+message PutPeriodicPromptRequest {
+  string session_id = 1;
+  string run_id = 2;
+  string schedule = 3;
+  string prompt = 4;
+}
+message PutPeriodicPromptResponse {
+  PeriodicPrompt periodic_prompt = 1;
+}
+message ListPeriodicPromptsRequest {
+  string session_id = 1;
+}
+message ListPeriodicPromptsResponse {
+  repeated PeriodicPrompt periodic_prompts = 1;
+}
+message SetPeriodicPromptEnabledRequest {
+  string periodic_prompt_id = 1;
+  bool enabled = 2;
+}
+message SetPeriodicPromptEnabledResponse {}
+service AutomationService {
+  rpc PutPeriodicPrompt(PutPeriodicPromptRequest) returns (PutPeriodicPromptResponse);
+  rpc ListPeriodicPrompts(ListPeriodicPromptsRequest) returns (ListPeriodicPromptsResponse);
+  rpc SetPeriodicPromptEnabled(SetPeriodicPromptEnabledRequest) returns (SetPeriodicPromptEnabledResponse);
+}

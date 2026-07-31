@@ -68,6 +68,7 @@ type OrgScope interface {
 	Memory() SessionMemoryStore
 	Waits() RunWaitStore
 	Flows() FlowStore
+	PeriodicPrompts() PeriodicPromptStore
 }
 
 // SessionStore manages sessions within one org.
