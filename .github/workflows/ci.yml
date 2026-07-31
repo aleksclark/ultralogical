@@ -2,7 +2,9 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    # This repository's default branch is master; naming only main here meant
+    # no checks ever ran on a merge.
+    branches: [master, main]
   pull_request:
 
 jobs:
