@@ -1886,6 +1886,7 @@ type EventPayload struct {
 	//	*EventPayload_FlowInvoked
 	//	*EventPayload_FlowInvocationProgressed
 	//	*EventPayload_FlowInvocationTerminal
+	//	*EventPayload_EnvSuspended
 	Payload       isEventPayload_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2234,6 +2235,15 @@ func (x *EventPayload) GetFlowInvocationTerminal() *FlowInvocationTerminal {
 	return nil
 }
 
+func (x *EventPayload) GetEnvSuspended() *EnvLifecycle {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_EnvSuspended); ok {
+			return x.EnvSuspended
+		}
+	}
+	return nil
+}
+
 type isEventPayload_Payload interface {
 	isEventPayload_Payload()
 }
@@ -2374,6 +2384,12 @@ type EventPayload_FlowInvocationTerminal struct {
 	FlowInvocationTerminal *FlowInvocationTerminal `protobuf:"bytes,43,opt,name=flow_invocation_terminal,json=flowInvocationTerminal,proto3,oneof"`
 }
 
+type EventPayload_EnvSuspended struct {
+	// A suspended environment's host is temporarily unreachable. It is
+	// deliberately distinct from env_failed: the workspace still exists.
+	EnvSuspended *EnvLifecycle `protobuf:"bytes,44,opt,name=env_suspended,json=envSuspended,proto3,oneof"`
+}
+
 func (*EventPayload_UserMessage) isEventPayload_Payload() {}
 
 func (*EventPayload_Annotation) isEventPayload_Payload() {}
@@ -2441,6 +2457,8 @@ func (*EventPayload_FlowInvoked) isEventPayload_Payload() {}
 func (*EventPayload_FlowInvocationProgressed) isEventPayload_Payload() {}
 
 func (*EventPayload_FlowInvocationTerminal) isEventPayload_Payload() {}
+
+func (*EventPayload_EnvSuspended) isEventPayload_Payload() {}
 
 // SessionEvent is one entry in a session's append-only event log. Seq is
 // per-session, gapless, and monotonic; clients resume by seq.
@@ -2861,7 +2879,7 @@ const file_ultra_v1_event_proto_rawDesc = "" +
 	"\rinvocation_id\x18\x01 \x01(\tR\finvocationId\x12\x14\n" +
 	"\x05state\x18\x02 \x01(\tR\x05state\x12'\n" +
 	"\x0fterminal_reason\x18\x03 \x01(\tR\x0eterminalReason\x12\x18\n" +
-	"\amessage\x18\x04 \x01(\tR\amessage\"\xf0\x11\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage\"\xaf\x12\n" +
 	"\fEventPayload\x12:\n" +
 	"\fuser_message\x18\n" +
 	" \x01(\v2\x15.ultra.v1.UserMessageH\x00R\vuserMessage\x126\n" +
@@ -2907,7 +2925,8 @@ const file_ultra_v1_event_proto_rawDesc = "" +
 	"\x15periodic_prompt_fired\x18( \x01(\v2\x1d.ultra.v1.PeriodicPromptFiredH\x00R\x13periodicPromptFired\x12:\n" +
 	"\fflow_invoked\x18) \x01(\v2\x15.ultra.v1.FlowInvokedH\x00R\vflowInvoked\x12b\n" +
 	"\x1aflow_invocation_progressed\x18* \x01(\v2\".ultra.v1.FlowInvocationProgressedH\x00R\x18flowInvocationProgressed\x12\\\n" +
-	"\x18flow_invocation_terminal\x18+ \x01(\v2 .ultra.v1.FlowInvocationTerminalH\x00R\x16flowInvocationTerminalB\t\n" +
+	"\x18flow_invocation_terminal\x18+ \x01(\v2 .ultra.v1.FlowInvocationTerminalH\x00R\x16flowInvocationTerminal\x12=\n" +
+	"\renv_suspended\x18, \x01(\v2\x16.ultra.v1.EnvLifecycleH\x00R\fenvSuspendedB\t\n" +
 	"\apayload\"\xc4\x01\n" +
 	"\fSessionEvent\x12\x1d\n" +
 	"\n" +
@@ -3026,20 +3045,21 @@ var file_ultra_v1_event_proto_depIdxs = []int32{
 	26, // 33: ultra.v1.EventPayload.flow_invoked:type_name -> ultra.v1.FlowInvoked
 	27, // 34: ultra.v1.EventPayload.flow_invocation_progressed:type_name -> ultra.v1.FlowInvocationProgressed
 	28, // 35: ultra.v1.EventPayload.flow_invocation_terminal:type_name -> ultra.v1.FlowInvocationTerminal
-	35, // 36: ultra.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
-	1,  // 37: ultra.v1.SessionEvent.actor:type_name -> ultra.v1.Actor
-	29, // 38: ultra.v1.SessionEvent.payload:type_name -> ultra.v1.EventPayload
-	29, // 39: ultra.v1.AppendRequest.payload:type_name -> ultra.v1.EventPayload
-	30, // 40: ultra.v1.SubscribeResponse.event:type_name -> ultra.v1.SessionEvent
-	31, // 41: ultra.v1.EventService.Append:input_type -> ultra.v1.AppendRequest
-	33, // 42: ultra.v1.EventService.Subscribe:input_type -> ultra.v1.SubscribeRequest
-	32, // 43: ultra.v1.EventService.Append:output_type -> ultra.v1.AppendResponse
-	34, // 44: ultra.v1.EventService.Subscribe:output_type -> ultra.v1.SubscribeResponse
-	43, // [43:45] is the sub-list for method output_type
-	41, // [41:43] is the sub-list for method input_type
-	41, // [41:41] is the sub-list for extension type_name
-	41, // [41:41] is the sub-list for extension extendee
-	0,  // [0:41] is the sub-list for field type_name
+	16, // 36: ultra.v1.EventPayload.env_suspended:type_name -> ultra.v1.EnvLifecycle
+	35, // 37: ultra.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
+	1,  // 38: ultra.v1.SessionEvent.actor:type_name -> ultra.v1.Actor
+	29, // 39: ultra.v1.SessionEvent.payload:type_name -> ultra.v1.EventPayload
+	29, // 40: ultra.v1.AppendRequest.payload:type_name -> ultra.v1.EventPayload
+	30, // 41: ultra.v1.SubscribeResponse.event:type_name -> ultra.v1.SessionEvent
+	31, // 42: ultra.v1.EventService.Append:input_type -> ultra.v1.AppendRequest
+	33, // 43: ultra.v1.EventService.Subscribe:input_type -> ultra.v1.SubscribeRequest
+	32, // 44: ultra.v1.EventService.Append:output_type -> ultra.v1.AppendResponse
+	34, // 45: ultra.v1.EventService.Subscribe:output_type -> ultra.v1.SubscribeResponse
+	44, // [44:46] is the sub-list for method output_type
+	42, // [42:44] is the sub-list for method input_type
+	42, // [42:42] is the sub-list for extension type_name
+	42, // [42:42] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_event_proto_init() }
@@ -3082,6 +3102,7 @@ func file_ultra_v1_event_proto_init() {
 		(*EventPayload_FlowInvoked)(nil),
 		(*EventPayload_FlowInvocationProgressed)(nil),
 		(*EventPayload_FlowInvocationTerminal)(nil),
+		(*EventPayload_EnvSuspended)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

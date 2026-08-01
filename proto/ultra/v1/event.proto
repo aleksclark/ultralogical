@@ -215,6 +215,9 @@ message EventPayload {
     FlowInvoked flow_invoked = 41;
     FlowInvocationProgressed flow_invocation_progressed = 42;
     FlowInvocationTerminal flow_invocation_terminal = 43;
+    // A suspended environment's host is temporarily unreachable. It is
+    // deliberately distinct from env_failed: the workspace still exists.
+    EnvLifecycle env_suspended = 44;
   }
 }
 

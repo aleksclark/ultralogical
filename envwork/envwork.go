@@ -449,6 +449,99 @@ func (s *Service) Provision(ctx context.Context, job ProvisionJob) error {
 	})
 }
 
+// suspend parks an environment whose host is unreachable and stops its meter.
+// A user is not billed, even at their own rate, for a laptop that is closed.
+func (s *Service) suspend(ctx context.Context, org ultra.OrgID, env ultra.DevEnv, message string) error {
+	// Cached tool clients must not keep pointing at a host that is gone; the
+	// next tool call has to observe the suspension.
+	s.InvalidateToolClients(env.ID)
+	if message == "" {
+		message = "the environment host is unreachable"
+	}
+	err := s.Store.Tx(ctx, func(txs ultra.Store) error {
+		sc := txs.Org(org)
+		locked, e := sc.Envs().GetForUpdate(ctx, env.ID)
+		if e != nil {
+			return e
+		}
+		if locked.State != ultra.EnvReady {
+			return nil
+		}
+		if e = sc.Envs().SetSuspended(ctx, env.ID, message); e != nil {
+			return e
+		}
+		// Closing the interval at the heartbeat rather than at wall time means
+		// the unreachable window is never billed.
+		if e = sc.Usage().CloseAtWatermark(ctx, env.ID); e != nil {
+			return e
+		}
+		env.State = ultra.EnvSuspended
+		_, e = appendEvent(ctx, sc, env.SessionID, ultra.Actor{Type: ultra.ActorSystem},
+			ultra.EventKindEnvSuspended, eventPayload(env, message))
+		return e
+	})
+	if err != nil {
+		return err
+	}
+	return s.rearmReconcile(ctx, org, env.ID)
+}
+
+// reconcileSuspended asks whether a suspended environment's host has come
+// back. Recovery is a transition to ready with a reopened meter, not a new
+// provisioning: the workspace was never destroyed.
+func (s *Service) reconcileSuspended(ctx context.Context, org ultra.OrgID, env ultra.DevEnv) error {
+	scope := s.Store.Org(org)
+	provider, instance, err := s.provider(ctx, scope, env)
+	if err != nil {
+		// The provider registration is unusable; keep checking rather than
+		// destroying an environment whose workspace is intact.
+		return s.rearmReconcile(ctx, org, env.ID)
+	}
+	status, err := provider.Status(ctx, env.Handle)
+	if err != nil || status.State != ultra.EnvReady || mcp.Healthy(ctx, env.Endpoint) != nil {
+		if err == nil && status.State.Terminal() {
+			// The host came back and told us the resource is really gone.
+			return s.fail(ctx, org, env, "environment resource is no longer healthy")
+		}
+		return s.rearmReconcile(ctx, org, env.ID)
+	}
+	now := time.Now()
+	return s.Store.Tx(ctx, func(txs ultra.Store) error {
+		sc := txs.Org(org)
+		locked, e := sc.Envs().GetForUpdate(ctx, env.ID)
+		if e != nil {
+			return e
+		}
+		if locked.State != ultra.EnvSuspended {
+			return nil
+		}
+		if e = sc.Envs().SetReady(ctx, env.ID, locked.Handle, locked.Endpoint); e != nil {
+			return e
+		}
+		locked.State = ultra.EnvReady
+		// Metering resumes with a fresh interval, so the suspended window
+		// stays excluded from the ledger.
+		if e = sc.Usage().Open(ctx, ultra.EnvUsage{ID: uuid.NewString(), OrgID: org, EnvID: env.ID,
+			ProviderInstanceID: instance.ID, StartedAt: now, RateClass: instance.RateClass}); e != nil {
+			return e
+		}
+		if _, e = appendEvent(ctx, sc, env.SessionID, ultra.Actor{Type: ultra.ActorSystem},
+			ultra.EventKindEnvReady, eventPayload(locked, "resumed")); e != nil {
+			return e
+		}
+		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{OrgID: string(org), EnvID: string(env.ID)},
+			jobqueue.WithScheduledAt(now.Add(s.interval())))
+	})
+}
+
+// rearmReconcile keeps an environment under observation without changing it.
+func (s *Service) rearmReconcile(ctx context.Context, org ultra.OrgID, id ultra.EnvID) error {
+	return s.Store.Tx(ctx, func(txs ultra.Store) error {
+		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{OrgID: string(org), EnvID: string(id)},
+			jobqueue.WithScheduledAt(time.Now().Add(s.interval())))
+	})
+}
+
 func (s *Service) fail(ctx context.Context, org ultra.OrgID, env ultra.DevEnv, message string) error {
 	// A failed environment must not keep serving cached tool clients: the
 	// next tool call has to observe the failure, not a stale connection.
@@ -514,6 +607,12 @@ func (s *Service) Reconcile(ctx context.Context, job ReconcileJob) error {
 	if env.State == ultra.EnvRequested || env.State == ultra.EnvProvisioning {
 		return s.recoverProvisioning(ctx, org, env)
 	}
+	if env.State == ultra.EnvSuspended {
+		// A suspended environment is still owned and still reconciled: its
+		// host is expected back. Keep checking until it returns or is
+		// terminated, and keep its meter paused meanwhile.
+		return s.reconcileSuspended(ctx, org, env)
+	}
 	if env.State != ultra.EnvReady {
 		// The environment is terminal or terminating. If a control-plane
 		// death left its metering interval open, close it at the persisted
@@ -525,6 +624,12 @@ func (s *Service) Reconcile(ctx context.Context, job ReconcileJob) error {
 		return err
 	}
 	status, err := provider.Status(ctx, env.Handle)
+	// A provider that reports suspension is describing a host that went away
+	// with the workspace intact, which is not the same as a resource that
+	// broke. Failing it would tell every other surface the work was destroyed.
+	if err == nil && status.State == ultra.EnvSuspended {
+		return s.suspend(ctx, org, env, status.Message)
+	}
 	healthy := err == nil && status.State == ultra.EnvReady && mcp.Healthy(ctx, env.Endpoint) == nil
 	if !healthy {
 		return s.fail(ctx, org, env, "environment resource is no longer healthy")

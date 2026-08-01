@@ -113,3 +113,55 @@ func TestA1010_ProviderCapabilityIsBehavioral(t *testing.T) {
 		t.Fatalf("the capable provider did not create the declared environment: %v", final.GetEnvs())
 	}
 }
+
+// A10.11 — an invocation belonging to another org is refused exactly like one
+// that does not exist. Anything else is an existence oracle: a caller could
+// discover which invocation identifiers are real by comparing denials.
+func TestA1011_DirectInvocationTenancy(t *testing.T) {
+	stack := harness.Up(t)
+	alice, bob := stack.AliceClient(), stack.BobClient()
+	stack.Model.SetScript(flowScript())
+	ctx := context.Background()
+
+	putFlow(t, alice, string(stack.OrgA.ID), "tenancy", singleAgentFlow)
+	session := createSession(t, alice, string(stack.OrgA.ID), "tenancy")
+	invoked := invokeFlow(t, alice, session.GetId(), "tenancy", `{"subject":"tenancy"}`)
+	invocationTerminal(t, alice, invoked.GetInvocationId(), 90*time.Second)
+
+	// Bob asks for Alice's real invocation, and for one that exists nowhere.
+	real, realErr := bob.Flows.GetFlowInvocation(ctx, connect.NewRequest(&ultrav1.GetFlowInvocationRequest{
+		InvocationId: invoked.GetInvocationId(),
+	}))
+	missing, missingErr := bob.Flows.GetFlowInvocation(ctx, connect.NewRequest(&ultrav1.GetFlowInvocationRequest{
+		InvocationId: uuid.NewString(),
+	}))
+	if realErr == nil || missingErr == nil {
+		t.Fatalf("a cross-org read succeeded: %v %v", real, missing)
+	}
+	if connect.CodeOf(realErr) != connect.CodeNotFound {
+		t.Fatalf("cross-org code = %v, want not_found", connect.CodeOf(realErr))
+	}
+	if connect.CodeOf(realErr) != connect.CodeOf(missingErr) {
+		t.Fatalf("codes differ: %v vs %v", connect.CodeOf(realErr), connect.CodeOf(missingErr))
+	}
+	if realErr.Error() != missingErr.Error() {
+		t.Fatalf("messages differ, which reveals that one identifier is real:\n%q\n%q",
+			realErr.Error(), missingErr.Error())
+	}
+
+	// Cancelling someone else's invocation is refused the same way, and leaves
+	// it untouched.
+	_, cancelErr := bob.Flows.CancelFlowInvocation(ctx, connect.NewRequest(&ultrav1.CancelFlowInvocationRequest{
+		InvocationId: invoked.GetInvocationId(),
+	}))
+	if cancelErr == nil {
+		t.Fatal("bob cancelled alice's invocation")
+	}
+	if cancelErr.Error() != missingErr.Error() {
+		t.Fatalf("cancel denial %q differs from missing %q", cancelErr.Error(), missingErr.Error())
+	}
+	still := getInvocation(t, alice, invoked.GetInvocationId())
+	if still.GetState() != ultrav1.FlowInvocationState_FLOW_INVOCATION_STATE_COMPLETED {
+		t.Fatalf("a refused cross-org cancel changed the invocation to %v", still.GetState())
+	}
+}

@@ -189,6 +189,10 @@ func payloadFromDomain(kind string, payload []byte) (*ultrav1.EventPayload, erro
 		return decodeAs(payload, &ultrav1.EnvLifecycle{}, func(m *ultrav1.EnvLifecycle) *ultrav1.EventPayload {
 			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_EnvReady{EnvReady: m}}
 		})
+	case ultra.EventKindEnvSuspended:
+		return decodeAs(payload, &ultrav1.EnvLifecycle{}, func(m *ultrav1.EnvLifecycle) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_EnvSuspended{EnvSuspended: m}}
+		})
 	case ultra.EventKindEnvFailed:
 		return decodeAs(payload, &ultrav1.EnvLifecycle{}, func(m *ultrav1.EnvLifecycle) *ultrav1.EventPayload {
 			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_EnvFailed{EnvFailed: m}}

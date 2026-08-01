@@ -131,12 +131,22 @@ jobs:
         run: |
           # A skipped provider test looks exactly like a passing one, so the
           # leg fails when its cluster evidence did not execute.
-          out=$(go test ./envprovider/k8s/... -count=1 -v -timeout 30m -run TestKubernetesConformance 2>&1)
+          out=$(go test ./envprovider/k8s/... -count=1 -v -timeout 30m \
+            -run 'TestKubernetesConformance|TestA102_' 2>&1)
           echo "$out"
           echo "$out" | grep -q -- "--- PASS: TestKubernetesConformance/ProviderNativeResources" || {
             echo "the Kubernetes leg did not inspect provider-native resources" >&2
             exit 1
           }
+          # A10.2: convergence after an out-of-band deletion is the evidence
+          # that an environment does not sit stale, so a skip must fail the leg.
+          for name in TestA102_KubernetesReconcilesExternallyDeletedPod \
+                      TestA102_KubernetesAdoptsInterruptedProvisioning; do
+            echo "$out" | grep -q -- "--- PASS: $name" || {
+              echo "the Kubernetes leg did not run $name" >&2
+              exit 1
+            }
+          done
       - name: Dump cluster state on failure
         if: failure()
         run: go run sigs.k8s.io/kind@v0.32.0 export logs /tmp/kind-logs --name ultra-test || true
@@ -180,6 +190,15 @@ jobs:
             echo "the Nomad leg did not inspect provider-native resources" >&2
             exit 1
           }
+          # A10.4: same reasoning as the Kubernetes leg. A stopped allocation
+          # has to converge, and a skipped test would hide that it does not.
+          for name in TestA104_NomadReconcilesExternallyStoppedAllocation \
+                      TestA104_NomadReusesInterruptedRegistration; do
+            echo "$out" | grep -q -- "--- PASS: $name" || {
+              echo "the Nomad leg did not run $name" >&2
+              exit 1
+            }
+          done
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -203,6 +222,12 @@ jobs:
           echo "$out"
           echo "$out" | grep -q -- "--- PASS: TestTunnelConformance/ProviderNativeResources" || {
             echo "the tunnel leg did not inspect provider-native resources" >&2
+            exit 1
+          }
+          # A10.5: a lost host must suspend rather than fail, which is the
+          # difference between a paused laptop and a destroyed workspace.
+          echo "$out" | grep -q -- "--- PASS: TestA105_LostTransportSuspendsRatherThanFails" || {
+            echo "the tunnel leg did not prove a lost host suspends rather than fails" >&2
             exit 1
           }
 
