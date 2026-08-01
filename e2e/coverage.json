@@ -263,5 +263,95 @@
         "await_rendered(cx, \"usage-panel\""
       ]
     }
+  },
+  "run_tree_linkage": {
+    "web": {
+      "file": "run-tree.spec.ts",
+      "test": "renders a spawned run tree with child lanes",
+      "asserts": [
+        "toHaveAttribute(\"data-parent-run-id\", parentId!)",
+        "getByTestId(\"cohort-marker\")"
+      ]
+    },
+    "rust": {
+      "file": "run_tree_e2e.rs",
+      "test": "renders_run_tree_and_lanes",
+      "asserts": [
+        "await_rendered(cx, \"run-tree\", FRAME_ATTEMPTS)",
+        "does not point at the parent"
+      ]
+    }
+  },
+  "run_lane_filter": {
+    "web": {
+      "file": "run-tree.spec.ts",
+      "test": "filters the timeline to one run lane",
+      "asserts": [
+        "toHaveAttribute(\"data-lane\", childId!)",
+        "Show all runs"
+      ]
+    },
+    "rust": {
+      "file": "run_tree_e2e.rs",
+      "test": "filters_timeline_to_one_lane",
+      "asserts": [
+        "await_rendered(cx, selector(format!(\"lane-rows:all:{all_rows}\")), FRAME_ATTEMPTS)",
+        "did not narrow the timeline"
+      ]
+    }
+  },
+  "wait_transitions": {
+    "web": {
+      "file": "run-tree.spec.ts",
+      "test": "shows wait and failure transitions",
+      "asserts": [
+        ".toBe(\"timed_out\")",
+        "data-run-state=\"completed\""
+      ]
+    },
+    "rust": {
+      "file": "run_tree_e2e.rs",
+      "test": "renders_wait_transitions",
+      "asserts": [
+        "rendered(cx, \"wait:cohort:timed_out:1\")",
+        "await_rendered(cx, \"row:run completed\", FRAME_ATTEMPTS)"
+      ]
+    }
+  },
+  "agent_memory_inspection": {
+    "web": {
+      "file": "run-tree.spec.ts",
+      "test": "inspects agent-written session memory",
+      "asserts": [
+        "getByTestId(\"session-memory\")",
+        "toContainText(\"browser.note\")"
+      ]
+    },
+    "rust": {
+      "file": "run_tree_e2e.rs",
+      "test": "inspects_memory_and_reconnects",
+      "asserts": [
+        "await_rendered(cx, \"memory:desktop.note\", FRAME_ATTEMPTS)",
+        "await_rendered(cx, \"memory-count:1\", FRAME_ATTEMPTS)"
+      ]
+    }
+  },
+  "replica_reconnect": {
+    "web": {
+      "file": "run-tree.spec.ts",
+      "test": "reconnects through a second replica",
+      "asserts": [
+        "getByTestId(\"replica-switch\")",
+        ".toBe(normalize(before))"
+      ]
+    },
+    "rust": {
+      "file": "run_tree_e2e.rs",
+      "test": "inspects_memory_and_reconnects",
+      "asserts": [
+        "open_app_at(cx, &alt)",
+        "the second replica rendered a different timeline"
+      ]
+    }
   }
 }

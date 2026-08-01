@@ -134,7 +134,10 @@ regardless of which credentials exist in the org. There is no path by which
 possessing a credential expands the grant lattice.
 
 **Proven by:** `credentials_never_leave_the_worker`,
-`narrowed_child_gains_nothing_from_org_credentials`.
+`narrowed_child_gains_nothing_from_org_credentials`, and — for environment
+token rotation and revocation specifically — `TestA74_EnvDurabilityAndRotation`,
+which restarts an environment and requires that the previous token, and a
+client cached with it, both stop working.
 
 ## 7. What is not claimed
 

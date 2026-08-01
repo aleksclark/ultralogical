@@ -70,6 +70,42 @@ dev-stack smoke.
   `AppendUserMessage`, `Subscribe`, `Subscription.Collect(t, n, timeout)`.
   If the public API can't do something, tests can't either — by design.
 
+### Multi-replica harness
+
+`harness.Up(t, harness.WithReplicas(2, 2))` starts two `ultrad` processes
+behind a round-robin ingress plus two workers, so "worker 0 died and worker 1
+finished the job" is a statement about identifiable processes. It exposes:
+
+- `IngressURL()` / `IngressClient(token)` — load balanced across replicas;
+- `ReplicaBaseURLs` / `ReplicaClient(i, token)` — pinned to one replica;
+- `StartWorker()`, `RestartWorker(i)`, `KillWorkerAt(i)`, `WorkerCount()`;
+- `RestartUltrad(i)`, `Health(baseURL)`;
+- `QueueDepth(ctx, kinds...)` and `QueueDepthForRun(ctx, runID)`.
+
+Queue-depth assertions must be scoped to the job kinds or the run a test
+actually cares about. A parked parent's own step job is still running while it
+commits its wait, and its children legitimately hold slots, so an unscoped
+depth check is a flake waiting to happen.
+
+### Constructing races instead of sleeping for them
+
+`modelscript` selects a turn by **conversation depth** — the number of
+assistant messages so far — among the turns whose matcher accepts the request.
+Sticky turns only apply past the end of the matching set. Two features exist
+specifically to make race tests deterministic:
+
+- `Turn.Gate <-chan struct{}` blocks a scripted response until the test closes
+  the channel, so a run can be held in a known state without sleeping.
+- `Turn.Scenario` labels which independent scenario a turn belongs to. When a
+  request matches turns from two different labelled scenarios, the server
+  refuses rather than guessing: that situation means one scenario's prompt is a
+  substring of another's, and silently picking one produces a wrong answer that
+  looks like a product bug.
+
+A race test that only passes with sleeps or a fixed ordering is not acceptance
+evidence. Run the distributed suites repeatedly with process-kill timing
+jitter before believing them.
+
 ## Capability-completeness gate
 
 Backend acceptance is necessary but insufficient. Every implemented public
