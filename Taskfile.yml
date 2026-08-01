@@ -48,6 +48,10 @@ tasks:
     cmds:
       - bash scripts/verify-codegen.sh
       - python3 scripts/verify-codegen-rust.py
+      # Generated TypeScript has to compile under the client's own resolution
+      # settings, not merely exist. Skipped when deps are not installed so the
+      # gate stays runnable without a node toolchain.
+      - test -d clients/ts/node_modules && (cd clients/ts && npx tsc --noEmit) || echo "clients/ts deps not installed; run npm ci to include the TS typecheck"
 
   verify:codegen:mutation:
     desc: Prove the codegen drift gates fail on deliberate drift, then restore
