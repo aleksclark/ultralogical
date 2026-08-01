@@ -7,18 +7,52 @@ import type { TimelineItem } from "@/reducer";
 
 type AnswerFn = (runId: string, message: string) => Promise<void>;
 
-export function Timeline({ items, onAnswer, deltaFrames }: { items: TimelineItem[]; onAnswer: AnswerFn; deltaFrames: number }) {
+export function Timeline({
+  items,
+  onAnswer,
+  deltaFrames,
+  laneRunId,
+}: {
+  items: TimelineItem[];
+  onAnswer: AnswerFn;
+  deltaFrames: number;
+  /** When set, only this run's activity is shown. Sessions run several agents
+   * at once, so an unfiltered timeline interleaves them; a lane answers "what
+   * did this one agent do". */
+  laneRunId?: string;
+}) {
+  const visible = laneRunId ? items.filter((item) => runIdOf(item) === laneRunId) : items;
   return (
     <section
       data-testid="timeline"
       data-delta-frames={deltaFrames}
+      data-lane={laneRunId ?? ""}
+      data-visible-rows={visible.length}
       className="flex-1 space-y-3 overflow-auto py-4"
     >
-      {items.map((item, index) => (
+      {visible.map((item, index) => (
         <TimelineRow key={index} item={item} onAnswer={onAnswer} />
       ))}
+      {laneRunId && visible.length === 0 && (
+        <p className="text-xs text-zinc-500">No activity for this agent yet</p>
+      )}
     </section>
   );
+}
+
+/** runIdOf reports which run an item belongs to, if any. */
+function runIdOf(item: TimelineItem): string | undefined {
+  switch (item.type) {
+    case "assistant":
+    case "tool":
+    case "question":
+    case "status":
+      return item.runId;
+    case "annotation":
+      return item.runId;
+    default:
+      return undefined;
+  }
 }
 
 function TimelineRow({ item, onAnswer }: { item: TimelineItem; onAnswer: AnswerFn }) {
@@ -68,7 +102,7 @@ function TimelineRow({ item, onAnswer }: { item: TimelineItem; onAnswer: AnswerF
       );
     case "status":
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-run-id={item.runId}>
           <Badge data-status={item.status} variant={statusVariant(item.status)}>
             {item.status}
           </Badge>
@@ -76,13 +110,17 @@ function TimelineRow({ item, onAnswer }: { item: TimelineItem; onAnswer: AnswerF
         </div>
       );
     case "annotation":
-      return <div className="text-sm italic text-zinc-400">Note: {item.text}</div>;
+      return (
+        <div data-kind="annotation" data-run-id={item.runId} className="text-sm italic text-zinc-400">
+          Note: {item.text}
+        </div>
+      );
   }
 }
 
 function statusVariant(status: string) {
   if (status === "completed") return "success" as const;
-  if (status === "failed" || status === "cancelled") return "destructive" as const;
+  if (status === "failed" || status === "cancelled" || status === "denied") return "destructive" as const;
   return "pending" as const;
 }
 

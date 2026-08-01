@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/aleksclark/ultralogical/testkit/harness"
 	"github.com/aleksclark/ultralogical/testkit/modelscript"
@@ -30,9 +31,47 @@ func webScript() modelscript.Script {
 			Match:      modelscript.UserContains("stream to me"),
 			Text:       "streaming one two three four five six seven eight",
 			ChunkSize:  3,
-			ChunkDelay: 60_000_000, // 60ms
+			ChunkDelay: 60 * time.Millisecond,
 			Sticky:     true,
 		},
+		// A8.7: a cohort, so the browser has a real run tree to render.
+		{
+			Match: modelscript.UserContains("cohort work"),
+			ToolCalls: []modelscript.ToolCallSpec{{Name: "run_agent_cohort", Args: map[string]any{
+				"timeout": "3m",
+				"specs": []map[string]any{
+					{"prompt": "browser member alpha", "tools": []string{"post_event"}},
+					{"prompt": "browser member beta", "tools": []string{"post_event"}},
+					{"prompt": "browser member gamma", "tools": []string{"post_event"}},
+				},
+			}}},
+		},
+		{Match: modelscript.UserContains("cohort work"), Sticky: true, Text: "cohort summarized"},
+		{Match: modelscript.UserContains("browser member"), Sticky: true, Text: "member finished"},
+		// A8.7: a cohort whose member never finishes, so the browser can show
+		// a wait timing out.
+		{
+			Match: modelscript.UserContains("stalling cohort"),
+			ToolCalls: []modelscript.ToolCallSpec{{Name: "run_agent_cohort", Args: map[string]any{
+				"timeout": "3s",
+				"specs":   []map[string]any{{"prompt": "browser stalled member", "tools": []string{"post_event"}}},
+			}}},
+		},
+		{Match: modelscript.UserContains("stalling cohort"), Sticky: true, Text: "proceeded without the member"},
+		{
+			Match:      modelscript.UserContains("browser stalled member"),
+			Sticky:     true,
+			Text:       "far too late",
+			ChunkDelay: 30 * time.Second,
+		},
+		// A8.7: an agent writes session memory the browser then inspects.
+		{
+			Match: modelscript.UserContains("remember something"),
+			ToolCalls: []modelscript.ToolCallSpec{{Name: "session_memory_set", Args: map[string]any{
+				"key": "browser.note", "value": map[string]any{"detail": "written by an agent"},
+			}}},
+		},
+		{Match: modelscript.UserContains("remember something"), Sticky: true, Text: "remembered"},
 	}}
 }
 
@@ -62,13 +101,16 @@ func webSuiteEnabled(t *testing.T) string {
 func TestA16_WebGolden(t *testing.T) {
 	webDir := webSuiteEnabled(t)
 
-	stack := harness.Up(t)
+	// Two ultrad replicas: the browser suite proves a client can reconnect
+	// through a different one and rebuild identical state.
+	stack := harness.Up(t, harness.WithReplicas(2, 2))
 	stack.Model.SetScript(webScript())
 
 	cmd := exec.Command("npx", "playwright", "test")
 	cmd.Dir = webDir
 	cmd.Env = append(os.Environ(),
-		"ULTRAD_URL="+stack.BaseURL,
+		"ULTRAD_URL="+stack.ReplicaBaseURLs[0],
+		"ULTRAD_ALT_URL="+stack.ReplicaBaseURLs[1],
 		"ULTRA_TOKEN="+harness.TokenAlice,
 		"ULTRA_CANARY_KEY="+harness.CanaryAPIKey,
 		"WEB_PORT=15317",

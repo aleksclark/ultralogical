@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import type { Org } from "@client/gen/ultra/v1/org_pb";
 import type { Session } from "@client/gen/ultra/v1/session_pb";
 import type { DevEnv, UsageInterval } from "@client/gen/ultra/v1/env_pb";
+import type { RunTreeNode } from "@client/gen/ultra/v1/agent_pb";
 import { EnvState } from "@client/gen/ultra/v1/env_pb";
 import { clients } from "./api";
-import { foldEvent, initialView } from "./reducer";
+import { initialView, reduceView } from "./reducer";
 import { EnvironmentPanel } from "@/components/environment-panel";
+import { RunTree } from "@/components/run-tree";
 import { SessionSidebar, type ConnectionState } from "@/components/session-sidebar";
 import { SettingsView, type CredentialForm, type ProviderForm } from "@/components/settings-view";
 import { Timeline } from "@/components/timeline";
@@ -15,16 +17,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const apiBaseUrl = import.meta.env.VITE_ULTRAD_URL ?? "http://localhost:8080";
+// A deployment runs several ultrad replicas. The alternate address lets an
+// operator reconnect through a different one, which is how a client proves it
+// depends on the durable log rather than on one server's memory.
+const altBaseUrl = import.meta.env.VITE_ULTRAD_ALT_URL ?? "";
 const initialToken = localStorage.getItem("ultra-token") ?? "dev-token";
 
 export function App() {
   const [token, setToken] = useState(initialToken);
-  const api = useMemo(() => clients(apiBaseUrl, token), [token]);
+  const [endpoint, setEndpoint] = useState(apiBaseUrl);
+  const api = useMemo(() => clients(endpoint, token), [endpoint, token]);
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [org, setOrg] = useState<Org>();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [session, setSession] = useState<Session>();
-  const [view, dispatch] = useReducer(foldEvent, initialView);
+  const [view, dispatch] = useReducer(reduceView, initialView);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [prompt, setPrompt] = useState("");
   const [title, setTitle] = useState("");
@@ -34,6 +41,8 @@ export function App() {
   const [usage, setUsage] = useState<UsageInterval[]>([]);
   const [usageTotal, setUsageTotal] = useState(0n);
   const [participants, setParticipants] = useState<string[]>([]);
+  const [runTree, setRunTree] = useState<RunTreeNode[]>([]);
+  const [laneRunId, setLaneRunId] = useState<string>();
   const [memory, setMemory] = useState<{ key: string; valueJson: string }[]>([]);
   const [credential, setCredential] = useState<CredentialForm>({ apiKey: "", baseUrl: "", extraHeaders: "{}" });
   const [provider, setProvider] = useState<ProviderForm>({ kind: "byo_k8s", name: "", config: '{"mode":"loopback"}' });
@@ -67,6 +76,12 @@ export function App() {
     setUsageTotal(resp.totalSeconds);
   }, [api, org]);
 
+  const refreshRunTree = useCallback(async () => {
+    if (!session) return;
+    const resp = await api.agents.getRunTree({ sessionId: session.id });
+    setRunTree(resp.roots);
+  }, [api, session]);
+
   const refreshMultiplayer = useCallback(async () => {
     if (!session) return;
     const p = await api.sessions.listParticipants({ sessionId: session.id });
@@ -80,7 +95,8 @@ export function App() {
     void api.sessions.join({ sessionId: session.id, display: "You" }).then(refreshMultiplayer);
     void refreshEnvs();
     void refreshUsage();
-  }, [session, api, refreshMultiplayer, refreshEnvs, refreshUsage]);
+    void refreshRunTree();
+  }, [session, api, refreshMultiplayer, refreshEnvs, refreshUsage, refreshRunTree]);
 
   useEffect(() => {
     if (!session) return;
@@ -90,7 +106,7 @@ export function App() {
       try {
         for await (const resp of api.events.subscribe({ sessionId: session.id, fromSeq: 0n }, { signal: abort.signal })) {
           setConnection("live");
-          if (resp.event) dispatch(resp.event);
+          if (resp.event) dispatch({ event: resp.event });
         }
         if (!abort.signal.aborted) setConnection("offline");
       } catch (e) {
@@ -113,6 +129,28 @@ export function App() {
     void refreshEnvs();
     void refreshUsage();
   }, [envSignature, refreshEnvs, refreshUsage]);
+
+  // Memory changes are announced in the log, so the inspector refreshes on
+  // those events rather than only when the session is first opened.
+  const memorySignature = view.items
+    .filter((i) => i.type === "annotation" && i.text.startsWith("memory "))
+    .map((i) => (i.type === "annotation" ? i.text : ""))
+    .join(",");
+  useEffect(() => {
+    if (!session) return;
+    void refreshMultiplayer();
+  }, [memorySignature, session, refreshMultiplayer]);
+
+  // Run structure changes are announced in the log (spawns and run status), so
+  // the tree refreshes on those rather than on a timer.
+  const runSignature = [
+    view.spawns.map((s) => s.childRunId).join(","),
+    view.items.filter((i) => i.type === "status").map((i) => `${i.runId}:${i.status}`).join(","),
+  ].join("|");
+  useEffect(() => {
+    if (!session) return;
+    void refreshRunTree();
+  }, [runSignature, session, refreshRunTree]);
 
   async function createSession() {
     if (!org) return;
@@ -206,6 +244,14 @@ export function App() {
     localStorage.setItem("ultra-token", value);
     setToken(value);
   }
+  // Switching replicas tears down the subscription and rebuilds every view
+  // from the log on the other server, so nothing carries over in memory.
+  function switchEndpoint() {
+    if (!altBaseUrl) return;
+    setEndpoint((current: string) => (current === apiBaseUrl ? altBaseUrl : apiBaseUrl));
+    setConnection("connecting");
+    dispatch({ reset: true });
+  }
 
   return (
     <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
@@ -223,6 +269,9 @@ export function App() {
         token={token}
         onTokenChange={changeToken}
         onToggleSettings={() => setSettings(!settings)}
+        endpoint={endpoint}
+        altEndpoint={altBaseUrl}
+        onSwitchEndpoint={switchEndpoint}
       />
       <main className="mx-auto flex h-screen max-w-4xl flex-1 flex-col gap-4 p-6">
         {settings ? (
@@ -244,6 +293,7 @@ export function App() {
                 </div>
               </div>
             </header>
+            <RunTree roots={runTree} selectedRunId={laneRunId} onSelectRun={setLaneRunId} />
             <EnvironmentPanel
               envs={envs}
               output={envOutput}
@@ -253,17 +303,19 @@ export function App() {
               onExec={execPreview}
             />
             <UsagePanel intervals={usage} totalSeconds={usageTotal} onRefresh={refreshUsage} />
-            {memory.length > 0 && (
-              <details className="text-xs" data-testid="session-memory">
-                <summary>Session memory ({memory.length})</summary>
-                {memory.map((m) => (
-                  <pre key={m.key}>
-                    {m.key}: {m.valueJson}
-                  </pre>
-                ))}
-              </details>
-            )}
-            <Timeline items={view.items} onAnswer={answer} deltaFrames={view.deltaFrames} />
+            {/* The inspector is always present, empty or not: an operator
+                needs to see that a session has no memory as readily as that it
+                has some. */}
+            <details className="text-xs" data-testid="session-memory" data-entry-count={memory.length}>
+              <summary>Session memory ({memory.length})</summary>
+              {memory.length === 0 && <p className="text-zinc-500">No session memory yet</p>}
+              {memory.map((m) => (
+                <pre key={m.key}>
+                  {m.key}: {m.valueJson}
+                </pre>
+              ))}
+            </details>
+            <Timeline items={view.items} onAnswer={answer} deltaFrames={view.deltaFrames} laneRunId={laneRunId} />
             <div className="flex gap-2 border-t border-zinc-800 pt-4">
               <Input
                 aria-label="Prompt"

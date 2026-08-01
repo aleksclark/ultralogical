@@ -31,7 +31,7 @@ test("provisions a real environment and runs ExecPreview", async ({ page }) => {
   expect([...phases]).toContain("ready");
 
   await page.getByLabel("Environment command").fill("echo web-environment");
-  await page.getByRole("button", { name: "Run" }).click();
+  await page.getByRole("button", { name: "Execute in environment" }).click();
   await expect(page.getByTestId("env-output")).toContainText("web-environment", { timeout: 30_000 });
   await expect(page.locator('[data-kind="tool"]')).toContainText("exec: echo web-environment");
 });
@@ -54,7 +54,7 @@ test("restarts an environment and shows a new epoch", async ({ page }) => {
   await expect(chip.locator('[data-phase="ready"]')).toBeVisible({ timeout: 90_000 });
 
   await page.getByLabel("Environment command").fill("echo after-restart");
-  await page.getByRole("button", { name: "Run" }).click();
+  await page.getByRole("button", { name: "Execute in environment" }).click();
   await expect(page.getByTestId("env-output")).toContainText("after-restart", { timeout: 30_000 });
 });
 
