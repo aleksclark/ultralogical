@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/google/uuid"
 
 	ultra "github.com/aleksclark/ultralogical"
 	"github.com/aleksclark/ultralogical/jobqueue"
@@ -362,11 +361,13 @@ func (w *StepWorker) handleStreamError(ctx context.Context, job StepJob, stepCtx
 // inside the given transaction-bound store. It returns errCancelledCommit,
 // which txStale translates into a committed transaction + silent ack.
 func (w *StepWorker) markCancelledTx(ctx context.Context, txs ultra.Store, job StepJob) error {
-	scope := txs.Org(ultra.OrgID(job.OrgID))
-	if err := scope.Runs().SetState(ctx, ultra.RunID(job.RunID), ultra.RunCancelled, "", ""); err != nil {
+	org := ultra.OrgID(job.OrgID)
+	runID := ultra.RunID(job.RunID)
+	scope := txs.Org(org)
+	if err := scope.Runs().SetState(ctx, runID, ultra.RunCancelled, "", ""); err != nil {
 		return err
 	}
-	payload, _ := json.Marshal(ultra.RunCancelledPayload{RunID: ultra.RunID(job.RunID)})
+	payload, _ := json.Marshal(ultra.RunCancelledPayload{RunID: runID})
 	_, err := scope.Events().Append(ctx, ultra.SessionID(job.SessionID), ultra.Event{
 		Actor:   ultra.Actor{Type: ultra.ActorSystem},
 		Kind:    ultra.EventKindRunCancelled,
@@ -375,7 +376,34 @@ func (w *StepWorker) markCancelledTx(ctx context.Context, txs ultra.Store, job S
 	if err != nil {
 		return err
 	}
+	if err := w.settleTerminalRun(ctx, txs, org, runID); err != nil {
+		return err
+	}
 	return errCancelledCommit
+}
+
+// settleTerminalRun closes both sides of a terminal run's orchestration: waits
+// it was holding are abandoned, and waits it is a member of are re-evaluated.
+// Every terminal transition calls it, so cancellation and failure resolve
+// parents exactly like completion does.
+func (w *StepWorker) settleTerminalRun(ctx context.Context, txs ultra.Store, org ultra.OrgID, runID ultra.RunID) error {
+	if err := w.abandonParentWaits(ctx, txs, org, runID); err != nil {
+		return err
+	}
+	run, err := txs.Org(org).Runs().Get(ctx, runID)
+	if err != nil {
+		return err
+	}
+	return w.resolveChildWaits(ctx, txs, run)
+}
+
+// waitAwaitingText describes why a run is parked, so clients can tell a
+// human-input await from a child-agent await.
+func waitAwaitingText(rec *stepRecorder) string {
+	if rec.waitKind == ultra.WaitKindCohort {
+		return "Waiting for agent cohort"
+	}
+	return "Waiting for child agents"
 }
 
 // failRun marks a terminal, typed failure.
@@ -390,12 +418,16 @@ func (w *StepWorker) failRun(ctx context.Context, job StepJob, reason, message s
 			return err
 		}
 		payload, _ := json.Marshal(ultra.RunFailedPayload{RunID: run.ID, Reason: reason, Message: message})
-		_, err = scope.Events().Append(ctx, ultra.SessionID(job.SessionID), ultra.Event{
+		if _, err := scope.Events().Append(ctx, ultra.SessionID(job.SessionID), ultra.Event{
 			Actor:   ultra.Actor{Type: ultra.ActorSystem},
 			Kind:    ultra.EventKindRunFailed,
 			Payload: payload,
-		})
-		return err
+		}); err != nil {
+			return err
+		}
+		// A failed child must resume its parent just as a completed one does,
+		// or one bad child parks the parent until its deadline.
+		return w.settleTerminalRun(ctx, txs, ultra.OrgID(job.OrgID), run.ID)
 	})
 }
 
@@ -463,18 +495,20 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 
 		switch {
 		case len(rec.waitRunIDs) > 0:
-			members := make([]ultra.RunWaitMember, 0, len(rec.waitRunIDs))
-			waitID := uuid.NewString()
-			for i, id := range rec.waitRunIDs {
-				members = append(members, ultra.RunWaitMember{WaitID: waitID, RunID: id, Ordinal: i})
-			}
-			if err := scope.Waits().Create(ctx, ultra.RunWait{ID: waitID, ParentRunID: runID, StepIndex: job.StepIndex, ToolCallID: rec.waitToolCallID, State: "open", Deadline: time.Now().Add(rec.waitTimeout)}, members); err != nil {
+			// createWait also handles the child-terminal-before-commit race:
+			// it may resolve and resume immediately, in which case the parent
+			// must not be parked.
+			park, err := w.createWait(ctx, txs, run, job, rec)
+			if err != nil {
 				return err
+			}
+			if !park {
+				return nil
 			}
 			if err := scope.Runs().SetState(ctx, runID, ultra.RunAwaiting, "", ""); err != nil {
 				return err
 			}
-			return appendTx(ultra.EventKindRunAwaiting, ultra.RunAwaitingPayload{RunID: runID, Question: ultra.Question{Text: "Waiting for child agents"}})
+			return appendTx(ultra.EventKindRunAwaiting, ultra.RunAwaitingPayload{RunID: runID, Question: ultra.Question{Text: waitAwaitingText(rec)}})
 		case rec.question != nil:
 			// Await: no job parked; PromptRun resumes.
 			if err := scope.Runs().SetState(ctx, runID, ultra.RunAwaiting, "", ""); err != nil {
@@ -493,7 +527,25 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 			if err := scope.Runs().SetState(ctx, runID, ultra.RunCompleted, "", ""); err != nil {
 				return err
 			}
-			if err := appendTx(ultra.EventKindRunCompleted, ultra.RunCompletedPayload{RunID: runID, FinalText: finalText(result)}); err != nil {
+			// Persist the result before resolving waits: a parent reading a
+			// terminal child must see what that child produced, long after the
+			// child's process is gone.
+			final := finalText(result)
+			resultJSON, err := json.Marshal(map[string]string{"final_text": final})
+			if err != nil {
+				return err
+			}
+			if err := scope.Runs().SetResult(ctx, runID, resultJSON); err != nil {
+				return err
+			}
+			run.State = ultra.RunCompleted
+			run.Result = resultJSON
+			if err := appendTx(ultra.EventKindRunCompleted, ultra.RunCompletedPayload{RunID: runID, FinalText: final}); err != nil {
+				return err
+			}
+			// Both directions of the tree must settle: waits this run is a
+			// member of, and waits it was itself holding.
+			if err := w.abandonParentWaits(ctx, txs, run.OrgID, runID); err != nil {
 				return err
 			}
 			return w.resolveChildWaits(ctx, txs, run)

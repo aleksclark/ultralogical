@@ -88,7 +88,13 @@ func run(log *slog.Logger) error {
 		Store: store, Keyring: keyring, Enqueue: postgres.TxEnqueuer{Queue: queue},
 		Registry: loop.NewRegistry(), Log: log, ToolResolver: &loop.EnvTools{Store: store, Envs: envs},
 	}
+	// Wait deadlines are enforced by any worker, not by the process that
+	// created the wait, so a parked parent is released even after a crash.
+	waitSweeper := &loop.WaitSweeper{
+		Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Worker: stepWorker, Log: log,
+	}
 	jobqueue.Register(queue, jobqueue.Worker[loop.StepJob](stepWorker))
+	jobqueue.Register(queue, jobqueue.WorkerFunc[loop.WaitTimeoutJob](waitSweeper.Sweep))
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.ProvisionJob](envs.Provision))
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.TerminateJob](envs.Terminate))
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.ReconcileJob](envs.Reconcile))

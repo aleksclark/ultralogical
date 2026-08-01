@@ -12,10 +12,14 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -82,10 +86,16 @@ type Stack struct {
 	Store       *postgres.Store
 	Model       *modelscript.Server
 
-	workerMu        sync.Mutex
-	workerCmd       *exec.Cmd
-	ultradCmds      []*exec.Cmd
+	workerMu sync.Mutex
+	// workers is indexed: tests kill and restart a specific worker, so
+	// "worker 0 died and worker 1 finished the work" is a statement about
+	// identifiable processes rather than about whichever one was last started.
+	workers    []*exec.Cmd
+	ultradCmds []*exec.Cmd
+	// ReplicaBaseURLs addresses each ultrad replica directly. BaseURL is the
+	// round-robin ingress in front of all of them.
 	ReplicaBaseURLs []string
+	ingress         *httptest.Server
 	workerEnv       []string
 	ultradBin       string
 	workerBin       string
@@ -260,18 +270,21 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 		t.Cleanup(func() { _ = cmd.Process.Kill(); _, _ = cmd.Process.Wait() })
 		waitHealthy(t, base)
 	}
-	for i := 0; i < options.WorkerReplicas; i++ {
+	for range options.WorkerReplicas {
 		stack.StartWorker()
 	}
 	waitHealthy(t, stack.BaseURL)
+	// Every replica must be healthy before the ingress starts fanning out, or
+	// the first round-robin request could hit a replica that is still booting.
+	for _, base := range stack.ReplicaBaseURLs {
+		waitHealthy(t, base)
+	}
+	stack.startIngress(t)
 	return stack
 }
 
-// StartWorker launches a worker process. Call KillWorker first when
-// simulating crashes.
-func (s *Stack) StartWorker() {
-	s.workerMu.Lock()
-	defer s.workerMu.Unlock()
+// newWorkerCmd builds a worker process with the harness environment.
+func (s *Stack) newWorkerCmd() *exec.Cmd {
 	cmd := exec.Command(s.workerBin)
 	cmd.Env = append(os.Environ(),
 		"DATABASE_URL="+s.DatabaseURL,
@@ -285,35 +298,94 @@ func (s *Stack) StartWorker() {
 	cmd.Env = append(cmd.Env, s.workerEnv...)
 	cmd.Stdout = s.logs
 	cmd.Stderr = s.logs
+	return cmd
+}
+
+// StartWorker launches a worker process and returns its index. Every worker
+// the harness starts is tracked, so cleanup reaps all of them exactly once.
+func (s *Stack) StartWorker() int {
+	s.workerMu.Lock()
+	defer s.workerMu.Unlock()
+	cmd := s.newWorkerCmd()
 	if err := cmd.Start(); err != nil {
 		s.t.Fatal(err)
 	}
-	s.workerCmd = cmd
-	s.t.Cleanup(func() {
-		s.workerMu.Lock()
-		defer s.workerMu.Unlock()
-		if s.workerCmd != nil {
-			_ = s.workerCmd.Process.Kill()
-			_, _ = s.workerCmd.Process.Wait()
-			s.workerCmd = nil
-		}
-	})
+	s.workers = append(s.workers, cmd)
+	index := len(s.workers) - 1
+	s.t.Cleanup(func() { s.stopWorker(index) })
+	return index
 }
 
-// KillWorker SIGKILLs the worker process (crash simulation).
-func (s *Stack) KillWorker() {
+// RestartWorker replaces the worker at an index with a fresh process, which is
+// how a test proves work survives the death of the process that started it.
+func (s *Stack) RestartWorker(index int) {
+	s.KillWorkerAt(index)
 	s.workerMu.Lock()
 	defer s.workerMu.Unlock()
-	if s.workerCmd != nil {
-		_ = s.workerCmd.Process.Kill()
-		_, _ = s.workerCmd.Process.Wait()
-		s.workerCmd = nil
+	if index >= len(s.workers) {
+		s.t.Fatalf("harness: no worker at index %d", index)
+	}
+	cmd := s.newWorkerCmd()
+	if err := cmd.Start(); err != nil {
+		s.t.Fatal(err)
+	}
+	s.workers[index] = cmd
+}
+
+// WorkerCount reports how many worker slots exist.
+func (s *Stack) WorkerCount() int {
+	s.workerMu.Lock()
+	defer s.workerMu.Unlock()
+	return len(s.workers)
+}
+
+// KillWorker SIGKILLs the most recently started worker (crash simulation).
+func (s *Stack) KillWorker() {
+	s.workerMu.Lock()
+	last := len(s.workers) - 1
+	s.workerMu.Unlock()
+	if last >= 0 {
+		s.KillWorkerAt(last)
 	}
 }
 
-// QueueDepth returns the number of queued/running step jobs (harness-side
-// inspection of river's table for awaiting-state assertions).
-func (s *Stack) QueueDepth(ctx context.Context) (int, error) {
+// KillWorkerAt SIGKILLs one specific worker, leaving its slot empty so a test
+// can assert that the remaining workers finish the workload.
+func (s *Stack) KillWorkerAt(index int) {
+	s.workerMu.Lock()
+	defer s.workerMu.Unlock()
+	s.killWorkerLocked(index)
+}
+
+func (s *Stack) stopWorker(index int) {
+	s.workerMu.Lock()
+	defer s.workerMu.Unlock()
+	s.killWorkerLocked(index)
+}
+
+func (s *Stack) killWorkerLocked(index int) {
+	if index < 0 || index >= len(s.workers) || s.workers[index] == nil {
+		return
+	}
+	cmd := s.workers[index]
+	s.workers[index] = nil
+	_ = cmd.Process.Kill()
+	_, _ = cmd.Process.Wait()
+}
+
+// runnableJobStates are the states a job can still be worked from. A test
+// asking "is anything queued" means these and not, for example, a completed
+// row still sitting in the table.
+var runnableJobStates = []string{"available", "running", "scheduled", "retryable"}
+
+// QueueDepth counts runnable jobs of the named kinds. Callers must name the
+// kinds they mean: a test asserting "the parent holds no worker" is about
+// agent.step jobs, and counting unrelated background sweeps instead would make
+// the assertion meaningless.
+func (s *Stack) QueueDepth(ctx context.Context, kinds ...string) (int, error) {
+	if len(kinds) == 0 {
+		kinds = []string{"agent.step"}
+	}
 	pool, err := pgxpool.New(ctx, s.DatabaseURL)
 	if err != nil {
 		return 0, err
@@ -321,8 +393,52 @@ func (s *Stack) QueueDepth(ctx context.Context) (int, error) {
 	defer pool.Close()
 	var n int
 	err = pool.QueryRow(ctx,
-		`SELECT count(*) FROM river_job WHERE state IN ('available', 'running', 'scheduled', 'retryable')`).
-		Scan(&n)
+		`SELECT count(*) FROM river_job
+		  WHERE state = ANY($1) AND args->>'job_kind' = ANY($2)`,
+		runnableJobStates, kinds).Scan(&n)
+	return n, err
+}
+
+// DebugRunnableJobs lists runnable jobs with their state, for diagnosing a
+// queue-depth assertion failure.
+func (s *Stack) DebugRunnableJobs(t *testing.T, ctx context.Context) []string {
+	t.Helper()
+	pool, err := pgxpool.New(ctx, s.DatabaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	rows, err := pool.Query(ctx, `SELECT state, args::text FROM river_job WHERE state = ANY($1)`, runnableJobStates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var state, args string
+		if err := rows.Scan(&state, &args); err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, state+" "+args)
+	}
+	return out
+}
+
+// QueueDepthForRun counts runnable step jobs belonging to one run, which is
+// how a test proves a specific parked parent holds no worker slot while other
+// runs legitimately keep working.
+func (s *Stack) QueueDepthForRun(ctx context.Context, run ultra.RunID) (int, error) {
+	pool, err := pgxpool.New(ctx, s.DatabaseURL)
+	if err != nil {
+		return 0, err
+	}
+	defer pool.Close()
+	var n int
+	err = pool.QueryRow(ctx,
+		`SELECT count(*) FROM river_job
+		  WHERE state = ANY($1) AND args->>'job_kind' = 'agent.step'
+		    AND args->'payload'->>'run_id' = $2`,
+		runnableJobStates, string(run)).Scan(&n)
 	return n, err
 }
 
@@ -405,6 +521,95 @@ func waitHealthy(t *testing.T, baseURL string) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	t.Fatalf("ultrad at %s never became healthy", baseURL)
+}
+
+// startIngress puts a round-robin reverse proxy in front of every ultrad
+// replica. A client that talks to it does not know or care which replica
+// served a request, which is the point: cross-replica correctness has to hold
+// without client affinity.
+func (s *Stack) startIngress(t *testing.T) {
+	t.Helper()
+	targets := make([]*url.URL, 0, len(s.ReplicaBaseURLs))
+	for _, base := range s.ReplicaBaseURLs {
+		parsed, err := url.Parse(base)
+		if err != nil {
+			t.Fatal(err)
+		}
+		targets = append(targets, parsed)
+	}
+	var next atomic.Uint64
+	proxy := &httputil.ReverseProxy{
+		Rewrite: func(r *httputil.ProxyRequest) {
+			target := targets[int(next.Add(1)-1)%len(targets)]
+			r.SetURL(target)
+			r.Out.Host = target.Host
+		},
+		// Streaming subscriptions must not be buffered, or a test would see
+		// events arrive in one lump and learn nothing about delivery.
+		FlushInterval: -1,
+	}
+	server := httptest.NewUnstartedServer(proxy)
+	server.EnableHTTP2 = true
+	server.Start()
+	s.ingress = server
+	t.Cleanup(server.Close)
+}
+
+// IngressURL is the round-robin entry point across replicas. With one replica
+// it is simply that replica.
+func (s *Stack) IngressURL() string {
+	if s.ingress != nil {
+		return s.ingress.URL
+	}
+	return s.BaseURL
+}
+
+// ReplicaClient returns a client pinned to one ultrad replica, for tests that
+// must act on a named replica rather than wherever the ingress lands.
+func (s *Stack) ReplicaClient(index int, token string) *testclient.Client {
+	if index < 0 || index >= len(s.ReplicaBaseURLs) {
+		s.t.Fatalf("harness: no ultrad replica at index %d", index)
+	}
+	return testclient.New(s.ReplicaBaseURLs[index], token)
+}
+
+// IngressClient returns a client that round-robins across every replica.
+func (s *Stack) IngressClient(token string) *testclient.Client {
+	return testclient.New(s.IngressURL(), token)
+}
+
+// RestartUltrad replaces one ultrad replica with a fresh process on the same
+// address, so subscribers must reconnect and resume by seq.
+func (s *Stack) RestartUltrad(index int) {
+	if index < 0 || index >= len(s.ultradCmds) {
+		s.t.Fatalf("harness: no ultrad replica at index %d", index)
+	}
+	base := s.ReplicaBaseURLs[index]
+	parsed, err := url.Parse(base)
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	if cmd := s.ultradCmds[index]; cmd != nil {
+		_ = cmd.Process.Kill()
+		_, _ = cmd.Process.Wait()
+	}
+	cmd := exec.Command(s.ultradBin)
+	cmd.Env = append(os.Environ(),
+		"DATABASE_URL="+s.DatabaseURL,
+		"ULTRA_ADDR="+parsed.Host,
+		fmt.Sprintf("ULTRA_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob),
+		"ULTRA_MASTER_KEY="+s.MasterKey,
+		"ULTRA_DEFAULT_MODEL=mock-model",
+		"ULTRA_MIGRATE=false",
+	)
+	cmd.Stdout = s.logs
+	cmd.Stderr = s.logs
+	if err := cmd.Start(); err != nil {
+		s.t.Fatal(err)
+	}
+	s.ultradCmds[index] = cmd
+	s.t.Cleanup(func() { _ = cmd.Process.Kill(); _, _ = cmd.Process.Wait() })
+	waitHealthy(s.t, base)
 }
 
 // AliceClient returns a client authenticated as Alice (owner of OrgA).

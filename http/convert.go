@@ -274,7 +274,7 @@ func runStateToProto(s ultra.RunState) ultrav1.RunState {
 }
 
 func runToProto(r ultra.AgentRun) *ultrav1.AgentRun {
-	return &ultrav1.AgentRun{
+	out := &ultrav1.AgentRun{
 		Id:          string(r.ID),
 		SessionId:   string(r.SessionID),
 		State:       runStateToProto(r.State),
@@ -290,7 +290,64 @@ func runToProto(r ultra.AgentRun) *ultrav1.AgentRun {
 		FailureMessage: r.FailureMessage,
 		CreatedAt:      timestamppb.New(r.CreatedAt),
 		UpdatedAt:      timestamppb.New(r.UpdatedAt),
+		Grants:         grantsToProto(r.Grants),
+		ResultJson:     string(r.Result),
+		CohortId:       r.CohortID,
+		CohortOrdinal:  int32(r.CohortOrdinal),
 	}
+	if r.ParentRunID != nil {
+		out.ParentRunId = string(*r.ParentRunID)
+	}
+	return out
+}
+
+// grantsToProto exposes a run's authority so clients can show what a child was
+// actually allowed to do, rather than implying it inherited everything.
+func grantsToProto(g ultra.Grants) *ultrav1.Grants {
+	out := &ultrav1.Grants{
+		Tools:       g.Tools,
+		EnvAll:      g.EnvAll,
+		MaySpawn:    g.MaySpawn,
+		MaxChildren: int32(g.MaxChildren),
+	}
+	for _, id := range g.Envs {
+		out.EnvIds = append(out.EnvIds, string(id))
+	}
+	return out
+}
+
+// grantsFromProto reads a caller-supplied grant request. It performs no
+// authority checks itself: the caller must validate the result against what
+// it is allowed to delegate.
+func grantsFromProto(g *ultrav1.Grants) ultra.Grants {
+	out := ultra.Grants{
+		Tools:       g.GetTools(),
+		EnvAll:      g.GetEnvAll(),
+		MaySpawn:    g.GetMaySpawn(),
+		MaxChildren: int(g.GetMaxChildren()),
+	}
+	for _, id := range g.GetEnvIds() {
+		out.Envs = append(out.Envs, ultra.EnvID(id))
+	}
+	return out
+}
+
+func waitToProto(w ultra.RunWait, members []ultra.RunWaitMember) *ultrav1.RunWait {
+	out := &ultrav1.RunWait{
+		Id:            w.ID,
+		ParentRunId:   string(w.ParentRunID),
+		StepIndex:     int32(w.StepIndex),
+		ToolCallId:    w.ToolCallID,
+		Kind:          w.Kind,
+		State:         w.State,
+		TimeoutPolicy: w.TimeoutPolicy,
+		Deadline:      timestamppb.New(w.Deadline),
+		ResultJson:    string(w.Result),
+	}
+	for _, m := range members {
+		out.MemberRunIds = append(out.MemberRunIds, string(m.RunID))
+	}
+	return out
 }
 
 func credentialInfoToProto(c ultra.CredentialInfo) *ultrav1.CredentialInfo {
