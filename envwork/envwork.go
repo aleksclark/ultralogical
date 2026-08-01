@@ -581,6 +581,15 @@ func (s *Service) ToolClient(ctx context.Context, env ultra.DevEnv) (*mcp.Client
 // InvalidateToolClients drops any cached client for an environment.
 func (s *Service) InvalidateToolClients(id ultra.EnvID) { s.clients().Invalidate(string(id)) }
 
+// RememberTools records the tools an environment offered, so a later step can
+// still name them once the environment has become unreachable.
+func (s *Service) RememberTools(id ultra.EnvID, names []string) {
+	s.clients().RememberTools(string(id), names)
+}
+
+// LastTools returns the tools an environment last offered.
+func (s *Service) LastTools(id ultra.EnvID) []string { return s.clients().LastTools(string(id)) }
+
 func (s *Service) clients() *mcp.Cache {
 	s.cacheOnce.Do(func() {
 		if s.Clients == nil {
