@@ -211,6 +211,20 @@ func Kind(ev *ultrav1.SessionEvent) string {
 		return "env_terminated"
 	case *ultrav1.EventPayload_ExecPreviewRan:
 		return "exec_preview_ran"
+	case *ultrav1.EventPayload_ParticipantJoined:
+		return "participant_joined"
+	case *ultrav1.EventPayload_ParticipantLeft:
+		return "participant_left"
+	case *ultrav1.EventPayload_ParticipantIdle:
+		return "participant_idle"
+	case *ultrav1.EventPayload_RunSpawned:
+		return "run_spawned"
+	case *ultrav1.EventPayload_MemorySet:
+		return "memory_set"
+	case *ultrav1.EventPayload_MemoryDeleted:
+		return "memory_deleted"
+	case *ultrav1.EventPayload_PermissionDenied:
+		return "permission_denied"
 	case *ultrav1.EventPayload_HistoryCompacted:
 		return "history_compacted"
 	case *ultrav1.EventPayload_ModelFallback:

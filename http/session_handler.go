@@ -8,12 +8,16 @@ import (
 	"github.com/google/uuid"
 
 	ultra "github.com/aleksclark/ultralogical"
+	"github.com/aleksclark/ultralogical/jobqueue"
 	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
 )
 
 // sessionHandler implements ultrav1connect.SessionServiceHandler.
 type sessionHandler struct {
 	store ultra.Store
+	// enqueue arms the presence reaper when someone joins, so presence expiry
+	// exists for any session that actually has participants.
+	enqueue jobqueue.TxEnqueuer
 }
 
 // resolveSessionOrg maps a session id to its org and verifies the caller is

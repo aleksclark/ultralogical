@@ -102,10 +102,12 @@ func (s *memoryStore) List(ctx context.Context, session ultra.SessionID) ([]ultr
 	return out, rows.Err()
 }
 func (s *memoryStore) Set(ctx context.Context, e ultra.SessionMemoryEntry) error {
-	if len(e.Key) == 0 {
-		return errors.New("memory key required")
+	// Key shape is validated before taking the lock: a malformed key is a
+	// caller error, not a contention problem.
+	if !ultra.ValidMemoryKey(e.Key) {
+		return errors.New("memory key must be dot-separated alphanumeric segments")
 	}
-	if len(e.Value) > 65536 {
+	if len(e.Value) > ultra.MaxMemoryValue {
 		return errors.New("memory value exceeds 64KiB")
 	}
 	if err := s.lock(ctx, e.SessionID); err != nil {
@@ -116,7 +118,7 @@ func (s *memoryStore) Set(ctx context.Context, e ultra.SessionMemoryEntry) error
 	if err := s.scope.s.db().QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM session_memory WHERE session_id=$1 AND key=$2),(SELECT count(*) FROM session_memory WHERE session_id=$1)`, string(e.SessionID), e.Key).Scan(&exists, &count); err != nil {
 		return err
 	}
-	if !exists && count >= 200 {
+	if !exists && count >= ultra.MaxMemoryKeys {
 		return errors.New("session memory limit reached")
 	}
 	tag, err := s.scope.s.db().Exec(ctx, `INSERT INTO session_memory(session_id,key,value,updated_by_type,updated_by_id) SELECT se.id,$2,$3,$4,$5 FROM sessions se WHERE se.id=$1 AND se.org_id=$6 ON CONFLICT(session_id,key) DO UPDATE SET value=EXCLUDED.value,updated_by_type=EXCLUDED.updated_by_type,updated_by_id=EXCLUDED.updated_by_id,updated_at=now()`, string(e.SessionID), e.Key, e.Value, string(e.UpdatedBy.Type), e.UpdatedBy.ID, string(s.scope.org))

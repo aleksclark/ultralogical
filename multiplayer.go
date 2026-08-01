@@ -132,6 +132,43 @@ type SessionMemoryEntry struct {
 	UpdatedAt time.Time
 }
 
+// Session memory limits. Both are enforced inside the per-session advisory
+// lock, so concurrent writers cannot race past them.
+const (
+	MaxMemoryKeys     = 200
+	MaxMemoryValue    = 64 << 10
+	MaxMemoryKeyBytes = 256
+)
+
+// ValidMemoryKey reports whether a key follows the dotted-namespace convention
+// (for example "investigation.findings.db").
+//
+// The convention is enforced rather than merely documented: memory is shared
+// across every run and human in a session, so keys with whitespace, control
+// characters, or empty segments make the namespace unreadable and invite
+// collisions between agents that meant different things.
+func ValidMemoryKey(key string) bool {
+	if key == "" || len(key) > MaxMemoryKeyBytes {
+		return false
+	}
+	segment := 0
+	for i := 0; i < len(key); i++ {
+		c := key[i]
+		switch {
+		case c == '.':
+			if segment == 0 {
+				return false // empty segment: leading, trailing, or ".."
+			}
+			segment = 0
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9', c == '_', c == '-':
+			segment++
+		default:
+			return false
+		}
+	}
+	return segment > 0
+}
+
 // SessionMemoryStore manages capped session memory.
 type SessionMemoryStore interface {
 	Get(context.Context, SessionID, string) (SessionMemoryEntry, error)

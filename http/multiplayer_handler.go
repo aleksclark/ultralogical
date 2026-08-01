@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"connectrpc.com/connect"
 	ultra "github.com/aleksclark/ultralogical"
 	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
+	"github.com/aleksclark/ultralogical/jobqueue"
+	"github.com/aleksclark/ultralogical/loop"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -37,6 +40,14 @@ func (h *sessionHandler) Join(ctx context.Context, req *connect.Request[ultrav1.
 		}
 		if changed {
 			seq, e = appendTransition(ctx, scope, session, ultra.EventKindParticipantJoined, ultra.ParticipantEventPayload{Kind: ultra.ParticipantHuman, ParticipantID: string(user.ID), Display: req.Msg.GetDisplay()})
+			if e != nil {
+				return e
+			}
+			// Arm presence expiry in the same transaction as the join: a
+			// participant can never become present without something
+			// scheduled to notice when they go quiet.
+			e = h.enqueue.EnqueueInTx(ctx, txs, loop.PresenceReapJob{OrgID: string(org)},
+				jobqueue.WithScheduledAt(time.Now().Add(loop.DefaultPresenceAfter)))
 		}
 		return e
 	})

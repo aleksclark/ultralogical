@@ -294,6 +294,10 @@ func (s *Stack) newWorkerCmd() *exec.Cmd {
 		"ULTRA_BEZALEL_IMAGE="+BezalelImage,
 		"ULTRA_RECONCILE_INTERVAL=1s",
 		"ULTRA_PROVISION_TIMEOUT=45s",
+		// Presence expiry is deliberately fast in tests so idle transitions
+		// are observable without long sleeps.
+		"ULTRA_PRESENCE_AFTER=2s",
+		"ULTRA_PRESENCE_INTERVAL=1s",
 	)
 	cmd.Env = append(cmd.Env, s.workerEnv...)
 	cmd.Stdout = s.logs
