@@ -507,6 +507,17 @@ func (s *Stack) SeedCredential(t *testing.T, org ultra.OrgID, name, apiKey, base
 	}
 }
 
+// Health reports whether an ultrad instance answers its health endpoint. Tests
+// use it to assert a replica really is serving rather than assuming it is.
+func Health(baseURL string) (bool, error) {
+	resp, err := http.Get(baseURL + "/healthz")
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	return resp.StatusCode == http.StatusOK, nil
+}
+
 func waitHealthy(t *testing.T, baseURL string) {
 	t.Helper()
 	deadline := time.Now().Add(15 * time.Second)
