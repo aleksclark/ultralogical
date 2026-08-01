@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
-import type { Org } from "@client/gen/ultra/v1/org_pb";
+import type { Org, ProviderInstance } from "@client/gen/ultra/v1/org_pb";
 import type { Session } from "@client/gen/ultra/v1/session_pb";
 import type { DevEnv, UsageInterval } from "@client/gen/ultra/v1/env_pb";
 import type { RunTreeNode } from "@client/gen/ultra/v1/agent_pb";
@@ -10,7 +10,7 @@ import { EnvState } from "@client/gen/ultra/v1/env_pb";
 import { clients } from "./api";
 import { initialView, reduceView } from "./reducer";
 import { EnvironmentPanel } from "@/components/environment-panel";
-import { FlowPanel } from "@/components/flow-panel";
+import { FlowInvocationView, FlowPanel, invocationStateLabel } from "@/components/flow-panel";
 import { MemoryPanel } from "@/components/memory-panel";
 import { RunTree } from "@/components/run-tree";
 import { SessionSidebar, type ConnectionState } from "@/components/session-sidebar";
@@ -67,10 +67,50 @@ export function App() {
   const [invocations, setInvocations] = useState<FlowInvocation[]>([]);
   const [activeInvocationId, setActiveInvocationId] = useState<string>();
   const [credential, setCredential] = useState<CredentialForm>({ apiKey: "", baseUrl: "", extraHeaders: "{}" });
+  const [providers, setProviders] = useState<ProviderInstance[]>([]);
   const [provider, setProvider] = useState<ProviderForm>({ kind: "byo_k8s", name: "", config: '{"mode":"loopback"}' });
   const [error, setError] = useState("");
 
-  const activeInvocation = invocations.find((i) => i.id === activeInvocationId) ?? invocations[0];
+  // A direct invocation is one opened from its identifier alone, which is the
+  // path an operator follows from a CLI or an alert. It is kept separate from
+  // the session's list so opening one never depends on having loaded the list.
+  const [directInvocation, setDirectInvocation] = useState<FlowInvocation>();
+  const activeInvocation =
+    directInvocation ?? invocations.find((i) => i.id === activeInvocationId) ?? invocations[0];
+
+  // openInvocation fetches one invocation by id. Failures surface as errors
+  // rather than an empty panel: an operator following a link needs to know the
+  // difference between "not yours" and "still loading".
+  const openInvocation = useCallback(
+    async (id: string) => {
+      try {
+        const resp = await api.flows.getFlowInvocation({ invocationId: id });
+        if (resp.invocation) {
+          setDirectInvocation(resp.invocation);
+          setActiveInvocationId(resp.invocation.id);
+        }
+        setError("");
+      } catch (e) {
+        setDirectInvocation(undefined);
+        setError(String(e));
+      }
+    },
+    [api],
+  );
+
+  // An invocation named in the address is opened directly, and kept fresh
+  // while it is still running.
+  const requestedInvocation = new URLSearchParams(window.location.search).get("invocation") ?? "";
+  useEffect(() => {
+    if (!requestedInvocation) return;
+    void openInvocation(requestedInvocation);
+    const terminal = ["completed", "failed", "cancelled"];
+    const timer = window.setInterval(() => {
+      if (directInvocation && terminal.includes(invocationStateLabel(directInvocation.state))) return;
+      void openInvocation(requestedInvocation);
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, [requestedInvocation, openInvocation, directInvocation]);
 
   const load = useCallback(async () => {
     try {
@@ -78,7 +118,10 @@ export function App() {
       setOrgs(listed.orgs);
       const selected = org ?? listed.orgs[0];
       setOrg(selected);
-      if (selected) setSessions((await api.sessions.listSessions({ orgId: selected.id })).sessions);
+      if (selected) {
+        setSessions((await api.sessions.listSessions({ orgId: selected.id })).sessions);
+        setProviders((await api.orgs.listProviders({ orgId: selected.id })).providers);
+      }
       setError("");
     } catch (e) {
       setError(String(e));
@@ -378,6 +421,7 @@ export function App() {
     try {
       JSON.parse(provider.config);
       await api.orgs.registerProvider({ orgId: org.id, kind: provider.kind, name: provider.name, configJson: provider.config });
+      setProviders((await api.orgs.listProviders({ orgId: org.id })).providers);
       setError("");
     } catch (e) {
       setError(String(e));
@@ -425,6 +469,16 @@ export function App() {
             provider={provider}
             onProviderChange={setProvider}
             onRegisterProvider={registerProvider}
+            providers={providers}
+          />
+        ) : directInvocation ? (
+          <FlowInvocationView
+            invocation={directInvocation}
+            onCancel={cancelInvocation}
+            onClose={() => {
+              setDirectInvocation(undefined);
+              window.history.replaceState(null, "", window.location.pathname);
+            }}
           />
         ) : session ? (
           <>

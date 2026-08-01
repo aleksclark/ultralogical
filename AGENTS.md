@@ -3,7 +3,7 @@
 Ultralogical: a durable-session platform for agentic work — multi-tenant,
 event-sourced sessions that humans and agents share. Go backend, ConnectRPC
 API, Postgres, React/gpui UIs. **Phase 9** (versioned flow
-completion) is closed; Phase 10 owns real remote providers.
+completion) is closed; **Phase 10** (real remote providers) is in progress.
 
 ## Cheatsheet
 
@@ -71,6 +71,7 @@ task desktop:test      # GPUI golden on real stack
 | [agent_docs/phase_8_audit.md](agent_docs/phase_8_audit.md) | Phase 8 independent completion audit |
 | [agent_docs/phase_9_inventory.md](agent_docs/phase_9_inventory.md) | Phase 9 behavior-to-test inventory |
 | [agent_docs/phase_9_audit.md](agent_docs/phase_9_audit.md) | Phase 9 independent completion audit |
+| [agent_docs/phase_10_inventory.md](agent_docs/phase_10_inventory.md) | Phase 10 behavior-to-test inventory and progress |
 | [agent_docs/throughput_baseline.md](agent_docs/throughput_baseline.md) | recording or comparing a throughput regression baseline |
 | [docs/flows.md](docs/flows.md) | flow definition language, lifecycle, CLI, examples |
 | [docs/security.md](docs/security.md) | grant lattice, denial visibility, tenancy, credential scope |

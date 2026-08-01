@@ -122,10 +122,10 @@
       },
       "rust": {
         "file": "provider_e2e.rs",
-        "test": "rejects_invalid_provider_config",
+        "test": "stores_credential_with_gateway_fields",
         "asserts": [
-          "invalid provider config must be rejected",
-          "await_rendered(cx, selector(format!(\"error:{message}\"))"
+          "await_rendered(cx, \"credential:inference:openai:desktop-gateway\", FRAME_ATTEMPTS)",
+          "the credential surface exposed secret material"
         ]
       }
     },
@@ -267,18 +267,18 @@
       ],
       "web": {
         "file": "providers.spec.ts",
-        "test": "registers provider kinds in dark-mode shadcn settings",
+        "test": "registers a real cluster and shows its capabilities",
         "asserts": [
-          "toContainText(\"Kubernetes\")",
-          "toContainText(\"Nomad\")"
+          "toHaveAttribute(\"data-supported\", \"yes\")",
+          "toHaveAttribute(\"data-rate-class\", \"byo\")"
         ]
       },
       "rust": {
         "file": "provider_e2e.rs",
-        "test": "registers_provider_kinds",
+        "test": "registers_provider_and_shows_capabilities",
         "asserts": [
-          "provider kind {kind} was not registered",
-          "await_rendered(cx, \"window:dark\""
+          "await_rendered(cx, \"provider:desktop-cluster:byo_k8s:byo\", FRAME_ATTEMPTS)",
+          "the window hides the capabilities this cluster lacks"
         ]
       }
     },
@@ -288,16 +288,18 @@
       ],
       "web": {
         "file": "providers.spec.ts",
-        "test": "shows provider validation errors",
+        "test": "shows why an unreachable cluster was refused",
         "asserts": [
-          "getByRole(\"alert\")"
+          "toContainText(/unreachable/i)",
+          "toHaveCount(0)"
         ]
       },
       "rust": {
         "file": "provider_e2e.rs",
-        "test": "rejects_invalid_provider_config",
+        "test": "shows_why_a_registration_was_refused",
         "asserts": [
-          "invalid provider config must be rejected"
+          "the refusal does not say the control plane was unreachable",
+          "a refused registration was stored"
         ]
       }
     },
@@ -497,7 +499,6 @@
     "flow_invocation_progress": {
       "rpcs": [
         "ultra.v1.FlowService/InvokeFlow",
-        "ultra.v1.FlowService/GetFlowInvocation",
         "ultra.v1.FlowService/ListFlowInvocations"
       ],
       "web": {
@@ -536,6 +537,27 @@
         "asserts": [
           "await_rendered(cx, \"invocation-reason:cancelled\", FRAME_ATTEMPTS)",
           "the reconnected window rebuilt different progress"
+        ]
+      }
+    },
+    "flow_direct_invocation": {
+      "rpcs": [
+        "ultra.v1.FlowService/GetFlowInvocation"
+      ],
+      "web": {
+        "file": "flows.spec.ts",
+        "test": "opens an invocation directly by id",
+        "asserts": [
+          "expect(directProgress).toEqual(listedProgress)",
+          "toHaveAttribute(\"data-terminal-reason\", \"completed\")"
+        ]
+      },
+      "rust": {
+        "file": "flow_e2e.rs",
+        "test": "opens_invocation_by_id",
+        "asserts": [
+          "the two routes rendered different progress",
+          "await_rendered(direct_cx, \"flow-run:reviewer:completed\", FRAME_ATTEMPTS)"
         ]
       }
     }

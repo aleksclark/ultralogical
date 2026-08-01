@@ -165,13 +165,18 @@ func (s *Service) checkProviders(ctx context.Context, org ultra.OrgID, rendered 
 			})
 			continue
 		}
-		// Setup commands and health readiness both require a provider whose
-		// environments expose the tool endpoint. A registration whose kind
-		// cannot is a declaration the org cannot execute, not a runtime error.
-		if env.Readiness == ultra.FlowReadinessHealth && !providerServesTools(instance.Kind) {
+		// Health readiness and setup commands both require environments that
+		// serve the tool endpoint. Whether this registration can is answered
+		// by what its control plane reported when it was probed, not by its
+		// kind: two clusters registered under the same kind can differ, and a
+		// flow must be refused against the one that genuinely cannot rather
+		// than hanging on a gate that can never open.
+		if env.Readiness == ultra.FlowReadinessHealth &&
+			!instance.Capabilities.Has(ultra.CapabilityServesToolEndpoint) {
 			errs = append(errs, ultra.FlowFieldError{
 				Path: "envs." + env.Name + ".readiness", Code: ultra.FlowErrProviderMismatch,
-				Message: fmt.Sprintf("provider kind %q cannot serve environment health checks", instance.Kind),
+				Message: fmt.Sprintf("provider %q cannot serve environment health checks: %s",
+					instance.Name, instance.Capabilities.Reason(ultra.CapabilityServesToolEndpoint)),
 			})
 		}
 	}
@@ -179,17 +184,6 @@ func (s *Service) checkProviders(ctx context.Context, org ultra.OrgID, rendered 
 		return nil
 	}
 	return &ultra.FlowValidationError{Errors: errs}
-}
-
-// providerServesTools reports whether a provider kind exposes the environment
-// tool endpoint that health readiness and setup commands need.
-func providerServesTools(kind string) bool {
-	switch kind {
-	case ultra.ProviderKindLocalDocker, ultra.ProviderKindBYOKubernetes, ultra.ProviderKindHostedEKS,
-		ultra.ProviderKindBYONomad, ultra.ProviderKindTunnelLocal:
-		return true
-	}
-	return false
 }
 
 // RequestCancel asks an invocation to converge on cancelled. It is idempotent

@@ -269,74 +269,98 @@ export function FlowPanel({
           ))}
         </ul>
 
-        {activeInvocation && (
-          <div
-            className="space-y-2 rounded border border-zinc-800 p-2"
-            data-testid="flow-invocation"
-            data-invocation-id={activeInvocation.id}
-            data-state={invocationStateLabel(activeInvocation.state)}
-            data-terminal-reason={activeInvocation.terminalReason}
-          >
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-zinc-400" data-testid="flow-provenance">
-                {activeInvocation.flowName} v{activeInvocation.flowVersion} · invocation{" "}
-                {activeInvocation.id.slice(0, 8)} · flow {activeInvocation.flowId.slice(0, 8)}
-              </div>
-              <Badge variant={stateVariant(activeInvocation.state)} data-testid="flow-invocation-state">
-                {invocationStateLabel(activeInvocation.state)}
-              </Badge>
-            </div>
-            <ol data-testid="flow-progress" className="space-y-0.5">
-              {activeInvocation.progress.map((entry) => (
-                <li
-                  key={`${entry.seq}`}
-                  data-testid="flow-progress-entry"
-                  data-stage={entry.stage}
-                  data-key={entry.key}
-                  className="font-mono text-xs text-zinc-400"
-                >
-                  {entry.seq}. {entry.stage} {entry.key} {entry.detail}
-                </li>
-              ))}
-            </ol>
-            <ul data-testid="flow-topology" className="space-y-0.5">
-              {activeInvocation.envs.map((env) => (
-                <li
-                  key={env.envId}
-                  data-testid="flow-env"
-                  data-env-name={env.envName}
-                  data-env-id={env.envId}
-                  data-state={envStates[env.state] ?? "unknown"}
-                  className="text-xs text-zinc-300"
-                >
-                  env {env.envName}: {envStates[env.state] ?? "unknown"} ({env.envId.slice(0, 8)})
-                </li>
-              ))}
-              {activeInvocation.runs.map((run) => (
-                <li
-                  key={run.runId}
-                  data-testid="flow-run"
-                  data-agent={run.agentName}
-                  data-run-id={run.runId}
-                  data-state={runStates[run.state] ?? "unknown"}
-                  data-parent-run-id={run.parentRunId}
-                  className="text-xs text-zinc-300"
-                >
-                  agent {run.agentName}: {runStates[run.state] ?? "unknown"} ({run.runId.slice(0, 8)})
-                </li>
-              ))}
-            </ul>
-            <Button
-              size="sm"
-              variant="ghost"
-              aria-label="Cancel invocation"
-              onClick={() => onCancelInvocation(activeInvocation.id)}
-            >
-              Cancel invocation
-            </Button>
-          </div>
-        )}
+        {activeInvocation && <FlowInvocationView invocation={activeInvocation} onCancel={onCancelInvocation} />}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * FlowInvocationView renders one invocation: provenance, ordered progress, and
+ * the topology it produced. Both the session's list and the direct-by-id route
+ * render through it, so the two paths cannot show different things.
+ */
+export function FlowInvocationView({
+  invocation,
+  onCancel,
+  onClose,
+}: {
+  invocation: FlowInvocation;
+  onCancel: (id: string) => Promise<void>;
+  onClose?: () => void;
+}) {
+  return (
+    <div data-testid="flow-invocation-route">
+        <div
+          className="space-y-2 rounded border border-zinc-800 p-2"
+          data-testid="flow-invocation"
+          data-invocation-id={invocation.id}
+          data-state={invocationStateLabel(invocation.state)}
+          data-terminal-reason={invocation.terminalReason}
+        >
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-zinc-400" data-testid="flow-provenance">
+              {invocation.flowName} v{invocation.flowVersion} · invocation{" "}
+              {invocation.id.slice(0, 8)} · flow {invocation.flowId.slice(0, 8)}
+            </div>
+            <Badge variant={stateVariant(invocation.state)} data-testid="flow-invocation-state">
+              {invocationStateLabel(invocation.state)}
+            </Badge>
+          </div>
+          <ol data-testid="flow-progress" className="space-y-0.5">
+            {invocation.progress.map((entry) => (
+              <li
+                key={`${entry.seq}`}
+                data-testid="flow-progress-entry"
+                data-stage={entry.stage}
+                data-key={entry.key}
+                className="font-mono text-xs text-zinc-400"
+              >
+                {entry.seq}. {entry.stage} {entry.key} {entry.detail}
+              </li>
+            ))}
+          </ol>
+          <ul data-testid="flow-topology" className="space-y-0.5">
+            {invocation.envs.map((env) => (
+              <li
+                key={env.envId}
+                data-testid="flow-env"
+                data-env-name={env.envName}
+                data-env-id={env.envId}
+                data-state={envStates[env.state] ?? "unknown"}
+                className="text-xs text-zinc-300"
+              >
+                env {env.envName}: {envStates[env.state] ?? "unknown"} ({env.envId.slice(0, 8)})
+              </li>
+            ))}
+            {invocation.runs.map((run) => (
+              <li
+                key={run.runId}
+                data-testid="flow-run"
+                data-agent={run.agentName}
+                data-run-id={run.runId}
+                data-state={runStates[run.state] ?? "unknown"}
+                data-parent-run-id={run.parentRunId}
+                className="text-xs text-zinc-300"
+              >
+                agent {run.agentName}: {runStates[run.state] ?? "unknown"} ({run.runId.slice(0, 8)})
+              </li>
+            ))}
+          </ul>
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label="Cancel invocation"
+            onClick={() => onCancel(invocation.id)}
+          >
+            Cancel invocation
+          </Button>
+        </div>
+      {onClose && (
+        <Button size="sm" variant="ghost" aria-label="Close invocation" onClick={onClose}>
+          Close
+        </Button>
+      )}
+    </div>
   );
 }

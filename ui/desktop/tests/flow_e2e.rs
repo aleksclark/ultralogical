@@ -338,3 +338,91 @@ async fn cancels_and_recovers_flow_invocation(cx: &mut TestAppContext) {
     });
     assert_eq!(before, after, "the reconnected window rebuilt different progress");
 }
+
+/// A10.11 — an invocation opens from its identifier alone and renders the same
+/// state the session's list renders. This is the path an operator follows from
+/// a CLI or an alert, so it must not depend on having loaded the list.
+#[gpui::test]
+async fn opens_invocation_by_id(cx: &mut TestAppContext) {
+    let (window, mut cx, mut client, org_id) = open_app(cx).await;
+    let cx = &mut cx;
+
+    let name = unique_name("desktop-direct");
+    client
+        .put_flow(&org_id, &name, SINGLE_AGENT_FLOW)
+        .await
+        .expect("put flow")
+        .expect("flow stored");
+    let session = client
+        .create_session(&org_id, "GPUI flow direct")
+        .await
+        .expect("create session");
+    let stream = client.subscribe(&session.id, 0).await.expect("subscribe");
+    window.update(cx, |view: &mut DesktopWindow, cx| {
+        view.open_session(session.id.clone(), stream, cx)
+    });
+    await_rendered(cx, "connection:live", FRAME_ATTEMPTS);
+
+    let invocation_id = client
+        .invoke_flow(&session.id, &name, 0, r#"{"subject":"direct subject"}"#)
+        .await
+        .expect("invoke flow");
+
+    // Drive it to completion through the list route and record what that
+    // route rendered.
+    window.update(cx, |view: &mut DesktopWindow, cx| {
+        view.select_invocation(Some(invocation_id.clone()), cx)
+    });
+    let mut completed = false;
+    for _ in 0..FRAME_ATTEMPTS {
+        refresh_invocations(&window, cx, &mut client, &session.id).await;
+        if rendered(cx, "invocation-state:completed") {
+            completed = true;
+            break;
+        }
+        pump(cx);
+    }
+    assert!(completed, "the invocation never completed through the list route");
+    let listed = window.read_with(cx, |view: &DesktopWindow, _| {
+        view.state.active_invocation_view().cloned().expect("an invocation is shown")
+    });
+
+    // A second window, which never loads the session's invocation list, opens
+    // the same invocation from its identifier alone.
+    let (direct, mut direct_cx, mut direct_client, _) = open_app(cx).await;
+    let direct_cx = &mut direct_cx;
+    let fetched = direct_client
+        .get_invocation(&invocation_id)
+        .await
+        .expect("fetch the invocation by id");
+    direct.update(direct_cx, |view: &mut DesktopWindow, cx| {
+        view.open_invocation_by_id(fetched, cx)
+    });
+
+    await_rendered(direct_cx, "invocation-state:completed", FRAME_ATTEMPTS);
+    await_rendered(direct_cx, "invocation-reason:completed", FRAME_ATTEMPTS);
+    await_rendered(
+        direct_cx,
+        selector(format!("provenance:{name}:1:{}", invocation_id.chars().take(8).collect::<String>())),
+        FRAME_ATTEMPTS,
+    );
+    await_rendered(direct_cx, "flow-run:reviewer:completed", FRAME_ATTEMPTS);
+
+    // The direct route shows exactly what the list route showed.
+    let opened = direct.read_with(direct_cx, |view: &DesktopWindow, _| {
+        view.state.active_invocation_view().cloned().expect("an invocation is shown")
+    });
+    assert_eq!(opened.id, listed.id, "the direct route opened a different invocation");
+    assert_eq!(opened.state, listed.state, "the two routes disagree about state");
+    assert_eq!(
+        opened.progress_keys(),
+        listed.progress_keys(),
+        "the two routes rendered different progress"
+    );
+    assert_eq!(opened.runs, listed.runs, "the two routes rendered different topology");
+
+    // An identifier belonging to nobody is refused rather than rendered as an
+    // empty invocation a reader would mistake for a real one.
+    let missing = direct_client.get_invocation("00000000-0000-0000-0000-000000000000").await;
+    assert!(missing.is_err(), "an unknown invocation id returned a result");
+}

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import type { ProviderInstance } from "@client/gen/ultra/v1/org_pb";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,7 @@ export function SettingsView({
   onCredentialChange,
   onSaveCredential,
   provider,
+  providers,
   onProviderChange,
   onRegisterProvider,
 }: {
@@ -28,6 +30,7 @@ export function SettingsView({
   onCredentialChange: (next: CredentialForm) => void;
   onSaveCredential: () => Promise<void>;
   provider: ProviderForm;
+  providers: ProviderInstance[];
   onProviderChange: (next: ProviderForm) => void;
   onRegisterProvider: () => Promise<void>;
 }) {
@@ -110,6 +113,39 @@ export function SettingsView({
             />
           </Label>
           <Button onClick={onRegisterProvider}>Register provider</Button>
+          <ul className="space-y-2" data-testid="provider-list">
+            {providers.map((instance) => (
+              <li
+                key={instance.id}
+                data-testid="provider-row"
+                data-provider-name={instance.name}
+                data-kind={instance.kind}
+                data-rate-class={instance.rateClass}
+                data-state={instance.state}
+                className="rounded border border-zinc-800 p-2"
+              >
+                <div className="text-sm">
+                  {instance.name} ({instance.kind}) · {instance.rateClass} · {instance.state}
+                </div>
+                <ul className="mt-1 space-y-0.5">
+                  {instance.capabilities.map((capability) => (
+                    <li
+                      key={capability.name}
+                      data-testid="provider-capability"
+                      data-provider={instance.name}
+                      data-capability={capability.name}
+                      data-supported={capability.supported ? "yes" : "no"}
+                      className={capability.supported ? "text-xs text-zinc-400" : "text-xs text-red-300"}
+                    >
+                      {capability.name}
+                      {capability.supported ? " available" : ` unavailable: ${capability.reason}`}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+            {providers.length === 0 && <li className="text-xs text-zinc-500">No providers registered</li>}
+          </ul>
         </CardContent>
       </Card>
     </section>

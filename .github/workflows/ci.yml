@@ -89,6 +89,123 @@ jobs:
             exit 1
           fi
 
+  # A10.8: provider adapters are exercised against the control planes they
+  # claim to drive. A leg that could not stand its cluster up must fail, not
+  # skip: a skipped provider test is indistinguishable from a passing one.
+  providers-kubernetes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build the pinned Bezalel image
+        run: docker build -t ultralogical/bezalel:phase2-test https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120
+      - name: Create a kind cluster
+        run: |
+          cat > /tmp/kind.yaml <<'YAML'
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+            - role: control-plane
+              extraPortMappings:
+                - containerPort: 30080
+                  hostPort: 30080
+                  listenAddress: "127.0.0.1"
+                - containerPort: 30081
+                  hostPort: 30081
+                  listenAddress: "127.0.0.1"
+                - containerPort: 30082
+                  hostPort: 30082
+                  listenAddress: "127.0.0.1"
+          YAML
+          go run sigs.k8s.io/kind@v0.32.0 create cluster --name ultra-test --config /tmp/kind.yaml --wait 180s
+          go run sigs.k8s.io/kind@v0.32.0 load docker-image ultralogical/bezalel:phase2-test --name ultra-test
+      - name: Kubernetes conformance and hosted isolation
+        env:
+          ULTRA_BEZALEL_IMAGE: ultralogical/bezalel:phase2-test
+        run: go test ./envprovider/k8s/... -count=1 -v -timeout 30m
+      - name: Prove the cluster leg actually ran
+        env:
+          ULTRA_BEZALEL_IMAGE: ultralogical/bezalel:phase2-test
+        run: |
+          # A skipped provider test looks exactly like a passing one, so the
+          # leg fails when its cluster evidence did not execute.
+          out=$(go test ./envprovider/k8s/... -count=1 -v -timeout 30m -run TestKubernetesConformance 2>&1)
+          echo "$out"
+          echo "$out" | grep -q -- "--- PASS: TestKubernetesConformance/ProviderNativeResources" || {
+            echo "the Kubernetes leg did not inspect provider-native resources" >&2
+            exit 1
+          }
+      - name: Dump cluster state on failure
+        if: failure()
+        run: go run sigs.k8s.io/kind@v0.32.0 export logs /tmp/kind-logs --name ultra-test || true
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: kind-logs
+          path: /tmp/kind-logs
+
+  providers-nomad:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build the pinned Bezalel image
+        run: docker build -t ultralogical/bezalel:phase2-test https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120
+      - name: Install Nomad
+        run: |
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt-get update && sudo apt-get install -y nomad
+      - name: Start a Nomad dev agent
+        run: |
+          sudo nomad agent -dev -bind 127.0.0.1 > /tmp/nomad.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:4646/v1/agent/health >/dev/null 2>&1; then exit 0; fi
+            sleep 1
+          done
+          echo "the Nomad dev agent never became healthy" >&2
+          cat /tmp/nomad.log >&2
+          exit 1
+      - name: Nomad conformance
+        env:
+          ULTRA_BEZALEL_IMAGE: ultralogical/bezalel:phase2-test
+        run: |
+          out=$(go test ./envprovider/nomad/... -count=1 -v -timeout 30m 2>&1)
+          echo "$out"
+          echo "$out" | grep -q -- "--- PASS: TestNomadConformance/ProviderNativeResources" || {
+            echo "the Nomad leg did not inspect provider-native resources" >&2
+            exit 1
+          }
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: nomad-log
+          path: /tmp/nomad.log
+
+  providers-tunnel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build the pinned Bezalel image
+        run: docker build -t ultralogical/bezalel:phase2-test https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120
+      - name: Tunnel conformance, signing, and suspend/resume
+        env:
+          ULTRA_BEZALEL_IMAGE: ultralogical/bezalel:phase2-test
+        run: |
+          out=$(go test ./envprovider/tunnel/... -count=1 -v -timeout 30m 2>&1)
+          echo "$out"
+          echo "$out" | grep -q -- "--- PASS: TestTunnelConformance/ProviderNativeResources" || {
+            echo "the tunnel leg did not inspect provider-native resources" >&2
+            exit 1
+          }
+
   functional:
     runs-on: ubuntu-latest
     steps:
@@ -116,6 +233,31 @@ jobs:
       - name: Install Playwright Chromium
         working-directory: ui/web
         run: npx playwright install --with-deps chromium
+      # The browser and desktop provider evidence registers a real cluster, so
+      # the functional leg needs one.
+      - name: Create a kind cluster
+        run: |
+          cat > /tmp/kind.yaml <<'YAML'
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+            - role: control-plane
+              extraPortMappings:
+                - containerPort: 30080
+                  hostPort: 30080
+                  listenAddress: "127.0.0.1"
+                - containerPort: 30081
+                  hostPort: 30081
+                  listenAddress: "127.0.0.1"
+                - containerPort: 30082
+                  hostPort: 30082
+                  listenAddress: "127.0.0.1"
+          YAML
+          go run sigs.k8s.io/kind@v0.32.0 create cluster --name ultra-test --config /tmp/kind.yaml --wait 180s
+          docker build -t ultralogical/bezalel:phase2-test https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120
+          go run sigs.k8s.io/kind@v0.32.0 load docker-image ultralogical/bezalel:phase2-test --name ultra-test
+          go run sigs.k8s.io/kind@v0.32.0 get kubeconfig --name ultra-test > /tmp/kubeconfig
+          echo "ULTRA_TEST_KUBECONFIG=/tmp/kubeconfig" >> "$GITHUB_ENV"
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       # GPUI links against xkbcommon's X11 companion library, which
