@@ -19,6 +19,14 @@ tasks:
     cmds:
       - buf lint
       - go vet ./...
+      # Fail loudly when golangci-lint is missing. A silent skip means a
+      # developer believes the lint gate passed locally when it never ran, and
+      # the first real signal is a red PR.
+      - |
+        if ! golangci-lint version >/dev/null 2>&1; then
+          echo "golangci-lint is not installed or has no selected version; CI runs it, so install it before relying on 'task lint'" >&2
+          exit 1
+        fi
       - golangci-lint run
 
   test:

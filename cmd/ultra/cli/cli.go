@@ -114,17 +114,19 @@ func Run(args []string, stdout, stderr io.Writer) (int, error) {
 // RunWithEnv is Run with an explicit environment.
 func RunWithEnv(args []string, environment Env, stdout, stderr io.Writer) (int, error) {
 	if len(args) == 0 {
-		fmt.Fprint(stderr, usage)
-		return ExitUsage, nil
+		sink := newOut(stderr)
+		sink.printf("%s", usage)
+		return ExitUsage, sink.Err()
 	}
 	switch args[0] {
 	case "flow":
 		return runFlow(args[1:], environment, stdout, stderr)
 	case "help", "-h", "--help":
-		fmt.Fprint(stdout, usage)
-		return ExitOK, nil
+		sink := newOut(stdout)
+		sink.printf("%s", usage)
+		return ExitOK, sink.Err()
 	default:
-		fmt.Fprint(stderr, usage)
+		newOut(stderr).printf("%s", usage)
 		return ExitUsage, fmt.Errorf("unknown command %q", args[0])
 	}
 }
@@ -134,8 +136,9 @@ func NewEnv(url, token, org string) Env { return Env{URL: url, Token: token, Org
 
 func runFlow(args []string, environment Env, stdout, stderr io.Writer) (int, error) {
 	if len(args) == 0 {
-		fmt.Fprint(stderr, usage)
-		return ExitUsage, nil
+		sink := newOut(stderr)
+		sink.printf("%s", usage)
+		return ExitUsage, sink.Err()
 	}
 	if environment.Token == "" {
 		return ExitUsage, errors.New("ULTRA_TOKEN is required")
@@ -161,7 +164,7 @@ func runFlow(args []string, environment Env, stdout, stderr io.Writer) (int, err
 	case "cancel":
 		return flowCancel(ctx, clients, rest, stdout, stderr)
 	default:
-		fmt.Fprint(stderr, usage)
+		newOut(stderr).printf("%s", usage)
 		return ExitUsage, fmt.Errorf("unknown flow subcommand %q", sub)
 	}
 }
@@ -203,6 +206,41 @@ func splitArgs(args []string) (positional, flags []string) {
 // following token is a value and which is a positional argument.
 var booleanFlags = map[string]bool{"json": true, "wait": true, "help": true, "h": true}
 
+// out is a writer that remembers the first write failure instead of forcing
+// every print site to check one. A CLI whose stdout is a closed pipe should
+// fail rather than print into the void and exit zero, so callers check Err()
+// once before returning.
+type out struct {
+	w   io.Writer
+	err error
+}
+
+func newOut(w io.Writer) *out { return &out{w: w} }
+
+// printf writes formatted text, keeping the first error.
+func (o *out) printf(format string, args ...any) {
+	if o.err != nil {
+		return
+	}
+	_, o.err = fmt.Fprintf(o.w, format, args...)
+}
+
+// line writes one line of text, keeping the first error.
+func (o *out) line(text string) { o.printf("%s\n", text) }
+
+// Err reports the first write failure, if any.
+func (o *out) Err() error { return o.err }
+
+// writeJSON encodes a value as indented JSON on this writer.
+func (o *out) writeJSON(value any) error {
+	body, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return err
+	}
+	o.printf("%s\n", string(body))
+	return o.err
+}
+
 // paramList collects repeated --param k=v flags.
 type paramList []string
 
@@ -219,9 +257,9 @@ func (p *paramList) Set(value string) error {
 // are recognized so a flow declaring them can be invoked from a shell, and
 // anything else stays a string.
 func parseParams(values []string, paramsJSON string) (map[string]any, error) {
-	out := map[string]any{}
+	params := map[string]any{}
 	if paramsJSON != "" {
-		if err := json.Unmarshal([]byte(paramsJSON), &out); err != nil {
+		if err := json.Unmarshal([]byte(paramsJSON), &params); err != nil {
 			return nil, errors.New("--params-json must be a JSON object")
 		}
 	}
@@ -230,20 +268,20 @@ func parseParams(values []string, paramsJSON string) (map[string]any, error) {
 		if key == "" {
 			return nil, errors.New("--param requires a name")
 		}
-		switch {
-		case value == "true":
-			out[key] = true
-		case value == "false":
-			out[key] = false
+		switch value {
+		case "true":
+			params[key] = true
+		case "false":
+			params[key] = false
 		default:
 			if number, err := strconv.ParseFloat(value, 64); err == nil {
-				out[key] = number
+				params[key] = number
 				continue
 			}
-			out[key] = value
+			params[key] = value
 		}
 	}
-	return out, nil
+	return params, nil
 }
 
 // cliError is the machine-readable failure the CLI prints in --json mode.
@@ -269,23 +307,21 @@ func report(w io.Writer, asJSON bool, err error) (int, error) {
 	if errors.As(err, &connectErr) {
 		code = connectErr.Code().String()
 	}
+	sink := newOut(w)
 	if asJSON {
-		payload := cliError{Error: cleanMessage(err), Code: code, Fields: fields}
-		body, marshalErr := json.MarshalIndent(payload, "", "  ")
-		if marshalErr != nil {
-			return ExitFailure, marshalErr
+		if writeErr := sink.writeJSON(cliError{Error: cleanMessage(err), Code: code, Fields: fields}); writeErr != nil {
+			return ExitFailure, writeErr
 		}
-		fmt.Fprintln(w, string(body))
 		return ExitFailure, nil
 	}
 	if len(fields) > 0 {
 		for _, field := range fields {
-			fmt.Fprintf(w, "%s: %s: %s\n", field.Path, field.Code, field.Message)
+			sink.printf("%s: %s: %s\n", field.Path, field.Code, field.Message)
 		}
-		return ExitFailure, nil
+		return ExitFailure, sink.Err()
 	}
-	fmt.Fprintln(w, cleanMessage(err))
-	return ExitFailure, nil
+	sink.line(cleanMessage(err))
+	return ExitFailure, sink.Err()
 }
 
 func cleanMessage(err error) string {
@@ -324,14 +360,7 @@ func fieldErrorsFrom(err error) []cliFieldError {
 	return out
 }
 
-func writeJSON(w io.Writer, value any) error {
-	body, err := json.MarshalIndent(value, "", "  ")
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprintln(w, string(body))
-	return err
-}
+func writeJSON(w io.Writer, value any) error { return newOut(w).writeJSON(value) }
 
 func requireOrg(environment Env, override string) (string, error) {
 	if override != "" {
@@ -381,8 +410,9 @@ func flowValidate(ctx context.Context, clients *Clients, environment Env, args [
 		if *asJSON {
 			return ExitOK, writeJSON(stdout, map[string]any{"valid": true})
 		}
-		fmt.Fprintln(stdout, "valid")
-		return ExitOK, nil
+		sink := newOut(stdout)
+		sink.line("valid")
+		return ExitOK, sink.Err()
 	}
 	fields := make([]cliFieldError, 0, len(resp.Msg.GetErrors()))
 	for _, item := range resp.Msg.GetErrors() {
@@ -396,8 +426,12 @@ func flowValidate(ctx context.Context, clients *Clients, environment Env, args [
 		}
 		return ExitFailure, nil
 	}
+	sink := newOut(stdout)
 	for _, field := range fields {
-		fmt.Fprintf(stdout, "%s: %s: %s\n", field.Path, field.Code, field.Message)
+		sink.printf("%s: %s: %s\n", field.Path, field.Code, field.Message)
+	}
+	if writeErr := sink.Err(); writeErr != nil {
+		return ExitFailure, writeErr
 	}
 	return ExitFailure, nil
 }
@@ -433,8 +467,9 @@ func flowPut(ctx context.Context, clients *Clients, environment Env, args []stri
 	if *asJSON {
 		return ExitOK, writeJSON(stdout, flowView(resp.Msg.GetFlow()))
 	}
-	fmt.Fprintf(stdout, "%s version %d\n", resp.Msg.GetFlow().GetName(), resp.Msg.GetFlow().GetVersion())
-	return ExitOK, nil
+	sink := newOut(stdout)
+	sink.printf("%s version %d\n", resp.Msg.GetFlow().GetName(), resp.Msg.GetFlow().GetVersion())
+	return ExitOK, sink.Err()
 }
 
 type flowSummary struct {
@@ -478,10 +513,11 @@ func flowList(ctx context.Context, clients *Clients, environment Env, args []str
 	if *asJSON {
 		return ExitOK, writeJSON(stdout, map[string]any{"flows": items})
 	}
+	sink := newOut(stdout)
 	for _, item := range items {
-		fmt.Fprintf(stdout, "%s\tv%d\t%s\n", item.Name, item.Version, item.ID)
+		sink.printf("%s\tv%d\t%s\n", item.Name, item.Version, item.ID)
 	}
-	return ExitOK, nil
+	return ExitOK, sink.Err()
 }
 
 func flowGet(ctx context.Context, clients *Clients, environment Env, args []string, stdout, stderr io.Writer) (int, error) {
@@ -510,9 +546,10 @@ func flowGet(ctx context.Context, clients *Clients, environment Env, args []stri
 	if *asJSON {
 		return ExitOK, writeJSON(stdout, flowView(resp.Msg.GetFlow()))
 	}
-	fmt.Fprintf(stdout, "%s v%d\n%s\n", resp.Msg.GetFlow().GetName(),
+	sink := newOut(stdout)
+	sink.printf("%s v%d\n%s\n", resp.Msg.GetFlow().GetName(),
 		resp.Msg.GetFlow().GetVersion(), resp.Msg.GetFlow().GetDefinitionJson())
-	return ExitOK, nil
+	return ExitOK, sink.Err()
 }
 
 func flowVersions(ctx context.Context, clients *Clients, environment Env, args []string, stdout, stderr io.Writer) (int, error) {
@@ -544,10 +581,11 @@ func flowVersions(ctx context.Context, clients *Clients, environment Env, args [
 	if *asJSON {
 		return ExitOK, writeJSON(stdout, map[string]any{"versions": items})
 	}
+	sink := newOut(stdout)
 	for _, item := range items {
-		fmt.Fprintf(stdout, "v%d\t%s\n", item.Version, item.ID)
+		sink.printf("v%d\t%s\n", item.Version, item.ID)
 	}
-	return ExitOK, nil
+	return ExitOK, sink.Err()
 }
 
 // invocationView is the CLI's stable JSON shape for an invocation. It mirrors
@@ -685,7 +723,11 @@ func flowInvoke(ctx context.Context, clients *Clients, args []string, stdout, st
 			return ExitFailure, err
 		}
 	} else {
-		fmt.Fprintf(stdout, "%s %s\n", inv.GetId(), invocationStateName(inv.GetState()))
+		sink := newOut(stdout)
+		sink.printf("%s %s\n", inv.GetId(), invocationStateName(inv.GetState()))
+		if writeErr := sink.Err(); writeErr != nil {
+			return ExitFailure, writeErr
+		}
 	}
 	// A completed invocation exits zero; a failed one does not. Waiting for an
 	// outcome and then hiding it would make --wait useless in a script.
@@ -749,17 +791,18 @@ func flowStatus(ctx context.Context, clients *Clients, args []string, stdout, st
 	if *asJSON {
 		return ExitOK, writeJSON(stdout, invocationToView(inv))
 	}
-	fmt.Fprintf(stdout, "%s %s %s\n", inv.GetId(), invocationStateName(inv.GetState()), inv.GetTerminalReason())
+	sink := newOut(stdout)
+	sink.printf("%s %s %s\n", inv.GetId(), invocationStateName(inv.GetState()), inv.GetTerminalReason())
 	for _, entry := range inv.GetProgress() {
-		fmt.Fprintf(stdout, "  %d %s %s %s\n", entry.GetSeq(), entry.GetStage(), entry.GetKey(), entry.GetDetail())
+		sink.printf("  %d %s %s %s\n", entry.GetSeq(), entry.GetStage(), entry.GetKey(), entry.GetDetail())
 	}
 	for _, env := range inv.GetEnvs() {
-		fmt.Fprintf(stdout, "  env %s %s %s\n", env.GetEnvName(), envStateName(env.GetState()), env.GetEnvId())
+		sink.printf("  env %s %s %s\n", env.GetEnvName(), envStateName(env.GetState()), env.GetEnvId())
 	}
 	for _, run := range inv.GetRuns() {
-		fmt.Fprintf(stdout, "  run %s %s %s\n", run.GetAgentName(), runStateName(run.GetState()), run.GetRunId())
+		sink.printf("  run %s %s %s\n", run.GetAgentName(), runStateName(run.GetState()), run.GetRunId())
 	}
-	return ExitOK, nil
+	return ExitOK, sink.Err()
 }
 
 func flowCancel(ctx context.Context, clients *Clients, args []string, stdout, stderr io.Writer) (int, error) {
@@ -783,6 +826,7 @@ func flowCancel(ctx context.Context, clients *Clients, args []string, stdout, st
 	if *asJSON {
 		return ExitOK, writeJSON(stdout, invocationToView(inv))
 	}
-	fmt.Fprintf(stdout, "%s %s\n", inv.GetId(), invocationStateName(inv.GetState()))
-	return ExitOK, nil
+	sink := newOut(stdout)
+	sink.printf("%s %s\n", inv.GetId(), invocationStateName(inv.GetState()))
+	return ExitOK, sink.Err()
 }
