@@ -128,7 +128,10 @@ test("inspects agent-written session memory", async ({ page }) => {
   const entry = page.locator('[data-testid="memory-entry"][data-key="browser.note"]');
   await expect(entry).toContainText("browser.note", { timeout: 120_000 });
   await expect(entry).toContainText("written by an agent");
-  await expect(page.getByTestId("memory-count")).toContainText("1 entries");
+  // Exactly one entry for this key, so the panel is not double-rendering the
+  // same write. The total count is deliberately not asserted: the platform
+  // writes its own keys (cost accounting) into the same namespace.
+  await expect(entry).toHaveCount(1);
 });
 
 // A8.7 — reconnecting through another replica rebuilds the same view, proving

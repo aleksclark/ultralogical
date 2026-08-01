@@ -65,25 +65,6 @@ func waitsOf(t *testing.T, stack *harness.Stack, org ultra.OrgID, parent ultra.R
 	return waits
 }
 
-// spawnScript builds a parent script that spawns one child, waits for it, then
-// finishes. The child script answers with its own text.
-func spawnScript(childPrompt, childText, parentFinal string, spec map[string]any) modelscript.Script {
-	return modelscript.Script{Turns: []modelscript.Turn{
-		{
-			Match:     modelscript.UserContains("orchestrate"),
-			Sticky:    true,
-			ToolCalls: []modelscript.ToolCallSpec{{Name: "spawn_agent", Args: spec}},
-		},
-		{
-			Match:     modelscript.UserContains("orchestrate"),
-			Sticky:    false,
-			ToolCalls: []modelscript.ToolCallSpec{{Name: "wait_for_agents", Args: map[string]any{"run_ids": []string{"PLACEHOLDER"}}}},
-		},
-		{Match: modelscript.UserContains(childPrompt), Sticky: true, Text: childText},
-		{Text: parentFinal},
-	}}
-}
-
 // A8.1 — a parent spawns a narrower child and a narrower grandchild; denied
 // authority is invisible at discovery and refused at dispatch with a uniform
 // error plus a PermissionDenied event.

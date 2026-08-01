@@ -76,13 +76,13 @@ func (w *StepWorker) spawnAgentTool(run ultra.AgentRun, job StepJob) fantasy.Age
 			// Re-check at dispatch: discovery-time filtering is a
 			// convenience, but authority is decided here.
 			if !run.Grants.MaySpawn || !run.Grants.AllowsTool("spawn_agent") {
-				return w.permissionDenied(ctx, run, "spawn_agent", nil, "tool not granted"), nil
+				return w.permissionDenied(ctx, run, "spawn_agent", "tool not granted"), nil
 			}
 			child, adopted, err := w.spawnChild(ctx, run, job, spawnRequest{spec: in, toolCallID: call.ID})
 			if err != nil {
 				var denied *deniedError
 				if errors.As(err, &denied) {
-					return w.permissionDenied(ctx, run, "spawn_agent", nil, denied.reason), nil
+					return w.permissionDenied(ctx, run, "spawn_agent", denied.reason), nil
 				}
 				return fantasy.NewTextErrorResponse("spawn failed"), nil
 			}
@@ -127,7 +127,7 @@ func (w *StepWorker) waitForAgentsTool(run ultra.AgentRun, rec *stepRecorder) fa
 				}
 				id := ultra.RunID(raw)
 				if !owned[id] {
-					return w.permissionDenied(ctx, run, "wait_for_agents", nil, "run is not a child of this agent"), nil
+					return w.permissionDenied(ctx, run, "wait_for_agents", "run is not a child of this agent"), nil
 				}
 				ids = append(ids, id)
 			}
@@ -169,7 +169,7 @@ func (w *StepWorker) runAgentCohortTool(run ultra.AgentRun, job StepJob, rec *st
 	return fantasy.NewAgentTool("run_agent_cohort", "Run several child agents concurrently and collect their results.",
 		func(ctx context.Context, in cohortInput, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
 			if !run.Grants.MaySpawn || !run.Grants.AllowsTool("run_agent_cohort") {
-				return w.permissionDenied(ctx, run, "run_agent_cohort", nil, "tool not granted"), nil
+				return w.permissionDenied(ctx, run, "run_agent_cohort", "tool not granted"), nil
 			}
 			if len(in.Specs) == 0 {
 				return fantasy.NewTextErrorResponse("run_agent_cohort requires at least one spec"), nil
@@ -192,7 +192,7 @@ func (w *StepWorker) runAgentCohortTool(run ultra.AgentRun, job StepJob, rec *st
 				if err != nil {
 					var denied *deniedError
 					if errors.As(err, &denied) {
-						return w.permissionDenied(ctx, run, "run_agent_cohort", nil, denied.reason), nil
+						return w.permissionDenied(ctx, run, "run_agent_cohort", denied.reason), nil
 					}
 					return fantasy.NewTextErrorResponse("cohort spawn failed"), nil
 				}
@@ -343,15 +343,15 @@ func (w *StepWorker) denialStubs(ctx context.Context, run ultra.AgentRun, offere
 		tool := name
 		stubs = append(stubs, fantasy.NewAgentTool(tool, "Not available to this agent.",
 			func(callCtx context.Context, _ struct{}, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-				return w.permissionDenied(callCtx, run, tool, nil, "tool not granted"), nil
+				return w.permissionDenied(callCtx, run, tool, "tool not granted"), nil
 			}))
 	}
 	_ = ctx
 	return stubs
 }
 
-func (w *StepWorker) permissionDenied(ctx context.Context, run ultra.AgentRun, tool string, envID *ultra.EnvID, reason string) fantasy.ToolResponse {
-	payload, _ := json.Marshal(ultra.PermissionDeniedPayload{RunID: run.ID, Tool: tool, EnvID: envID, Reason: reason})
+func (w *StepWorker) permissionDenied(ctx context.Context, run ultra.AgentRun, tool, reason string) fantasy.ToolResponse {
+	payload, _ := json.Marshal(ultra.PermissionDeniedPayload{RunID: run.ID, Tool: tool, Reason: reason})
 	_, _ = w.Store.Org(run.OrgID).Events().Append(ctx, run.SessionID, ultra.Event{Actor: ultra.Actor{Type: ultra.ActorSystem}, Kind: ultra.EventKindPermissionDenied, Payload: payload})
 	// Every denial returns the same opaque message: a caller must not be able
 	// to tell "you may not touch this" from "this does not exist".
