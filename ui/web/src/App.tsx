@@ -7,6 +7,7 @@ import { EnvState } from "@client/gen/ultra/v1/env_pb";
 import { clients } from "./api";
 import { initialView, reduceView } from "./reducer";
 import { EnvironmentPanel } from "@/components/environment-panel";
+import { MemoryPanel } from "@/components/memory-panel";
 import { RunTree } from "@/components/run-tree";
 import { SessionSidebar, type ConnectionState } from "@/components/session-sidebar";
 import { SettingsView, type CredentialForm, type ProviderForm } from "@/components/settings-view";
@@ -208,6 +209,16 @@ export function App() {
       setError(String(e));
     }
   }
+  async function rememberMemory(key: string, valueJson: string) {
+    if (!session || !key) return;
+    try {
+      await api.sessions.setMemory({ sessionId: session.id, key, valueJson: valueJson || '""' });
+      await refreshMultiplayer();
+      setError("");
+    } catch (e) {
+      setError(String(e));
+    }
+  }
   async function saveCredential() {
     if (!org || !credential.apiKey) return;
     try {
@@ -303,18 +314,7 @@ export function App() {
               onExec={execPreview}
             />
             <UsagePanel intervals={usage} totalSeconds={usageTotal} onRefresh={refreshUsage} />
-            {/* The inspector is always present, empty or not: an operator
-                needs to see that a session has no memory as readily as that it
-                has some. */}
-            <details className="text-xs" data-testid="session-memory" data-entry-count={memory.length}>
-              <summary>Session memory ({memory.length})</summary>
-              {memory.length === 0 && <p className="text-zinc-500">No session memory yet</p>}
-              {memory.map((m) => (
-                <pre key={m.key}>
-                  {m.key}: {m.valueJson}
-                </pre>
-              ))}
-            </details>
+            <MemoryPanel entries={memory} onSet={rememberMemory} />
             <Timeline items={view.items} onAnswer={answer} deltaFrames={view.deltaFrames} laneRunId={laneRunId} />
             <div className="flex gap-2 border-t border-zinc-800 pt-4">
               <Input

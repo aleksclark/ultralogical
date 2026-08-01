@@ -144,6 +144,41 @@ impl DesktopWindow {
         cx.notify();
     }
 
+    /// start_up is the application's startup sequence: list the org's
+    /// sessions, open the first one, and load usage. The native entrypoint
+    /// calls it after connecting, and UI tests call the same function, so
+    /// there is no test-only startup path that could diverge from what a user
+    /// sees when the application launches.
+    pub async fn start_up(
+        window: &WindowEntity,
+        client: &mut DesktopClient,
+        org_id: &str,
+        endpoint: &str,
+        cx: &mut gpui::AsyncApp,
+    ) {
+        let sessions = client.list_sessions(org_id).await.unwrap_or_default();
+        let first = sessions.first().cloned();
+        let attach = client.clone();
+        let org = org_id.to_string();
+        let endpoint = endpoint.to_string();
+        let _ = window.update(cx, |view: &mut DesktopWindow, cx| {
+            view.attach(attach, org, endpoint, cx);
+            view.set_sessions(sessions, cx);
+        });
+        if let Some(session) = first {
+            if let Ok(stream) = client.subscribe(&session.id, 0).await {
+                let _ = window.update(cx, |view: &mut DesktopWindow, cx| {
+                    view.open_session(session.id.clone(), stream, cx);
+                });
+            }
+        }
+        if let Ok((usage, total)) = client.usage(org_id).await {
+            let _ = window.update(cx, |view: &mut DesktopWindow, cx| {
+                view.set_usage(usage, total, cx);
+            });
+        }
+    }
+
     fn drain_stream(&mut self, cx: &mut Context<Self>) {
         let Some(stream) = self.stream.as_ref() else { return };
         let mut changed = false;
@@ -424,28 +459,6 @@ impl DesktopWindow {
             }))
     }
 
-    /// render_memory paints the session memory inspector. It is always present,
-    /// empty or not: an operator needs to see the absence as readily as the
-    /// presence of shared memory.
-    fn render_memory(&self) -> impl IntoElement {
-        let count = self.state.memory_keys.len();
-        div()
-            .flex()
-            .flex_col()
-            .gap_1()
-            .debug_selector(|| "memory-panel".to_string())
-            .child(
-                div()
-                    .text_color(DarkTheme::MUTED)
-                    .child(format!("session memory: {count}"))
-                    .debug_selector(move || format!("memory-count:{count}")),
-            )
-            .children(self.state.memory_keys.iter().map(|key| {
-                let label = format!("memory:{key}");
-                div().child(key.clone()).debug_selector(move || label.clone())
-            }))
-    }
-
     fn render_usage(&self) -> impl IntoElement {
         let total = self.state.usage_total_seconds;
         div()
@@ -474,6 +487,28 @@ impl DesktopWindow {
                         if interval.open { "open" } else { "closed" }
                     ))
                     .debug_selector(move || label.clone())
+            }))
+    }
+
+    /// render_memory paints the session's memory keys. Memory is folded from
+    /// the event log, so a painted key proves the window observed the write
+    /// rather than echoing its own request.
+    fn render_memory(&self) -> impl IntoElement {
+        let count = self.state.memory_keys.len();
+        div()
+            .flex()
+            .flex_col()
+            .gap_1()
+            .debug_selector(|| "memory-panel".to_string())
+            .child(
+                div()
+                    .text_color(DarkTheme::MUTED)
+                    .child(format!("session memory: {count} entries"))
+                    .debug_selector(move || format!("memory-count:{count}")),
+            )
+            .children(self.state.memory_keys.iter().map(|key| {
+                let label = format!("memory:{key}");
+                div().child(key.clone()).debug_selector(move || label.clone())
             }))
     }
 

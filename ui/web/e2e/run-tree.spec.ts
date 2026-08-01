@@ -123,9 +123,12 @@ test("inspects agent-written session memory", async ({ page }) => {
 
   const memory = page.getByTestId("session-memory");
   await expect(memory).toBeVisible({ timeout: 120_000 });
-  await memory.click();
-  await expect(memory).toContainText("browser.note");
-  await expect(memory).toContainText("written by an agent");
+  // The entry arrives through the event log, not through the panel's own form:
+  // nothing in this test typed it.
+  const entry = page.locator('[data-testid="memory-entry"][data-key="browser.note"]');
+  await expect(entry).toContainText("browser.note", { timeout: 120_000 });
+  await expect(entry).toContainText("written by an agent");
+  await expect(page.getByTestId("memory-count")).toContainText("1 entries");
 });
 
 // A8.7 — reconnecting through another replica rebuilds the same view, proving

@@ -54,26 +54,13 @@ fn main() {
                     return;
                 }
             };
-            let sessions = client.list_sessions(&org_id).await.unwrap_or_default();
-            let first = sessions.first().cloned();
-            let attach_client = client.clone();
-            let _ = handle.update(cx, |window: &mut DesktopWindow, _, cx| {
-                window.attach(attach_client, org_id.clone(), endpoint.clone(), cx);
-                window.set_sessions(sessions.clone(), cx);
-            });
-
-            if let Some(session) = first {
-                if let Ok(stream) = client.subscribe(&session.id, 0).await {
-                    let _ = handle.update(cx, |window: &mut DesktopWindow, _, cx| {
-                        window.open_session(session.id.clone(), stream, cx);
-                    });
-                }
-            }
-            if let Ok((usage, total)) = client.usage(&org_id).await {
-                let _ = handle.update(cx, |window: &mut DesktopWindow, _, cx| {
-                    window.set_usage(usage, total, cx);
-                });
-            }
+            // The startup sequence lives in the window so UI tests drive the
+            // same code path a launched application does.
+            let entity = match handle.entity(cx) {
+                Ok(entity) => entity,
+                Err(_) => return,
+            };
+            DesktopWindow::start_up(&entity, &mut client, &org_id, &endpoint, cx).await;
         })
         .detach();
     });

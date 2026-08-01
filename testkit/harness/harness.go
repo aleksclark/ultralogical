@@ -91,6 +91,7 @@ type Stack struct {
 	// "worker 0 died and worker 1 finished the work" is a statement about
 	// identifiable processes rather than about whichever one was last started.
 	workers    []*exec.Cmd
+	ultradMu   sync.Mutex
 	ultradCmds []*exec.Cmd
 	// ReplicaBaseURLs addresses each ultrad replica directly. BaseURL is the
 	// round-robin ingress in front of all of them.
@@ -235,40 +236,15 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 	stack.BaseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
 	stack.ReplicaBaseURLs = append(stack.ReplicaBaseURLs, stack.BaseURL)
 
-	ultradCmd := exec.Command(ultradBin)
-	ultradCmd.Env = append(os.Environ(),
-		"DATABASE_URL="+dbURL,
-		fmt.Sprintf("ULTRA_ADDR=127.0.0.1:%d", port),
-		fmt.Sprintf("ULTRA_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob),
-		"ULTRA_MASTER_KEY="+masterKey,
-		"ULTRA_DEFAULT_MODEL=mock-model",
-		"ULTRA_MIGRATE=false",
-	)
-	ultradCmd.Stdout = stack.logs
-	ultradCmd.Stderr = stack.logs
-	if err := ultradCmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		_ = ultradCmd.Process.Kill()
-		_, _ = ultradCmd.Process.Wait()
-	})
-
-	stack.ultradCmds = append(stack.ultradCmds, ultradCmd)
+	// Each replica owns its address, so killing and restarting one in place
+	// is invisible to a client holding that URL — which is what control-plane
+	// death actually looks like from outside.
+	stack.StartUltrad()
+	t.Cleanup(stack.KillUltrad)
 	for i := 1; i < options.UltradReplicas; i++ {
-		p := freePort(t)
-		base := fmt.Sprintf("http://127.0.0.1:%d", p)
-		cmd := exec.Command(ultradBin)
-		cmd.Env = append(os.Environ(), "DATABASE_URL="+dbURL, fmt.Sprintf("ULTRA_ADDR=127.0.0.1:%d", p), fmt.Sprintf("ULTRA_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob), "ULTRA_MASTER_KEY="+masterKey, "ULTRA_DEFAULT_MODEL=mock-model", "ULTRA_MIGRATE=false")
-		cmd.Stdout = stack.logs
-		cmd.Stderr = stack.logs
-		if err := cmd.Start(); err != nil {
-			t.Fatal(err)
-		}
-		stack.ultradCmds = append(stack.ultradCmds, cmd)
-		stack.ReplicaBaseURLs = append(stack.ReplicaBaseURLs, base)
-		t.Cleanup(func() { _ = cmd.Process.Kill(); _, _ = cmd.Process.Wait() })
-		waitHealthy(t, base)
+		stack.ReplicaBaseURLs = append(stack.ReplicaBaseURLs,
+			fmt.Sprintf("http://127.0.0.1:%d", freePort(t)))
+		stack.startUltradAt(i)
 	}
 	for range options.WorkerReplicas {
 		stack.StartWorker()
@@ -281,6 +257,59 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 	}
 	stack.startIngress(t)
 	return stack
+}
+
+// StartUltrad launches the primary ultrad on its original port and waits for
+// it to serve. Restarting in place keeps BaseURL valid, so a client cannot
+// tell the difference between a restart and a stall except by observing the
+// process.
+func (s *Stack) StartUltrad() { s.startUltradAt(0) }
+
+// KillUltrad SIGKILLs the primary ultrad process (control-plane crash).
+func (s *Stack) KillUltrad() {
+	s.ultradMu.Lock()
+	defer s.ultradMu.Unlock()
+	if len(s.ultradCmds) == 0 || s.ultradCmds[0] == nil {
+		return
+	}
+	_ = s.ultradCmds[0].Process.Kill()
+	_, _ = s.ultradCmds[0].Process.Wait()
+	s.ultradCmds[0] = nil
+}
+
+// startUltradAt launches replica index on the address it already owns, so a
+// restart is invisible to clients holding that URL.
+func (s *Stack) startUltradAt(index int) {
+	if index < 0 || index >= len(s.ReplicaBaseURLs) {
+		s.t.Fatalf("harness: no ultrad replica at index %d", index)
+	}
+	base := s.ReplicaBaseURLs[index]
+	parsed, err := url.Parse(base)
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	cmd := exec.Command(s.ultradBin)
+	cmd.Env = append(os.Environ(),
+		"DATABASE_URL="+s.DatabaseURL,
+		"ULTRA_ADDR="+parsed.Host,
+		fmt.Sprintf("ULTRA_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob),
+		"ULTRA_MASTER_KEY="+s.MasterKey,
+		"ULTRA_DEFAULT_MODEL=mock-model",
+		"ULTRA_MIGRATE=false",
+	)
+	cmd.Stdout = s.logs
+	cmd.Stderr = s.logs
+	if err := cmd.Start(); err != nil {
+		s.t.Fatal(err)
+	}
+	s.ultradMu.Lock()
+	for len(s.ultradCmds) <= index {
+		s.ultradCmds = append(s.ultradCmds, nil)
+	}
+	s.ultradCmds[index] = cmd
+	s.ultradMu.Unlock()
+	s.t.Cleanup(func() { _ = cmd.Process.Kill(); _, _ = cmd.Process.Wait() })
+	waitHealthy(s.t, base)
 }
 
 // newWorkerCmd builds a worker process with the harness environment.
@@ -599,32 +628,14 @@ func (s *Stack) RestartUltrad(index int) {
 	if index < 0 || index >= len(s.ultradCmds) {
 		s.t.Fatalf("harness: no ultrad replica at index %d", index)
 	}
-	base := s.ReplicaBaseURLs[index]
-	parsed, err := url.Parse(base)
-	if err != nil {
-		s.t.Fatal(err)
-	}
+	s.ultradMu.Lock()
 	if cmd := s.ultradCmds[index]; cmd != nil {
 		_ = cmd.Process.Kill()
 		_, _ = cmd.Process.Wait()
+		s.ultradCmds[index] = nil
 	}
-	cmd := exec.Command(s.ultradBin)
-	cmd.Env = append(os.Environ(),
-		"DATABASE_URL="+s.DatabaseURL,
-		"ULTRA_ADDR="+parsed.Host,
-		fmt.Sprintf("ULTRA_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob),
-		"ULTRA_MASTER_KEY="+s.MasterKey,
-		"ULTRA_DEFAULT_MODEL=mock-model",
-		"ULTRA_MIGRATE=false",
-	)
-	cmd.Stdout = s.logs
-	cmd.Stderr = s.logs
-	if err := cmd.Start(); err != nil {
-		s.t.Fatal(err)
-	}
-	s.ultradCmds[index] = cmd
-	s.t.Cleanup(func() { _ = cmd.Process.Kill(); _, _ = cmd.Process.Wait() })
-	waitHealthy(s.t, base)
+	s.ultradMu.Unlock()
+	s.startUltradAt(index)
 }
 
 // AliceClient returns a client authenticated as Alice (owner of OrgA).

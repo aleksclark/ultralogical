@@ -27,6 +27,12 @@ func (c *Client) Revoked() bool { return c.revoked.Load() }
 type Cache struct {
 	mu      sync.Mutex
 	entries map[string]*cacheEntry
+	// lastTools remembers the tool names last discovered in an
+	// environment. It deliberately outlives the client entry: when an
+	// environment becomes unreachable, callers need to know which tools it
+	// used to offer so they can fail those calls in a typed way rather than
+	// silently shrinking the caller's capabilities.
+	lastTools map[string][]string
 }
 
 type cacheEntry struct {
@@ -35,7 +41,26 @@ type cacheEntry struct {
 }
 
 // NewCache creates an empty cache.
-func NewCache() *Cache { return &Cache{entries: map[string]*cacheEntry{}} }
+func NewCache() *Cache {
+	return &Cache{entries: map[string]*cacheEntry{}, lastTools: map[string][]string{}}
+}
+
+// RememberTools records the tool names discovered in an environment.
+func (c *Cache) RememberTools(envID string, names []string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.lastTools == nil {
+		c.lastTools = map[string][]string{}
+	}
+	c.lastTools[envID] = append([]string(nil), names...)
+}
+
+// LastTools returns the tool names last discovered in an environment.
+func (c *Cache) LastTools(envID string) []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return append([]string(nil), c.lastTools[envID]...)
+}
 
 // Client returns the cached client for envID at the given epoch, creating one
 // when absent. An entry from an older epoch is revoked and replaced; a

@@ -117,6 +117,35 @@ impl DesktopClient {
         .await
     }
 
+    pub async fn set_memory(&mut self, session_id: &str, key: &str, value_json: &str) -> Result<(), BoxError> {
+        let mut client = self.clone();
+        let session_id = session_id.to_string();
+        let key = key.to_string();
+        let value_json = value_json.to_string();
+        self.dispatch(async move {
+            client
+                .sessions
+                .set_memory(client.auth.request(v1::SetMemoryRequest { session_id, key, value_json }))
+                .await?;
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn list_memory(&mut self, session_id: &str) -> Result<Vec<String>, BoxError> {
+        let mut client = self.clone();
+        let session_id = session_id.to_string();
+        self.dispatch(async move {
+            let listed = client
+                .sessions
+                .list_memory(client.auth.request(v1::ListMemoryRequest { session_id }))
+                .await?
+                .into_inner();
+            Ok(listed.entries.into_iter().map(|entry| entry.key).collect())
+        })
+        .await
+    }
+
     pub async fn start_run(&mut self, session_id: &str, prompt: &str) -> Result<String, BoxError> {
         let mut client = self.clone();
         let session_id = session_id.to_string();
