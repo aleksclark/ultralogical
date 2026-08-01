@@ -509,6 +509,18 @@ func (s *Stack) seed(t *testing.T, store *postgres.Store, options Options) {
 		if err := store.Org(org.ID).Providers().Create(ctx, ultra.ProviderInstance{
 			ID: ultra.ProviderInstanceID(uuid.NewString()), OrgID: org.ID,
 			Kind: ultra.ProviderKindLocalDocker, Name: "default", RateClass: ultra.RateClassBYO, State: "ready",
+			// The seeded registration carries the capabilities local Docker
+			// really has. Seeding it blank would make every flow that declares
+			// health readiness fail for the wrong reason.
+			Capabilities: ultra.ProviderCapabilities{
+				Kind: ultra.ProviderKindLocalDocker,
+				Supported: []ultra.ProviderCapability{
+					ultra.CapabilityServesToolEndpoint,
+					ultra.CapabilityRestartPreservesWorkspace,
+					ultra.CapabilityAdoptsOrphans,
+					ultra.CapabilityEnumeratesResources,
+				},
+			},
 		}); err != nil {
 			t.Fatal(err)
 		}
