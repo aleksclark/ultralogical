@@ -15,12 +15,13 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider/localdocker"
-	"github.com/aleksclark/ultralogical/envprovider/proxy"
+	"github.com/aleksclark/ultralogical/envprovider"
 	"github.com/aleksclark/ultralogical/envwork"
 	"github.com/aleksclark/ultralogical/flowwork"
 	"github.com/aleksclark/ultralogical/jobqueue"
@@ -71,18 +72,11 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
-	local, err := localdocker.New(localdocker.Config{Image: envOr("ULTRA_BEZALEL_IMAGE", "ultralogical/bezalel:local")})
-	if err != nil {
-		return err
-	}
-	defer func() { _ = local.Close() }()
-	providers := envwork.Registry{ultra.ProviderKindLocalDocker: local}
-	for _, kind := range []string{ultra.ProviderKindBYOKubernetes, ultra.ProviderKindHostedEKS, ultra.ProviderKindBYONomad, ultra.ProviderKindTunnelLocal} {
-		p, _ := proxy.New([]byte(`{"mode":"loopback"}`), kind, local)
-		providers[kind] = p
-	}
+	// Adapters are built per registration from its own configuration, so a
+	// worker never holds one provider standing in for another.
+	registry := envprovider.StandardRegistry(providerDeployment())
 	envs := &envwork.Service{Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Keyring: keyring,
-		Providers: providers, Log: log,
+		Providers: registry, Log: log,
 		ReconcileInterval: envDuration("ULTRA_RECONCILE_INTERVAL", 5*time.Second),
 		ProvisionTimeout:  envDuration("ULTRA_PROVISION_TIMEOUT", time.Minute)}
 	// Flow invocations advance on any worker: provisioning, readiness,
@@ -172,4 +166,36 @@ func envDuration(name string, def time.Duration) time.Duration {
 		}
 	}
 	return def
+}
+
+// providerDeployment reads which provider kinds this worker can host and how
+// environments are reached.
+func providerDeployment() envprovider.Deployment {
+	deployment := envprovider.Deployment{
+		BezalelImage:           envOr("ULTRA_BEZALEL_IMAGE", "ultralogical/bezalel:local"),
+		KubernetesEndpointMode: envOr("ULTRA_K8S_ENDPOINT_MODE", ""),
+		KubernetesEndpointHost: envOr("ULTRA_K8S_ENDPOINT_HOST", ""),
+	}
+	if kinds := os.Getenv("ULTRA_PROVIDER_KINDS"); kinds != "" {
+		deployment.EnabledKinds = strings.Split(kinds, ",")
+	}
+	if cidrs := os.Getenv("ULTRA_HOSTED_INGRESS_CIDRS"); cidrs != "" {
+		deployment.HostedIngressCIDRs = strings.Split(cidrs, ",")
+	}
+	if low, high := envInt32("ULTRA_K8S_NODEPORT_LOW"), envInt32("ULTRA_K8S_NODEPORT_HIGH"); high > 0 {
+		deployment.KubernetesNodePortRange = [2]int32{low, high}
+	}
+	return deployment
+}
+
+func envInt32(name string) int32 {
+	value := os.Getenv(name)
+	if value == "" {
+		return 0
+	}
+	parsed, err := strconv.ParseInt(value, 10, 32)
+	if err != nil {
+		return 0
+	}
+	return int32(parsed)
 }

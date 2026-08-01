@@ -106,13 +106,18 @@ type DevEnv struct {
 
 // ProviderInstance is an org-scoped registration of where environments run.
 type ProviderInstance struct {
-	ID            ProviderInstanceID
-	OrgID         OrgID
-	Kind          string
-	Name          string
-	Config        json.RawMessage
-	RateClass     string
-	State         string
+	ID        ProviderInstanceID
+	OrgID     OrgID
+	Kind      string
+	Name      string
+	Config    json.RawMessage
+	RateClass string
+	State     string
+	// Capabilities is what this registration's control plane answered when it
+	// was probed. It is stored rather than recomputed so a decision about what
+	// a provider can do never depends on the control plane being reachable at
+	// the moment the question is asked.
+	Capabilities  ProviderCapabilities
 	LastHealthyAt *time.Time
 	CreatedAt     time.Time
 }

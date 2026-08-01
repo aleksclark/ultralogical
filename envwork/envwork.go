@@ -66,15 +66,20 @@ func reconcileAfterRestart(job RestartJob) ReconcileJob {
 
 func (ReconcileJob) Kind() string { return "env.reconcile" }
 
-// Registry maps provider-instance kinds to concrete providers.
-type Registry map[string]ultra.EnvProvider
+// ProviderBuilder builds the adapter for one org registration. Environments
+// are hosted per registration, not per kind: two orgs registering Kubernetes
+// point at different clusters, so a single shared instance per kind would send
+// one org's work to another org's control plane.
+type ProviderBuilder interface {
+	Build(ctx context.Context, kind string, config json.RawMessage) (ultra.EnvProvider, error)
+}
 
 // Service creates env records and implements lifecycle workers.
 type Service struct {
 	Store             ultra.Store
 	Enqueue           jobqueue.TxEnqueuer
 	Keyring           secrets.Keyring
-	Providers         Registry
+	Providers         ProviderBuilder
 	Log               *slog.Logger
 	ReconcileInterval time.Duration
 	ProvisionTimeout  time.Duration
@@ -208,9 +213,12 @@ func (s *Service) provider(ctx context.Context, scope ultra.OrgScope, env ultra.
 	if err != nil {
 		return nil, instance, err
 	}
-	provider := s.Providers[instance.Kind]
-	if provider == nil {
-		return nil, instance, fmt.Errorf("envwork: provider kind %q disabled", instance.Kind)
+	if s.Providers == nil {
+		return nil, instance, fmt.Errorf("envwork: no provider registry is configured")
+	}
+	provider, err := s.Providers.Build(ctx, instance.Kind, instance.Config)
+	if err != nil {
+		return nil, instance, fmt.Errorf("envwork: build provider for %s: %w", instance.Name, err)
 	}
 	return provider, instance, nil
 }

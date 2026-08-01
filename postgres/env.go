@@ -178,10 +178,14 @@ func (s *providerStore) Create(ctx context.Context, p ultra.ProviderInstance) er
 	if len(config) == 0 {
 		config = []byte(`{}`)
 	}
-	_, err := s.scope.s.db().Exec(ctx,
-		`INSERT INTO provider_instances (id, org_id, kind, name, config, rate_class, state)
-		VALUES ($1,$2,$3,$4,$5,$6,$7)`, string(p.ID), string(s.scope.org), p.Kind,
-		p.Name, config, p.RateClass, p.State)
+	capabilities, err := json.Marshal(p.Capabilities)
+	if err != nil {
+		return fmt.Errorf("postgres: encode provider capabilities: %w", err)
+	}
+	_, err = s.scope.s.db().Exec(ctx,
+		`INSERT INTO provider_instances (id, org_id, kind, name, config, rate_class, state, capabilities)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, string(p.ID), string(s.scope.org), p.Kind,
+		p.Name, config, p.RateClass, p.State, capabilities)
 	if isUniqueViolation(err) {
 		return ultra.ErrAlreadyExists
 	}
@@ -191,17 +195,21 @@ func (s *providerStore) Create(ctx context.Context, p ultra.ProviderInstance) er
 	return nil
 }
 
-const providerColumns = `id, org_id, kind, name, config, rate_class, state, last_healthy_at, created_at`
+const providerColumns = `id, org_id, kind, name, config, rate_class, state, capabilities, last_healthy_at, created_at`
 
 func scanProvider(row pgx.Row) (ultra.ProviderInstance, error) {
 	var p ultra.ProviderInstance
+	var capabilities []byte
 	err := row.Scan(&p.ID, &p.OrgID, &p.Kind, &p.Name, &p.Config, &p.RateClass,
-		&p.State, &p.LastHealthyAt, &p.CreatedAt)
+		&p.State, &capabilities, &p.LastHealthyAt, &p.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ultra.ProviderInstance{}, ultra.ErrNotFound
 	}
 	if err != nil {
 		return ultra.ProviderInstance{}, fmt.Errorf("postgres: scan provider: %w", err)
+	}
+	if err := json.Unmarshal(capabilities, &p.Capabilities); err != nil {
+		return ultra.ProviderInstance{}, fmt.Errorf("postgres: decode provider capabilities: %w", err)
 	}
 	return p, nil
 }

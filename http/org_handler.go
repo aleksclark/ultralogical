@@ -10,15 +10,16 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	ultra "github.com/aleksclark/ultralogical"
+	"github.com/aleksclark/ultralogical/envprovider"
 	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
 	"github.com/aleksclark/ultralogical/secrets"
 )
 
 // orgHandler implements ultrav1connect.OrgServiceHandler.
 type orgHandler struct {
-	store         ultra.Store
-	keyring       secrets.Keyring
-	providerKinds map[string]func(context.Context, []byte) error
+	store     ultra.Store
+	keyring   secrets.Keyring
+	providers *envprovider.Registry
 }
 
 // requireMember returns the caller's role in the org, collapsing "no such
@@ -254,11 +255,7 @@ func (h *orgHandler) RegisterProvider(ctx context.Context, req *connect.Request[
 	if err := requireAdmin(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
-	validate, enabled := h.providerKinds[req.Msg.GetKind()]
-	if h.providerKinds == nil && req.Msg.GetKind() == ultra.ProviderKindLocalDocker {
-		enabled = true
-	}
-	if !enabled {
+	if h.providers == nil || !h.providers.Enabled(req.Msg.GetKind()) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("provider kind is not enabled"))
 	}
 	name := req.Msg.GetName()
@@ -272,16 +269,18 @@ func (h *orgHandler) RegisterProvider(ctx context.Context, req *connect.Request[
 	if !json.Valid(config) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("config_json is invalid"))
 	}
-	if validate != nil {
-		if err := validate(ctx, config); err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
+	// The dry run is read-only and happens before anything is persisted: a
+	// registration that cannot reach its control plane is refused rather than
+	// stored as a provider that has never answered.
+	capabilities, err := h.providers.DryRun(ctx, req.Msg.GetKind(), config)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(secrets.DefaultRedactor.Redact(err.Error())))
 	}
 	rateClass := ultra.RateClassBYO
 	if req.Msg.GetKind() == ultra.ProviderKindHostedEKS {
 		rateClass = ultra.RateClassHosted
 	}
-	p := ultra.ProviderInstance{ID: ultra.ProviderInstanceID(uuid.NewString()), OrgID: orgID, Kind: req.Msg.GetKind(), Name: name, Config: config, RateClass: rateClass, State: "ready"}
+	p := ultra.ProviderInstance{ID: ultra.ProviderInstanceID(uuid.NewString()), OrgID: orgID, Kind: req.Msg.GetKind(), Name: name, Config: config, RateClass: rateClass, State: "ready", Capabilities: capabilities}
 	if err := h.store.Org(orgID).Providers().Create(ctx, p); err != nil {
 		return nil, mapStoreErr(err)
 	}

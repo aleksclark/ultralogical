@@ -15,11 +15,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider/proxy"
+	"github.com/aleksclark/ultralogical/envprovider"
 	"github.com/aleksclark/ultralogical/envwork"
 	"github.com/aleksclark/ultralogical/flowwork"
 	ultrahttp "github.com/aleksclark/ultralogical/http"
@@ -95,28 +97,20 @@ func run(log *slog.Logger) error {
 		Log: log, DefaultModel: defaultModel,
 	}
 
-	providerKinds := map[string]func(context.Context, []byte) error{ultra.ProviderKindLocalDocker: func(context.Context, []byte) error { return nil }}
-	for _, kind := range []string{ultra.ProviderKindBYOKubernetes, ultra.ProviderKindHostedEKS, ultra.ProviderKindBYONomad, ultra.ProviderKindTunnelLocal} {
-		k := kind
-		providerKinds[k] = func(ctx context.Context, raw []byte) error {
-			p, err := proxy.New(raw, k, nil)
-			if err != nil {
-				return err
-			}
-			return p.Validate(ctx)
-		}
-	}
+	// Registration probes the real control plane through this registry, so a
+	// stored provider is one that answered rather than one that parsed.
+	providers := envprovider.StandardRegistry(providerDeployment())
 	handler := ultrahttp.NewHandler(ultrahttp.Config{
-		Store:         store,
-		ProviderKinds: providerKinds,
-		Auth:          ultra.NewDevTokenAuthenticator(store, devTokens),
-		Bus:           bus,
-		Log:           log,
-		Keyring:       keyring,
-		Enqueue:       postgres.TxEnqueuer{Queue: queue},
-		DefaultModel:  defaultModel,
-		Envs:          envs,
-		Flows:         flows,
+		Store:        store,
+		Providers:    providers,
+		Auth:         ultra.NewDevTokenAuthenticator(store, devTokens),
+		Bus:          bus,
+		Log:          log,
+		Keyring:      keyring,
+		Enqueue:      postgres.TxEnqueuer{Queue: queue},
+		DefaultModel: defaultModel,
+		Envs:         envs,
+		Flows:        flows,
 	})
 
 	protocols := new(http.Protocols)
@@ -150,4 +144,39 @@ func envOr(name, def string) string {
 		return v
 	}
 	return def
+}
+
+// providerDeployment reads which provider kinds this deployment offers and how
+// environments are reached. Defaults keep a single-machine deployment working
+// with no configuration.
+func providerDeployment() envprovider.Deployment {
+	deployment := envprovider.Deployment{
+		BezalelImage:           envOr("ULTRA_BEZALEL_IMAGE", "ultralogical/bezalel:local"),
+		KubernetesEndpointMode: envOr("ULTRA_K8S_ENDPOINT_MODE", ""),
+		KubernetesEndpointHost: envOr("ULTRA_K8S_ENDPOINT_HOST", ""),
+	}
+	if kinds := os.Getenv("ULTRA_PROVIDER_KINDS"); kinds != "" {
+		deployment.EnabledKinds = strings.Split(kinds, ",")
+	}
+	if cidrs := os.Getenv("ULTRA_HOSTED_INGRESS_CIDRS"); cidrs != "" {
+		deployment.HostedIngressCIDRs = strings.Split(cidrs, ",")
+	}
+	if low, high := envInt32("ULTRA_K8S_NODEPORT_LOW"), envInt32("ULTRA_K8S_NODEPORT_HIGH"); high > 0 {
+		deployment.KubernetesNodePortRange = [2]int32{low, high}
+	}
+	return deployment
+}
+
+// envInt32 reads a bounded numeric setting, treating anything unparseable as
+// unset rather than as zero.
+func envInt32(name string) int32 {
+	value := os.Getenv(name)
+	if value == "" {
+		return 0
+	}
+	parsed, err := strconv.ParseInt(value, 10, 32)
+	if err != nil {
+		return 0
+	}
+	return int32(parsed)
 }
