@@ -11,6 +11,28 @@ Legend: `go:` real-stack Go test, `conf:` shared provider conformance run,
 `cli:` `cmd/ultra` test, `web:` Playwright against the dark shadcn application,
 `gpui:` Rust test driving the rendered GPUI window.
 
+## Progress
+
+Phase 10 is **in progress**. Delivered and asserted so far:
+
+| Area | State |
+|---|---|
+| Capability manifest, conformance parameterization, native-inspection requirement | done (A10.1) |
+| Real Kubernetes adapter passing the unmodified contract on kind | done (A10.1, A10.2 partial) |
+| Hosted namespace/RBAC/NetworkPolicy/quota isolation, proven by real cross-namespace traffic | done (A10.3) |
+| Real Nomad adapter passing the unmodified contract on a dev agent | done (A10.1, A10.4 partial) |
+| Tunnel agent control API, request signing, suspend/resume, lease revocation | done (A10.1, A10.5 partial) |
+| Provider registry, per-registration adapters, registration dry run; loopback alias deleted | done (A10.6 partial) |
+| Provider and credential surfaces in both applications | done (A10.7 partial) |
+| Capability decided behaviorally rather than by kind | done (A10.10) |
+| Direct invocation route in both applications | done (A10.11) |
+
+Still open: reconciliation of externally deleted or replaced resources, the
+kind/Nomad/tunnel CI legs with native inspection (A10.8), the static-provider
+walkthrough and executed onboarding guides (A10.9), credential rotation
+evidence, and the independent completion audit. The rows below remain the
+contract for that work.
+
 ## Reconciliation: what Phase 5 actually shipped
 
 `envprovider/proxy` registers one adapter for `byo_k8s`, `hosted_eks`,
