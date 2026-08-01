@@ -128,10 +128,11 @@ func (h *sessionHandler) SetMemory(ctx context.Context, req *connect.Request[ult
 		if e := scope.Memory().Set(ctx, entry); e != nil {
 			return e
 		}
-		payload := ultra.MemoryEventPayload{Key: entry.Key, UpdatedBy: entry.UpdatedBy}
-		if len(value) <= 1024 {
-			payload.Value = value
+		inline := value
+		if len(inline) > 1024 {
+			inline = nil
 		}
+		payload := ultra.NewMemoryEventPayload(entry.Key, entry.UpdatedBy, inline)
 		seq, err = appendTransition(ctx, scope, session, ultra.EventKindMemorySet, payload)
 		return err
 	})
@@ -180,7 +181,7 @@ func (h *sessionHandler) DeleteMemory(ctx context.Context, req *connect.Request[
 		if e := scope.Memory().Delete(ctx, session, req.Msg.GetKey()); e != nil {
 			return e
 		}
-		seq, err = appendTransition(ctx, scope, session, ultra.EventKindMemoryDeleted, ultra.MemoryEventPayload{Key: req.Msg.GetKey(), UpdatedBy: ultra.Actor{Type: ultra.ActorUser, ID: string(user.ID)}})
+		seq, err = appendTransition(ctx, scope, session, ultra.EventKindMemoryDeleted, ultra.NewMemoryEventPayload(req.Msg.GetKey(), ultra.Actor{Type: ultra.ActorUser, ID: string(user.ID)}, nil))
 		return err
 	})
 	if err != nil {

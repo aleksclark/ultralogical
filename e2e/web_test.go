@@ -13,21 +13,27 @@ import (
 	"github.com/aleksclark/ultralogical/testkit/modelscript"
 )
 
+// webScenario labels the browser suite's turns. Two labelled scenarios must
+// never match one prompt; the script server refuses rather than guessing.
+const webScenario = 1
+
 // webScript is the model script the browser suite runs against. Turns are
 // sticky and matcher-selected because the specs execute in an arbitrary order
 // and each starts its own run: a prompt must always get the same response.
 func webScript() modelscript.Script {
 	return modelscript.Script{Turns: []modelscript.Turn{
 		{
+			Scenario:  webScenario,
 			Match:     modelscript.UserContains("ask me something"),
 			Text:      "I need input",
 			Sticky:    true,
 			ToolCalls: []modelscript.ToolCallSpec{{Name: "ask_user", Args: map[string]any{"question": "Which color?", "choices": []string{"red", "blue"}}}},
 		},
-		{Match: modelscript.UserContains("blue"), Text: "great choice of blue", ChunkSize: 4, Sticky: true},
+		{Scenario: webScenario, Match: modelscript.UserContains("blue"), Text: "great choice of blue", ChunkSize: 4, Sticky: true},
 		// A7.2: many small chunks so the browser must render intermediate
 		// frames rather than a single final flush.
 		{
+			Scenario:   webScenario,
 			Match:      modelscript.UserContains("stream to me"),
 			Text:       "streaming one two three four five six seven eight",
 			ChunkSize:  3,
@@ -36,7 +42,8 @@ func webScript() modelscript.Script {
 		},
 		// A8.7: a cohort, so the browser has a real run tree to render.
 		{
-			Match: modelscript.UserContains("cohort work"),
+			Scenario: webScenario,
+			Match:    modelscript.UserContains("cohort work"),
 			ToolCalls: []modelscript.ToolCallSpec{{Name: "run_agent_cohort", Args: map[string]any{
 				"timeout": "3m",
 				"specs": []map[string]any{
@@ -46,19 +53,21 @@ func webScript() modelscript.Script {
 				},
 			}}},
 		},
-		{Match: modelscript.UserContains("cohort work"), Sticky: true, Text: "cohort summarized"},
-		{Match: modelscript.UserContains("browser member"), Sticky: true, Text: "member finished"},
+		{Scenario: webScenario, Match: modelscript.UserContains("cohort work"), Sticky: true, Text: "cohort summarized"},
+		{Scenario: webScenario, Match: modelscript.UserContains("browser member"), Sticky: true, Text: "member finished"},
 		// A8.7: a cohort whose member never finishes, so the browser can show
 		// a wait timing out.
 		{
-			Match: modelscript.UserContains("stalling cohort"),
+			Scenario: webScenario,
+			Match:    modelscript.UserContains("stalling cohort"),
 			ToolCalls: []modelscript.ToolCallSpec{{Name: "run_agent_cohort", Args: map[string]any{
 				"timeout": "3s",
 				"specs":   []map[string]any{{"prompt": "browser stalled member", "tools": []string{"post_event"}}},
 			}}},
 		},
-		{Match: modelscript.UserContains("stalling cohort"), Sticky: true, Text: "proceeded without the member"},
+		{Scenario: webScenario, Match: modelscript.UserContains("stalling cohort"), Sticky: true, Text: "proceeded without the member"},
 		{
+			Scenario:   webScenario,
 			Match:      modelscript.UserContains("browser stalled member"),
 			Sticky:     true,
 			Text:       "far too late",
@@ -66,12 +75,13 @@ func webScript() modelscript.Script {
 		},
 		// A8.7: an agent writes session memory the browser then inspects.
 		{
-			Match: modelscript.UserContains("remember something"),
+			Scenario: webScenario,
+			Match:    modelscript.UserContains("remember something"),
 			ToolCalls: []modelscript.ToolCallSpec{{Name: "session_memory_set", Args: map[string]any{
 				"key": "browser.note", "value": map[string]any{"detail": "written by an agent"},
 			}}},
 		},
-		{Match: modelscript.UserContains("remember something"), Sticky: true, Text: "remembered"},
+		{Scenario: webScenario, Match: modelscript.UserContains("remember something"), Sticky: true, Text: "remembered"},
 	}}
 }
 

@@ -15,10 +15,11 @@ const maxInlineMemoryValue = 1024
 
 // appendMemoryEvent records a memory change so every subscriber sees it.
 func appendMemoryEvent(ctx context.Context, scope ultra.OrgScope, run ultra.AgentRun, kind, key string, value []byte, actor ultra.Actor) error {
-	payload := ultra.MemoryEventPayload{Key: key, UpdatedBy: actor}
-	if len(value) > 0 && len(value) <= maxInlineMemoryValue {
-		payload.Value = value
+	inline := value
+	if len(inline) > maxInlineMemoryValue {
+		inline = nil
 	}
+	payload := ultra.NewMemoryEventPayload(key, actor, inline)
 	encoded, err := json.Marshal(payload)
 	if err != nil {
 		return err

@@ -14,6 +14,7 @@ use ultralogical_desktop::{
 
 fn main() {
     let url = std::env::var("ULTRAD_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".into());
+    let endpoint_label = url.clone();
     let token = std::env::var("ULTRA_TOKEN").unwrap_or_else(|_| "dev-token".into());
 
     Application::new().run(move |cx: &mut App| {
@@ -33,6 +34,7 @@ fn main() {
         let url = url.clone();
         let token = token.clone();
         cx.spawn(async move |cx| {
+            let endpoint = endpoint_label.clone();
             let connected = DesktopClient::connect(runtime::handle(), url, &token).await;
             let mut client = match connected {
                 Ok(client) => client,
@@ -56,7 +58,7 @@ fn main() {
             let first = sessions.first().cloned();
             let attach_client = client.clone();
             let _ = handle.update(cx, |window: &mut DesktopWindow, _, cx| {
-                window.attach(attach_client, org_id.clone(), cx);
+                window.attach(attach_client, org_id.clone(), endpoint.clone(), cx);
                 window.set_sessions(sessions.clone(), cx);
             });
 

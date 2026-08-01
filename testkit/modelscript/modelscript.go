@@ -97,6 +97,11 @@ type Turn struct {
 	// Tests use it to hold a run in a known state (for example a parent
 	// parked on children) without sleeping and hoping.
 	Gate <-chan struct{}
+	// Scenario labels which independent scenario a turn belongs to. Turns from
+	// two different labelled scenarios must never match one request: that
+	// means one scenario's prompt is a substring of another's, and the server
+	// refuses rather than guessing.
+	Scenario int
 	// Sticky keeps a matched turn available for later requests instead of
 	// consuming it. A suite that drives several independent scenarios against
 	// one server (a browser suite whose specs each start their own run, for
@@ -235,10 +240,19 @@ func (s *Server) selectTurn(req Request) (Turn, error) {
 	}
 
 	var matching []Turn
+	var matchedGroups []int
 	for _, t := range s.script.Turns {
 		if t.Match == nil || t.Match(req.Messages) {
 			matching = append(matching, t)
+			matchedGroups = append(matchedGroups, t.group())
 		}
+	}
+	// A prompt that matches turns from two different scenarios is almost
+	// always an accident: one scenario's prompt is a substring of another's.
+	// Silently choosing one produces a baffling failure far from the cause, so
+	// say so here instead.
+	if distinct := distinctGroups(matchedGroups); len(distinct) > 1 {
+		return Turn{}, fmt.Errorf("modelscript: request matched turns from %d scenarios (%v); make the prompts distinct", len(distinct), distinct)
 	}
 	if len(matching) == 0 {
 		return Turn{}, fmt.Errorf("modelscript: no turn matched request with %d messages", len(req.Messages))
@@ -254,6 +268,24 @@ func (s *Server) selectTurn(req Request) (Turn, error) {
 		return last, nil
 	}
 	return Turn{}, fmt.Errorf("modelscript: conversation reached depth %d but only %d turns matched", depth, len(matching))
+}
+
+// group reports which scenario a turn belongs to. Turns default to group zero,
+// which is treated as "unlabelled" and never conflicts.
+func (t Turn) group() int { return t.Scenario }
+
+// distinctGroups lists the labelled scenarios present in a match set.
+func distinctGroups(groups []int) []int {
+	seen := map[int]bool{}
+	var out []int
+	for _, g := range groups {
+		if g == 0 || seen[g] {
+			continue
+		}
+		seen[g] = true
+		out = append(out, g)
+	}
+	return out
 }
 
 // countAssistants reports how many model turns a conversation already

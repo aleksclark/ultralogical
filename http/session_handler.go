@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 
 	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/jobqueue"
 	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
+	"github.com/aleksclark/ultralogical/jobqueue"
 )
 
 // sessionHandler implements ultrav1connect.SessionServiceHandler.

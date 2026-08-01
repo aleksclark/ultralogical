@@ -267,6 +267,22 @@ impl DesktopClient {
         .await
     }
 
+    /// run_tree fetches the session's spawn tree. The whole shape arrives at
+    /// once because walking it request by request would race the live stream.
+    pub async fn run_tree(&mut self, session_id: &str) -> Result<Vec<crate::state::RunNode>, BoxError> {
+        let mut client = self.clone();
+        let session_id = session_id.to_string();
+        self.dispatch(async move {
+            let resp = client
+                .agents
+                .get_run_tree(client.auth.request(v1::GetRunTreeRequest { session_id }))
+                .await?
+                .into_inner();
+            Ok(crate::state::DesktopState::flatten_tree(&resp.roots))
+        })
+        .await
+    }
+
     pub async fn first_org(&mut self) -> Result<String, BoxError> {
         let mut client = self.clone();
         self.dispatch(async move {
