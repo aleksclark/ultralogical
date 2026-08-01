@@ -90,5 +90,20 @@ func memoryTools(store ultra.Store, run ultra.AgentRun) []fantasy.AgentTool {
 		}
 		return fantasy.NewTextResponse("deleted"), nil
 	})
-	return []fantasy.AgentTool{get, list, set, del}
+	// Session memory is shared state, so reading it is as much an authority
+	// question as writing it: a child restricted to one narrow job must not
+	// be able to read what everyone else in the session stored.
+	byName := map[string]fantasy.AgentTool{
+		"session_memory_get":    get,
+		"session_memory_list":   list,
+		"session_memory_set":    set,
+		"session_memory_delete": del,
+	}
+	var granted []fantasy.AgentTool
+	for _, name := range []string{"session_memory_get", "session_memory_list", "session_memory_set", "session_memory_delete"} {
+		if run.Grants.AllowsTool(name) {
+			granted = append(granted, byName[name])
+		}
+	}
+	return granted
 }

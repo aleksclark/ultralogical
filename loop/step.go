@@ -162,9 +162,16 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 	rec := &stepRecorder{}
 	batcher := newDeltaBatcher(runID, job.StepIndex, attempt, w.DeltaFlushInterval, w.DeltaFlushBytes, appendEvent)
 
-	tools := []fantasy.AgentTool{
-		newAskUserTool(rec),
-		newPostEventTool(events, sessionID, runID),
+	// Native session tools are subject to the same lattice as everything
+	// else. A child restricted to post_event must not be able to interrogate
+	// the human or read the session's shared memory just because those tools
+	// happen to be built in.
+	var tools []fantasy.AgentTool
+	if run.Grants.AllowsTool("ask_user") {
+		tools = append(tools, newAskUserTool(rec))
+	}
+	if run.Grants.AllowsTool("post_event") {
+		tools = append(tools, newPostEventTool(events, sessionID, runID))
 	}
 	tools = append(tools, memoryTools(w.Store, run)...)
 	tools = append(tools, w.spawnTools(run, job, rec)...)

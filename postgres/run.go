@@ -48,9 +48,9 @@ func (r *runStore) Create(ctx context.Context, run ultra.AgentRun) error {
 	if err != nil {
 		return err
 	}
-	if len(run.Grants.Tools) == 0 && !run.Grants.EnvAll && !run.Grants.MaySpawn {
-		grants, _ = json.Marshal(ultra.RootGrants())
-	}
+	// A run with no grants is a run that may do nothing. Substituting root
+	// authority here would silently escalate exactly the case that matters:
+	// a child deliberately spawned with an empty tool list.
 	history := run.History
 	if len(history) == 0 {
 		history = []byte(`{"v":1,"messages":[]}`)
