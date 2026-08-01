@@ -10,7 +10,7 @@ import { EnvState } from "@client/gen/ultra/v1/env_pb";
 import { clients } from "./api";
 import { initialView, reduceView } from "./reducer";
 import { EnvironmentPanel } from "@/components/environment-panel";
-import { FlowPanel } from "@/components/flow-panel";
+import { FlowInvocationView, FlowPanel, invocationStateLabel } from "@/components/flow-panel";
 import { MemoryPanel } from "@/components/memory-panel";
 import { RunTree } from "@/components/run-tree";
 import { SessionSidebar, type ConnectionState } from "@/components/session-sidebar";
@@ -70,7 +70,46 @@ export function App() {
   const [provider, setProvider] = useState<ProviderForm>({ kind: "byo_k8s", name: "", config: '{"mode":"loopback"}' });
   const [error, setError] = useState("");
 
-  const activeInvocation = invocations.find((i) => i.id === activeInvocationId) ?? invocations[0];
+  // A direct invocation is one opened from its identifier alone, which is the
+  // path an operator follows from a CLI or an alert. It is kept separate from
+  // the session's list so opening one never depends on having loaded the list.
+  const [directInvocation, setDirectInvocation] = useState<FlowInvocation>();
+  const activeInvocation =
+    directInvocation ?? invocations.find((i) => i.id === activeInvocationId) ?? invocations[0];
+
+  // openInvocation fetches one invocation by id. Failures surface as errors
+  // rather than an empty panel: an operator following a link needs to know the
+  // difference between "not yours" and "still loading".
+  const openInvocation = useCallback(
+    async (id: string) => {
+      try {
+        const resp = await api.flows.getFlowInvocation({ invocationId: id });
+        if (resp.invocation) {
+          setDirectInvocation(resp.invocation);
+          setActiveInvocationId(resp.invocation.id);
+        }
+        setError("");
+      } catch (e) {
+        setDirectInvocation(undefined);
+        setError(String(e));
+      }
+    },
+    [api],
+  );
+
+  // An invocation named in the address is opened directly, and kept fresh
+  // while it is still running.
+  const requestedInvocation = new URLSearchParams(window.location.search).get("invocation") ?? "";
+  useEffect(() => {
+    if (!requestedInvocation) return;
+    void openInvocation(requestedInvocation);
+    const terminal = ["completed", "failed", "cancelled"];
+    const timer = window.setInterval(() => {
+      if (directInvocation && terminal.includes(invocationStateLabel(directInvocation.state))) return;
+      void openInvocation(requestedInvocation);
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, [requestedInvocation, openInvocation, directInvocation]);
 
   const load = useCallback(async () => {
     try {
@@ -425,6 +464,15 @@ export function App() {
             provider={provider}
             onProviderChange={setProvider}
             onRegisterProvider={registerProvider}
+          />
+        ) : directInvocation ? (
+          <FlowInvocationView
+            invocation={directInvocation}
+            onCancel={cancelInvocation}
+            onClose={() => {
+              setDirectInvocation(undefined);
+              window.history.replaceState(null, "", window.location.pathname);
+            }}
           />
         ) : session ? (
           <>

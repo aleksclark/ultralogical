@@ -178,3 +178,57 @@ test("cancels an invocation and recovers state after reload", async ({ page }) =
   );
   expect(after).toEqual(before);
 });
+
+// A10.11 — an invocation can be opened from its identifier alone, which is the
+// path an operator follows from a CLI or an alert. It must render the same
+// state the session's list renders, without listing anything first.
+test("opens an invocation directly by id", async ({ page }) => {
+  await openSession(page, "Web flow direct route");
+
+  const name = `direct-${Date.now()}`;
+  await saveFlow(page, name, singleAgentFlow);
+  await expect(page.getByTestId("flow-catalog")).toContainText(name);
+  await page.getByLabel("Parameter subject").fill("direct subject");
+  await page.getByRole("button", { name: "Invoke flow" }).click();
+
+  const listed = page.getByTestId("flow-invocation");
+  await expect(listed).toBeVisible();
+  const invocationId = await listed.getAttribute("data-invocation-id");
+  expect(invocationId).toBeTruthy();
+  await expect
+    .poll(async () => listed.getAttribute("data-state"), { timeout: 90_000, intervals: [250] })
+    .toBe("completed");
+
+  // What the list route rendered, recorded before navigating away.
+  const listedProgress = await page.getByTestId("flow-progress-entry").evaluateAll((nodes) =>
+    nodes.map((node) => node.getAttribute("data-key")),
+  );
+  const listedRuns = await page.getByTestId("flow-run").evaluateAll((nodes) =>
+    nodes.map((node) => `${node.getAttribute("data-agent")}:${node.getAttribute("data-state")}`),
+  );
+
+  // Open the invocation by id in a fresh page: no session is selected and the
+  // list was never loaded, so anything rendered came from the identifier.
+  await page.goto(`/?invocation=${invocationId}`);
+  const direct = page.getByTestId("flow-invocation-route");
+  await expect(direct).toBeVisible();
+  await expect(page.getByTestId("flow-invocation")).toHaveAttribute("data-invocation-id", invocationId!);
+  await expect(page.getByTestId("flow-invocation")).toHaveAttribute("data-state", "completed");
+  await expect(page.getByTestId("flow-invocation")).toHaveAttribute("data-terminal-reason", "completed");
+  await expect(page.getByTestId("flow-provenance")).toContainText(`${name} v1`);
+
+  // The direct route shows exactly what the list route showed.
+  const directProgress = await page.getByTestId("flow-progress-entry").evaluateAll((nodes) =>
+    nodes.map((node) => node.getAttribute("data-key")),
+  );
+  const directRuns = await page.getByTestId("flow-run").evaluateAll((nodes) =>
+    nodes.map((node) => `${node.getAttribute("data-agent")}:${node.getAttribute("data-state")}`),
+  );
+  expect(directProgress).toEqual(listedProgress);
+  expect(directRuns).toEqual(listedRuns);
+
+  // An identifier that belongs to nobody is reported, not rendered as an
+  // empty invocation a reader would mistake for a real one.
+  await page.goto("/?invocation=00000000-0000-0000-0000-000000000000");
+  await expect(page.getByTestId("flow-invocation-route")).toHaveCount(0);
+});

@@ -164,6 +164,19 @@ impl DesktopWindow {
         cx.notify();
     }
 
+    /// open_invocation_by_id shows one invocation fetched by its identifier
+    /// alone, without the session's list. The window renders it through the
+    /// same path the list uses, so the two routes cannot diverge.
+    pub fn open_invocation_by_id(&mut self, invocation: FlowInvocationView, cx: &mut Context<Self>) {
+        let id = invocation.id.clone();
+        match self.state.invocations.iter_mut().find(|existing| existing.id == id) {
+            Some(existing) => *existing = invocation,
+            None => self.state.invocations.insert(0, invocation),
+        }
+        self.state.active_invocation = Some(id);
+        cx.notify();
+    }
+
     /// select_invocation shows one invocation's progress and topology.
     pub fn select_invocation(&mut self, id: Option<String>, cx: &mut Context<Self>) {
         self.state.active_invocation = id;

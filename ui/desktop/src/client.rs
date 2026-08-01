@@ -474,6 +474,26 @@ impl DesktopClient {
         .await
     }
 
+    /// get_invocation fetches one invocation by its identifier alone. It is
+    /// the path an operator follows from a CLI or an alert, and it does not
+    /// require the session's invocation list to have been loaded.
+    pub async fn get_invocation(&mut self, invocation_id: &str) -> Result<FlowInvocationView, BoxError> {
+        let mut client = self.clone();
+        let invocation_id = invocation_id.to_string();
+        self.dispatch(async move {
+            let resp = client
+                .flows
+                .get_flow_invocation(client.auth.request(v1::GetFlowInvocationRequest { invocation_id }))
+                .await?
+                .into_inner();
+            let invocation = resp
+                .invocation
+                .ok_or_else(|| BoxError::from("get_flow_invocation returned no invocation"))?;
+            Ok(FlowInvocationView::from_proto(&invocation))
+        })
+        .await
+    }
+
     /// cancel_invocation asks an invocation to converge on cancelled.
     pub async fn cancel_invocation(&mut self, invocation_id: &str) -> Result<(), BoxError> {
         let mut client = self.clone();
