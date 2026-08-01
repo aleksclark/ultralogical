@@ -233,6 +233,12 @@ func Kind(ev *ultrav1.SessionEvent) string {
 		return "hook_fired"
 	case *ultrav1.EventPayload_PeriodicPromptFired:
 		return "periodic_prompt_fired"
+	case *ultrav1.EventPayload_FlowInvoked:
+		return "flow_invoked"
+	case *ultrav1.EventPayload_FlowInvocationProgressed:
+		return "flow_invocation_progressed"
+	case *ultrav1.EventPayload_FlowInvocationTerminal:
+		return "flow_invocation_terminal"
 	default:
 		return "unknown"
 	}

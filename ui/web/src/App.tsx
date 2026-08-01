@@ -3,10 +3,14 @@ import type { Org } from "@client/gen/ultra/v1/org_pb";
 import type { Session } from "@client/gen/ultra/v1/session_pb";
 import type { DevEnv, UsageInterval } from "@client/gen/ultra/v1/env_pb";
 import type { RunTreeNode } from "@client/gen/ultra/v1/agent_pb";
+import type { Flow, FlowFieldError, FlowInvocation } from "@client/gen/ultra/v1/flow_pb";
+import { FlowFieldErrorSchema } from "@client/gen/ultra/v1/flow_pb";
+import { ConnectError } from "@connectrpc/connect";
 import { EnvState } from "@client/gen/ultra/v1/env_pb";
 import { clients } from "./api";
 import { initialView, reduceView } from "./reducer";
 import { EnvironmentPanel } from "@/components/environment-panel";
+import { FlowPanel } from "@/components/flow-panel";
 import { MemoryPanel } from "@/components/memory-panel";
 import { RunTree } from "@/components/run-tree";
 import { SessionSidebar, type ConnectionState } from "@/components/session-sidebar";
@@ -23,6 +27,15 @@ const apiBaseUrl = import.meta.env.VITE_ULTRAD_URL ?? "http://localhost:8080";
 // depends on the durable log rather than on one server's memory.
 const altBaseUrl = import.meta.env.VITE_ULTRAD_ALT_URL ?? "";
 const initialToken = localStorage.getItem("ultra-token") ?? "dev-token";
+
+/**
+ * flowFieldErrors pulls the structured validation failures out of a rejected
+ * flow request. The server attaches them as typed error details precisely so
+ * every client can show the same field paths instead of parsing prose.
+ */
+function flowFieldErrors(error: unknown): FlowFieldError[] {
+  return ConnectError.from(error).findDetails(FlowFieldErrorSchema);
+}
 
 export function App() {
   const [token, setToken] = useState(initialToken);
@@ -45,9 +58,19 @@ export function App() {
   const [runTree, setRunTree] = useState<RunTreeNode[]>([]);
   const [laneRunId, setLaneRunId] = useState<string>();
   const [memory, setMemory] = useState<{ key: string; valueJson: string }[]>([]);
+  const [flows, setFlows] = useState<Flow[]>([]);
+  const [flowVersions, setFlowVersions] = useState<Flow[]>([]);
+  const [selectedFlow, setSelectedFlow] = useState<string>();
+  const [selectedVersion, setSelectedVersion] = useState(0);
+  const [definition, setDefinition] = useState("");
+  const [flowErrors, setFlowErrors] = useState<FlowFieldError[]>([]);
+  const [invocations, setInvocations] = useState<FlowInvocation[]>([]);
+  const [activeInvocationId, setActiveInvocationId] = useState<string>();
   const [credential, setCredential] = useState<CredentialForm>({ apiKey: "", baseUrl: "", extraHeaders: "{}" });
   const [provider, setProvider] = useState<ProviderForm>({ kind: "byo_k8s", name: "", config: '{"mode":"loopback"}' });
   const [error, setError] = useState("");
+
+  const activeInvocation = invocations.find((i) => i.id === activeInvocationId) ?? invocations[0];
 
   const load = useCallback(async () => {
     try {
@@ -91,13 +114,43 @@ export function App() {
     setMemory(m.entries);
   }, [api, session]);
 
+  const refreshFlows = useCallback(async () => {
+    if (!org) return;
+    setFlows((await api.flows.listFlows({ orgId: org.id })).flows);
+  }, [api, org]);
+
+  const refreshFlowVersions = useCallback(
+    async (name: string) => {
+      if (!org || !name) return;
+      const resp = await api.flows.listFlowVersions({ orgId: org.id, name });
+      setFlowVersions(resp.flows);
+      const latest = resp.flows[0];
+      if (latest) {
+        setSelectedVersion(latest.version);
+        setDefinition(latest.definitionJson);
+      }
+    },
+    [api, org],
+  );
+
+  // Invocations are refreshed from the API rather than reconstructed from the
+  // log: the invocation view carries progress, runs, and environments together,
+  // and assembling it client-side would race the stream.
+  const refreshInvocations = useCallback(async () => {
+    if (!session) return;
+    const resp = await api.flows.listFlowInvocations({ sessionId: session.id });
+    setInvocations(resp.invocations);
+  }, [api, session]);
+
   useEffect(() => {
     if (!session) return;
     void api.sessions.join({ sessionId: session.id, display: "You" }).then(refreshMultiplayer);
     void refreshEnvs();
     void refreshUsage();
     void refreshRunTree();
-  }, [session, api, refreshMultiplayer, refreshEnvs, refreshUsage, refreshRunTree]);
+    void refreshFlows();
+    void refreshInvocations();
+  }, [session, api, refreshMultiplayer, refreshEnvs, refreshUsage, refreshRunTree, refreshFlows, refreshInvocations]);
 
   useEffect(() => {
     if (!session) return;
@@ -141,6 +194,14 @@ export function App() {
     if (!session) return;
     void refreshMultiplayer();
   }, [memorySignature, session, refreshMultiplayer]);
+
+  // Flow lifecycle is announced in the log, so the invocation view refreshes
+  // on those events rather than on a timer.
+  const flowSignature = view.flows.map((f) => `${f.invocationId}:${f.state}:${f.progress.length}`).join(",");
+  useEffect(() => {
+    if (!session) return;
+    void refreshInvocations();
+  }, [flowSignature, session, refreshInvocations]);
 
   // Run structure changes are announced in the log (spawns and run status), so
   // the tree refreshes on those rather than on a timer.
@@ -204,6 +265,77 @@ export function App() {
     try {
       const r = await api.envs.execPreview({ envId: env.id, command });
       setEnvOutput(r.output);
+      setError("");
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+  async function validateFlow() {
+    if (!org) return;
+    try {
+      const resp = await api.flows.validateFlow({ orgId: org.id, definitionJson: definition });
+      setFlowErrors(resp.errors);
+      setError("");
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+  async function saveFlow(name: string) {
+    if (!org || !name) return;
+    try {
+      await api.flows.putFlow({ orgId: org.id, name, definitionJson: definition });
+      setFlowErrors([]);
+      await refreshFlows();
+      await selectFlow(name);
+      setError("");
+    } catch (e) {
+      // A rejected save carries its field paths as typed error details, so the
+      // browser renders the same structured list the CLI prints rather than a
+      // reworded message.
+      const fields = flowFieldErrors(e);
+      if (fields.length > 0) {
+        setFlowErrors(fields);
+        return;
+      }
+      setError(String(e));
+    }
+  }
+  async function selectFlow(name: string) {
+    setSelectedFlow(name);
+    setFlowErrors([]);
+    await refreshFlowVersions(name);
+  }
+  function selectVersion(version: number) {
+    setSelectedVersion(version);
+    const found = flowVersions.find((f) => f.version === version);
+    if (found) setDefinition(found.definitionJson);
+  }
+  async function invokeFlow(params: Record<string, unknown>) {
+    if (!session || !selectedFlow) return;
+    try {
+      const resp = await api.flows.invokeFlow({
+        sessionId: session.id,
+        name: selectedFlow,
+        version: selectedVersion,
+        paramsJson: JSON.stringify(params),
+      });
+      setActiveInvocationId(resp.invocationId);
+      setFlowErrors([]);
+      await refreshInvocations();
+      setError("");
+    } catch (e) {
+      const fields = flowFieldErrors(e);
+      if (fields.length > 0) {
+        setFlowErrors(fields);
+        return;
+      }
+      setError(String(e));
+    }
+  }
+  async function cancelInvocation(id: string) {
+    try {
+      await api.flows.cancelFlowInvocation({ invocationId: id });
+      await refreshInvocations();
       setError("");
     } catch (e) {
       setError(String(e));
@@ -304,6 +436,24 @@ export function App() {
                 </div>
               </div>
             </header>
+            <FlowPanel
+              flows={flows}
+              versions={flowVersions}
+              selectedFlow={selectedFlow}
+              onSelectFlow={selectFlow}
+              selectedVersion={selectedVersion}
+              onSelectVersion={selectVersion}
+              definition={definition}
+              onDefinitionChange={setDefinition}
+              validationErrors={flowErrors}
+              onValidate={validateFlow}
+              onSave={saveFlow}
+              onInvoke={invokeFlow}
+              invocations={invocations}
+              activeInvocation={activeInvocation}
+              onSelectInvocation={setActiveInvocationId}
+              onCancelInvocation={cancelInvocation}
+            />
             <RunTree roots={runTree} selectedRunId={laneRunId} onSelectRun={setLaneRunId} />
             <EnvironmentPanel
               envs={envs}

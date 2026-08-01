@@ -14,14 +14,14 @@ import (
 type runStore struct{ scope *orgScope }
 
 const runColumns = `id, session_id, org_id, parent_run_id, COALESCE(spawn_key,''), COALESCE(cohort_id::text,''), COALESCE(cohort_ordinal,0),
-	flow_invocation_id, grants, result, state, loop_kind, loop_version, model_config,
+	flow_invocation_id, flow_agent_name, grants, result, state, loop_kind, loop_version, model_config,
 	prompt, history, failure_reason, failure_message, cancel_requested_at, created_at, updated_at`
 
 func (r *runStore) scan(row pgx.Row) (ultra.AgentRun, error) {
 	var run ultra.AgentRun
 	var modelConfig, grants []byte
 	err := row.Scan(&run.ID, &run.SessionID, &run.OrgID, &run.ParentRunID, &run.SpawnKey, &run.CohortID, &run.CohortOrdinal,
-		&run.FlowInvocationID, &grants, &run.Result, &run.State, &run.LoopKind,
+		&run.FlowInvocationID, &run.FlowAgentName, &grants, &run.Result, &run.State, &run.LoopKind,
 		&run.LoopVersion, &modelConfig, &run.Prompt, &run.History, &run.FailureReason,
 		&run.FailureMessage, &run.CancelRequestedAt, &run.CreatedAt, &run.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -65,11 +65,12 @@ func (r *runStore) Create(ctx context.Context, run ultra.AgentRun) error {
 		cohortID = run.CohortID
 	}
 	tag, err := r.scope.s.db().Exec(ctx,
-		`INSERT INTO agent_runs (id, session_id, org_id, parent_run_id, flow_invocation_id, grants, state, loop_kind, loop_version, model_config, prompt, history, spawn_key, cohort_id, cohort_ordinal)
-		 SELECT $1, s.id, s.org_id, $3, $4, $5, $6, $7, $8, $9, $10, $11, $13, $14, $15
+		`INSERT INTO agent_runs (id, session_id, org_id, parent_run_id, flow_invocation_id, grants, state, loop_kind, loop_version, model_config, prompt, history, spawn_key, cohort_id, cohort_ordinal, flow_agent_name)
+		 SELECT $1, s.id, s.org_id, $3, $4, $5, $6, $7, $8, $9, $10, $11, $13, $14, $15, $16
 		   FROM sessions s WHERE s.id = $2 AND s.org_id = $12`,
 		string(run.ID), string(run.SessionID), run.ParentRunID, run.FlowInvocationID, grants, string(ultra.RunPending), run.LoopKind,
-		run.LoopVersion, modelConfig, run.Prompt, history, string(r.scope.org), spawnKey, cohortID, run.CohortOrdinal)
+		run.LoopVersion, modelConfig, run.Prompt, history, string(r.scope.org), spawnKey, cohortID, run.CohortOrdinal,
+		run.FlowAgentName)
 	if isUniqueViolation(err) {
 		return ultra.ErrAlreadyExists
 	}

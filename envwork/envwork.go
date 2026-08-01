@@ -120,9 +120,25 @@ func appendEvent(ctx context.Context, scope ultra.OrgScope, session ultra.Sessio
 	return scope.Events().Append(ctx, session, ultra.Event{Actor: actor, Kind: kind, Payload: b})
 }
 
+// Provenance attributes an environment to the flow invocation that declared
+// it. It is written with the environment row, so an invocation's cleanup scope
+// is exact from the moment the resource exists.
+type Provenance struct {
+	FlowInvocationID *ultra.FlowInvocationID
+	FlowEnvName      string
+}
+
 // Request atomically creates a requested environment, emits EnvRequested,
 // and enqueues provisioning. providerName defaults to "default".
 func (s *Service) Request(ctx context.Context, org ultra.OrgID, session ultra.SessionID, spec ultra.EnvSpec, providerName string, createdBy *ultra.RunID) (ultra.DevEnv, int64, error) {
+	return s.RequestWith(ctx, org, session, spec, providerName, createdBy, Provenance{})
+}
+
+// RequestWith is Request with flow provenance attached. A flow-owned
+// environment is created with its invocation and declaration name already set:
+// patching them afterwards would leave a window in which a crash orphans the
+// resource outside its invocation's cleanup scope.
+func (s *Service) RequestWith(ctx context.Context, org ultra.OrgID, session ultra.SessionID, spec ultra.EnvSpec, providerName string, createdBy *ultra.RunID, provenance Provenance) (ultra.DevEnv, int64, error) {
 	if providerName == "" {
 		providerName = "default"
 	}
@@ -139,7 +155,10 @@ func (s *Service) Request(ctx context.Context, org ultra.OrgID, session ultra.Se
 		return ultra.DevEnv{}, 0, err
 	}
 	secrets.DefaultRedactor.Register(clear)
-	env := ultra.DevEnv{ID: ultra.EnvID(uuid.NewString()), OrgID: org, SessionID: session, ProviderInstanceID: instance.ID, State: ultra.EnvRequested, Spec: spec, TokenHash: hash, TokenEnc: enc, Epoch: 1, CreatedByRunID: createdBy}
+	env := ultra.DevEnv{ID: ultra.EnvID(uuid.NewString()), OrgID: org, SessionID: session,
+		ProviderInstanceID: instance.ID, State: ultra.EnvRequested, Spec: spec,
+		TokenHash: hash, TokenEnc: enc, Epoch: 1, CreatedByRunID: createdBy,
+		FlowInvocationID: provenance.FlowInvocationID, FlowEnvName: provenance.FlowEnvName}
 	var seq int64
 	err = s.Store.Tx(ctx, func(txs ultra.Store) error {
 		scope := txs.Org(org)

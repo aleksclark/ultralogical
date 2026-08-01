@@ -35,20 +35,41 @@ const (
 const (
 	// FlowServicePutFlowProcedure is the fully-qualified name of the FlowService's PutFlow RPC.
 	FlowServicePutFlowProcedure = "/ultra.v1.FlowService/PutFlow"
+	// FlowServiceValidateFlowProcedure is the fully-qualified name of the FlowService's ValidateFlow
+	// RPC.
+	FlowServiceValidateFlowProcedure = "/ultra.v1.FlowService/ValidateFlow"
 	// FlowServiceGetFlowProcedure is the fully-qualified name of the FlowService's GetFlow RPC.
 	FlowServiceGetFlowProcedure = "/ultra.v1.FlowService/GetFlow"
 	// FlowServiceListFlowsProcedure is the fully-qualified name of the FlowService's ListFlows RPC.
 	FlowServiceListFlowsProcedure = "/ultra.v1.FlowService/ListFlows"
+	// FlowServiceListFlowVersionsProcedure is the fully-qualified name of the FlowService's
+	// ListFlowVersions RPC.
+	FlowServiceListFlowVersionsProcedure = "/ultra.v1.FlowService/ListFlowVersions"
 	// FlowServiceInvokeFlowProcedure is the fully-qualified name of the FlowService's InvokeFlow RPC.
 	FlowServiceInvokeFlowProcedure = "/ultra.v1.FlowService/InvokeFlow"
+	// FlowServiceGetFlowInvocationProcedure is the fully-qualified name of the FlowService's
+	// GetFlowInvocation RPC.
+	FlowServiceGetFlowInvocationProcedure = "/ultra.v1.FlowService/GetFlowInvocation"
+	// FlowServiceListFlowInvocationsProcedure is the fully-qualified name of the FlowService's
+	// ListFlowInvocations RPC.
+	FlowServiceListFlowInvocationsProcedure = "/ultra.v1.FlowService/ListFlowInvocations"
+	// FlowServiceCancelFlowInvocationProcedure is the fully-qualified name of the FlowService's
+	// CancelFlowInvocation RPC.
+	FlowServiceCancelFlowInvocationProcedure = "/ultra.v1.FlowService/CancelFlowInvocation"
 )
 
 // FlowServiceClient is a client for the ultra.v1.FlowService service.
 type FlowServiceClient interface {
 	PutFlow(context.Context, *connect.Request[v1.PutFlowRequest]) (*connect.Response[v1.PutFlowResponse], error)
+	// ValidateFlow reports structured field errors without persisting anything.
+	ValidateFlow(context.Context, *connect.Request[v1.ValidateFlowRequest]) (*connect.Response[v1.ValidateFlowResponse], error)
 	GetFlow(context.Context, *connect.Request[v1.GetFlowRequest]) (*connect.Response[v1.GetFlowResponse], error)
 	ListFlows(context.Context, *connect.Request[v1.ListFlowsRequest]) (*connect.Response[v1.ListFlowsResponse], error)
+	ListFlowVersions(context.Context, *connect.Request[v1.ListFlowVersionsRequest]) (*connect.Response[v1.ListFlowVersionsResponse], error)
 	InvokeFlow(context.Context, *connect.Request[v1.InvokeFlowRequest]) (*connect.Response[v1.InvokeFlowResponse], error)
+	GetFlowInvocation(context.Context, *connect.Request[v1.GetFlowInvocationRequest]) (*connect.Response[v1.GetFlowInvocationResponse], error)
+	ListFlowInvocations(context.Context, *connect.Request[v1.ListFlowInvocationsRequest]) (*connect.Response[v1.ListFlowInvocationsResponse], error)
+	CancelFlowInvocation(context.Context, *connect.Request[v1.CancelFlowInvocationRequest]) (*connect.Response[v1.CancelFlowInvocationResponse], error)
 }
 
 // NewFlowServiceClient constructs a client for the ultra.v1.FlowService service. By default, it
@@ -68,6 +89,12 @@ func NewFlowServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(flowServiceMethods.ByName("PutFlow")),
 			connect.WithClientOptions(opts...),
 		),
+		validateFlow: connect.NewClient[v1.ValidateFlowRequest, v1.ValidateFlowResponse](
+			httpClient,
+			baseURL+FlowServiceValidateFlowProcedure,
+			connect.WithSchema(flowServiceMethods.ByName("ValidateFlow")),
+			connect.WithClientOptions(opts...),
+		),
 		getFlow: connect.NewClient[v1.GetFlowRequest, v1.GetFlowResponse](
 			httpClient,
 			baseURL+FlowServiceGetFlowProcedure,
@@ -80,10 +107,34 @@ func NewFlowServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(flowServiceMethods.ByName("ListFlows")),
 			connect.WithClientOptions(opts...),
 		),
+		listFlowVersions: connect.NewClient[v1.ListFlowVersionsRequest, v1.ListFlowVersionsResponse](
+			httpClient,
+			baseURL+FlowServiceListFlowVersionsProcedure,
+			connect.WithSchema(flowServiceMethods.ByName("ListFlowVersions")),
+			connect.WithClientOptions(opts...),
+		),
 		invokeFlow: connect.NewClient[v1.InvokeFlowRequest, v1.InvokeFlowResponse](
 			httpClient,
 			baseURL+FlowServiceInvokeFlowProcedure,
 			connect.WithSchema(flowServiceMethods.ByName("InvokeFlow")),
+			connect.WithClientOptions(opts...),
+		),
+		getFlowInvocation: connect.NewClient[v1.GetFlowInvocationRequest, v1.GetFlowInvocationResponse](
+			httpClient,
+			baseURL+FlowServiceGetFlowInvocationProcedure,
+			connect.WithSchema(flowServiceMethods.ByName("GetFlowInvocation")),
+			connect.WithClientOptions(opts...),
+		),
+		listFlowInvocations: connect.NewClient[v1.ListFlowInvocationsRequest, v1.ListFlowInvocationsResponse](
+			httpClient,
+			baseURL+FlowServiceListFlowInvocationsProcedure,
+			connect.WithSchema(flowServiceMethods.ByName("ListFlowInvocations")),
+			connect.WithClientOptions(opts...),
+		),
+		cancelFlowInvocation: connect.NewClient[v1.CancelFlowInvocationRequest, v1.CancelFlowInvocationResponse](
+			httpClient,
+			baseURL+FlowServiceCancelFlowInvocationProcedure,
+			connect.WithSchema(flowServiceMethods.ByName("CancelFlowInvocation")),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -91,15 +142,25 @@ func NewFlowServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // flowServiceClient implements FlowServiceClient.
 type flowServiceClient struct {
-	putFlow    *connect.Client[v1.PutFlowRequest, v1.PutFlowResponse]
-	getFlow    *connect.Client[v1.GetFlowRequest, v1.GetFlowResponse]
-	listFlows  *connect.Client[v1.ListFlowsRequest, v1.ListFlowsResponse]
-	invokeFlow *connect.Client[v1.InvokeFlowRequest, v1.InvokeFlowResponse]
+	putFlow              *connect.Client[v1.PutFlowRequest, v1.PutFlowResponse]
+	validateFlow         *connect.Client[v1.ValidateFlowRequest, v1.ValidateFlowResponse]
+	getFlow              *connect.Client[v1.GetFlowRequest, v1.GetFlowResponse]
+	listFlows            *connect.Client[v1.ListFlowsRequest, v1.ListFlowsResponse]
+	listFlowVersions     *connect.Client[v1.ListFlowVersionsRequest, v1.ListFlowVersionsResponse]
+	invokeFlow           *connect.Client[v1.InvokeFlowRequest, v1.InvokeFlowResponse]
+	getFlowInvocation    *connect.Client[v1.GetFlowInvocationRequest, v1.GetFlowInvocationResponse]
+	listFlowInvocations  *connect.Client[v1.ListFlowInvocationsRequest, v1.ListFlowInvocationsResponse]
+	cancelFlowInvocation *connect.Client[v1.CancelFlowInvocationRequest, v1.CancelFlowInvocationResponse]
 }
 
 // PutFlow calls ultra.v1.FlowService.PutFlow.
 func (c *flowServiceClient) PutFlow(ctx context.Context, req *connect.Request[v1.PutFlowRequest]) (*connect.Response[v1.PutFlowResponse], error) {
 	return c.putFlow.CallUnary(ctx, req)
+}
+
+// ValidateFlow calls ultra.v1.FlowService.ValidateFlow.
+func (c *flowServiceClient) ValidateFlow(ctx context.Context, req *connect.Request[v1.ValidateFlowRequest]) (*connect.Response[v1.ValidateFlowResponse], error) {
+	return c.validateFlow.CallUnary(ctx, req)
 }
 
 // GetFlow calls ultra.v1.FlowService.GetFlow.
@@ -112,17 +173,43 @@ func (c *flowServiceClient) ListFlows(ctx context.Context, req *connect.Request[
 	return c.listFlows.CallUnary(ctx, req)
 }
 
+// ListFlowVersions calls ultra.v1.FlowService.ListFlowVersions.
+func (c *flowServiceClient) ListFlowVersions(ctx context.Context, req *connect.Request[v1.ListFlowVersionsRequest]) (*connect.Response[v1.ListFlowVersionsResponse], error) {
+	return c.listFlowVersions.CallUnary(ctx, req)
+}
+
 // InvokeFlow calls ultra.v1.FlowService.InvokeFlow.
 func (c *flowServiceClient) InvokeFlow(ctx context.Context, req *connect.Request[v1.InvokeFlowRequest]) (*connect.Response[v1.InvokeFlowResponse], error) {
 	return c.invokeFlow.CallUnary(ctx, req)
 }
 
+// GetFlowInvocation calls ultra.v1.FlowService.GetFlowInvocation.
+func (c *flowServiceClient) GetFlowInvocation(ctx context.Context, req *connect.Request[v1.GetFlowInvocationRequest]) (*connect.Response[v1.GetFlowInvocationResponse], error) {
+	return c.getFlowInvocation.CallUnary(ctx, req)
+}
+
+// ListFlowInvocations calls ultra.v1.FlowService.ListFlowInvocations.
+func (c *flowServiceClient) ListFlowInvocations(ctx context.Context, req *connect.Request[v1.ListFlowInvocationsRequest]) (*connect.Response[v1.ListFlowInvocationsResponse], error) {
+	return c.listFlowInvocations.CallUnary(ctx, req)
+}
+
+// CancelFlowInvocation calls ultra.v1.FlowService.CancelFlowInvocation.
+func (c *flowServiceClient) CancelFlowInvocation(ctx context.Context, req *connect.Request[v1.CancelFlowInvocationRequest]) (*connect.Response[v1.CancelFlowInvocationResponse], error) {
+	return c.cancelFlowInvocation.CallUnary(ctx, req)
+}
+
 // FlowServiceHandler is an implementation of the ultra.v1.FlowService service.
 type FlowServiceHandler interface {
 	PutFlow(context.Context, *connect.Request[v1.PutFlowRequest]) (*connect.Response[v1.PutFlowResponse], error)
+	// ValidateFlow reports structured field errors without persisting anything.
+	ValidateFlow(context.Context, *connect.Request[v1.ValidateFlowRequest]) (*connect.Response[v1.ValidateFlowResponse], error)
 	GetFlow(context.Context, *connect.Request[v1.GetFlowRequest]) (*connect.Response[v1.GetFlowResponse], error)
 	ListFlows(context.Context, *connect.Request[v1.ListFlowsRequest]) (*connect.Response[v1.ListFlowsResponse], error)
+	ListFlowVersions(context.Context, *connect.Request[v1.ListFlowVersionsRequest]) (*connect.Response[v1.ListFlowVersionsResponse], error)
 	InvokeFlow(context.Context, *connect.Request[v1.InvokeFlowRequest]) (*connect.Response[v1.InvokeFlowResponse], error)
+	GetFlowInvocation(context.Context, *connect.Request[v1.GetFlowInvocationRequest]) (*connect.Response[v1.GetFlowInvocationResponse], error)
+	ListFlowInvocations(context.Context, *connect.Request[v1.ListFlowInvocationsRequest]) (*connect.Response[v1.ListFlowInvocationsResponse], error)
+	CancelFlowInvocation(context.Context, *connect.Request[v1.CancelFlowInvocationRequest]) (*connect.Response[v1.CancelFlowInvocationResponse], error)
 }
 
 // NewFlowServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -138,6 +225,12 @@ func NewFlowServiceHandler(svc FlowServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(flowServiceMethods.ByName("PutFlow")),
 		connect.WithHandlerOptions(opts...),
 	)
+	flowServiceValidateFlowHandler := connect.NewUnaryHandler(
+		FlowServiceValidateFlowProcedure,
+		svc.ValidateFlow,
+		connect.WithSchema(flowServiceMethods.ByName("ValidateFlow")),
+		connect.WithHandlerOptions(opts...),
+	)
 	flowServiceGetFlowHandler := connect.NewUnaryHandler(
 		FlowServiceGetFlowProcedure,
 		svc.GetFlow,
@@ -150,22 +243,56 @@ func NewFlowServiceHandler(svc FlowServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(flowServiceMethods.ByName("ListFlows")),
 		connect.WithHandlerOptions(opts...),
 	)
+	flowServiceListFlowVersionsHandler := connect.NewUnaryHandler(
+		FlowServiceListFlowVersionsProcedure,
+		svc.ListFlowVersions,
+		connect.WithSchema(flowServiceMethods.ByName("ListFlowVersions")),
+		connect.WithHandlerOptions(opts...),
+	)
 	flowServiceInvokeFlowHandler := connect.NewUnaryHandler(
 		FlowServiceInvokeFlowProcedure,
 		svc.InvokeFlow,
 		connect.WithSchema(flowServiceMethods.ByName("InvokeFlow")),
 		connect.WithHandlerOptions(opts...),
 	)
+	flowServiceGetFlowInvocationHandler := connect.NewUnaryHandler(
+		FlowServiceGetFlowInvocationProcedure,
+		svc.GetFlowInvocation,
+		connect.WithSchema(flowServiceMethods.ByName("GetFlowInvocation")),
+		connect.WithHandlerOptions(opts...),
+	)
+	flowServiceListFlowInvocationsHandler := connect.NewUnaryHandler(
+		FlowServiceListFlowInvocationsProcedure,
+		svc.ListFlowInvocations,
+		connect.WithSchema(flowServiceMethods.ByName("ListFlowInvocations")),
+		connect.WithHandlerOptions(opts...),
+	)
+	flowServiceCancelFlowInvocationHandler := connect.NewUnaryHandler(
+		FlowServiceCancelFlowInvocationProcedure,
+		svc.CancelFlowInvocation,
+		connect.WithSchema(flowServiceMethods.ByName("CancelFlowInvocation")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/ultra.v1.FlowService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case FlowServicePutFlowProcedure:
 			flowServicePutFlowHandler.ServeHTTP(w, r)
+		case FlowServiceValidateFlowProcedure:
+			flowServiceValidateFlowHandler.ServeHTTP(w, r)
 		case FlowServiceGetFlowProcedure:
 			flowServiceGetFlowHandler.ServeHTTP(w, r)
 		case FlowServiceListFlowsProcedure:
 			flowServiceListFlowsHandler.ServeHTTP(w, r)
+		case FlowServiceListFlowVersionsProcedure:
+			flowServiceListFlowVersionsHandler.ServeHTTP(w, r)
 		case FlowServiceInvokeFlowProcedure:
 			flowServiceInvokeFlowHandler.ServeHTTP(w, r)
+		case FlowServiceGetFlowInvocationProcedure:
+			flowServiceGetFlowInvocationHandler.ServeHTTP(w, r)
+		case FlowServiceListFlowInvocationsProcedure:
+			flowServiceListFlowInvocationsHandler.ServeHTTP(w, r)
+		case FlowServiceCancelFlowInvocationProcedure:
+			flowServiceCancelFlowInvocationHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -179,6 +306,10 @@ func (UnimplementedFlowServiceHandler) PutFlow(context.Context, *connect.Request
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.FlowService.PutFlow is not implemented"))
 }
 
+func (UnimplementedFlowServiceHandler) ValidateFlow(context.Context, *connect.Request[v1.ValidateFlowRequest]) (*connect.Response[v1.ValidateFlowResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.FlowService.ValidateFlow is not implemented"))
+}
+
 func (UnimplementedFlowServiceHandler) GetFlow(context.Context, *connect.Request[v1.GetFlowRequest]) (*connect.Response[v1.GetFlowResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.FlowService.GetFlow is not implemented"))
 }
@@ -187,6 +318,22 @@ func (UnimplementedFlowServiceHandler) ListFlows(context.Context, *connect.Reque
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.FlowService.ListFlows is not implemented"))
 }
 
+func (UnimplementedFlowServiceHandler) ListFlowVersions(context.Context, *connect.Request[v1.ListFlowVersionsRequest]) (*connect.Response[v1.ListFlowVersionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.FlowService.ListFlowVersions is not implemented"))
+}
+
 func (UnimplementedFlowServiceHandler) InvokeFlow(context.Context, *connect.Request[v1.InvokeFlowRequest]) (*connect.Response[v1.InvokeFlowResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.FlowService.InvokeFlow is not implemented"))
+}
+
+func (UnimplementedFlowServiceHandler) GetFlowInvocation(context.Context, *connect.Request[v1.GetFlowInvocationRequest]) (*connect.Response[v1.GetFlowInvocationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.FlowService.GetFlowInvocation is not implemented"))
+}
+
+func (UnimplementedFlowServiceHandler) ListFlowInvocations(context.Context, *connect.Request[v1.ListFlowInvocationsRequest]) (*connect.Response[v1.ListFlowInvocationsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.FlowService.ListFlowInvocations is not implemented"))
+}
+
+func (UnimplementedFlowServiceHandler) CancelFlowInvocation(context.Context, *connect.Request[v1.CancelFlowInvocationRequest]) (*connect.Response[v1.CancelFlowInvocationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.FlowService.CancelFlowInvocation is not implemented"))
 }

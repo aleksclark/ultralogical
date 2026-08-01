@@ -91,8 +91,15 @@ func decodeHandle(h ultra.ProviderHandle) (handleData, error) {
 
 // Provision implements ultra.EnvProvider.
 func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+	// A spec that names an image means it: silently substituting the
+	// configured default would let a declaration ask for one runtime and
+	// receive another, which no caller could detect.
+	imageRef := p.cfg.Image
+	if spec.Image != "" {
+		imageRef = spec.Image
+	}
 	if p.cfg.PullImage {
-		reader, err := p.docker.ImagePull(ctx, p.cfg.Image, image.PullOptions{})
+		reader, err := p.docker.ImagePull(ctx, imageRef, image.PullOptions{})
 		if err != nil {
 			return ultra.ProviderHandle{}, fmt.Errorf("localdocker: pull: %w", err)
 		}
@@ -114,7 +121,7 @@ func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.
 	}
 	resp, err := p.docker.ContainerCreate(ctx,
 		&containertypes.Config{
-			Image:        p.cfg.Image,
+			Image:        imageRef,
 			Env:          env,
 			Cmd:          []string{"--workdir", workdir},
 			Labels:       map[string]string{labelEnvID: string(envID)},

@@ -135,6 +135,140 @@ pub struct WaitView {
     pub member_count: usize,
 }
 
+/// FlowSummary is one row of the rendered flow catalog.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct FlowSummary {
+    pub id: String,
+    pub name: String,
+    pub version: i32,
+    /// definition is the version's own stored text. Carrying it means
+    /// selecting a version shows what that version says, not what the latest
+    /// one says.
+    pub definition: String,
+}
+
+/// FlowFieldErrorView is one rendered validation failure. The path and code
+/// come from the server unchanged, so the desktop shows the same structured
+/// errors the API produced rather than a reworded approximation.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct FlowFieldErrorView {
+    pub path: String,
+    pub code: String,
+    pub message: String,
+}
+
+/// FlowProgressView is one rendered lifecycle step of an invocation.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct FlowProgressView {
+    pub seq: i64,
+    pub stage: String,
+    pub key: String,
+    pub detail: String,
+}
+
+/// FlowResourceView is one run or environment an invocation owns, rendered
+/// with the flow declaration that produced it.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct FlowResourceView {
+    pub id: String,
+    pub declaration: String,
+    pub state: String,
+}
+
+/// FlowInvocationView is the rendered state of one invocation: provenance,
+/// ordered progress, and the topology it produced.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct FlowInvocationView {
+    pub id: String,
+    pub flow_id: String,
+    pub flow_name: String,
+    pub flow_version: i32,
+    pub state: String,
+    pub terminal_reason: String,
+    pub progress: Vec<FlowProgressView>,
+    pub runs: Vec<FlowResourceView>,
+    pub envs: Vec<FlowResourceView>,
+}
+
+/// flow_invocation_state_label maps the wire enum to the word the window
+/// paints, matching the API and the web application exactly.
+pub fn flow_invocation_state_label(state: i32) -> String {
+    match v1::FlowInvocationState::try_from(state) {
+        Ok(v1::FlowInvocationState::Pending) => "pending",
+        Ok(v1::FlowInvocationState::Provisioning) => "provisioning",
+        Ok(v1::FlowInvocationState::Running) => "running",
+        Ok(v1::FlowInvocationState::Cancelling) => "cancelling",
+        Ok(v1::FlowInvocationState::Completed) => "completed",
+        Ok(v1::FlowInvocationState::Failed) => "failed",
+        Ok(v1::FlowInvocationState::Cancelled) => "cancelled",
+        _ => "unknown",
+    }
+    .to_string()
+}
+
+/// env_state_label maps the environment wire enum to a rendered word.
+pub fn env_state_label(state: i32) -> String {
+    match v1::EnvState::try_from(state) {
+        Ok(v1::EnvState::Requested) => "requested",
+        Ok(v1::EnvState::Provisioning) => "provisioning",
+        Ok(v1::EnvState::Ready) => "ready",
+        Ok(v1::EnvState::Suspended) => "suspended",
+        Ok(v1::EnvState::Terminating) => "terminating",
+        Ok(v1::EnvState::Terminated) => "terminated",
+        Ok(v1::EnvState::Failed) => "failed",
+        _ => "unknown",
+    }
+    .to_string()
+}
+
+impl FlowInvocationView {
+    /// from_proto converts the API's invocation into rendered state.
+    pub fn from_proto(inv: &v1::FlowInvocation) -> Self {
+        Self {
+            id: inv.id.clone(),
+            flow_id: inv.flow_id.clone(),
+            flow_name: inv.flow_name.clone(),
+            flow_version: inv.flow_version,
+            state: flow_invocation_state_label(inv.state),
+            terminal_reason: inv.terminal_reason.clone(),
+            progress: inv
+                .progress
+                .iter()
+                .map(|p| FlowProgressView {
+                    seq: p.seq,
+                    stage: p.stage.clone(),
+                    key: p.key.clone(),
+                    detail: p.detail.clone(),
+                })
+                .collect(),
+            runs: inv
+                .runs
+                .iter()
+                .map(|r| FlowResourceView {
+                    id: r.run_id.clone(),
+                    declaration: r.agent_name.clone(),
+                    state: run_state_label(r.state),
+                })
+                .collect(),
+            envs: inv
+                .envs
+                .iter()
+                .map(|e| FlowResourceView {
+                    id: e.env_id.clone(),
+                    declaration: e.env_name.clone(),
+                    state: env_state_label(e.state),
+                })
+                .collect(),
+        }
+    }
+
+    /// progress_keys is the ordered key sequence, which is what replay
+    /// equality is asserted against.
+    pub fn progress_keys(&self) -> Vec<String> {
+        self.progress.iter().map(|p| p.key.clone()).collect()
+    }
+}
+
 /// SessionSummary is one row of the rendered session list.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct SessionSummary {
@@ -169,6 +303,19 @@ pub struct DesktopState {
     pub lane_run_id: Option<String>,
     /// endpoint records which replica the window is currently talking to.
     pub endpoint: String,
+    /// flows is the rendered catalog: the latest version of each org flow.
+    pub flows: Vec<FlowSummary>,
+    /// flow_versions is every version of the selected flow, newest first.
+    pub flow_versions: Vec<FlowSummary>,
+    pub selected_flow: Option<String>,
+    pub selected_version: i32,
+    /// flow_definition is the definition text of the selected version.
+    pub flow_definition: String,
+    /// flow_errors are the server's structured validation failures.
+    pub flow_errors: Vec<FlowFieldErrorView>,
+    /// invocations are the session's flow invocations, newest first.
+    pub invocations: Vec<FlowInvocationView>,
+    pub active_invocation: Option<String>,
 }
 
 impl DesktopState {
@@ -237,6 +384,31 @@ impl DesktopState {
         self.memory_keys.clear();
         self.runs.clear();
         self.lane_run_id = None;
+        self.invocations.clear();
+        self.active_invocation = None;
+    }
+
+    /// active_invocation_view returns the invocation the window is showing.
+    pub fn active_invocation_view(&self) -> Option<&FlowInvocationView> {
+        match self.active_invocation.as_deref() {
+            Some(id) => self.invocations.iter().find(|inv| inv.id == id),
+            None => self.invocations.first(),
+        }
+    }
+
+    /// set_flow_catalog replaces the rendered catalog.
+    pub fn set_flow_catalog(&mut self, flows: Vec<FlowSummary>) {
+        self.flows = flows;
+    }
+
+    /// select_flow_version shows one version's definition, which is how a user
+    /// inspects an older version rather than always seeing the latest.
+    pub fn select_flow_version(&mut self, version: i32) {
+        self.selected_version = version;
+        if let Some(found) = self.flow_versions.iter().find(|f| f.version == version) {
+            self.selected_flow = Some(found.name.clone());
+            self.flow_definition = found.definition.clone();
+        }
     }
 
     /// assistant_text returns the concatenated assistant text, used by the

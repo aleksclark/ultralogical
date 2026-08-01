@@ -9,6 +9,7 @@ package ultrav1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -21,6 +22,73 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// FlowInvocationState is the durable invocation state machine. Provisioning,
+// readiness, topology, cleanup, and cancellation are all states of a persisted
+// row, so a client can explain an invocation without reconstructing it.
+type FlowInvocationState int32
+
+const (
+	FlowInvocationState_FLOW_INVOCATION_STATE_UNSPECIFIED  FlowInvocationState = 0
+	FlowInvocationState_FLOW_INVOCATION_STATE_PENDING      FlowInvocationState = 1
+	FlowInvocationState_FLOW_INVOCATION_STATE_PROVISIONING FlowInvocationState = 2
+	FlowInvocationState_FLOW_INVOCATION_STATE_RUNNING      FlowInvocationState = 3
+	FlowInvocationState_FLOW_INVOCATION_STATE_CANCELLING   FlowInvocationState = 4
+	FlowInvocationState_FLOW_INVOCATION_STATE_COMPLETED    FlowInvocationState = 5
+	FlowInvocationState_FLOW_INVOCATION_STATE_FAILED       FlowInvocationState = 6
+	FlowInvocationState_FLOW_INVOCATION_STATE_CANCELLED    FlowInvocationState = 7
+)
+
+// Enum value maps for FlowInvocationState.
+var (
+	FlowInvocationState_name = map[int32]string{
+		0: "FLOW_INVOCATION_STATE_UNSPECIFIED",
+		1: "FLOW_INVOCATION_STATE_PENDING",
+		2: "FLOW_INVOCATION_STATE_PROVISIONING",
+		3: "FLOW_INVOCATION_STATE_RUNNING",
+		4: "FLOW_INVOCATION_STATE_CANCELLING",
+		5: "FLOW_INVOCATION_STATE_COMPLETED",
+		6: "FLOW_INVOCATION_STATE_FAILED",
+		7: "FLOW_INVOCATION_STATE_CANCELLED",
+	}
+	FlowInvocationState_value = map[string]int32{
+		"FLOW_INVOCATION_STATE_UNSPECIFIED":  0,
+		"FLOW_INVOCATION_STATE_PENDING":      1,
+		"FLOW_INVOCATION_STATE_PROVISIONING": 2,
+		"FLOW_INVOCATION_STATE_RUNNING":      3,
+		"FLOW_INVOCATION_STATE_CANCELLING":   4,
+		"FLOW_INVOCATION_STATE_COMPLETED":    5,
+		"FLOW_INVOCATION_STATE_FAILED":       6,
+		"FLOW_INVOCATION_STATE_CANCELLED":    7,
+	}
+)
+
+func (x FlowInvocationState) Enum() *FlowInvocationState {
+	p := new(FlowInvocationState)
+	*p = x
+	return p
+}
+
+func (x FlowInvocationState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (FlowInvocationState) Descriptor() protoreflect.EnumDescriptor {
+	return file_ultra_v1_flow_proto_enumTypes[0].Descriptor()
+}
+
+func (FlowInvocationState) Type() protoreflect.EnumType {
+	return &file_ultra_v1_flow_proto_enumTypes[0]
+}
+
+func (x FlowInvocationState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use FlowInvocationState.Descriptor instead.
+func (FlowInvocationState) EnumDescriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{0}
+}
+
 type Flow struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -28,6 +96,7 @@ type Flow struct {
 	Name           string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	Version        int32                  `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
 	DefinitionJson string                 `protobuf:"bytes,5,opt,name=definition_json,json=definitionJson,proto3" json:"definition_json,omitempty"`
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -97,18 +166,499 @@ func (x *Flow) GetDefinitionJson() string {
 	return ""
 }
 
+func (x *Flow) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+// FlowFieldError is one validation failure addressed by a stable field path.
+// The code is machine-readable and stable; the message is for humans.
+type FlowFieldError struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Code          string                 `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FlowFieldError) Reset() {
+	*x = FlowFieldError{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlowFieldError) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlowFieldError) ProtoMessage() {}
+
+func (x *FlowFieldError) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlowFieldError.ProtoReflect.Descriptor instead.
+func (*FlowFieldError) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *FlowFieldError) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *FlowFieldError) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *FlowFieldError) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+// FlowInvocationProgressEntry is one recorded step of an invocation's
+// lifecycle. Entries are append-only and gapless per invocation.
+type FlowInvocationProgressEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Seq           int64                  `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Stage         string                 `protobuf:"bytes,2,opt,name=stage,proto3" json:"stage,omitempty"`
+	Key           string                 `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`
+	Detail        string                 `protobuf:"bytes,4,opt,name=detail,proto3" json:"detail,omitempty"`
+	At            *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=at,proto3" json:"at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FlowInvocationProgressEntry) Reset() {
+	*x = FlowInvocationProgressEntry{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlowInvocationProgressEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlowInvocationProgressEntry) ProtoMessage() {}
+
+func (x *FlowInvocationProgressEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlowInvocationProgressEntry.ProtoReflect.Descriptor instead.
+func (*FlowInvocationProgressEntry) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *FlowInvocationProgressEntry) GetSeq() int64 {
+	if x != nil {
+		return x.Seq
+	}
+	return 0
+}
+
+func (x *FlowInvocationProgressEntry) GetStage() string {
+	if x != nil {
+		return x.Stage
+	}
+	return ""
+}
+
+func (x *FlowInvocationProgressEntry) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *FlowInvocationProgressEntry) GetDetail() string {
+	if x != nil {
+		return x.Detail
+	}
+	return ""
+}
+
+func (x *FlowInvocationProgressEntry) GetAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.At
+	}
+	return nil
+}
+
+// FlowInvocationRun links one agent run to the flow agent that declared it.
+type FlowInvocationRun struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	AgentName     string                 `protobuf:"bytes,2,opt,name=agent_name,json=agentName,proto3" json:"agent_name,omitempty"`
+	State         RunState               `protobuf:"varint,3,opt,name=state,proto3,enum=ultra.v1.RunState" json:"state,omitempty"`
+	Prompt        string                 `protobuf:"bytes,4,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	ParentRunId   string                 `protobuf:"bytes,5,opt,name=parent_run_id,json=parentRunId,proto3" json:"parent_run_id,omitempty"`
+	CohortId      string                 `protobuf:"bytes,6,opt,name=cohort_id,json=cohortId,proto3" json:"cohort_id,omitempty"`
+	CohortOrdinal int32                  `protobuf:"varint,7,opt,name=cohort_ordinal,json=cohortOrdinal,proto3" json:"cohort_ordinal,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FlowInvocationRun) Reset() {
+	*x = FlowInvocationRun{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlowInvocationRun) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlowInvocationRun) ProtoMessage() {}
+
+func (x *FlowInvocationRun) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlowInvocationRun.ProtoReflect.Descriptor instead.
+func (*FlowInvocationRun) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *FlowInvocationRun) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *FlowInvocationRun) GetAgentName() string {
+	if x != nil {
+		return x.AgentName
+	}
+	return ""
+}
+
+func (x *FlowInvocationRun) GetState() RunState {
+	if x != nil {
+		return x.State
+	}
+	return RunState_RUN_STATE_UNSPECIFIED
+}
+
+func (x *FlowInvocationRun) GetPrompt() string {
+	if x != nil {
+		return x.Prompt
+	}
+	return ""
+}
+
+func (x *FlowInvocationRun) GetParentRunId() string {
+	if x != nil {
+		return x.ParentRunId
+	}
+	return ""
+}
+
+func (x *FlowInvocationRun) GetCohortId() string {
+	if x != nil {
+		return x.CohortId
+	}
+	return ""
+}
+
+func (x *FlowInvocationRun) GetCohortOrdinal() int32 {
+	if x != nil {
+		return x.CohortOrdinal
+	}
+	return 0
+}
+
+// FlowInvocationEnv links one environment to the flow environment that
+// declared it.
+type FlowInvocationEnv struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	EnvId          string                 `protobuf:"bytes,1,opt,name=env_id,json=envId,proto3" json:"env_id,omitempty"`
+	EnvName        string                 `protobuf:"bytes,2,opt,name=env_name,json=envName,proto3" json:"env_name,omitempty"`
+	State          EnvState               `protobuf:"varint,3,opt,name=state,proto3,enum=ultra.v1.EnvState" json:"state,omitempty"`
+	Endpoint       string                 `protobuf:"bytes,4,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	FailureMessage string                 `protobuf:"bytes,5,opt,name=failure_message,json=failureMessage,proto3" json:"failure_message,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *FlowInvocationEnv) Reset() {
+	*x = FlowInvocationEnv{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlowInvocationEnv) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlowInvocationEnv) ProtoMessage() {}
+
+func (x *FlowInvocationEnv) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlowInvocationEnv.ProtoReflect.Descriptor instead.
+func (*FlowInvocationEnv) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *FlowInvocationEnv) GetEnvId() string {
+	if x != nil {
+		return x.EnvId
+	}
+	return ""
+}
+
+func (x *FlowInvocationEnv) GetEnvName() string {
+	if x != nil {
+		return x.EnvName
+	}
+	return ""
+}
+
+func (x *FlowInvocationEnv) GetState() EnvState {
+	if x != nil {
+		return x.State
+	}
+	return EnvState_ENV_STATE_UNSPECIFIED
+}
+
+func (x *FlowInvocationEnv) GetEndpoint() string {
+	if x != nil {
+		return x.Endpoint
+	}
+	return ""
+}
+
+func (x *FlowInvocationEnv) GetFailureMessage() string {
+	if x != nil {
+		return x.FailureMessage
+	}
+	return ""
+}
+
+// FlowInvocation is one durable attempt to run a flow version into a session.
+type FlowInvocation struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Id          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	SessionId   string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	FlowId      string                 `protobuf:"bytes,3,opt,name=flow_id,json=flowId,proto3" json:"flow_id,omitempty"`
+	FlowName    string                 `protobuf:"bytes,4,opt,name=flow_name,json=flowName,proto3" json:"flow_name,omitempty"`
+	FlowVersion int32                  `protobuf:"varint,5,opt,name=flow_version,json=flowVersion,proto3" json:"flow_version,omitempty"`
+	ParamsJson  string                 `protobuf:"bytes,6,opt,name=params_json,json=paramsJson,proto3" json:"params_json,omitempty"`
+	// rendered_json is the frozen rendering this invocation executed: prompts,
+	// grants, and environment specs exactly as it resolved them.
+	RenderedJson   string                         `protobuf:"bytes,7,opt,name=rendered_json,json=renderedJson,proto3" json:"rendered_json,omitempty"`
+	State          FlowInvocationState            `protobuf:"varint,8,opt,name=state,proto3,enum=ultra.v1.FlowInvocationState" json:"state,omitempty"`
+	TerminalReason string                         `protobuf:"bytes,9,opt,name=terminal_reason,json=terminalReason,proto3" json:"terminal_reason,omitempty"`
+	Message        string                         `protobuf:"bytes,10,opt,name=message,proto3" json:"message,omitempty"`
+	CreatedAt      *timestamppb.Timestamp         `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt      *timestamppb.Timestamp         `protobuf:"bytes,12,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Progress       []*FlowInvocationProgressEntry `protobuf:"bytes,13,rep,name=progress,proto3" json:"progress,omitempty"`
+	Runs           []*FlowInvocationRun           `protobuf:"bytes,14,rep,name=runs,proto3" json:"runs,omitempty"`
+	Envs           []*FlowInvocationEnv           `protobuf:"bytes,15,rep,name=envs,proto3" json:"envs,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *FlowInvocation) Reset() {
+	*x = FlowInvocation{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlowInvocation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlowInvocation) ProtoMessage() {}
+
+func (x *FlowInvocation) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlowInvocation.ProtoReflect.Descriptor instead.
+func (*FlowInvocation) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *FlowInvocation) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *FlowInvocation) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *FlowInvocation) GetFlowId() string {
+	if x != nil {
+		return x.FlowId
+	}
+	return ""
+}
+
+func (x *FlowInvocation) GetFlowName() string {
+	if x != nil {
+		return x.FlowName
+	}
+	return ""
+}
+
+func (x *FlowInvocation) GetFlowVersion() int32 {
+	if x != nil {
+		return x.FlowVersion
+	}
+	return 0
+}
+
+func (x *FlowInvocation) GetParamsJson() string {
+	if x != nil {
+		return x.ParamsJson
+	}
+	return ""
+}
+
+func (x *FlowInvocation) GetRenderedJson() string {
+	if x != nil {
+		return x.RenderedJson
+	}
+	return ""
+}
+
+func (x *FlowInvocation) GetState() FlowInvocationState {
+	if x != nil {
+		return x.State
+	}
+	return FlowInvocationState_FLOW_INVOCATION_STATE_UNSPECIFIED
+}
+
+func (x *FlowInvocation) GetTerminalReason() string {
+	if x != nil {
+		return x.TerminalReason
+	}
+	return ""
+}
+
+func (x *FlowInvocation) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *FlowInvocation) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *FlowInvocation) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+func (x *FlowInvocation) GetProgress() []*FlowInvocationProgressEntry {
+	if x != nil {
+		return x.Progress
+	}
+	return nil
+}
+
+func (x *FlowInvocation) GetRuns() []*FlowInvocationRun {
+	if x != nil {
+		return x.Runs
+	}
+	return nil
+}
+
+func (x *FlowInvocation) GetEnvs() []*FlowInvocationEnv {
+	if x != nil {
+		return x.Envs
+	}
+	return nil
+}
+
 type PutFlowRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	OrgId          string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
 	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	DefinitionJson string                 `protobuf:"bytes,3,opt,name=definition_json,json=definitionJson,proto3" json:"definition_json,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// version pins the version being written. Zero assigns the next version;
+	// an explicit version that already exists is rejected rather than
+	// overwritten.
+	Version       int32 `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PutFlowRequest) Reset() {
 	*x = PutFlowRequest{}
-	mi := &file_ultra_v1_flow_proto_msgTypes[1]
+	mi := &file_ultra_v1_flow_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -120,7 +670,7 @@ func (x *PutFlowRequest) String() string {
 func (*PutFlowRequest) ProtoMessage() {}
 
 func (x *PutFlowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_flow_proto_msgTypes[1]
+	mi := &file_ultra_v1_flow_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -133,7 +683,7 @@ func (x *PutFlowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutFlowRequest.ProtoReflect.Descriptor instead.
 func (*PutFlowRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{1}
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *PutFlowRequest) GetOrgId() string {
@@ -157,6 +707,13 @@ func (x *PutFlowRequest) GetDefinitionJson() string {
 	return ""
 }
 
+func (x *PutFlowRequest) GetVersion() int32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
 type PutFlowResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Flow          *Flow                  `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
@@ -166,7 +723,7 @@ type PutFlowResponse struct {
 
 func (x *PutFlowResponse) Reset() {
 	*x = PutFlowResponse{}
-	mi := &file_ultra_v1_flow_proto_msgTypes[2]
+	mi := &file_ultra_v1_flow_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -178,7 +735,7 @@ func (x *PutFlowResponse) String() string {
 func (*PutFlowResponse) ProtoMessage() {}
 
 func (x *PutFlowResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_flow_proto_msgTypes[2]
+	mi := &file_ultra_v1_flow_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -191,12 +748,116 @@ func (x *PutFlowResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutFlowResponse.ProtoReflect.Descriptor instead.
 func (*PutFlowResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{2}
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *PutFlowResponse) GetFlow() *Flow {
 	if x != nil {
 		return x.Flow
+	}
+	return nil
+}
+
+type ValidateFlowRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	OrgId          string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	DefinitionJson string                 `protobuf:"bytes,2,opt,name=definition_json,json=definitionJson,proto3" json:"definition_json,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ValidateFlowRequest) Reset() {
+	*x = ValidateFlowRequest{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateFlowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateFlowRequest) ProtoMessage() {}
+
+func (x *ValidateFlowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateFlowRequest.ProtoReflect.Descriptor instead.
+func (*ValidateFlowRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ValidateFlowRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *ValidateFlowRequest) GetDefinitionJson() string {
+	if x != nil {
+		return x.DefinitionJson
+	}
+	return ""
+}
+
+type ValidateFlowResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Valid         bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
+	Errors        []*FlowFieldError      `protobuf:"bytes,2,rep,name=errors,proto3" json:"errors,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ValidateFlowResponse) Reset() {
+	*x = ValidateFlowResponse{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateFlowResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateFlowResponse) ProtoMessage() {}
+
+func (x *ValidateFlowResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateFlowResponse.ProtoReflect.Descriptor instead.
+func (*ValidateFlowResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ValidateFlowResponse) GetValid() bool {
+	if x != nil {
+		return x.Valid
+	}
+	return false
+}
+
+func (x *ValidateFlowResponse) GetErrors() []*FlowFieldError {
+	if x != nil {
+		return x.Errors
 	}
 	return nil
 }
@@ -212,7 +873,7 @@ type GetFlowRequest struct {
 
 func (x *GetFlowRequest) Reset() {
 	*x = GetFlowRequest{}
-	mi := &file_ultra_v1_flow_proto_msgTypes[3]
+	mi := &file_ultra_v1_flow_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -224,7 +885,7 @@ func (x *GetFlowRequest) String() string {
 func (*GetFlowRequest) ProtoMessage() {}
 
 func (x *GetFlowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_flow_proto_msgTypes[3]
+	mi := &file_ultra_v1_flow_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -237,7 +898,7 @@ func (x *GetFlowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFlowRequest.ProtoReflect.Descriptor instead.
 func (*GetFlowRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{3}
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetFlowRequest) GetOrgId() string {
@@ -270,7 +931,7 @@ type GetFlowResponse struct {
 
 func (x *GetFlowResponse) Reset() {
 	*x = GetFlowResponse{}
-	mi := &file_ultra_v1_flow_proto_msgTypes[4]
+	mi := &file_ultra_v1_flow_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -282,7 +943,7 @@ func (x *GetFlowResponse) String() string {
 func (*GetFlowResponse) ProtoMessage() {}
 
 func (x *GetFlowResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_flow_proto_msgTypes[4]
+	mi := &file_ultra_v1_flow_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -295,7 +956,7 @@ func (x *GetFlowResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFlowResponse.ProtoReflect.Descriptor instead.
 func (*GetFlowResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{4}
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetFlowResponse) GetFlow() *Flow {
@@ -314,7 +975,7 @@ type ListFlowsRequest struct {
 
 func (x *ListFlowsRequest) Reset() {
 	*x = ListFlowsRequest{}
-	mi := &file_ultra_v1_flow_proto_msgTypes[5]
+	mi := &file_ultra_v1_flow_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -326,7 +987,7 @@ func (x *ListFlowsRequest) String() string {
 func (*ListFlowsRequest) ProtoMessage() {}
 
 func (x *ListFlowsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_flow_proto_msgTypes[5]
+	mi := &file_ultra_v1_flow_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -339,7 +1000,7 @@ func (x *ListFlowsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListFlowsRequest.ProtoReflect.Descriptor instead.
 func (*ListFlowsRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{5}
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListFlowsRequest) GetOrgId() string {
@@ -358,7 +1019,7 @@ type ListFlowsResponse struct {
 
 func (x *ListFlowsResponse) Reset() {
 	*x = ListFlowsResponse{}
-	mi := &file_ultra_v1_flow_proto_msgTypes[6]
+	mi := &file_ultra_v1_flow_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -370,7 +1031,7 @@ func (x *ListFlowsResponse) String() string {
 func (*ListFlowsResponse) ProtoMessage() {}
 
 func (x *ListFlowsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_flow_proto_msgTypes[6]
+	mi := &file_ultra_v1_flow_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -383,10 +1044,106 @@ func (x *ListFlowsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListFlowsResponse.ProtoReflect.Descriptor instead.
 func (*ListFlowsResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{6}
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListFlowsResponse) GetFlows() []*Flow {
+	if x != nil {
+		return x.Flows
+	}
+	return nil
+}
+
+type ListFlowVersionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListFlowVersionsRequest) Reset() {
+	*x = ListFlowVersionsRequest{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListFlowVersionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListFlowVersionsRequest) ProtoMessage() {}
+
+func (x *ListFlowVersionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListFlowVersionsRequest.ProtoReflect.Descriptor instead.
+func (*ListFlowVersionsRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ListFlowVersionsRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *ListFlowVersionsRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type ListFlowVersionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Flows         []*Flow                `protobuf:"bytes,1,rep,name=flows,proto3" json:"flows,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListFlowVersionsResponse) Reset() {
+	*x = ListFlowVersionsResponse{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListFlowVersionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListFlowVersionsResponse) ProtoMessage() {}
+
+func (x *ListFlowVersionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListFlowVersionsResponse.ProtoReflect.Descriptor instead.
+func (*ListFlowVersionsResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ListFlowVersionsResponse) GetFlows() []*Flow {
 	if x != nil {
 		return x.Flows
 	}
@@ -405,7 +1162,7 @@ type InvokeFlowRequest struct {
 
 func (x *InvokeFlowRequest) Reset() {
 	*x = InvokeFlowRequest{}
-	mi := &file_ultra_v1_flow_proto_msgTypes[7]
+	mi := &file_ultra_v1_flow_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -417,7 +1174,7 @@ func (x *InvokeFlowRequest) String() string {
 func (*InvokeFlowRequest) ProtoMessage() {}
 
 func (x *InvokeFlowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_flow_proto_msgTypes[7]
+	mi := &file_ultra_v1_flow_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -430,7 +1187,7 @@ func (x *InvokeFlowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvokeFlowRequest.ProtoReflect.Descriptor instead.
 func (*InvokeFlowRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{7}
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *InvokeFlowRequest) GetSessionId() string {
@@ -466,13 +1223,14 @@ type InvokeFlowResponse struct {
 	InvocationId  string                 `protobuf:"bytes,1,opt,name=invocation_id,json=invocationId,proto3" json:"invocation_id,omitempty"`
 	RunIds        []string               `protobuf:"bytes,2,rep,name=run_ids,json=runIds,proto3" json:"run_ids,omitempty"`
 	EventSeq      int64                  `protobuf:"varint,3,opt,name=event_seq,json=eventSeq,proto3" json:"event_seq,omitempty"`
+	Invocation    *FlowInvocation        `protobuf:"bytes,4,opt,name=invocation,proto3" json:"invocation,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InvokeFlowResponse) Reset() {
 	*x = InvokeFlowResponse{}
-	mi := &file_ultra_v1_flow_proto_msgTypes[8]
+	mi := &file_ultra_v1_flow_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -484,7 +1242,7 @@ func (x *InvokeFlowResponse) String() string {
 func (*InvokeFlowResponse) ProtoMessage() {}
 
 func (x *InvokeFlowResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_flow_proto_msgTypes[8]
+	mi := &file_ultra_v1_flow_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -497,7 +1255,7 @@ func (x *InvokeFlowResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvokeFlowResponse.ProtoReflect.Descriptor instead.
 func (*InvokeFlowResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{8}
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *InvokeFlowResponse) GetInvocationId() string {
@@ -521,23 +1279,349 @@ func (x *InvokeFlowResponse) GetEventSeq() int64 {
 	return 0
 }
 
+func (x *InvokeFlowResponse) GetInvocation() *FlowInvocation {
+	if x != nil {
+		return x.Invocation
+	}
+	return nil
+}
+
+type GetFlowInvocationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	InvocationId  string                 `protobuf:"bytes,1,opt,name=invocation_id,json=invocationId,proto3" json:"invocation_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFlowInvocationRequest) Reset() {
+	*x = GetFlowInvocationRequest{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFlowInvocationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFlowInvocationRequest) ProtoMessage() {}
+
+func (x *GetFlowInvocationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFlowInvocationRequest.ProtoReflect.Descriptor instead.
+func (*GetFlowInvocationRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetFlowInvocationRequest) GetInvocationId() string {
+	if x != nil {
+		return x.InvocationId
+	}
+	return ""
+}
+
+type GetFlowInvocationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Invocation    *FlowInvocation        `protobuf:"bytes,1,opt,name=invocation,proto3" json:"invocation,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFlowInvocationResponse) Reset() {
+	*x = GetFlowInvocationResponse{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFlowInvocationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFlowInvocationResponse) ProtoMessage() {}
+
+func (x *GetFlowInvocationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFlowInvocationResponse.ProtoReflect.Descriptor instead.
+func (*GetFlowInvocationResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetFlowInvocationResponse) GetInvocation() *FlowInvocation {
+	if x != nil {
+		return x.Invocation
+	}
+	return nil
+}
+
+type ListFlowInvocationsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListFlowInvocationsRequest) Reset() {
+	*x = ListFlowInvocationsRequest{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListFlowInvocationsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListFlowInvocationsRequest) ProtoMessage() {}
+
+func (x *ListFlowInvocationsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListFlowInvocationsRequest.ProtoReflect.Descriptor instead.
+func (*ListFlowInvocationsRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *ListFlowInvocationsRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type ListFlowInvocationsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Invocations   []*FlowInvocation      `protobuf:"bytes,1,rep,name=invocations,proto3" json:"invocations,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListFlowInvocationsResponse) Reset() {
+	*x = ListFlowInvocationsResponse{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListFlowInvocationsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListFlowInvocationsResponse) ProtoMessage() {}
+
+func (x *ListFlowInvocationsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListFlowInvocationsResponse.ProtoReflect.Descriptor instead.
+func (*ListFlowInvocationsResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ListFlowInvocationsResponse) GetInvocations() []*FlowInvocation {
+	if x != nil {
+		return x.Invocations
+	}
+	return nil
+}
+
+type CancelFlowInvocationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	InvocationId  string                 `protobuf:"bytes,1,opt,name=invocation_id,json=invocationId,proto3" json:"invocation_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelFlowInvocationRequest) Reset() {
+	*x = CancelFlowInvocationRequest{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelFlowInvocationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelFlowInvocationRequest) ProtoMessage() {}
+
+func (x *CancelFlowInvocationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelFlowInvocationRequest.ProtoReflect.Descriptor instead.
+func (*CancelFlowInvocationRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *CancelFlowInvocationRequest) GetInvocationId() string {
+	if x != nil {
+		return x.InvocationId
+	}
+	return ""
+}
+
+type CancelFlowInvocationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Invocation    *FlowInvocation        `protobuf:"bytes,1,opt,name=invocation,proto3" json:"invocation,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelFlowInvocationResponse) Reset() {
+	*x = CancelFlowInvocationResponse{}
+	mi := &file_ultra_v1_flow_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelFlowInvocationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelFlowInvocationResponse) ProtoMessage() {}
+
+func (x *CancelFlowInvocationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_flow_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelFlowInvocationResponse.ProtoReflect.Descriptor instead.
+func (*CancelFlowInvocationResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_flow_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *CancelFlowInvocationResponse) GetInvocation() *FlowInvocation {
+	if x != nil {
+		return x.Invocation
+	}
+	return nil
+}
+
 var File_ultra_v1_flow_proto protoreflect.FileDescriptor
 
 const file_ultra_v1_flow_proto_rawDesc = "" +
 	"\n" +
-	"\x13ultra/v1/flow.proto\x12\bultra.v1\"\x84\x01\n" +
+	"\x13ultra/v1/flow.proto\x12\bultra.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14ultra/v1/agent.proto\x1a\x12ultra/v1/env.proto\"\xbf\x01\n" +
 	"\x04Flow\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x06org_id\x18\x02 \x01(\tR\x05orgId\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\x04 \x01(\x05R\aversion\x12'\n" +
-	"\x0fdefinition_json\x18\x05 \x01(\tR\x0edefinitionJson\"d\n" +
+	"\x0fdefinition_json\x18\x05 \x01(\tR\x0edefinitionJson\x129\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"R\n" +
+	"\x0eFlowFieldError\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12\x12\n" +
+	"\x04code\x18\x02 \x01(\tR\x04code\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\x9b\x01\n" +
+	"\x1bFlowInvocationProgressEntry\x12\x10\n" +
+	"\x03seq\x18\x01 \x01(\x03R\x03seq\x12\x14\n" +
+	"\x05stage\x18\x02 \x01(\tR\x05stage\x12\x10\n" +
+	"\x03key\x18\x03 \x01(\tR\x03key\x12\x16\n" +
+	"\x06detail\x18\x04 \x01(\tR\x06detail\x12*\n" +
+	"\x02at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x02at\"\xf3\x01\n" +
+	"\x11FlowInvocationRun\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1d\n" +
+	"\n" +
+	"agent_name\x18\x02 \x01(\tR\tagentName\x12(\n" +
+	"\x05state\x18\x03 \x01(\x0e2\x12.ultra.v1.RunStateR\x05state\x12\x16\n" +
+	"\x06prompt\x18\x04 \x01(\tR\x06prompt\x12\"\n" +
+	"\rparent_run_id\x18\x05 \x01(\tR\vparentRunId\x12\x1b\n" +
+	"\tcohort_id\x18\x06 \x01(\tR\bcohortId\x12%\n" +
+	"\x0ecohort_ordinal\x18\a \x01(\x05R\rcohortOrdinal\"\xb4\x01\n" +
+	"\x11FlowInvocationEnv\x12\x15\n" +
+	"\x06env_id\x18\x01 \x01(\tR\x05envId\x12\x19\n" +
+	"\benv_name\x18\x02 \x01(\tR\aenvName\x12(\n" +
+	"\x05state\x18\x03 \x01(\x0e2\x12.ultra.v1.EnvStateR\x05state\x12\x1a\n" +
+	"\bendpoint\x18\x04 \x01(\tR\bendpoint\x12'\n" +
+	"\x0ffailure_message\x18\x05 \x01(\tR\x0efailureMessage\"\xf1\x04\n" +
+	"\x0eFlowInvocation\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12\x17\n" +
+	"\aflow_id\x18\x03 \x01(\tR\x06flowId\x12\x1b\n" +
+	"\tflow_name\x18\x04 \x01(\tR\bflowName\x12!\n" +
+	"\fflow_version\x18\x05 \x01(\x05R\vflowVersion\x12\x1f\n" +
+	"\vparams_json\x18\x06 \x01(\tR\n" +
+	"paramsJson\x12#\n" +
+	"\rrendered_json\x18\a \x01(\tR\frenderedJson\x123\n" +
+	"\x05state\x18\b \x01(\x0e2\x1d.ultra.v1.FlowInvocationStateR\x05state\x12'\n" +
+	"\x0fterminal_reason\x18\t \x01(\tR\x0eterminalReason\x12\x18\n" +
+	"\amessage\x18\n" +
+	" \x01(\tR\amessage\x129\n" +
+	"\n" +
+	"created_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12A\n" +
+	"\bprogress\x18\r \x03(\v2%.ultra.v1.FlowInvocationProgressEntryR\bprogress\x12/\n" +
+	"\x04runs\x18\x0e \x03(\v2\x1b.ultra.v1.FlowInvocationRunR\x04runs\x12/\n" +
+	"\x04envs\x18\x0f \x03(\v2\x1b.ultra.v1.FlowInvocationEnvR\x04envs\"~\n" +
 	"\x0ePutFlowRequest\x12\x15\n" +
 	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12'\n" +
-	"\x0fdefinition_json\x18\x03 \x01(\tR\x0edefinitionJson\"5\n" +
+	"\x0fdefinition_json\x18\x03 \x01(\tR\x0edefinitionJson\x12\x18\n" +
+	"\aversion\x18\x04 \x01(\x05R\aversion\"5\n" +
 	"\x0fPutFlowResponse\x12\"\n" +
 	"\x04flow\x18\x01 \x01(\v2\x0e.ultra.v1.FlowR\x04flow\"U\n" +
+	"\x13ValidateFlowRequest\x12\x15\n" +
+	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12'\n" +
+	"\x0fdefinition_json\x18\x02 \x01(\tR\x0edefinitionJson\"^\n" +
+	"\x14ValidateFlowResponse\x12\x14\n" +
+	"\x05valid\x18\x01 \x01(\bR\x05valid\x120\n" +
+	"\x06errors\x18\x02 \x03(\v2\x18.ultra.v1.FlowFieldErrorR\x06errors\"U\n" +
 	"\x0eGetFlowRequest\x12\x15\n" +
 	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -547,6 +1631,11 @@ const file_ultra_v1_flow_proto_rawDesc = "" +
 	"\x10ListFlowsRequest\x12\x15\n" +
 	"\x06org_id\x18\x01 \x01(\tR\x05orgId\"9\n" +
 	"\x11ListFlowsResponse\x12$\n" +
+	"\x05flows\x18\x01 \x03(\v2\x0e.ultra.v1.FlowR\x05flows\"D\n" +
+	"\x17ListFlowVersionsRequest\x12\x15\n" +
+	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"@\n" +
+	"\x18ListFlowVersionsResponse\x12$\n" +
 	"\x05flows\x18\x01 \x03(\v2\x0e.ultra.v1.FlowR\x05flows\"\x81\x01\n" +
 	"\x11InvokeFlowRequest\x12\x1d\n" +
 	"\n" +
@@ -554,17 +1643,51 @@ const file_ultra_v1_flow_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\x03 \x01(\x05R\aversion\x12\x1f\n" +
 	"\vparams_json\x18\x04 \x01(\tR\n" +
-	"paramsJson\"o\n" +
+	"paramsJson\"\xa9\x01\n" +
 	"\x12InvokeFlowResponse\x12#\n" +
 	"\rinvocation_id\x18\x01 \x01(\tR\finvocationId\x12\x17\n" +
 	"\arun_ids\x18\x02 \x03(\tR\x06runIds\x12\x1b\n" +
-	"\tevent_seq\x18\x03 \x01(\x03R\beventSeq2\x9c\x02\n" +
-	"\vFlowService\x12>\n" +
-	"\aPutFlow\x12\x18.ultra.v1.PutFlowRequest\x1a\x19.ultra.v1.PutFlowResponse\x12>\n" +
-	"\aGetFlow\x12\x18.ultra.v1.GetFlowRequest\x1a\x19.ultra.v1.GetFlowResponse\x12D\n" +
-	"\tListFlows\x12\x1a.ultra.v1.ListFlowsRequest\x1a\x1b.ultra.v1.ListFlowsResponse\x12G\n" +
+	"\tevent_seq\x18\x03 \x01(\x03R\beventSeq\x128\n" +
 	"\n" +
-	"InvokeFlow\x12\x1b.ultra.v1.InvokeFlowRequest\x1a\x1c.ultra.v1.InvokeFlowResponseB<Z:github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1b\x06proto3"
+	"invocation\x18\x04 \x01(\v2\x18.ultra.v1.FlowInvocationR\n" +
+	"invocation\"?\n" +
+	"\x18GetFlowInvocationRequest\x12#\n" +
+	"\rinvocation_id\x18\x01 \x01(\tR\finvocationId\"U\n" +
+	"\x19GetFlowInvocationResponse\x128\n" +
+	"\n" +
+	"invocation\x18\x01 \x01(\v2\x18.ultra.v1.FlowInvocationR\n" +
+	"invocation\";\n" +
+	"\x1aListFlowInvocationsRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"Y\n" +
+	"\x1bListFlowInvocationsResponse\x12:\n" +
+	"\vinvocations\x18\x01 \x03(\v2\x18.ultra.v1.FlowInvocationR\vinvocations\"B\n" +
+	"\x1bCancelFlowInvocationRequest\x12#\n" +
+	"\rinvocation_id\x18\x01 \x01(\tR\finvocationId\"X\n" +
+	"\x1cCancelFlowInvocationResponse\x128\n" +
+	"\n" +
+	"invocation\x18\x01 \x01(\v2\x18.ultra.v1.FlowInvocationR\n" +
+	"invocation*\xbc\x02\n" +
+	"\x13FlowInvocationState\x12%\n" +
+	"!FLOW_INVOCATION_STATE_UNSPECIFIED\x10\x00\x12!\n" +
+	"\x1dFLOW_INVOCATION_STATE_PENDING\x10\x01\x12&\n" +
+	"\"FLOW_INVOCATION_STATE_PROVISIONING\x10\x02\x12!\n" +
+	"\x1dFLOW_INVOCATION_STATE_RUNNING\x10\x03\x12$\n" +
+	" FLOW_INVOCATION_STATE_CANCELLING\x10\x04\x12#\n" +
+	"\x1fFLOW_INVOCATION_STATE_COMPLETED\x10\x05\x12 \n" +
+	"\x1cFLOW_INVOCATION_STATE_FAILED\x10\x06\x12#\n" +
+	"\x1fFLOW_INVOCATION_STATE_CANCELLED\x10\a2\xef\x05\n" +
+	"\vFlowService\x12>\n" +
+	"\aPutFlow\x12\x18.ultra.v1.PutFlowRequest\x1a\x19.ultra.v1.PutFlowResponse\x12M\n" +
+	"\fValidateFlow\x12\x1d.ultra.v1.ValidateFlowRequest\x1a\x1e.ultra.v1.ValidateFlowResponse\x12>\n" +
+	"\aGetFlow\x12\x18.ultra.v1.GetFlowRequest\x1a\x19.ultra.v1.GetFlowResponse\x12D\n" +
+	"\tListFlows\x12\x1a.ultra.v1.ListFlowsRequest\x1a\x1b.ultra.v1.ListFlowsResponse\x12Y\n" +
+	"\x10ListFlowVersions\x12!.ultra.v1.ListFlowVersionsRequest\x1a\".ultra.v1.ListFlowVersionsResponse\x12G\n" +
+	"\n" +
+	"InvokeFlow\x12\x1b.ultra.v1.InvokeFlowRequest\x1a\x1c.ultra.v1.InvokeFlowResponse\x12\\\n" +
+	"\x11GetFlowInvocation\x12\".ultra.v1.GetFlowInvocationRequest\x1a#.ultra.v1.GetFlowInvocationResponse\x12b\n" +
+	"\x13ListFlowInvocations\x12$.ultra.v1.ListFlowInvocationsRequest\x1a%.ultra.v1.ListFlowInvocationsResponse\x12e\n" +
+	"\x14CancelFlowInvocation\x12%.ultra.v1.CancelFlowInvocationRequest\x1a&.ultra.v1.CancelFlowInvocationResponseB<Z:github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1b\x06proto3"
 
 var (
 	file_ultra_v1_flow_proto_rawDescOnce sync.Once
@@ -578,35 +1701,81 @@ func file_ultra_v1_flow_proto_rawDescGZIP() []byte {
 	return file_ultra_v1_flow_proto_rawDescData
 }
 
-var file_ultra_v1_flow_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_ultra_v1_flow_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_ultra_v1_flow_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_ultra_v1_flow_proto_goTypes = []any{
-	(*Flow)(nil),               // 0: ultra.v1.Flow
-	(*PutFlowRequest)(nil),     // 1: ultra.v1.PutFlowRequest
-	(*PutFlowResponse)(nil),    // 2: ultra.v1.PutFlowResponse
-	(*GetFlowRequest)(nil),     // 3: ultra.v1.GetFlowRequest
-	(*GetFlowResponse)(nil),    // 4: ultra.v1.GetFlowResponse
-	(*ListFlowsRequest)(nil),   // 5: ultra.v1.ListFlowsRequest
-	(*ListFlowsResponse)(nil),  // 6: ultra.v1.ListFlowsResponse
-	(*InvokeFlowRequest)(nil),  // 7: ultra.v1.InvokeFlowRequest
-	(*InvokeFlowResponse)(nil), // 8: ultra.v1.InvokeFlowResponse
+	(FlowInvocationState)(0),             // 0: ultra.v1.FlowInvocationState
+	(*Flow)(nil),                         // 1: ultra.v1.Flow
+	(*FlowFieldError)(nil),               // 2: ultra.v1.FlowFieldError
+	(*FlowInvocationProgressEntry)(nil),  // 3: ultra.v1.FlowInvocationProgressEntry
+	(*FlowInvocationRun)(nil),            // 4: ultra.v1.FlowInvocationRun
+	(*FlowInvocationEnv)(nil),            // 5: ultra.v1.FlowInvocationEnv
+	(*FlowInvocation)(nil),               // 6: ultra.v1.FlowInvocation
+	(*PutFlowRequest)(nil),               // 7: ultra.v1.PutFlowRequest
+	(*PutFlowResponse)(nil),              // 8: ultra.v1.PutFlowResponse
+	(*ValidateFlowRequest)(nil),          // 9: ultra.v1.ValidateFlowRequest
+	(*ValidateFlowResponse)(nil),         // 10: ultra.v1.ValidateFlowResponse
+	(*GetFlowRequest)(nil),               // 11: ultra.v1.GetFlowRequest
+	(*GetFlowResponse)(nil),              // 12: ultra.v1.GetFlowResponse
+	(*ListFlowsRequest)(nil),             // 13: ultra.v1.ListFlowsRequest
+	(*ListFlowsResponse)(nil),            // 14: ultra.v1.ListFlowsResponse
+	(*ListFlowVersionsRequest)(nil),      // 15: ultra.v1.ListFlowVersionsRequest
+	(*ListFlowVersionsResponse)(nil),     // 16: ultra.v1.ListFlowVersionsResponse
+	(*InvokeFlowRequest)(nil),            // 17: ultra.v1.InvokeFlowRequest
+	(*InvokeFlowResponse)(nil),           // 18: ultra.v1.InvokeFlowResponse
+	(*GetFlowInvocationRequest)(nil),     // 19: ultra.v1.GetFlowInvocationRequest
+	(*GetFlowInvocationResponse)(nil),    // 20: ultra.v1.GetFlowInvocationResponse
+	(*ListFlowInvocationsRequest)(nil),   // 21: ultra.v1.ListFlowInvocationsRequest
+	(*ListFlowInvocationsResponse)(nil),  // 22: ultra.v1.ListFlowInvocationsResponse
+	(*CancelFlowInvocationRequest)(nil),  // 23: ultra.v1.CancelFlowInvocationRequest
+	(*CancelFlowInvocationResponse)(nil), // 24: ultra.v1.CancelFlowInvocationResponse
+	(*timestamppb.Timestamp)(nil),        // 25: google.protobuf.Timestamp
+	(RunState)(0),                        // 26: ultra.v1.RunState
+	(EnvState)(0),                        // 27: ultra.v1.EnvState
 }
 var file_ultra_v1_flow_proto_depIdxs = []int32{
-	0, // 0: ultra.v1.PutFlowResponse.flow:type_name -> ultra.v1.Flow
-	0, // 1: ultra.v1.GetFlowResponse.flow:type_name -> ultra.v1.Flow
-	0, // 2: ultra.v1.ListFlowsResponse.flows:type_name -> ultra.v1.Flow
-	1, // 3: ultra.v1.FlowService.PutFlow:input_type -> ultra.v1.PutFlowRequest
-	3, // 4: ultra.v1.FlowService.GetFlow:input_type -> ultra.v1.GetFlowRequest
-	5, // 5: ultra.v1.FlowService.ListFlows:input_type -> ultra.v1.ListFlowsRequest
-	7, // 6: ultra.v1.FlowService.InvokeFlow:input_type -> ultra.v1.InvokeFlowRequest
-	2, // 7: ultra.v1.FlowService.PutFlow:output_type -> ultra.v1.PutFlowResponse
-	4, // 8: ultra.v1.FlowService.GetFlow:output_type -> ultra.v1.GetFlowResponse
-	6, // 9: ultra.v1.FlowService.ListFlows:output_type -> ultra.v1.ListFlowsResponse
-	8, // 10: ultra.v1.FlowService.InvokeFlow:output_type -> ultra.v1.InvokeFlowResponse
-	7, // [7:11] is the sub-list for method output_type
-	3, // [3:7] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	25, // 0: ultra.v1.Flow.created_at:type_name -> google.protobuf.Timestamp
+	25, // 1: ultra.v1.FlowInvocationProgressEntry.at:type_name -> google.protobuf.Timestamp
+	26, // 2: ultra.v1.FlowInvocationRun.state:type_name -> ultra.v1.RunState
+	27, // 3: ultra.v1.FlowInvocationEnv.state:type_name -> ultra.v1.EnvState
+	0,  // 4: ultra.v1.FlowInvocation.state:type_name -> ultra.v1.FlowInvocationState
+	25, // 5: ultra.v1.FlowInvocation.created_at:type_name -> google.protobuf.Timestamp
+	25, // 6: ultra.v1.FlowInvocation.updated_at:type_name -> google.protobuf.Timestamp
+	3,  // 7: ultra.v1.FlowInvocation.progress:type_name -> ultra.v1.FlowInvocationProgressEntry
+	4,  // 8: ultra.v1.FlowInvocation.runs:type_name -> ultra.v1.FlowInvocationRun
+	5,  // 9: ultra.v1.FlowInvocation.envs:type_name -> ultra.v1.FlowInvocationEnv
+	1,  // 10: ultra.v1.PutFlowResponse.flow:type_name -> ultra.v1.Flow
+	2,  // 11: ultra.v1.ValidateFlowResponse.errors:type_name -> ultra.v1.FlowFieldError
+	1,  // 12: ultra.v1.GetFlowResponse.flow:type_name -> ultra.v1.Flow
+	1,  // 13: ultra.v1.ListFlowsResponse.flows:type_name -> ultra.v1.Flow
+	1,  // 14: ultra.v1.ListFlowVersionsResponse.flows:type_name -> ultra.v1.Flow
+	6,  // 15: ultra.v1.InvokeFlowResponse.invocation:type_name -> ultra.v1.FlowInvocation
+	6,  // 16: ultra.v1.GetFlowInvocationResponse.invocation:type_name -> ultra.v1.FlowInvocation
+	6,  // 17: ultra.v1.ListFlowInvocationsResponse.invocations:type_name -> ultra.v1.FlowInvocation
+	6,  // 18: ultra.v1.CancelFlowInvocationResponse.invocation:type_name -> ultra.v1.FlowInvocation
+	7,  // 19: ultra.v1.FlowService.PutFlow:input_type -> ultra.v1.PutFlowRequest
+	9,  // 20: ultra.v1.FlowService.ValidateFlow:input_type -> ultra.v1.ValidateFlowRequest
+	11, // 21: ultra.v1.FlowService.GetFlow:input_type -> ultra.v1.GetFlowRequest
+	13, // 22: ultra.v1.FlowService.ListFlows:input_type -> ultra.v1.ListFlowsRequest
+	15, // 23: ultra.v1.FlowService.ListFlowVersions:input_type -> ultra.v1.ListFlowVersionsRequest
+	17, // 24: ultra.v1.FlowService.InvokeFlow:input_type -> ultra.v1.InvokeFlowRequest
+	19, // 25: ultra.v1.FlowService.GetFlowInvocation:input_type -> ultra.v1.GetFlowInvocationRequest
+	21, // 26: ultra.v1.FlowService.ListFlowInvocations:input_type -> ultra.v1.ListFlowInvocationsRequest
+	23, // 27: ultra.v1.FlowService.CancelFlowInvocation:input_type -> ultra.v1.CancelFlowInvocationRequest
+	8,  // 28: ultra.v1.FlowService.PutFlow:output_type -> ultra.v1.PutFlowResponse
+	10, // 29: ultra.v1.FlowService.ValidateFlow:output_type -> ultra.v1.ValidateFlowResponse
+	12, // 30: ultra.v1.FlowService.GetFlow:output_type -> ultra.v1.GetFlowResponse
+	14, // 31: ultra.v1.FlowService.ListFlows:output_type -> ultra.v1.ListFlowsResponse
+	16, // 32: ultra.v1.FlowService.ListFlowVersions:output_type -> ultra.v1.ListFlowVersionsResponse
+	18, // 33: ultra.v1.FlowService.InvokeFlow:output_type -> ultra.v1.InvokeFlowResponse
+	20, // 34: ultra.v1.FlowService.GetFlowInvocation:output_type -> ultra.v1.GetFlowInvocationResponse
+	22, // 35: ultra.v1.FlowService.ListFlowInvocations:output_type -> ultra.v1.ListFlowInvocationsResponse
+	24, // 36: ultra.v1.FlowService.CancelFlowInvocation:output_type -> ultra.v1.CancelFlowInvocationResponse
+	28, // [28:37] is the sub-list for method output_type
+	19, // [19:28] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_flow_proto_init() }
@@ -614,18 +1783,21 @@ func file_ultra_v1_flow_proto_init() {
 	if File_ultra_v1_flow_proto != nil {
 		return
 	}
+	file_ultra_v1_agent_proto_init()
+	file_ultra_v1_env_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ultra_v1_flow_proto_rawDesc), len(file_ultra_v1_flow_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   9,
+			NumEnums:      1,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_ultra_v1_flow_proto_goTypes,
 		DependencyIndexes: file_ultra_v1_flow_proto_depIdxs,
+		EnumInfos:         file_ultra_v1_flow_proto_enumTypes,
 		MessageInfos:      file_ultra_v1_flow_proto_msgTypes,
 	}.Build()
 	File_ultra_v1_flow_proto = out.File

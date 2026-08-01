@@ -1626,6 +1626,225 @@ func (x *PermissionDenied) GetReason() string {
 	return ""
 }
 
+// FlowInvoked records that a flow version was invoked into this session. It
+// carries the whole provenance triple, so a subscriber can attribute every
+// later run and environment without a second request.
+type FlowInvoked struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	InvocationId  string                 `protobuf:"bytes,1,opt,name=invocation_id,json=invocationId,proto3" json:"invocation_id,omitempty"`
+	FlowId        string                 `protobuf:"bytes,2,opt,name=flow_id,json=flowId,proto3" json:"flow_id,omitempty"`
+	FlowName      string                 `protobuf:"bytes,3,opt,name=flow_name,json=flowName,proto3" json:"flow_name,omitempty"`
+	FlowVersion   int32                  `protobuf:"varint,4,opt,name=flow_version,json=flowVersion,proto3" json:"flow_version,omitempty"`
+	ParamsJson    string                 `protobuf:"bytes,5,opt,name=params_json,json=paramsJson,proto3" json:"params_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FlowInvoked) Reset() {
+	*x = FlowInvoked{}
+	mi := &file_ultra_v1_event_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlowInvoked) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlowInvoked) ProtoMessage() {}
+
+func (x *FlowInvoked) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlowInvoked.ProtoReflect.Descriptor instead.
+func (*FlowInvoked) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *FlowInvoked) GetInvocationId() string {
+	if x != nil {
+		return x.InvocationId
+	}
+	return ""
+}
+
+func (x *FlowInvoked) GetFlowId() string {
+	if x != nil {
+		return x.FlowId
+	}
+	return ""
+}
+
+func (x *FlowInvoked) GetFlowName() string {
+	if x != nil {
+		return x.FlowName
+	}
+	return ""
+}
+
+func (x *FlowInvoked) GetFlowVersion() int32 {
+	if x != nil {
+		return x.FlowVersion
+	}
+	return 0
+}
+
+func (x *FlowInvoked) GetParamsJson() string {
+	if x != nil {
+		return x.ParamsJson
+	}
+	return ""
+}
+
+// FlowInvocationProgressed is one ordered lifecycle step of an invocation:
+// provisioning, per-environment readiness, agent launch, cleanup. Replaying
+// these events reconstructs exactly what the invocation did and when.
+type FlowInvocationProgressed struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	InvocationId  string                 `protobuf:"bytes,1,opt,name=invocation_id,json=invocationId,proto3" json:"invocation_id,omitempty"`
+	Stage         string                 `protobuf:"bytes,2,opt,name=stage,proto3" json:"stage,omitempty"`
+	Key           string                 `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`
+	Detail        string                 `protobuf:"bytes,4,opt,name=detail,proto3" json:"detail,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FlowInvocationProgressed) Reset() {
+	*x = FlowInvocationProgressed{}
+	mi := &file_ultra_v1_event_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlowInvocationProgressed) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlowInvocationProgressed) ProtoMessage() {}
+
+func (x *FlowInvocationProgressed) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlowInvocationProgressed.ProtoReflect.Descriptor instead.
+func (*FlowInvocationProgressed) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *FlowInvocationProgressed) GetInvocationId() string {
+	if x != nil {
+		return x.InvocationId
+	}
+	return ""
+}
+
+func (x *FlowInvocationProgressed) GetStage() string {
+	if x != nil {
+		return x.Stage
+	}
+	return ""
+}
+
+func (x *FlowInvocationProgressed) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *FlowInvocationProgressed) GetDetail() string {
+	if x != nil {
+		return x.Detail
+	}
+	return ""
+}
+
+// FlowInvocationTerminal closes an invocation with its documented reason.
+type FlowInvocationTerminal struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	InvocationId   string                 `protobuf:"bytes,1,opt,name=invocation_id,json=invocationId,proto3" json:"invocation_id,omitempty"`
+	State          string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	TerminalReason string                 `protobuf:"bytes,3,opt,name=terminal_reason,json=terminalReason,proto3" json:"terminal_reason,omitempty"`
+	Message        string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *FlowInvocationTerminal) Reset() {
+	*x = FlowInvocationTerminal{}
+	mi := &file_ultra_v1_event_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlowInvocationTerminal) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlowInvocationTerminal) ProtoMessage() {}
+
+func (x *FlowInvocationTerminal) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_event_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlowInvocationTerminal.ProtoReflect.Descriptor instead.
+func (*FlowInvocationTerminal) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *FlowInvocationTerminal) GetInvocationId() string {
+	if x != nil {
+		return x.InvocationId
+	}
+	return ""
+}
+
+func (x *FlowInvocationTerminal) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *FlowInvocationTerminal) GetTerminalReason() string {
+	if x != nil {
+		return x.TerminalReason
+	}
+	return ""
+}
+
+func (x *FlowInvocationTerminal) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 // EventPayload is the typed payload of a session event. Every observable
 // thing in a session is one of these variants; later phases add variants
 // (additive only — enforced by breaking-change CI).
@@ -1664,6 +1883,9 @@ type EventPayload struct {
 	//	*EventPayload_ModelFallback
 	//	*EventPayload_HookFired
 	//	*EventPayload_PeriodicPromptFired
+	//	*EventPayload_FlowInvoked
+	//	*EventPayload_FlowInvocationProgressed
+	//	*EventPayload_FlowInvocationTerminal
 	Payload       isEventPayload_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1671,7 +1893,7 @@ type EventPayload struct {
 
 func (x *EventPayload) Reset() {
 	*x = EventPayload{}
-	mi := &file_ultra_v1_event_proto_msgTypes[25]
+	mi := &file_ultra_v1_event_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1683,7 +1905,7 @@ func (x *EventPayload) String() string {
 func (*EventPayload) ProtoMessage() {}
 
 func (x *EventPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[25]
+	mi := &file_ultra_v1_event_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1696,7 +1918,7 @@ func (x *EventPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventPayload.ProtoReflect.Descriptor instead.
 func (*EventPayload) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{25}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *EventPayload) GetPayload() isEventPayload_Payload {
@@ -1985,6 +2207,33 @@ func (x *EventPayload) GetPeriodicPromptFired() *PeriodicPromptFired {
 	return nil
 }
 
+func (x *EventPayload) GetFlowInvoked() *FlowInvoked {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_FlowInvoked); ok {
+			return x.FlowInvoked
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetFlowInvocationProgressed() *FlowInvocationProgressed {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_FlowInvocationProgressed); ok {
+			return x.FlowInvocationProgressed
+		}
+	}
+	return nil
+}
+
+func (x *EventPayload) GetFlowInvocationTerminal() *FlowInvocationTerminal {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_FlowInvocationTerminal); ok {
+			return x.FlowInvocationTerminal
+		}
+	}
+	return nil
+}
+
 type isEventPayload_Payload interface {
 	isEventPayload_Payload()
 }
@@ -2113,6 +2362,18 @@ type EventPayload_PeriodicPromptFired struct {
 	PeriodicPromptFired *PeriodicPromptFired `protobuf:"bytes,40,opt,name=periodic_prompt_fired,json=periodicPromptFired,proto3,oneof"`
 }
 
+type EventPayload_FlowInvoked struct {
+	FlowInvoked *FlowInvoked `protobuf:"bytes,41,opt,name=flow_invoked,json=flowInvoked,proto3,oneof"`
+}
+
+type EventPayload_FlowInvocationProgressed struct {
+	FlowInvocationProgressed *FlowInvocationProgressed `protobuf:"bytes,42,opt,name=flow_invocation_progressed,json=flowInvocationProgressed,proto3,oneof"`
+}
+
+type EventPayload_FlowInvocationTerminal struct {
+	FlowInvocationTerminal *FlowInvocationTerminal `protobuf:"bytes,43,opt,name=flow_invocation_terminal,json=flowInvocationTerminal,proto3,oneof"`
+}
+
 func (*EventPayload_UserMessage) isEventPayload_Payload() {}
 
 func (*EventPayload_Annotation) isEventPayload_Payload() {}
@@ -2175,6 +2436,12 @@ func (*EventPayload_HookFired) isEventPayload_Payload() {}
 
 func (*EventPayload_PeriodicPromptFired) isEventPayload_Payload() {}
 
+func (*EventPayload_FlowInvoked) isEventPayload_Payload() {}
+
+func (*EventPayload_FlowInvocationProgressed) isEventPayload_Payload() {}
+
+func (*EventPayload_FlowInvocationTerminal) isEventPayload_Payload() {}
+
 // SessionEvent is one entry in a session's append-only event log. Seq is
 // per-session, gapless, and monotonic; clients resume by seq.
 type SessionEvent struct {
@@ -2190,7 +2457,7 @@ type SessionEvent struct {
 
 func (x *SessionEvent) Reset() {
 	*x = SessionEvent{}
-	mi := &file_ultra_v1_event_proto_msgTypes[26]
+	mi := &file_ultra_v1_event_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2202,7 +2469,7 @@ func (x *SessionEvent) String() string {
 func (*SessionEvent) ProtoMessage() {}
 
 func (x *SessionEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[26]
+	mi := &file_ultra_v1_event_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2215,7 +2482,7 @@ func (x *SessionEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionEvent.ProtoReflect.Descriptor instead.
 func (*SessionEvent) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{26}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *SessionEvent) GetSessionId() string {
@@ -2263,7 +2530,7 @@ type AppendRequest struct {
 
 func (x *AppendRequest) Reset() {
 	*x = AppendRequest{}
-	mi := &file_ultra_v1_event_proto_msgTypes[27]
+	mi := &file_ultra_v1_event_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2275,7 +2542,7 @@ func (x *AppendRequest) String() string {
 func (*AppendRequest) ProtoMessage() {}
 
 func (x *AppendRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[27]
+	mi := &file_ultra_v1_event_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2288,7 +2555,7 @@ func (x *AppendRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendRequest.ProtoReflect.Descriptor instead.
 func (*AppendRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{27}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *AppendRequest) GetSessionId() string {
@@ -2316,7 +2583,7 @@ type AppendResponse struct {
 
 func (x *AppendResponse) Reset() {
 	*x = AppendResponse{}
-	mi := &file_ultra_v1_event_proto_msgTypes[28]
+	mi := &file_ultra_v1_event_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2328,7 +2595,7 @@ func (x *AppendResponse) String() string {
 func (*AppendResponse) ProtoMessage() {}
 
 func (x *AppendResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[28]
+	mi := &file_ultra_v1_event_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2341,7 +2608,7 @@ func (x *AppendResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendResponse.ProtoReflect.Descriptor instead.
 func (*AppendResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{28}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *AppendResponse) GetSeq() int64 {
@@ -2362,7 +2629,7 @@ type SubscribeRequest struct {
 
 func (x *SubscribeRequest) Reset() {
 	*x = SubscribeRequest{}
-	mi := &file_ultra_v1_event_proto_msgTypes[29]
+	mi := &file_ultra_v1_event_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2374,7 +2641,7 @@ func (x *SubscribeRequest) String() string {
 func (*SubscribeRequest) ProtoMessage() {}
 
 func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[29]
+	mi := &file_ultra_v1_event_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2387,7 +2654,7 @@ func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeRequest.ProtoReflect.Descriptor instead.
 func (*SubscribeRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{29}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *SubscribeRequest) GetSessionId() string {
@@ -2416,7 +2683,7 @@ type SubscribeResponse struct {
 
 func (x *SubscribeResponse) Reset() {
 	*x = SubscribeResponse{}
-	mi := &file_ultra_v1_event_proto_msgTypes[30]
+	mi := &file_ultra_v1_event_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2428,7 +2695,7 @@ func (x *SubscribeResponse) String() string {
 func (*SubscribeResponse) ProtoMessage() {}
 
 func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_event_proto_msgTypes[30]
+	mi := &file_ultra_v1_event_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2441,7 +2708,7 @@ func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeResponse.ProtoReflect.Descriptor instead.
 func (*SubscribeResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_event_proto_rawDescGZIP(), []int{30}
+	return file_ultra_v1_event_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *SubscribeResponse) GetEvent() *SessionEvent {
@@ -2577,7 +2844,24 @@ const file_ultra_v1_event_proto_rawDesc = "" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x12\n" +
 	"\x04tool\x18\x02 \x01(\tR\x04tool\x12\x15\n" +
 	"\x06env_id\x18\x03 \x01(\tR\x05envId\x12\x16\n" +
-	"\x06reason\x18\x04 \x01(\tR\x06reason\"\xf2\x0f\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\"\xac\x01\n" +
+	"\vFlowInvoked\x12#\n" +
+	"\rinvocation_id\x18\x01 \x01(\tR\finvocationId\x12\x17\n" +
+	"\aflow_id\x18\x02 \x01(\tR\x06flowId\x12\x1b\n" +
+	"\tflow_name\x18\x03 \x01(\tR\bflowName\x12!\n" +
+	"\fflow_version\x18\x04 \x01(\x05R\vflowVersion\x12\x1f\n" +
+	"\vparams_json\x18\x05 \x01(\tR\n" +
+	"paramsJson\"\x7f\n" +
+	"\x18FlowInvocationProgressed\x12#\n" +
+	"\rinvocation_id\x18\x01 \x01(\tR\finvocationId\x12\x14\n" +
+	"\x05stage\x18\x02 \x01(\tR\x05stage\x12\x10\n" +
+	"\x03key\x18\x03 \x01(\tR\x03key\x12\x16\n" +
+	"\x06detail\x18\x04 \x01(\tR\x06detail\"\x96\x01\n" +
+	"\x16FlowInvocationTerminal\x12#\n" +
+	"\rinvocation_id\x18\x01 \x01(\tR\finvocationId\x12\x14\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\x12'\n" +
+	"\x0fterminal_reason\x18\x03 \x01(\tR\x0eterminalReason\x12\x18\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage\"\xf0\x11\n" +
 	"\fEventPayload\x12:\n" +
 	"\fuser_message\x18\n" +
 	" \x01(\v2\x15.ultra.v1.UserMessageH\x00R\vuserMessage\x126\n" +
@@ -2620,7 +2904,10 @@ const file_ultra_v1_event_proto_rawDesc = "" +
 	"\x0emodel_fallback\x18& \x01(\v2\x17.ultra.v1.ModelFallbackH\x00R\rmodelFallback\x124\n" +
 	"\n" +
 	"hook_fired\x18' \x01(\v2\x13.ultra.v1.HookFiredH\x00R\thookFired\x12S\n" +
-	"\x15periodic_prompt_fired\x18( \x01(\v2\x1d.ultra.v1.PeriodicPromptFiredH\x00R\x13periodicPromptFiredB\t\n" +
+	"\x15periodic_prompt_fired\x18( \x01(\v2\x1d.ultra.v1.PeriodicPromptFiredH\x00R\x13periodicPromptFired\x12:\n" +
+	"\fflow_invoked\x18) \x01(\v2\x15.ultra.v1.FlowInvokedH\x00R\vflowInvoked\x12b\n" +
+	"\x1aflow_invocation_progressed\x18* \x01(\v2\".ultra.v1.FlowInvocationProgressedH\x00R\x18flowInvocationProgressed\x12\\\n" +
+	"\x18flow_invocation_terminal\x18+ \x01(\v2 .ultra.v1.FlowInvocationTerminalH\x00R\x16flowInvocationTerminalB\t\n" +
 	"\apayload\"\xc4\x01\n" +
 	"\fSessionEvent\x12\x1d\n" +
 	"\n" +
@@ -2663,41 +2950,44 @@ func file_ultra_v1_event_proto_rawDescGZIP() []byte {
 }
 
 var file_ultra_v1_event_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ultra_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_ultra_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_ultra_v1_event_proto_goTypes = []any{
-	(ActorType)(0),                // 0: ultra.v1.ActorType
-	(*Actor)(nil),                 // 1: ultra.v1.Actor
-	(*UserMessage)(nil),           // 2: ultra.v1.UserMessage
-	(*Annotation)(nil),            // 3: ultra.v1.Annotation
-	(*RunStarted)(nil),            // 4: ultra.v1.RunStarted
-	(*StepStarted)(nil),           // 5: ultra.v1.StepStarted
-	(*TextDelta)(nil),             // 6: ultra.v1.TextDelta
-	(*ReasoningDelta)(nil),        // 7: ultra.v1.ReasoningDelta
-	(*ToolCallStarted)(nil),       // 8: ultra.v1.ToolCallStarted
-	(*ToolResult)(nil),            // 9: ultra.v1.ToolResult
-	(*StepFinished)(nil),          // 10: ultra.v1.StepFinished
-	(*Question)(nil),              // 11: ultra.v1.Question
-	(*RunAwaiting)(nil),           // 12: ultra.v1.RunAwaiting
-	(*RunCompleted)(nil),          // 13: ultra.v1.RunCompleted
-	(*RunFailed)(nil),             // 14: ultra.v1.RunFailed
-	(*RunCancelled)(nil),          // 15: ultra.v1.RunCancelled
-	(*EnvLifecycle)(nil),          // 16: ultra.v1.EnvLifecycle
-	(*ExecPreviewRan)(nil),        // 17: ultra.v1.ExecPreviewRan
-	(*ParticipantTransition)(nil), // 18: ultra.v1.ParticipantTransition
-	(*RunSpawned)(nil),            // 19: ultra.v1.RunSpawned
-	(*MemoryChanged)(nil),         // 20: ultra.v1.MemoryChanged
-	(*HistoryCompacted)(nil),      // 21: ultra.v1.HistoryCompacted
-	(*ModelFallback)(nil),         // 22: ultra.v1.ModelFallback
-	(*HookFired)(nil),             // 23: ultra.v1.HookFired
-	(*PeriodicPromptFired)(nil),   // 24: ultra.v1.PeriodicPromptFired
-	(*PermissionDenied)(nil),      // 25: ultra.v1.PermissionDenied
-	(*EventPayload)(nil),          // 26: ultra.v1.EventPayload
-	(*SessionEvent)(nil),          // 27: ultra.v1.SessionEvent
-	(*AppendRequest)(nil),         // 28: ultra.v1.AppendRequest
-	(*AppendResponse)(nil),        // 29: ultra.v1.AppendResponse
-	(*SubscribeRequest)(nil),      // 30: ultra.v1.SubscribeRequest
-	(*SubscribeResponse)(nil),     // 31: ultra.v1.SubscribeResponse
-	(*timestamppb.Timestamp)(nil), // 32: google.protobuf.Timestamp
+	(ActorType)(0),                   // 0: ultra.v1.ActorType
+	(*Actor)(nil),                    // 1: ultra.v1.Actor
+	(*UserMessage)(nil),              // 2: ultra.v1.UserMessage
+	(*Annotation)(nil),               // 3: ultra.v1.Annotation
+	(*RunStarted)(nil),               // 4: ultra.v1.RunStarted
+	(*StepStarted)(nil),              // 5: ultra.v1.StepStarted
+	(*TextDelta)(nil),                // 6: ultra.v1.TextDelta
+	(*ReasoningDelta)(nil),           // 7: ultra.v1.ReasoningDelta
+	(*ToolCallStarted)(nil),          // 8: ultra.v1.ToolCallStarted
+	(*ToolResult)(nil),               // 9: ultra.v1.ToolResult
+	(*StepFinished)(nil),             // 10: ultra.v1.StepFinished
+	(*Question)(nil),                 // 11: ultra.v1.Question
+	(*RunAwaiting)(nil),              // 12: ultra.v1.RunAwaiting
+	(*RunCompleted)(nil),             // 13: ultra.v1.RunCompleted
+	(*RunFailed)(nil),                // 14: ultra.v1.RunFailed
+	(*RunCancelled)(nil),             // 15: ultra.v1.RunCancelled
+	(*EnvLifecycle)(nil),             // 16: ultra.v1.EnvLifecycle
+	(*ExecPreviewRan)(nil),           // 17: ultra.v1.ExecPreviewRan
+	(*ParticipantTransition)(nil),    // 18: ultra.v1.ParticipantTransition
+	(*RunSpawned)(nil),               // 19: ultra.v1.RunSpawned
+	(*MemoryChanged)(nil),            // 20: ultra.v1.MemoryChanged
+	(*HistoryCompacted)(nil),         // 21: ultra.v1.HistoryCompacted
+	(*ModelFallback)(nil),            // 22: ultra.v1.ModelFallback
+	(*HookFired)(nil),                // 23: ultra.v1.HookFired
+	(*PeriodicPromptFired)(nil),      // 24: ultra.v1.PeriodicPromptFired
+	(*PermissionDenied)(nil),         // 25: ultra.v1.PermissionDenied
+	(*FlowInvoked)(nil),              // 26: ultra.v1.FlowInvoked
+	(*FlowInvocationProgressed)(nil), // 27: ultra.v1.FlowInvocationProgressed
+	(*FlowInvocationTerminal)(nil),   // 28: ultra.v1.FlowInvocationTerminal
+	(*EventPayload)(nil),             // 29: ultra.v1.EventPayload
+	(*SessionEvent)(nil),             // 30: ultra.v1.SessionEvent
+	(*AppendRequest)(nil),            // 31: ultra.v1.AppendRequest
+	(*AppendResponse)(nil),           // 32: ultra.v1.AppendResponse
+	(*SubscribeRequest)(nil),         // 33: ultra.v1.SubscribeRequest
+	(*SubscribeResponse)(nil),        // 34: ultra.v1.SubscribeResponse
+	(*timestamppb.Timestamp)(nil),    // 35: google.protobuf.Timestamp
 }
 var file_ultra_v1_event_proto_depIdxs = []int32{
 	0,  // 0: ultra.v1.Actor.type:type_name -> ultra.v1.ActorType
@@ -2733,20 +3023,23 @@ var file_ultra_v1_event_proto_depIdxs = []int32{
 	22, // 30: ultra.v1.EventPayload.model_fallback:type_name -> ultra.v1.ModelFallback
 	23, // 31: ultra.v1.EventPayload.hook_fired:type_name -> ultra.v1.HookFired
 	24, // 32: ultra.v1.EventPayload.periodic_prompt_fired:type_name -> ultra.v1.PeriodicPromptFired
-	32, // 33: ultra.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
-	1,  // 34: ultra.v1.SessionEvent.actor:type_name -> ultra.v1.Actor
-	26, // 35: ultra.v1.SessionEvent.payload:type_name -> ultra.v1.EventPayload
-	26, // 36: ultra.v1.AppendRequest.payload:type_name -> ultra.v1.EventPayload
-	27, // 37: ultra.v1.SubscribeResponse.event:type_name -> ultra.v1.SessionEvent
-	28, // 38: ultra.v1.EventService.Append:input_type -> ultra.v1.AppendRequest
-	30, // 39: ultra.v1.EventService.Subscribe:input_type -> ultra.v1.SubscribeRequest
-	29, // 40: ultra.v1.EventService.Append:output_type -> ultra.v1.AppendResponse
-	31, // 41: ultra.v1.EventService.Subscribe:output_type -> ultra.v1.SubscribeResponse
-	40, // [40:42] is the sub-list for method output_type
-	38, // [38:40] is the sub-list for method input_type
-	38, // [38:38] is the sub-list for extension type_name
-	38, // [38:38] is the sub-list for extension extendee
-	0,  // [0:38] is the sub-list for field type_name
+	26, // 33: ultra.v1.EventPayload.flow_invoked:type_name -> ultra.v1.FlowInvoked
+	27, // 34: ultra.v1.EventPayload.flow_invocation_progressed:type_name -> ultra.v1.FlowInvocationProgressed
+	28, // 35: ultra.v1.EventPayload.flow_invocation_terminal:type_name -> ultra.v1.FlowInvocationTerminal
+	35, // 36: ultra.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
+	1,  // 37: ultra.v1.SessionEvent.actor:type_name -> ultra.v1.Actor
+	29, // 38: ultra.v1.SessionEvent.payload:type_name -> ultra.v1.EventPayload
+	29, // 39: ultra.v1.AppendRequest.payload:type_name -> ultra.v1.EventPayload
+	30, // 40: ultra.v1.SubscribeResponse.event:type_name -> ultra.v1.SessionEvent
+	31, // 41: ultra.v1.EventService.Append:input_type -> ultra.v1.AppendRequest
+	33, // 42: ultra.v1.EventService.Subscribe:input_type -> ultra.v1.SubscribeRequest
+	32, // 43: ultra.v1.EventService.Append:output_type -> ultra.v1.AppendResponse
+	34, // 44: ultra.v1.EventService.Subscribe:output_type -> ultra.v1.SubscribeResponse
+	43, // [43:45] is the sub-list for method output_type
+	41, // [41:43] is the sub-list for method input_type
+	41, // [41:41] is the sub-list for extension type_name
+	41, // [41:41] is the sub-list for extension extendee
+	0,  // [0:41] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_event_proto_init() }
@@ -2754,7 +3047,7 @@ func file_ultra_v1_event_proto_init() {
 	if File_ultra_v1_event_proto != nil {
 		return
 	}
-	file_ultra_v1_event_proto_msgTypes[25].OneofWrappers = []any{
+	file_ultra_v1_event_proto_msgTypes[28].OneofWrappers = []any{
 		(*EventPayload_UserMessage)(nil),
 		(*EventPayload_Annotation)(nil),
 		(*EventPayload_RunStarted)(nil),
@@ -2786,6 +3079,9 @@ func file_ultra_v1_event_proto_init() {
 		(*EventPayload_ModelFallback)(nil),
 		(*EventPayload_HookFired)(nil),
 		(*EventPayload_PeriodicPromptFired)(nil),
+		(*EventPayload_FlowInvoked)(nil),
+		(*EventPayload_FlowInvocationProgressed)(nil),
+		(*EventPayload_FlowInvocationTerminal)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -2793,7 +3089,7 @@ func file_ultra_v1_event_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ultra_v1_event_proto_rawDesc), len(file_ultra_v1_event_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   31,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

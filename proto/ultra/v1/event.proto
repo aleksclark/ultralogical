@@ -147,6 +147,35 @@ message HookFired { string hook=1; string run_id=2; }
 message PeriodicPromptFired { string run_id=1; string prompt=2; }
 message PermissionDenied { string run_id=1; string tool=2; string env_id=3; string reason=4; }
 
+// FlowInvoked records that a flow version was invoked into this session. It
+// carries the whole provenance triple, so a subscriber can attribute every
+// later run and environment without a second request.
+message FlowInvoked {
+  string invocation_id = 1;
+  string flow_id = 2;
+  string flow_name = 3;
+  int32 flow_version = 4;
+  string params_json = 5;
+}
+
+// FlowInvocationProgressed is one ordered lifecycle step of an invocation:
+// provisioning, per-environment readiness, agent launch, cleanup. Replaying
+// these events reconstructs exactly what the invocation did and when.
+message FlowInvocationProgressed {
+  string invocation_id = 1;
+  string stage = 2;
+  string key = 3;
+  string detail = 4;
+}
+
+// FlowInvocationTerminal closes an invocation with its documented reason.
+message FlowInvocationTerminal {
+  string invocation_id = 1;
+  string state = 2;
+  string terminal_reason = 3;
+  string message = 4;
+}
+
 // EventPayload is the typed payload of a session event. Every observable
 // thing in a session is one of these variants; later phases add variants
 // (additive only — enforced by breaking-change CI).
@@ -183,6 +212,9 @@ message EventPayload {
     ModelFallback model_fallback = 38;
     HookFired hook_fired = 39;
     PeriodicPromptFired periodic_prompt_fired = 40;
+    FlowInvoked flow_invoked = 41;
+    FlowInvocationProgressed flow_invocation_progressed = 42;
+    FlowInvocationTerminal flow_invocation_terminal = 43;
   }
 }
 

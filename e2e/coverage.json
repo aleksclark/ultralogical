@@ -448,6 +448,96 @@
       "rpcs": [
         "ultra.v1.EventService/Subscribe"
       ]
+    },
+    "flow_catalog_versions": {
+      "rpcs": [
+        "ultra.v1.FlowService/ListFlows",
+        "ultra.v1.FlowService/GetFlow",
+        "ultra.v1.FlowService/ListFlowVersions"
+      ],
+      "web": {
+        "file": "flows.spec.ts",
+        "test": "lists the flow catalog and selects a version",
+        "asserts": [
+          "toHaveAttribute(\"data-type\", \"string\")",
+          "not.toContainText(\"reviewer v2\")"
+        ]
+      },
+      "rust": {
+        "file": "flow_e2e.rs",
+        "test": "renders_flow_catalog_and_version_selection",
+        "asserts": [
+          "await_rendered(cx, \"flow-version:1\", FRAME_ATTEMPTS)",
+          "selecting version 1 did not change the shown definition"
+        ]
+      }
+    },
+    "flow_authoring_validation": {
+      "rpcs": [
+        "ultra.v1.FlowService/PutFlow",
+        "ultra.v1.FlowService/ValidateFlow"
+      ],
+      "web": {
+        "file": "flows.spec.ts",
+        "test": "rejects an invalid flow with typed field paths",
+        "asserts": [
+          "toHaveAttribute(\"data-code\", \"invalid_template\")",
+          "toHaveAttribute(\"data-code\", \"unknown_tool\")"
+        ]
+      },
+      "rust": {
+        "file": "flow_e2e.rs",
+        "test": "renders_flow_validation_errors",
+        "asserts": [
+          "await_rendered(cx, \"flow-error:agents.reviewer.prompt:invalid_template\", FRAME_ATTEMPTS)",
+          "await_rendered(cx, \"flow-errors:0\", FRAME_ATTEMPTS)"
+        ]
+      }
+    },
+    "flow_invocation_progress": {
+      "rpcs": [
+        "ultra.v1.FlowService/InvokeFlow",
+        "ultra.v1.FlowService/GetFlowInvocation",
+        "ultra.v1.FlowService/ListFlowInvocations"
+      ],
+      "web": {
+        "file": "flows.spec.ts",
+        "test": "invokes a flow and shows provenance and progress",
+        "asserts": [
+          "toHaveAttribute(\"data-terminal-reason\", \"completed\")",
+          "expect(keys[keys.length - 1]).toBe(\"terminal\")"
+        ]
+      },
+      "rust": {
+        "file": "flow_e2e.rs",
+        "test": "renders_flow_invocation_progress",
+        "asserts": [
+          "await_rendered(cx, \"progress:stage_started:0\", FRAME_ATTEMPTS)",
+          "await_rendered(cx, \"flow-run:reviewer:completed\", FRAME_ATTEMPTS)"
+        ]
+      }
+    },
+    "flow_cancellation_recovery": {
+      "rpcs": [
+        "ultra.v1.FlowService/CancelFlowInvocation",
+        "ultra.v1.AgentService/CancelRun"
+      ],
+      "web": {
+        "file": "flows.spec.ts",
+        "test": "cancels an invocation and recovers state after reload",
+        "asserts": [
+          "toBe(\"cancelled\")",
+          "expect(after).toEqual(before)"
+        ]
+      },
+      "rust": {
+        "file": "flow_e2e.rs",
+        "test": "cancels_and_recovers_flow_invocation",
+        "asserts": [
+          "await_rendered(cx, \"invocation-reason:cancelled\", FRAME_ATTEMPTS)",
+          "the reconnected window rebuilt different progress"
+        ]
+      }
     }
   },
   "deferred": {
@@ -463,10 +553,6 @@
       "owner": "A12.11",
       "reason": "Phase 8 proved deletion and replay after deletion through the Go functional suite; no client offers a delete control yet."
     },
-    "ultra.v1.AgentService/CancelRun": {
-      "owner": "A9.8",
-      "reason": "Phase 8 proved cancellation and its wait-abandonment races through the Go functional suite; the cancel control itself is part of Phase 9 application parity."
-    },
     "ultra.v1.OrgService/CreateOrg": {
       "owner": "A12.11",
       "reason": "Org creation is an admin surface delivered with production auth in Phase 12."
@@ -478,22 +564,6 @@
     "ultra.v1.OrgService/ListMembers": {
       "owner": "A12.11",
       "reason": "Membership management ships with the Phase 12 admin applications."
-    },
-    "ultra.v1.FlowService/PutFlow": {
-      "owner": "A9.8",
-      "reason": "Flow authoring surfaces are Phase 9."
-    },
-    "ultra.v1.FlowService/GetFlow": {
-      "owner": "A9.8",
-      "reason": "Flow catalog and version selection are Phase 9."
-    },
-    "ultra.v1.FlowService/ListFlows": {
-      "owner": "A9.8",
-      "reason": "Flow catalog and version selection are Phase 9."
-    },
-    "ultra.v1.FlowService/InvokeFlow": {
-      "owner": "A9.8",
-      "reason": "Flow invocation and progress views are Phase 9."
     },
     "ultra.v1.AutomationService/PutPeriodicPrompt": {
       "owner": "A11.7",

@@ -17,6 +17,20 @@ export type EnvLifecycleState = {
   message?: string;
 };
 
+/**
+ * FlowLifecycleState is one invocation as the log describes it. The panel
+ * fetches the full invocation from the API, but folding the log too is what
+ * tells the client *when* to refetch, without polling.
+ */
+export type FlowLifecycleState = {
+  invocationId: string;
+  flowName: string;
+  flowVersion: number;
+  state: string;
+  terminalReason?: string;
+  progress: string[];
+};
+
 export type SessionView = {
   items: TimelineItem[];
   /** spawns records parent/child links seen in the log, so lanes are known
@@ -31,9 +45,11 @@ export type SessionView = {
   deltaFrames: number;
   /** envs tracks the last observed lifecycle phase per environment. */
   envs: Record<string, EnvLifecycleState>;
+  /** flows tracks each invocation announced in this session's log. */
+  flows: FlowLifecycleState[];
 };
 
-export const initialView: SessionView = { items: [], lastSeq: 0n, deltaFrames: 0, envs: {}, spawns: [] };
+export const initialView: SessionView = { items: [], lastSeq: 0n, deltaFrames: 0, envs: {}, spawns: [], flows: [] };
 
 const envPhases: Record<string, string> = {
   envRequested: "requested",
@@ -62,6 +78,7 @@ export function foldEvent(state: SessionView, event: SessionEvent): SessionView 
   let deltaFrames = state.deltaFrames;
   const envs = { ...state.envs };
   const spawns = [...state.spawns];
+  const flows = state.flows.map((flow) => ({ ...flow, progress: [...flow.progress] }));
   const payload = event.payload?.payload;
   if (!payload) return { ...state, items, lastSeq: event.seq };
 
@@ -130,6 +147,36 @@ export function foldEvent(state: SessionView, event: SessionEvent): SessionView 
     case "runCancelled":
       items.push({ type: "status", runId: payload.value.runId, status: "cancelled" });
       break;
+    case "flowInvoked": {
+      const invoked = payload.value;
+      flows.push({
+        invocationId: invoked.invocationId,
+        flowName: invoked.flowName,
+        flowVersion: invoked.flowVersion,
+        state: "pending",
+        progress: [],
+      });
+      items.push({ type: "annotation", text: `flow invoked: ${invoked.flowName} v${invoked.flowVersion}` });
+      break;
+    }
+    case "flowInvocationProgressed": {
+      const progressed = payload.value;
+      const flow = flows.find((f) => f.invocationId === progressed.invocationId);
+      if (flow && !flow.progress.includes(progressed.key)) flow.progress.push(progressed.key);
+      items.push({ type: "annotation", text: `flow ${progressed.stage}: ${progressed.key}` });
+      break;
+    }
+    case "flowInvocationTerminal": {
+      const terminal = payload.value;
+      const flow = flows.find((f) => f.invocationId === terminal.invocationId);
+      if (flow) {
+        flow.state = terminal.state;
+        flow.terminalReason = terminal.terminalReason;
+        if (!flow.progress.includes("terminal")) flow.progress.push("terminal");
+      }
+      items.push({ type: "annotation", text: `flow ${terminal.state}: ${terminal.terminalReason}` });
+      break;
+    }
     case "execPreviewRan":
       items.push({ type: "tool", runId: "human", name: `exec: ${payload.value.command}`, input: payload.value.command, output: payload.value.output, error: payload.value.isError });
       break;
@@ -147,5 +194,5 @@ export function foldEvent(state: SessionView, event: SessionEvent): SessionView 
       break;
     }
   }
-  return { items, lastSeq: event.seq, deltaFrames, envs, spawns };
+  return { items, lastSeq: event.seq, deltaFrames, envs, spawns, flows };
 }

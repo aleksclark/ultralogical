@@ -148,7 +148,7 @@ python3 - <<'PY'
 import json, pathlib
 p = pathlib.Path("e2e/coverage.json")
 d = json.loads(p.read_text())
-d["deferred"]["ultra.v1.AgentService/CancelRun"]["owner"] = "A99.9"
+d["deferred"]["ultra.v1.SessionService/Leave"]["owner"] = "A99.9"
 p.write_text(json.dumps(d, indent=2) + "\n")
 PY
 expect_rejected "a deferral owned by an acceptance test no plan declares"

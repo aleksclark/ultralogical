@@ -15,6 +15,10 @@ Close every audited Phase 5 gap by replacing provider-kind aliases with real Kub
 - Namespace/job isolation, quotas, network/auth boundaries, endpoint discovery, restart, reconcile, and cleanup.
 - kind and Nomad development-agent CI legs, a real tunnel process in CI, and scheduled real-cluster checks.
 - Static-provider wiring proof, onboarding, diagnostics, and dark shadcn/GPUI provider management.
+- **Inherited from Phase 9** (see agent_docs/phase_9_audit.md, "Open items"):
+  behavioral proof that a provider incapable of serving environment health
+  rejects a flow that declares it, and a deep-link client path that opens one
+  invocation directly rather than only through a session's list.
 
 **Out:** multi-region scheduling, cluster autoscaling, enterprise networking, and production billing enforcement (Phase 12).
 
@@ -38,7 +42,9 @@ Close every audited Phase 5 gap by replacing provider-kind aliases with real Kub
 8. Add required CI: kind and Nomad per PR, real tunnel per PR, scheduled pinned-version and real-cluster matrices. CI must prove the intended adapter was used by inspecting provider-native resources.
 9. Build provider registration, credential dry-run, health, quota, environment location, diagnostics, and remediation in dark shadcn and GPUI applications.
 10. Execute onboarding guides from a clean environment and verify static-provider configuration works without database registration where documented.
-11. Independently audit that no provider kind resolves to local Docker except `local_docker` and no test passes by accepting a loopback alias.
+11. Make provider capability a real, queryable property of a registration rather than a compile-time table. A flow declaring an environment policy a provider genuinely cannot serve must be rejected at invoke time with the existing typed field error, proven against a provider whose control plane really lacks that capability.
+12. Add a direct invocation route to both applications so a flow invocation can be opened from an identifier alone. It is the path an operator follows from a CLI or an alert, and it must reconstruct the same state the session list produces.
+13. Independently audit that no provider kind resolves to local Docker except `local_docker` and no test passes by accepting a loopback alias.
 
 ## Acceptance tests
 
@@ -51,6 +57,8 @@ Close every audited Phase 5 gap by replacing provider-kind aliases with real Kub
 - **A10.7 — Application onboarding.** Web and GPUI register each provider type, display dry-run errors, show health/capabilities/quotas, provision an environment, identify its actual provider, recover from a provider fault, and remove the provider only when ownership rules permit.
 - **A10.8 — CI topology.** Required jobs fail if kind, Nomad, tunnel, or provider-native inspection is bypassed. Scheduled jobs cover pinned supported versions and publish conformance artifacts.
 - **A10.9 — Documentation and static wiring.** Clean-machine scripts follow each onboarding guide and complete conformance. Static provider configuration is selected by the worker and proven via native resource inspection.
+- **A10.10 — Provider capability is behavioral.** *(inherited from Phase 9.)* Register a provider whose control plane genuinely cannot serve environment health checks. A flow declaring `readiness: "health"` against it is rejected at invoke time with the `unsupported_provider_capability` field error, nothing is persisted, and the same flow invoked against a capable provider provisions and reaches ready. The rejection must follow from the registration's real capabilities, not from a hard-coded kind list.
+- **A10.11 — Direct invocation route.** *(inherited from Phase 9.)* Web and GPUI open a flow invocation from its identifier alone, without first listing a session's invocations, and render the same state, progress, and topology the list path produces. A cross-org identifier is indistinguishable from a missing one. This is what makes `GetFlowInvocation` client-proven rather than covered only through the list surface.
 
 ## Validation commands
 
@@ -60,6 +68,7 @@ task verify:codegen
 task lint
 go test ./envprovider/... -count=1 -timeout 30m
 go test ./e2e -run 'TestA5|TestA10' -count=1 -timeout 30m
+go test ./e2e -run 'TestA9' -count=1 -timeout 30m
 task test:functional
 task web:test
 cargo test --manifest-path ui/desktop/Cargo.toml
@@ -75,3 +84,4 @@ The CI manifests must also run provider conformance in kind, Nomad, and tunnel j
 - Source and wiring contain no Kubernetes/Nomad/tunnel provider alias to local Docker.
 - Provider-native inspection proves creation, isolation, replacement, and deletion for each adapter.
 - Every Phase 5 audit bullet is closed by real control-plane, tenancy, failure, onboarding, and application evidence.
+- Both Phase 9 open items are closed: provider capability is proven behaviorally (A10.10), and `GetFlowInvocation` has its own client evidence through the direct route (A10.11).

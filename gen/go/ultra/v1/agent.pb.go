@@ -177,8 +177,13 @@ type AgentRun struct {
 	// cohort_ordinal preserves their declaration order.
 	CohortId      string `protobuf:"bytes,15,opt,name=cohort_id,json=cohortId,proto3" json:"cohort_id,omitempty"`
 	CohortOrdinal int32  `protobuf:"varint,16,opt,name=cohort_ordinal,json=cohortOrdinal,proto3" json:"cohort_ordinal,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Flow provenance. Both are immutable once written: a run created by a flow
+	// names the invocation that created it and the flow agent that declared it,
+	// so a later flow version can never reattribute finished work.
+	FlowInvocationId string `protobuf:"bytes,17,opt,name=flow_invocation_id,json=flowInvocationId,proto3" json:"flow_invocation_id,omitempty"`
+	FlowAgentName    string `protobuf:"bytes,18,opt,name=flow_agent_name,json=flowAgentName,proto3" json:"flow_agent_name,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *AgentRun) Reset() {
@@ -321,6 +326,20 @@ func (x *AgentRun) GetCohortOrdinal() int32 {
 		return x.CohortOrdinal
 	}
 	return 0
+}
+
+func (x *AgentRun) GetFlowInvocationId() string {
+	if x != nil {
+		return x.FlowInvocationId
+	}
+	return ""
+}
+
+func (x *AgentRun) GetFlowAgentName() string {
+	if x != nil {
+		return x.FlowAgentName
+	}
+	return ""
 }
 
 // RunWait is a parent's durable fan-in on child runs. It leaves the open state
@@ -1157,7 +1176,7 @@ const file_ultra_v1_agent_proto_rawDesc = "" +
 	"\n" +
 	"credential\x18\x03 \x01(\tR\n" +
 	"credential\x123\n" +
-	"\tfallbacks\x18\x04 \x03(\v2\x15.ultra.v1.ModelConfigR\tfallbacks\"\xee\x04\n" +
+	"\tfallbacks\x18\x04 \x03(\v2\x15.ultra.v1.ModelConfigR\tfallbacks\"\xc4\x05\n" +
 	"\bAgentRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -1179,7 +1198,9 @@ const file_ultra_v1_agent_proto_rawDesc = "" +
 	"\vresult_json\x18\x0e \x01(\tR\n" +
 	"resultJson\x12\x1b\n" +
 	"\tcohort_id\x18\x0f \x01(\tR\bcohortId\x12%\n" +
-	"\x0ecohort_ordinal\x18\x10 \x01(\x05R\rcohortOrdinal\"\xce\x02\n" +
+	"\x0ecohort_ordinal\x18\x10 \x01(\x05R\rcohortOrdinal\x12,\n" +
+	"\x12flow_invocation_id\x18\x11 \x01(\tR\x10flowInvocationId\x12&\n" +
+	"\x0fflow_agent_name\x18\x12 \x01(\tR\rflowAgentName\"\xce\x02\n" +
 	"\aRunWait\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\"\n" +
 	"\rparent_run_id\x18\x02 \x01(\tR\vparentRunId\x12\x1d\n" +

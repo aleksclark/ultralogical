@@ -64,6 +64,10 @@ jobs:
           go-version-file: go.mod
       - name: Unit, store, provider, and jobqueue conformance tests
         run: go test $(go list ./... | grep -v '/e2e$') -count=1 -timeout 30m
+      # A9.9: the shipped flow examples and the commands docs/flows.md
+      # documents must actually validate, not merely be checked in.
+      - name: Documented flow examples validate
+        run: go run ./cmd/ultra help && go test . -run TestValidateFlowDefinition -count=1
 
   dev-stack:
     runs-on: ubuntu-latest

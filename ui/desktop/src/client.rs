@@ -14,7 +14,7 @@ use tokio::runtime::Handle;
 use tonic::transport::Channel;
 use ultralogical_client::{Auth, ultra::v1};
 
-use crate::state::{SessionSummary, UsageView};
+use crate::state::{FlowFieldErrorView, FlowInvocationView, FlowSummary, SessionSummary, UsageView};
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
@@ -29,6 +29,7 @@ pub struct DesktopClient {
     pub agents: v1::agent_service_client::AgentServiceClient<Channel>,
     pub envs: v1::env_service_client::EnvServiceClient<Channel>,
     pub billing: v1::billing_service_client::BillingServiceClient<Channel>,
+    pub flows: v1::flow_service_client::FlowServiceClient<Channel>,
 }
 
 impl DesktopClient {
@@ -46,7 +47,8 @@ impl DesktopClient {
             events: v1::event_service_client::EventServiceClient::new(channel.clone()),
             agents: v1::agent_service_client::AgentServiceClient::new(channel.clone()),
             envs: v1::env_service_client::EnvServiceClient::new(channel.clone()),
-            billing: v1::billing_service_client::BillingServiceClient::new(channel),
+            billing: v1::billing_service_client::BillingServiceClient::new(channel.clone()),
+            flows: v1::flow_service_client::FlowServiceClient::new(channel),
         })
     }
 
@@ -308,6 +310,180 @@ impl DesktopClient {
                 .await?
                 .into_inner();
             Ok(crate::state::DesktopState::flatten_tree(&resp.roots))
+        })
+        .await
+    }
+
+    /// list_flows fetches the org's flow catalog: the latest version of each.
+    pub async fn list_flows(&mut self, org_id: &str) -> Result<Vec<FlowSummary>, BoxError> {
+        let mut client = self.clone();
+        let org_id = org_id.to_string();
+        self.dispatch(async move {
+            let resp = client
+                .flows
+                .list_flows(client.auth.request(v1::ListFlowsRequest { org_id }))
+                .await?
+                .into_inner();
+            Ok(resp
+                .flows
+                .into_iter()
+                .map(|f| FlowSummary {
+                    id: f.id,
+                    name: f.name,
+                    version: f.version,
+                    definition: f.definition_json,
+                })
+                .collect())
+        })
+        .await
+    }
+
+    /// list_flow_versions fetches every version of one flow, newest first, so
+    /// selecting an older version shows that version's own definition.
+    pub async fn list_flow_versions(&mut self, org_id: &str, name: &str) -> Result<Vec<FlowSummary>, BoxError> {
+        let mut client = self.clone();
+        let org_id = org_id.to_string();
+        let name = name.to_string();
+        self.dispatch(async move {
+            let resp = client
+                .flows
+                .list_flow_versions(client.auth.request(v1::ListFlowVersionsRequest { org_id, name }))
+                .await?
+                .into_inner();
+            Ok(resp
+                .flows
+                .into_iter()
+                .map(|f| FlowSummary {
+                    id: f.id,
+                    name: f.name,
+                    version: f.version,
+                    definition: f.definition_json,
+                })
+                .collect())
+        })
+        .await
+    }
+
+    /// validate_flow reports structured errors without storing anything.
+    pub async fn validate_flow(
+        &mut self,
+        org_id: &str,
+        definition_json: &str,
+    ) -> Result<Vec<FlowFieldErrorView>, BoxError> {
+        let mut client = self.clone();
+        let org_id = org_id.to_string();
+        let definition_json = definition_json.to_string();
+        self.dispatch(async move {
+            let resp = client
+                .flows
+                .validate_flow(client.auth.request(v1::ValidateFlowRequest { org_id, definition_json }))
+                .await?
+                .into_inner();
+            Ok(resp
+                .errors
+                .into_iter()
+                .map(|e| FlowFieldErrorView { path: e.path, code: e.code, message: e.message })
+                .collect())
+        })
+        .await
+    }
+
+    /// put_flow stores a version. A rejected write returns the server's own
+    /// field errors rather than a message, so the window shows the same
+    /// structured list every other client shows.
+    pub async fn put_flow(
+        &mut self,
+        org_id: &str,
+        name: &str,
+        definition_json: &str,
+    ) -> Result<Result<FlowSummary, Vec<FlowFieldErrorView>>, BoxError> {
+        let mut client = self.clone();
+        let org_id = org_id.to_string();
+        let name = name.to_string();
+        let definition_json = definition_json.to_string();
+        self.dispatch(async move {
+            let request = v1::PutFlowRequest { org_id: org_id.clone(), name, definition_json: definition_json.clone(), version: 0 };
+            match client.flows.put_flow(client.auth.request(request)).await {
+                Ok(resp) => {
+                    let flow = resp
+                        .into_inner()
+                        .flow
+                        .ok_or_else(|| BoxError::from("put_flow returned no flow"))?;
+                    Ok(Ok(FlowSummary {
+                        id: flow.id,
+                        name: flow.name,
+                        version: flow.version,
+                        definition: flow.definition_json,
+                    }))
+                }
+                Err(status) if status.code() == tonic::Code::InvalidArgument => {
+                    // gRPC error details are not carried by tonic's Status in a
+                    // typed form here, so the structured list is re-derived
+                    // from the same validation surface the write used.
+                    let errors = client.validate_flow(&org_id, &definition_json).await?;
+                    Ok(Err(errors))
+                }
+                Err(status) => Err(BoxError::from(status)),
+            }
+        })
+        .await
+    }
+
+    /// invoke_flow starts an invocation of the named version.
+    pub async fn invoke_flow(
+        &mut self,
+        session_id: &str,
+        name: &str,
+        version: i32,
+        params_json: &str,
+    ) -> Result<String, BoxError> {
+        let mut client = self.clone();
+        let session_id = session_id.to_string();
+        let name = name.to_string();
+        let params_json = params_json.to_string();
+        self.dispatch(async move {
+            let resp = client
+                .flows
+                .invoke_flow(client.auth.request(v1::InvokeFlowRequest {
+                    session_id,
+                    name,
+                    version,
+                    params_json,
+                }))
+                .await?
+                .into_inner();
+            Ok(resp.invocation_id)
+        })
+        .await
+    }
+
+    /// list_invocations fetches every invocation in a session with its
+    /// progress, runs, and environments. The whole view arrives at once
+    /// because assembling it request by request would race the live stream.
+    pub async fn list_invocations(&mut self, session_id: &str) -> Result<Vec<FlowInvocationView>, BoxError> {
+        let mut client = self.clone();
+        let session_id = session_id.to_string();
+        self.dispatch(async move {
+            let resp = client
+                .flows
+                .list_flow_invocations(client.auth.request(v1::ListFlowInvocationsRequest { session_id }))
+                .await?
+                .into_inner();
+            Ok(resp.invocations.iter().map(FlowInvocationView::from_proto).collect())
+        })
+        .await
+    }
+
+    /// cancel_invocation asks an invocation to converge on cancelled.
+    pub async fn cancel_invocation(&mut self, invocation_id: &str) -> Result<(), BoxError> {
+        let mut client = self.clone();
+        let invocation_id = invocation_id.to_string();
+        self.dispatch(async move {
+            client
+                .flows
+                .cancel_flow_invocation(client.auth.request(v1::CancelFlowInvocationRequest { invocation_id }))
+                .await?;
+            Ok(())
         })
         .await
     }

@@ -2,8 +2,8 @@
 
 Ultralogical: a durable-session platform for agentic work — multi-tenant,
 event-sourced sessions that humans and agents share. Go backend, ConnectRPC
-API, Postgres, React/gpui UIs. **Phase 8** (orchestration and
-distributed-session completion) is closed; Phase 9 owns flow completion.
+API, Postgres, React/gpui UIs. **Phase 9** (versioned flow
+completion) is closed; Phase 10 owns real remote providers.
 
 ## Cheatsheet
 
@@ -13,6 +13,7 @@ task lint              # buf lint + go vet + golangci-lint
 task generate          # regen from protos (commit the output!)
 task test              # unit + store + queue + provider conformance (docker)
 task test:functional   # e2e/ acceptance suite (real stack)
+task cli:test          # cmd/ultra CLI against the real stack
 task verify:codegen    # fail if generated output is stale
 task verify:coverage   # capability coverage matrix
 task dev               # one-command stack: pg + model + ultrad + worker + web
@@ -68,7 +69,10 @@ task desktop:test      # GPUI golden on real stack
 | [agent_docs/phase_7_audit.md](agent_docs/phase_7_audit.md) | Phase 7 independent completion audit |
 | [agent_docs/phase_8_inventory.md](agent_docs/phase_8_inventory.md) | Phase 8 behavior-to-test inventory |
 | [agent_docs/phase_8_audit.md](agent_docs/phase_8_audit.md) | Phase 8 independent completion audit |
+| [agent_docs/phase_9_inventory.md](agent_docs/phase_9_inventory.md) | Phase 9 behavior-to-test inventory |
+| [agent_docs/phase_9_audit.md](agent_docs/phase_9_audit.md) | Phase 9 independent completion audit |
 | [agent_docs/throughput_baseline.md](agent_docs/throughput_baseline.md) | recording or comparing a throughput regression baseline |
+| [docs/flows.md](docs/flows.md) | flow definition language, lifecycle, CLI, examples |
 | [docs/security.md](docs/security.md) | grant lattice, denial visibility, tenancy, credential scope |
 | [agent_docs/cross_client_testing.md](agent_docs/cross_client_testing.md) | adding public capabilities or client tests |
 | [agent_docs/package_layout.md](agent_docs/package_layout.md) | deciding where new code goes |
@@ -79,8 +83,8 @@ task desktop:test      # GPUI golden on real stack
 | [plan/phase_6_7.md](plan/phase_6_7.md) | security-critical remediation phase |
 | [plan/phase_7.md](plan/phase_7.md) | Phase 0–2 completion (closed) |
 | [plan/phase_8.md](plan/phase_8.md) | orchestration and distributed-session completion (closed) |
-| [plan/phase_9.md](plan/phase_9.md) | current phase: flow completion |
-| [plan/phase_10.md](plan/phase_10.md) | real remote providers |
+| [plan/phase_9.md](plan/phase_9.md) | flow completion (closed) |
+| [plan/phase_10.md](plan/phase_10.md) | current phase: real remote providers |
 | [plan/phase_11.md](plan/phase_11.md) | advanced loop and automation completion |
 | [plan/phase_12.md](plan/phase_12.md) | production hardening and billing |
 | [plan/phase_13.md](plan/phase_13.md) | desktop distribution and release proof |

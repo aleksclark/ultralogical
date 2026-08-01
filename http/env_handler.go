@@ -40,7 +40,10 @@ func envStateToProto(s ultra.EnvState) ultrav1.EnvState {
 	return ultrav1.EnvState_ENV_STATE_UNSPECIFIED
 }
 func envToProto(e ultra.DevEnv) *ultrav1.DevEnv {
-	out := &ultrav1.DevEnv{Id: string(e.ID), SessionId: string(e.SessionID), ProviderInstanceId: string(e.ProviderInstanceID), State: envStateToProto(e.State), Spec: &ultrav1.EnvSpec{Name: e.Spec.Name, Image: e.Spec.Image, Workdir: e.Spec.Workdir, Env: e.Spec.Env, Metadata: e.Spec.Metadata}, Endpoint: e.Endpoint, Epoch: int32(e.Epoch), FailureMessage: e.FailureMessage, CreatedAt: timestamppb.New(e.CreatedAt), UpdatedAt: timestamppb.New(e.UpdatedAt)}
+	out := &ultrav1.DevEnv{Id: string(e.ID), SessionId: string(e.SessionID), ProviderInstanceId: string(e.ProviderInstanceID), State: envStateToProto(e.State), Spec: &ultrav1.EnvSpec{Name: e.Spec.Name, Image: e.Spec.Image, Workdir: e.Spec.Workdir, Env: e.Spec.Env, Metadata: e.Spec.Metadata}, Endpoint: e.Endpoint, Epoch: int32(e.Epoch), FailureMessage: e.FailureMessage, FlowEnvName: e.FlowEnvName, CreatedAt: timestamppb.New(e.CreatedAt), UpdatedAt: timestamppb.New(e.UpdatedAt)}
+	if e.FlowInvocationID != nil {
+		out.FlowInvocationId = string(*e.FlowInvocationID)
+	}
 	if e.ReadyAt != nil {
 		out.ReadyAt = timestamppb.New(*e.ReadyAt)
 	}

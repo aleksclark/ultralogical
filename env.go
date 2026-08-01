@@ -92,10 +92,16 @@ type DevEnv struct {
 	Epoch              int
 	FailureMessage     string
 	CreatedByRunID     *RunID
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	ReadyAt            *time.Time
-	TerminatedAt       *time.Time
+	// FlowInvocationID and FlowEnvName are the environment's flow provenance:
+	// which invocation created it and which declaration in that flow it
+	// satisfies. They are written with the row and never change, which is what
+	// makes an invocation's cleanup scope exact.
+	FlowInvocationID *FlowInvocationID
+	FlowEnvName      string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	ReadyAt          *time.Time
+	TerminatedAt     *time.Time
 }
 
 // ProviderInstance is an org-scoped registration of where environments run.

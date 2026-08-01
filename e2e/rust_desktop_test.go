@@ -129,6 +129,11 @@ func TestRustDesktopProviderE2E(t *testing.T) { runDesktopSuite(t, "provider_e2e
 // memory inspection, and replica reconnection.
 func TestRustDesktopRunTreeE2E(t *testing.T) { runDesktopSuite(t, "run_tree_e2e") }
 
+// A9.8 — the rendered GPUI window drives the flow catalog, version selection,
+// structured validation, invocation progress and topology, cancellation, and
+// reconnection.
+func TestRustDesktopFlowE2E(t *testing.T) { runDesktopSuite(t, "flow_e2e") }
+
 // desktopScenario labels the desktop suite's turns so a prompt that also
 // matches a browser turn is reported rather than silently mis-served.
 const desktopScenario = 2
@@ -179,6 +184,15 @@ func desktopScript() modelscript.Script {
 			}}},
 		},
 		modelscript.Turn{Scenario: desktopScenario, Match: modelscript.UserContains("desktop remember note"), Sticky: true, Text: "remembered"},
+		// A9.8: flows the window authors, invokes, and cancels.
+		modelscript.Turn{Scenario: desktopScenario, Match: modelscript.UserContains("desktop flow reviewer"), Sticky: true, Text: "desktop flow reviewed"},
+		modelscript.Turn{
+			Scenario:   desktopScenario,
+			Match:      modelscript.UserContains("desktop flow slow"),
+			Sticky:     true,
+			Text:       "far too late",
+			ChunkDelay: 30 * time.Second,
+		},
 	)
 	return script
 }

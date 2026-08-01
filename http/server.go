@@ -13,6 +13,7 @@ import (
 
 	ultra "github.com/aleksclark/ultralogical"
 	"github.com/aleksclark/ultralogical/envwork"
+	"github.com/aleksclark/ultralogical/flowwork"
 	"github.com/aleksclark/ultralogical/gen/go/ultra/v1/ultrav1connect"
 	"github.com/aleksclark/ultralogical/jobqueue"
 	"github.com/aleksclark/ultralogical/secrets"
@@ -34,6 +35,9 @@ type Config struct {
 	DefaultModel ultra.ModelConfig
 	// Envs orchestrates development-environment lifecycle and ExecPreview.
 	Envs *envwork.Service
+	// Flows orchestrates flow invocations: validation, rendering, and the
+	// durable provisioning/readiness/topology state machine.
+	Flows *flowwork.Service
 }
 
 // NewHandler builds the full ultrad http.Handler: all Connect services under
@@ -57,8 +61,10 @@ func NewHandler(cfg Config) http.Handler {
 	mux.Handle(agentPath, agentH)
 	automationPath, automationH := ultrav1connect.NewAutomationServiceHandler(&automationHandler{store: cfg.Store}, interceptors)
 	mux.Handle(automationPath, automationH)
-	flowPath, flowH := ultrav1connect.NewFlowServiceHandler(&flowHandler{store: cfg.Store, enqueue: cfg.Enqueue, defaultModel: cfg.DefaultModel}, interceptors)
-	mux.Handle(flowPath, flowH)
+	if cfg.Flows != nil {
+		flowPath, flowH := ultrav1connect.NewFlowServiceHandler(&flowHandler{store: cfg.Store, flows: cfg.Flows}, interceptors)
+		mux.Handle(flowPath, flowH)
+	}
 
 	if cfg.Envs != nil {
 		envPath, envH := ultrav1connect.NewEnvServiceHandler(&envHandler{store: cfg.Store, envs: cfg.Envs}, interceptors)
