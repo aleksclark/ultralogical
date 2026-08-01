@@ -73,6 +73,39 @@ func TestCacheEpochInvalidation(t *testing.T) {
 	}
 }
 
+// The last known toolset must outlive the client entry: when an environment
+// dies mid-run, the caller still has to name the tools it used to offer so it
+// can fail those calls in a typed way instead of silently losing them.
+func TestCacheRemembersToolsAcrossInvalidation(t *testing.T) {
+	cache := mcp.NewCache()
+	if got := cache.LastTools("env-1"); len(got) != 0 {
+		t.Fatalf("unknown environment reported tools: %v", got)
+	}
+
+	cache.RememberTools("env-1", []string{"bash", "view"})
+	if got := cache.LastTools("env-1"); len(got) != 2 || got[0] != "bash" || got[1] != "view" {
+		t.Fatalf("remembered tools = %v", got)
+	}
+
+	// Losing the client must not lose the knowledge of what it offered.
+	cache.Invalidate("env-1")
+	if got := cache.LastTools("env-1"); len(got) != 2 {
+		t.Fatalf("tools forgotten after invalidation: %v", got)
+	}
+
+	// The returned slice is a copy: a caller cannot corrupt the cache.
+	got := cache.LastTools("env-1")
+	got[0] = "mutated"
+	if again := cache.LastTools("env-1"); again[0] != "bash" {
+		t.Fatalf("caller mutated cached tool names: %v", again)
+	}
+
+	// Environments do not share remembered tools.
+	if got := cache.LastTools("env-2"); len(got) != 0 {
+		t.Fatalf("tools leaked across environments: %v", got)
+	}
+}
+
 func TestCacheIsolatesEnvironments(t *testing.T) {
 	cache := mcp.NewCache()
 	one, err := cache.Client("env-a", 1, "http://127.0.0.1:1/mcp", "a")

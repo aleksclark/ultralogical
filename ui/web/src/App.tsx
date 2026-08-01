@@ -6,6 +6,7 @@ import { EnvState } from "@client/gen/ultra/v1/env_pb";
 import { clients } from "./api";
 import { foldEvent, initialView } from "./reducer";
 import { EnvironmentPanel } from "@/components/environment-panel";
+import { MemoryPanel } from "@/components/memory-panel";
 import { SessionSidebar, type ConnectionState } from "@/components/session-sidebar";
 import { SettingsView, type CredentialForm, type ProviderForm } from "@/components/settings-view";
 import { Timeline } from "@/components/timeline";
@@ -170,6 +171,16 @@ export function App() {
       setError(String(e));
     }
   }
+  async function rememberMemory(key: string, valueJson: string) {
+    if (!session || !key) return;
+    try {
+      await api.sessions.setMemory({ sessionId: session.id, key, valueJson: valueJson || '""' });
+      await refreshMultiplayer();
+      setError("");
+    } catch (e) {
+      setError(String(e));
+    }
+  }
   async function saveCredential() {
     if (!org || !credential.apiKey) return;
     try {
@@ -253,16 +264,7 @@ export function App() {
               onExec={execPreview}
             />
             <UsagePanel intervals={usage} totalSeconds={usageTotal} onRefresh={refreshUsage} />
-            {memory.length > 0 && (
-              <details className="text-xs" data-testid="session-memory">
-                <summary>Session memory ({memory.length})</summary>
-                {memory.map((m) => (
-                  <pre key={m.key}>
-                    {m.key}: {m.valueJson}
-                  </pre>
-                ))}
-              </details>
-            )}
+            <MemoryPanel entries={memory} onSet={rememberMemory} />
             <Timeline items={view.items} onAnswer={answer} deltaFrames={view.deltaFrames} />
             <div className="flex gap-2 border-t border-zinc-800 pt-4">
               <Input

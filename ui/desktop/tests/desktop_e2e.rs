@@ -112,6 +112,72 @@ async fn renders_presence(cx: &mut TestAppContext) {
     await_rendered(cx, "row:you: presence check", FRAME_ATTEMPTS);
 }
 
+/// The window's startup sequence is the one the native entrypoint runs. This
+/// test creates a session, then drives `DesktopWindow::start_up` — the exact
+/// function `main.rs` calls after connecting — and asserts the launched
+/// application paints the session list, an opened timeline, and usage without
+/// any test-only wiring.
+#[gpui::test]
+async fn drives_same_actions_as_entrypoint(cx: &mut TestAppContext) {
+    let (window, mut cx, mut client, org_id) = open_app(cx).await;
+    let cx = &mut cx;
+
+    client
+        .create_session(&org_id, "GPUI entrypoint")
+        .await
+        .expect("create session");
+
+    // Exactly what main.rs does once the client is connected.
+    let mut async_app = cx.to_async();
+    DesktopWindow::start_up(&window, &mut client, &org_id, &mut async_app).await;
+
+    await_rendered(cx, "session:GPUI entrypoint", FRAME_ATTEMPTS);
+    await_rendered(cx, "connection:live", FRAME_ATTEMPTS);
+    await_rendered(cx, "usage-panel", FRAME_ATTEMPTS);
+    let opened = window.read_with(cx, |view: &DesktopWindow, _| view.state.active_session.clone());
+    assert!(
+        opened.is_some(),
+        "the entrypoint startup sequence never opened a session"
+    );
+}
+
+/// Session memory written through the API is folded from the event log and
+/// painted by the window, and a replay from seq 0 repaints the same entry.
+#[gpui::test]
+async fn renders_session_memory(cx: &mut TestAppContext) {
+    let (window, mut cx, mut client, org_id) = open_app(cx).await;
+    let cx = &mut cx;
+
+    let session = client
+        .create_session(&org_id, "GPUI memory")
+        .await
+        .expect("create session");
+    let stream = client.subscribe(&session.id, 0).await.expect("subscribe");
+    window.update(cx, |view: &mut DesktopWindow, cx| {
+        view.open_session(session.id.clone(), stream, cx)
+    });
+    await_rendered(cx, "connection:live", FRAME_ATTEMPTS);
+
+    client
+        .set_memory(&session.id, "desktop.note", "\"remembered\"")
+        .await
+        .expect("set memory");
+    await_rendered(cx, "memory:desktop.note", FRAME_ATTEMPTS);
+    await_rendered(cx, "memory-count:1", FRAME_ATTEMPTS);
+
+    // The painted key corresponds to a durable write, not a local echo.
+    let keys = client.list_memory(&session.id).await.expect("list memory");
+    assert!(
+        keys.iter().any(|k| k == "desktop.note"),
+        "memory entry was never painted from a durable write: {keys:?}"
+    );
+
+    // Replay repaints it, so the panel is derived from the log.
+    let replay = client.subscribe(&session.id, 0).await.expect("resubscribe");
+    window.update(cx, |view: &mut DesktopWindow, cx| view.replay_session(replay, cx));
+    await_rendered(cx, "memory:desktop.note", FRAME_ATTEMPTS);
+}
+
 /// A7.2 — the window renders intermediate streamed frames, then a terminal
 /// status. Two independent signals: the rendered frame counter advances past
 /// one, and more than one distinct assistant row is painted while streaming.

@@ -110,7 +110,7 @@ Both backends run the same suite: `jobqueue/river` and `jobqueue/inproc`.
 | The web app is built from reusable shadcn components in a dark theme | `ui/web/src/components/ui/*` | `web: renders shadcn primitives in dark mode` |
 | Session, run, environment, and usage behavior is driven through shipped web controls | shadcn views | `web` suite (session, environment, usage specs) |
 | A real GPUI window renders session list, timeline, connection state | GPUI `App` entrypoint (**was unimplemented; added in Phase 7**) | `gpui: renders_session_list_and_timeline` |
-| GPUI tests invoke the same actions as the native entrypoint | shared `run_actions` dispatch | `gpui: drives_same_actions_as_entrypoint` |
+| GPUI tests invoke the same actions as the native entrypoint | `DesktopWindow::start_up`, called by `main.rs` | `gpui: drives_same_actions_as_entrypoint` |
 | `task dev` starts the documented usable stack in one command | `scripts/dev-stack.sh` | `go: e2e TestA78_DevStackSmoke` |
 | The stack smoke creates a session, streams a run, provisions an env, shuts down clean | `scripts/dev-stack.sh smoke` | `go: e2e TestA78_DevStackSmoke` |
 | No owned process or container survives the smoke | smoke teardown | `go: e2e TestA78_DevStackSmoke` |

@@ -105,29 +105,58 @@ func (r *EnvTools) Tools(ctx context.Context, run ultra.AgentRun) ([]fantasy.Age
 		}
 	}
 	for _, env := range ready {
+		prefix := ""
+		if len(ready) > 1 {
+			prefix = "env:" + env.Spec.Name + "/"
+		}
 		// Discovery goes through the epoch-keyed client cache: a restarted
 		// environment yields a fresh client and revokes the previous one,
 		// so a rotated token can never be reused.
 		client, e := r.Envs.ToolClient(ctx, env)
-		if e != nil {
-			continue
-		}
-		discovered, e := client.Tools(ctx)
-		if e != nil {
-			continue
-		}
-		for _, dt := range discovered {
-			if !run.Grants.AllowsTool(dt.Name) {
+		if e == nil {
+			var discovered []mcp.Tool
+			discovered, e = client.Tools(ctx)
+			if e == nil {
+				names := make([]string, 0, len(discovered))
+				for _, dt := range discovered {
+					names = append(names, dt.Name)
+					if !run.Grants.AllowsTool(dt.Name) {
+						continue
+					}
+					tools = append(tools, newMCPTool(prefix+dt.Name, dt, client))
+				}
+				// Remember the toolset so a later step can still name
+				// these tools if the environment disappears.
+				r.Envs.RememberTools(env.ID, names)
 				continue
 			}
-			name := dt.Name
-			if len(ready) > 1 {
-				name = "env:" + env.Spec.Name + "/" + dt.Name
-			}
-			tools = append(tools, newMCPTool(name, dt, client))
 		}
+		// The environment is marked ready but is unreachable: it died
+		// between the last state write and this step. Dropping its tools
+		// would silently shrink the model's capabilities mid-run, so the
+		// previously discovered tools are offered as typed failures
+		// instead. A step must be able to report that its environment is
+		// gone, never quietly pretend it never had one.
+		tools = append(tools, r.unreachableEnvTools(prefix, env, run.Grants, e)...)
 	}
 	return tools, nil
+}
+
+// unreachableEnvTools rebuilds the last known toolset for an environment that
+// can no longer be reached, with every call failing in a typed way.
+func (r *EnvTools) unreachableEnvTools(prefix string, env ultra.DevEnv, grants ultra.Grants, cause error) []fantasy.AgentTool {
+	var tools []fantasy.AgentTool
+	for _, name := range r.Envs.LastTools(env.ID) {
+		if !grants.AllowsTool(name) {
+			continue
+		}
+		reason := fmt.Sprintf("environment unavailable: %s is unreachable: %v", env.Spec.Name, cause)
+		tools = append(tools, fantasy.NewAgentTool(prefix+name, "Unavailable: the environment is unreachable.",
+			func(context.Context, map[string]any, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+				return fantasy.NewTextErrorResponse(reason), nil
+			}))
+	}
+	return tools
 }
 
 type mcpTool struct {

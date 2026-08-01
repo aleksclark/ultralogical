@@ -1,267 +1,406 @@
 {
-  "auth_org_sessions": {
-    "web": {
-      "file": "session.spec.ts",
-      "test": "create session, stream, answer, and reload history",
-      "asserts": [
-        "getByRole(\"button\", { name: \"Browser golden\" })",
-        "data-status=\"completed\""
-      ]
+  "capabilities": {
+    "auth_org_sessions": {
+      "rpcs": [
+        "ultra.v1.OrgService/ListOrgs",
+        "ultra.v1.SessionService/CreateSession",
+        "ultra.v1.SessionService/ListSessions",
+        "ultra.v1.SessionService/GetSession"
+      ],
+      "web": {
+        "file": "session.spec.ts",
+        "test": "create session, stream, answer, and reload history",
+        "asserts": [
+          "getByRole(\"button\", { name: \"Browser golden\" })",
+          "data-status=\"completed\""
+        ]
+      },
+      "rust": {
+        "file": "desktop_e2e.rs",
+        "test": "renders_session_list_and_timeline",
+        "asserts": [
+          "await_rendered(cx, \"session-list\"",
+          "await_rendered(cx, \"session:GPUI session list\""
+        ]
+      }
     },
-    "rust": {
-      "file": "desktop_e2e.rs",
-      "test": "renders_session_list_and_timeline",
-      "asserts": [
-        "await_rendered(cx, \"session-list\"",
-        "await_rendered(cx, \"session:GPUI session list\""
-      ]
+    "connection_state": {
+      "rpcs": [
+        "ultra.v1.EventService/Subscribe"
+      ],
+      "web": {
+        "file": "session.spec.ts",
+        "test": "renders shadcn primitives in dark mode",
+        "asserts": [
+          "getByTestId(\"connection-state\")"
+        ]
+      },
+      "rust": {
+        "file": "desktop_e2e.rs",
+        "test": "renders_session_list_and_timeline",
+        "asserts": [
+          "connection:disconnected",
+          "await_rendered(cx, \"connection:live\""
+        ]
+      }
+    },
+    "incremental_streaming": {
+      "rpcs": [
+        "ultra.v1.AgentService/StartRun"
+      ],
+      "web": {
+        "file": "session.spec.ts",
+        "test": "renders incremental streamed frames before completion",
+        "asserts": [
+          "distinct rendered states",
+          "folded streamed delta frames"
+        ]
+      },
+      "rust": {
+        "file": "desktop_e2e.rs",
+        "test": "renders_incremental_stream_frames",
+        "asserts": [
+          "window painted {} assistant frames",
+          "streamed frames, want at least 2"
+        ]
+      }
+    },
+    "event_replay": {
+      "rpcs": [
+        "ultra.v1.EventService/Append"
+      ],
+      "web": {
+        "file": "session.spec.ts",
+        "test": "replays identical timeline after reload",
+        "asserts": [
+          "expect(after).toEqual(before)"
+        ]
+      },
+      "rust": {
+        "file": "desktop_e2e.rs",
+        "test": "replays_identical_timeline",
+        "asserts": [
+          "replayed timeline differs from the original",
+          "replayed row {label:?} was not painted"
+        ]
+      }
+    },
+    "agent_stream_and_await": {
+      "rpcs": [
+        "ultra.v1.AgentService/PromptRun",
+        "ultra.v1.AgentService/GetRun"
+      ],
+      "web": {
+        "file": "session.spec.ts",
+        "test": "create session, stream, answer, and reload history",
+        "asserts": [
+          "data-kind=\"question\"",
+          "great choice of blue"
+        ]
+      },
+      "rust": {
+        "file": "desktop_e2e.rs",
+        "test": "renders_question_and_answers",
+        "asserts": [
+          "row:question: Which color? [red/blue]",
+          "resumed turn was not rendered"
+        ]
+      }
+    },
+    "credential_gateway_fields": {
+      "rpcs": [
+        "ultra.v1.OrgService/PutCredential",
+        "ultra.v1.OrgService/ListCredentials"
+      ],
+      "web": {
+        "file": "settings.spec.ts",
+        "test": "settings supports API key, base URL, and extra headers",
+        "asserts": [
+          "getByLabel(\"OpenAI API key\")",
+          "getByLabel(\"Extra headers JSON\")"
+        ]
+      },
+      "rust": {
+        "file": "provider_e2e.rs",
+        "test": "rejects_invalid_provider_config",
+        "asserts": [
+          "invalid provider config must be rejected",
+          "await_rendered(cx, selector(format!(\"error:{message}\"))"
+        ]
+      }
+    },
+    "credential_redaction": {
+      "rpcs": [
+        "ultra.v1.OrgService/DeleteCredential"
+      ],
+      "web": {
+        "file": "session.spec.ts",
+        "test": "never exposes credential material",
+        "asserts": [
+          "expect(dom).not.toContain(canary)",
+          "encodeURIComponent(canary)"
+        ]
+      },
+      "rust": {
+        "file": "desktop_e2e.rs",
+        "test": "never_exposes_credential_material",
+        "asserts": [
+          "rendered desktop state contains the credential canary",
+          "encoded credential canary"
+        ]
+      }
+    },
+    "dev_env_exec_usage": {
+      "rpcs": [
+        "ultra.v1.EnvService/ProvisionEnv",
+        "ultra.v1.EnvService/ListEnvs",
+        "ultra.v1.EnvService/ExecPreview"
+      ],
+      "web": {
+        "file": "environment.spec.ts",
+        "test": "provisions a real environment and runs ExecPreview",
+        "asserts": [
+          "expect([...phases]).toContain(\"ready\")",
+          "getByTestId(\"env-output\")"
+        ]
+      },
+      "rust": {
+        "file": "environment_e2e.rs",
+        "test": "shows_environment_lifecycle_and_exec",
+        "asserts": [
+          "window never painted a pre-ready lifecycle phase",
+          "await_rendered(cx, \"exec-output:gpui-environment\""
+        ]
+      }
+    },
+    "dev_env_restart_rotation": {
+      "rpcs": [
+        "ultra.v1.EnvService/RestartEnv",
+        "ultra.v1.EnvService/GetEnv"
+      ],
+      "web": {
+        "file": "environment.spec.ts",
+        "test": "restarts an environment and shows a new epoch",
+        "asserts": [
+          ".toBeGreaterThan(before)",
+          "after-restart"
+        ]
+      },
+      "rust": {
+        "file": "environment_e2e.rs",
+        "test": "shows_environment_restart_epoch",
+        "asserts": [
+          "await_rendered(cx, \"env:gpui-restart:ready:2\"",
+          "await_rendered(cx, \"exec-output:after-gpui-restart\""
+        ]
+      }
+    },
+    "env_usage_metering": {
+      "rpcs": [
+        "ultra.v1.BillingService/GetUsage",
+        "ultra.v1.EnvService/TerminateEnv"
+      ],
+      "web": {
+        "file": "environment.spec.ts",
+        "test": "shows org usage totals",
+        "asserts": [
+          "toHaveAttribute(\"data-open\", \"true\")",
+          ".toBe(\"false\")"
+        ]
+      },
+      "rust": {
+        "file": "environment_e2e.rs",
+        "test": "shows_org_usage_totals",
+        "asserts": [
+          "interval should be open while the env is ready",
+          "usage interval never closed after termination"
+        ]
+      }
+    },
+    "presence": {
+      "rpcs": [
+        "ultra.v1.SessionService/Join",
+        "ultra.v1.SessionService/ListParticipants",
+        "ultra.v1.SessionService/Heartbeat"
+      ],
+      "web": {
+        "file": "multiplayer.spec.ts",
+        "test": "shows presence and session memory",
+        "asserts": [
+          "getByTestId(\"presence\")"
+        ]
+      },
+      "rust": {
+        "file": "desktop_e2e.rs",
+        "test": "renders_presence",
+        "asserts": [
+          "presence never reached rendered state",
+          "await_rendered(cx, \"row:you: presence check\""
+        ]
+      }
+    },
+    "prompt_input": {
+      "rpcs": [
+        "ultra.v1.AgentService/ListRuns"
+      ],
+      "web": {
+        "file": "session.spec.ts",
+        "test": "create session, stream, answer, and reload history",
+        "asserts": [
+          "getByLabel(\"Prompt\").fill",
+          "getByRole(\"button\", { name: \"Send\" })"
+        ]
+      },
+      "rust": {
+        "file": "desktop_e2e.rs",
+        "test": "accepts_prompt_keystrokes",
+        "asserts": [
+          "cx.simulate_keystrokes(\"h i\")",
+          "await_rendered(cx, \"prompt:hi\""
+        ]
+      }
+    },
+    "provider_registration_kinds": {
+      "rpcs": [
+        "ultra.v1.OrgService/RegisterProvider",
+        "ultra.v1.OrgService/ListProviders"
+      ],
+      "web": {
+        "file": "providers.spec.ts",
+        "test": "registers provider kinds in dark-mode shadcn settings",
+        "asserts": [
+          "toContainText(\"Kubernetes\")",
+          "toContainText(\"Nomad\")"
+        ]
+      },
+      "rust": {
+        "file": "provider_e2e.rs",
+        "test": "registers_provider_kinds",
+        "asserts": [
+          "provider kind {kind} was not registered",
+          "await_rendered(cx, \"window:dark\""
+        ]
+      }
+    },
+    "provider_failure_validation": {
+      "rpcs": [
+        "ultra.v1.OrgService/DeleteProvider"
+      ],
+      "web": {
+        "file": "providers.spec.ts",
+        "test": "shows provider validation errors",
+        "asserts": [
+          "getByRole(\"alert\")"
+        ]
+      },
+      "rust": {
+        "file": "provider_e2e.rs",
+        "test": "rejects_invalid_provider_config",
+        "asserts": [
+          "invalid provider config must be rejected"
+        ]
+      }
+    },
+    "shadcn_dark_surface": {
+      "rpcs": [
+        "ultra.v1.OrgService/GetOrg"
+      ],
+      "web": {
+        "file": "session.spec.ts",
+        "test": "renders shadcn primitives in dark mode",
+        "asserts": [
+          "toHaveClass(/dark/)",
+          "toHaveClass(/inline-flex/)"
+        ]
+      },
+      "rust": {
+        "file": "desktop_e2e.rs",
+        "test": "renders_dark_application_shell",
+        "asserts": [
+          "await_rendered(cx, \"window:dark\"",
+          "await_rendered(cx, \"usage-panel\""
+        ]
+      }
+    },
+    "session_memory": {
+      "rpcs": [
+        "ultra.v1.SessionService/SetMemory",
+        "ultra.v1.SessionService/ListMemory"
+      ],
+      "web": {
+        "file": "multiplayer.spec.ts",
+        "test": "shows presence and session memory",
+        "asserts": [
+          "getByTestId(\"session-memory\")",
+          "data-testid=\"memory-entry\"][data-key=\"web.note\""
+        ]
+      },
+      "rust": {
+        "file": "desktop_e2e.rs",
+        "test": "renders_session_memory",
+        "asserts": [
+          "await_rendered(cx, \"memory:desktop.note",
+          "memory entry was never painted"
+        ]
+      }
     }
   },
-  "connection_state": {
-    "web": {
-      "file": "session.spec.ts",
-      "test": "renders shadcn primitives in dark mode",
-      "asserts": [
-        "getByTestId(\"connection-state\")"
-      ]
+  "deferred": {
+    "ultra.v1.SessionService/Leave": {
+      "owner": "A8.6",
+      "reason": "Presence expiry and explicit leave are proven together with stale-presence semantics in Phase 8."
     },
-    "rust": {
-      "file": "desktop_e2e.rs",
-      "test": "renders_session_list_and_timeline",
-      "asserts": [
-        "connection:disconnected",
-        "await_rendered(cx, \"connection:live\""
-      ]
-    }
-  },
-  "incremental_streaming": {
-    "web": {
-      "file": "session.spec.ts",
-      "test": "renders incremental streamed frames before completion",
-      "asserts": [
-        "distinct rendered states",
-        "folded streamed delta frames"
-      ]
+    "ultra.v1.SessionService/GetMemory": {
+      "owner": "A8.6",
+      "reason": "Single-key reads are covered alongside memory caps, atomicity, and namespace rules in Phase 8."
     },
-    "rust": {
-      "file": "desktop_e2e.rs",
-      "test": "renders_incremental_stream_frames",
-      "asserts": [
-        "window painted {} assistant frames",
-        "streamed frames, want at least 2"
-      ]
-    }
-  },
-  "event_replay": {
-    "web": {
-      "file": "session.spec.ts",
-      "test": "replays identical timeline after reload",
-      "asserts": [
-        "expect(after).toEqual(before)"
-      ]
+    "ultra.v1.SessionService/DeleteMemory": {
+      "owner": "A8.6",
+      "reason": "Deletion semantics and replay after deletion are proven with the Phase 8 memory matrix."
     },
-    "rust": {
-      "file": "desktop_e2e.rs",
-      "test": "replays_identical_timeline",
-      "asserts": [
-        "replayed timeline differs from the original",
-        "replayed row {label:?} was not painted"
-      ]
-    }
-  },
-  "agent_stream_and_await": {
-    "web": {
-      "file": "session.spec.ts",
-      "test": "create session, stream, answer, and reload history",
-      "asserts": [
-        "data-kind=\"question\"",
-        "great choice of blue"
-      ]
+    "ultra.v1.AgentService/CancelRun": {
+      "owner": "A8.2",
+      "reason": "Client-driven cancellation is proven with the Phase 8 wait/cancellation race matrix."
     },
-    "rust": {
-      "file": "desktop_e2e.rs",
-      "test": "renders_question_and_answers",
-      "asserts": [
-        "row:question: Which color? [red/blue]",
-        "resumed turn was not rendered"
-      ]
-    }
-  },
-  "credential_gateway_fields": {
-    "web": {
-      "file": "settings.spec.ts",
-      "test": "settings supports API key, base URL, and extra headers",
-      "asserts": [
-        "getByLabel(\"OpenAI API key\")",
-        "getByLabel(\"Extra headers JSON\")"
-      ]
+    "ultra.v1.OrgService/CreateOrg": {
+      "owner": "A12.11",
+      "reason": "Org creation is an admin surface delivered with production auth in Phase 12."
     },
-    "rust": {
-      "file": "provider_e2e.rs",
-      "test": "rejects_invalid_provider_config",
-      "asserts": [
-        "invalid provider config must be rejected",
-        "await_rendered(cx, selector(format!(\"error:{message}\"))"
-      ]
-    }
-  },
-  "credential_redaction": {
-    "web": {
-      "file": "session.spec.ts",
-      "test": "never exposes credential material",
-      "asserts": [
-        "expect(dom).not.toContain(canary)",
-        "encodeURIComponent(canary)"
-      ]
+    "ultra.v1.OrgService/InviteMember": {
+      "owner": "A12.11",
+      "reason": "Membership management ships with the Phase 12 admin applications."
     },
-    "rust": {
-      "file": "desktop_e2e.rs",
-      "test": "never_exposes_credential_material",
-      "asserts": [
-        "rendered desktop state contains the credential canary",
-        "encoded credential canary"
-      ]
-    }
-  },
-  "dev_env_exec_usage": {
-    "web": {
-      "file": "environment.spec.ts",
-      "test": "provisions a real environment and runs ExecPreview",
-      "asserts": [
-        "expect([...phases]).toContain(\"ready\")",
-        "getByTestId(\"env-output\")"
-      ]
+    "ultra.v1.OrgService/ListMembers": {
+      "owner": "A12.11",
+      "reason": "Membership management ships with the Phase 12 admin applications."
     },
-    "rust": {
-      "file": "environment_e2e.rs",
-      "test": "shows_environment_lifecycle_and_exec",
-      "asserts": [
-        "window never painted a pre-ready lifecycle phase",
-        "await_rendered(cx, \"exec-output:gpui-environment\""
-      ]
-    }
-  },
-  "dev_env_restart_rotation": {
-    "web": {
-      "file": "environment.spec.ts",
-      "test": "restarts an environment and shows a new epoch",
-      "asserts": [
-        ".toBeGreaterThan(before)",
-        "after-restart"
-      ]
+    "ultra.v1.FlowService/PutFlow": {
+      "owner": "A9.8",
+      "reason": "Flow authoring surfaces are Phase 9."
     },
-    "rust": {
-      "file": "environment_e2e.rs",
-      "test": "shows_environment_restart_epoch",
-      "asserts": [
-        "await_rendered(cx, \"env:gpui-restart:ready:2\"",
-        "await_rendered(cx, \"exec-output:after-gpui-restart\""
-      ]
-    }
-  },
-  "env_usage_metering": {
-    "web": {
-      "file": "environment.spec.ts",
-      "test": "shows org usage totals",
-      "asserts": [
-        "toHaveAttribute(\"data-open\", \"true\")",
-        ".toBe(\"false\")"
-      ]
+    "ultra.v1.FlowService/GetFlow": {
+      "owner": "A9.8",
+      "reason": "Flow catalog and version selection are Phase 9."
     },
-    "rust": {
-      "file": "environment_e2e.rs",
-      "test": "shows_org_usage_totals",
-      "asserts": [
-        "interval should be open while the env is ready",
-        "usage interval never closed after termination"
-      ]
-    }
-  },
-  "presence": {
-    "web": {
-      "file": "multiplayer.spec.ts",
-      "test": "shows presence and session memory",
-      "asserts": [
-        "getByTestId(\"presence\")"
-      ]
+    "ultra.v1.FlowService/ListFlows": {
+      "owner": "A9.8",
+      "reason": "Flow catalog and version selection are Phase 9."
     },
-    "rust": {
-      "file": "desktop_e2e.rs",
-      "test": "renders_presence",
-      "asserts": [
-        "presence never reached rendered state",
-        "await_rendered(cx, \"row:you: presence check\""
-      ]
-    }
-  },
-  "prompt_input": {
-    "web": {
-      "file": "session.spec.ts",
-      "test": "create session, stream, answer, and reload history",
-      "asserts": [
-        "getByLabel(\"Prompt\").fill",
-        "getByRole(\"button\", { name: \"Send\" })"
-      ]
+    "ultra.v1.FlowService/InvokeFlow": {
+      "owner": "A9.8",
+      "reason": "Flow invocation and progress views are Phase 9."
     },
-    "rust": {
-      "file": "desktop_e2e.rs",
-      "test": "accepts_prompt_keystrokes",
-      "asserts": [
-        "cx.simulate_keystrokes(\"h i\")",
-        "await_rendered(cx, \"prompt:hi\""
-      ]
-    }
-  },
-  "provider_registration_kinds": {
-    "web": {
-      "file": "providers.spec.ts",
-      "test": "registers provider kinds in dark-mode shadcn settings",
-      "asserts": [
-        "toContainText(\"Kubernetes\")",
-        "toContainText(\"Nomad\")"
-      ]
+    "ultra.v1.AutomationService/PutPeriodicPrompt": {
+      "owner": "A11.7",
+      "reason": "Periodic schedules become user-facing once the real firing scheduler lands in Phase 11."
     },
-    "rust": {
-      "file": "provider_e2e.rs",
-      "test": "registers_provider_kinds",
-      "asserts": [
-        "provider kind {kind} was not registered",
-        "await_rendered(cx, \"window:dark\""
-      ]
-    }
-  },
-  "provider_failure_validation": {
-    "web": {
-      "file": "providers.spec.ts",
-      "test": "shows provider validation errors",
-      "asserts": [
-        "getByRole(\"alert\")"
-      ]
+    "ultra.v1.AutomationService/ListPeriodicPrompts": {
+      "owner": "A11.7",
+      "reason": "Periodic schedules become user-facing once the real firing scheduler lands in Phase 11."
     },
-    "rust": {
-      "file": "provider_e2e.rs",
-      "test": "rejects_invalid_provider_config",
-      "asserts": [
-        "invalid provider config must be rejected"
-      ]
-    }
-  },
-  "shadcn_dark_surface": {
-    "web": {
-      "file": "session.spec.ts",
-      "test": "renders shadcn primitives in dark mode",
-      "asserts": [
-        "toHaveClass(/dark/)",
-        "toHaveClass(/inline-flex/)"
-      ]
-    },
-    "rust": {
-      "file": "desktop_e2e.rs",
-      "test": "renders_dark_application_shell",
-      "asserts": [
-        "await_rendered(cx, \"window:dark\"",
-        "await_rendered(cx, \"usage-panel\""
-      ]
+    "ultra.v1.AutomationService/SetPeriodicPromptEnabled": {
+      "owner": "A11.7",
+      "reason": "Enable/disable is proven with observed firings in Phase 11, not as a configuration record."
     }
   }
 }

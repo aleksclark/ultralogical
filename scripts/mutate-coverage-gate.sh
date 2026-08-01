@@ -20,6 +20,7 @@ tracked=(
   "e2e/coverage.json"
   ".github/workflows/ci.yml"
   "ui/desktop/tests/desktop_e2e.rs"
+  "proto/ultra/v1/session.proto"
 )
 for f in "${tracked[@]}"; do
   mkdir -p "$snapshot/$(dirname "$f")"
@@ -55,7 +56,8 @@ python3 - <<'PY'
 import json, pathlib
 p = pathlib.Path("e2e/coverage.json")
 d = json.loads(p.read_text())
-d["fabricated_capability"] = {
+d["capabilities"]["fabricated_capability"] = {
+    "rpcs": ["ultra.v1.SessionService/GetSession"],
     "web": {"file": "does-not-exist.spec.ts", "test": "imaginary", "asserts": ["nothing"]},
     "rust": {"file": "does-not-exist.rs", "test": "imaginary", "asserts": ["nothing"]},
 }
@@ -69,7 +71,7 @@ python3 - <<'PY'
 import json, pathlib
 p = pathlib.Path("e2e/coverage.json")
 d = json.loads(p.read_text())
-d["incremental_streaming"]["rust"]["test"] = "test_that_was_never_written"
+d["capabilities"]["incremental_streaming"]["rust"]["test"] = "test_that_was_never_written"
 p.write_text(json.dumps(d, indent=2) + "\n")
 PY
 expect_rejected "a test name the referenced file does not declare"
@@ -80,7 +82,7 @@ python3 - <<'PY'
 import json, pathlib
 p = pathlib.Path("e2e/coverage.json")
 d = json.loads(p.read_text())
-d["env_usage_metering"]["rust"]["asserts"] = ["asserts a behavior this test never checks"]
+d["capabilities"]["env_usage_metering"]["rust"]["asserts"] = ["asserts a behavior this test never checks"]
 p.write_text(json.dumps(d, indent=2) + "\n")
 PY
 expect_rejected "an assertion the referenced test does not contain"
@@ -115,5 +117,40 @@ assert target in text, "desktop_e2e.rs shape changed; update the mutation script
 p.write_text(text.replace(target, "assert!(!participants.is_empty());"))
 PY
 expect_rejected "desktop evidence that never inspects a rendered GPUI frame"
+
+# 6. A capability silently deleted from the matrix. The matrix used to be a
+#    whitelist, so dropping a row hid a capability instead of failing.
+note "mutation 6: a covered capability deleted from the matrix"
+python3 - <<'PY'
+import json, pathlib
+p = pathlib.Path("e2e/coverage.json")
+d = json.loads(p.read_text())
+del d["capabilities"]["session_memory"]
+p.write_text(json.dumps(d, indent=2) + "\n")
+PY
+expect_rejected "a capability deleted from the matrix, leaving its RPCs unaccounted for"
+
+# 7. A new RPC shipped without evidence or an explicit deferral.
+note "mutation 7: a new RPC with neither coverage nor a deferral"
+python3 - <<'PY'
+import pathlib
+p = pathlib.Path("proto/ultra/v1/session.proto")
+text = p.read_text()
+target = "  rpc DeleteMemory(DeleteMemoryRequest) returns (DeleteMemoryResponse);"
+assert target in text, "session.proto shape changed; update the mutation script"
+p.write_text(text.replace(target, target + "\n  rpc PurgeSession(GetSessionRequest) returns (GetSessionResponse);"))
+PY
+expect_rejected "a published RPC with neither coverage nor an explicit deferral"
+
+# 8. A deferral parked on an acceptance ID no plan declares.
+note "mutation 8: deferral owned by a nonexistent acceptance test"
+python3 - <<'PY'
+import json, pathlib
+p = pathlib.Path("e2e/coverage.json")
+d = json.loads(p.read_text())
+d["deferred"]["ultra.v1.AgentService/CancelRun"]["owner"] = "A99.9"
+p.write_text(json.dumps(d, indent=2) + "\n")
+PY
+expect_rejected "a deferral owned by an acceptance test no plan declares"
 
 note "every false coverage claim was rejected and the restored tree passes"

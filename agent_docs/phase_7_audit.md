@@ -49,7 +49,7 @@ passing or failing drift verdict.
 
 | Behavior | Evidence | Verdict |
 |---|---|---|
-| Workspace survives control-plane death, and the file is readable after restart | `e2e TestA74_EnvDurabilityAndRotation` | closed |
+| Workspace survives control-plane death, and the file is readable after restart | `e2e TestA74_EnvDurabilityAndRotation` (kills ultrad and the worker, and asserts ultrad really stopped answering) | closed |
 | `RestartEnv` rotates the token and increments epoch | same test (asserts a different decrypted token and a higher epoch) | closed |
 | Rotated token works; prior token is rejected | same test | closed |
 | A client cached before rotation cannot keep working | same test (Initialize and Call both fail) plus `mcp TestCacheEpochInvalidation` | closed |
@@ -60,11 +60,12 @@ passing or failing drift verdict.
 | Behavior | Evidence | Verdict |
 |---|---|---|
 | Environment loss mid-run yields a documented terminal outcome, not a hang | `e2e TestA75_FailureAndReconciliation` | closed |
+| The failed tool call is reported as a typed, error-flagged result | same test (requires an `is_error` result naming the lost environment) | closed |
 | `EnvFailed` carries a structured reason and precedes the run's failure | same test | closed |
 | Reconciliation does not busy loop on a failed environment | same test (queue drains to zero) | closed |
 | Repeated termination is idempotent and leaks no container or volume | same test via `ultra.EnvResourceLister` | closed |
 | Tool calls are bounded by a deadline | `loop` per-call timeout; `envprovider/conformance PerCallDeadline` | closed |
-| Interrupted provisioning converges without duplicate resources | `e2e TestA75_InterruptedProvisioning` (asserts exactly one container) | closed |
+| Interrupted provisioning converges without duplicate resources | `e2e TestA75_InterruptedProvisioning` (asserts exactly one container; retries the provisioning race instead of skipping) | closed |
 
 ## A7.6 — Metering and tenancy
 
@@ -94,7 +95,7 @@ check, and concurrent provisioning with distinct endpoints — all in
 | Web app built from reusable shadcn primitives in dark mode | `ui/web/src/components/ui/*`; `web: renders shadcn primitives in dark mode` | closed |
 | Session, run, environment, and usage behavior driven through shipped web controls | web session/environment specs | closed |
 | A real GPUI window renders session list, timeline, connection state, environments, and usage | `gpui: renders_dark_application_shell`, `renders_session_list_and_timeline` | closed |
-| GPUI tests invoke the same actions as the native entrypoint | `build_window` + `DesktopClient` shared by `main.rs` and `tests/support`; `gpui: accepts_prompt_keystrokes`, `shows_environment_restart_epoch` | closed |
+| GPUI tests invoke the same actions as the native entrypoint | `DesktopWindow::start_up` is the startup sequence `main.rs` runs; `gpui: drives_same_actions_as_entrypoint` drives it directly | closed |
 | `task dev` starts the documented usable stack in one command | `scripts/dev-stack.sh` (Postgres, local model, seeded org/user/provider/credential, ultrad, worker, web) | closed |
 | Noninteractive smoke creates a session, streams a run, provisions an environment, and shuts down clean | `e2e TestA78_DevStackSmoke` + the `dev-stack` CI job | closed |
 | No owned process or container survives the smoke | same test (container and process leak checks) plus the CI leak assertion | closed |
@@ -108,6 +109,10 @@ check, and concurrent provisioning with distinct endpoints — all in
 | Rejects a reference whose test does not assert the capability | mutation 3 | closed |
 | Rejects evidence required CI never executes | mutation 4 | closed |
 | Rejects desktop evidence that bypasses rendered GPUI | mutation 5 | closed |
+| Rejects a capability quietly deleted from the matrix | mutation 6 | closed |
+| Rejects a published RPC with no coverage and no deferral | mutation 7 | closed |
+| Rejects a deferral owned by an acceptance test no plan declares | mutation 8 | closed |
+| Required CI jobs are actually required on the default branch | `e2e TestA79_RequiredChecksAreEnforced` | closed |
 | The unmutated matrix passes | same test, final step | closed |
 
 ## Behavior built in this phase that did not exist before
@@ -126,12 +131,31 @@ check, and concurrent provisioning with distinct endpoints — all in
    plus both gate mutation suites.
 10. Encoded-form redaction and harness log capture.
 
+## Follow-up audit (Phase 7.1)
+
+A re-audit of this document against the repository found five residual gaps.
+All are closed; the fixes are listed here so the record shows what the original
+audit missed rather than quietly overwriting it.
+
+| Gap found | Resolution |
+|---|---|
+| The matrix was a whitelist, so deleting a capability hid it. Phase 7 deleted `session_memory` and `periodic_prompt_configuration` without recording either. | The matrix is anchored to the proto surface: every RPC is covered or explicitly deferred to a declared acceptance ID. `session_memory` is restored with real web and GPUI evidence; periodic prompts are deferred to A11.7. |
+| The inventory named `gpui: drives_same_actions_as_entrypoint`, which was never written. | The startup sequence moved into `DesktopWindow::start_up`, `main.rs` calls it, and the named test drives it. |
+| A7.4 claimed to kill ultrad and the worker but only killed the worker. | The harness gained `KillUltrad`/`StartUltrad`; the test kills both and asserts ultrad stopped answering before restarting it. |
+| A7.5 accepted any terminal run state and never asserted a typed tool failure. | The test now requires an error-flagged tool result naming the lost environment. Adding the assertion exposed a real product gap: a dead environment's tools silently disappeared from the model's toolset instead of failing, so the run could finish without ever reporting the loss. The resolver now re-offers the last known toolset as typed failures. |
+| Skips could hide missing evidence: the provisioning race skipped, and the Rust runner's `"0 passed"` substring check misread `"10 passed"`. | The provisioning race retries instead of skipping, gate-owning CI jobs are asserted to exist, and the cargo summary is parsed for exact counts against declared tests. |
+
+Required status checks are now enforced on the default branch, so "required
+CI" is a property of the repository rather than a claim in a document.
+
 ## Remaining open work (owned by later phases, not by Phase 7)
 
 Child cohorts and multi-replica orchestration (Phase 8), flows (Phase 9), real
 remote providers (Phase 10), advanced loop completion (Phase 11), production
 auth/billing/retention (Phase 12), and desktop packaging and release-wide proof
-(Phase 13). Nothing above claims those rows.
+(Phase 13). Nothing above claims those rows. Every RPC belonging to those
+phases is listed in `e2e/coverage.json` under `deferred` with its owning
+acceptance ID, so the deferral is machine-checked rather than narrative.
 
 ## Verdict
 

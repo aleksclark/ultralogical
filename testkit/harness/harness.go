@@ -84,6 +84,8 @@ type Stack struct {
 
 	workerMu        sync.Mutex
 	workerCmd       *exec.Cmd
+	ultradMu        sync.Mutex
+	ultradPort      int
 	ultradCmds      []*exec.Cmd
 	ReplicaBaseURLs []string
 	workerEnv       []string
@@ -225,26 +227,12 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 	stack.BaseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
 	stack.ReplicaBaseURLs = append(stack.ReplicaBaseURLs, stack.BaseURL)
 
-	ultradCmd := exec.Command(ultradBin)
-	ultradCmd.Env = append(os.Environ(),
-		"DATABASE_URL="+dbURL,
-		fmt.Sprintf("ULTRA_ADDR=127.0.0.1:%d", port),
-		fmt.Sprintf("ULTRA_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob),
-		"ULTRA_MASTER_KEY="+masterKey,
-		"ULTRA_DEFAULT_MODEL=mock-model",
-		"ULTRA_MIGRATE=false",
-	)
-	ultradCmd.Stdout = stack.logs
-	ultradCmd.Stderr = stack.logs
-	if err := ultradCmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		_ = ultradCmd.Process.Kill()
-		_, _ = ultradCmd.Process.Wait()
-	})
-
-	stack.ultradCmds = append(stack.ultradCmds, ultradCmd)
+	// The primary ultrad's port is remembered so the process can be killed
+	// and restarted in place, which is what control-plane death looks like
+	// to a client that keeps its base URL.
+	stack.ultradPort = port
+	stack.StartUltrad()
+	t.Cleanup(stack.KillUltrad)
 	for i := 1; i < options.UltradReplicas; i++ {
 		p := freePort(t)
 		base := fmt.Sprintf("http://127.0.0.1:%d", p)
@@ -265,6 +253,48 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 	}
 	waitHealthy(t, stack.BaseURL)
 	return stack
+}
+
+// StartUltrad launches the primary ultrad on its original port and waits for
+// it to serve. Restarting in place keeps BaseURL valid, so a client cannot
+// tell the difference between a restart and a stall except by observing the
+// process.
+func (s *Stack) StartUltrad() {
+	s.ultradMu.Lock()
+	cmd := exec.Command(s.ultradBin)
+	cmd.Env = append(os.Environ(),
+		"DATABASE_URL="+s.DatabaseURL,
+		fmt.Sprintf("ULTRA_ADDR=127.0.0.1:%d", s.ultradPort),
+		fmt.Sprintf("ULTRA_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob),
+		"ULTRA_MASTER_KEY="+s.MasterKey,
+		"ULTRA_DEFAULT_MODEL=mock-model",
+		"ULTRA_MIGRATE=false",
+	)
+	cmd.Stdout = s.logs
+	cmd.Stderr = s.logs
+	if err := cmd.Start(); err != nil {
+		s.ultradMu.Unlock()
+		s.t.Fatal(err)
+	}
+	if len(s.ultradCmds) == 0 {
+		s.ultradCmds = append(s.ultradCmds, cmd)
+	} else {
+		s.ultradCmds[0] = cmd
+	}
+	s.ultradMu.Unlock()
+	waitHealthy(s.t, s.BaseURL)
+}
+
+// KillUltrad SIGKILLs the primary ultrad process (control-plane crash).
+func (s *Stack) KillUltrad() {
+	s.ultradMu.Lock()
+	defer s.ultradMu.Unlock()
+	if len(s.ultradCmds) == 0 || s.ultradCmds[0] == nil {
+		return
+	}
+	_ = s.ultradCmds[0].Process.Kill()
+	_, _ = s.ultradCmds[0].Process.Wait()
+	s.ultradCmds[0] = nil
 }
 
 // StartWorker launches a worker process. Call KillWorker first when

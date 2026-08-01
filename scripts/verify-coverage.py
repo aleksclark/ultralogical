@@ -14,12 +14,24 @@ false rather than merely malformed:
    headless state core alone.
 5. One named scenario may back at most three capabilities, so an omnibus smoke
    test cannot stand in for the product.
+6. The matrix must account for the whole published API surface. Every RPC in
+   the protos is either claimed by a capability or explicitly deferred to a
+   named future acceptance ID. Silently dropping a row is the same failure as
+   fabricating one, so both are rejected here.
 
-Schema per capability:
+Schema:
 
-  "capability": {
-    "web":  {"file": "...", "test": "...", "asserts": ["..."]},
-    "rust": {"file": "...", "test": "...", "asserts": ["..."]}
+  {
+    "capabilities": {
+      "capability": {
+        "rpcs": ["ultra.v1.Service/Method"],
+        "web":  {"file": "...", "test": "...", "asserts": ["..."]},
+        "rust": {"file": "...", "test": "...", "asserts": ["..."]}
+      }
+    },
+    "deferred": {
+      "ultra.v1.Service/Method": {"owner": "A9.8", "reason": "..."}
+    }
   }
 """
 
@@ -29,12 +41,19 @@ import re
 import sys
 
 root = pathlib.Path(__file__).resolve().parents[1]
-data = json.loads((root / "e2e/coverage.json").read_text())
+matrix = json.loads((root / "e2e/coverage.json").read_text())
+if not isinstance(matrix, dict) or "capabilities" not in matrix:
+    print("e2e/coverage.json must be an object with 'capabilities' and 'deferred'")
+    sys.exit(1)
+data = matrix["capabilities"]
+deferred = matrix.get("deferred", {})
 errors: list[str] = []
 seen: dict[str, dict[tuple[str, str], list[str]]] = {"web": {}, "rust": {}}
 
 WEB_DIR = root / "ui/web/e2e"
 RUST_DIR = root / "ui/desktop/tests"
+PROTO_DIR = root / "proto/ultra/v1"
+PLAN_DIR = root / "plan"
 CI_WORKFLOW = root / ".github/workflows/ci.yml"
 
 # GPUI application-path markers. Rust evidence must open the shipped window and
@@ -129,10 +148,88 @@ def go_tests_launching(client: str, filename: str) -> list[str]:
     return launchers
 
 
+# ---------------------------------------------------------------------------
+# Completeness: every published RPC is claimed or explicitly deferred.
+#
+# The matrix used to be a whitelist, so a capability could disappear from the
+# product's evidence simply by deleting its row. Anchoring it to the protos
+# makes a deletion as loud as a fabrication.
+# ---------------------------------------------------------------------------
+
+SERVICE_RE = re.compile(r"service\s+(\w+)\s*\{(.*?)\n?\}", re.S)
+RPC_RE = re.compile(r"rpc\s+(\w+)\s*\(")
+PACKAGE_RE = re.compile(r"^package\s+([\w.]+);", re.M)
+
+
+def published_rpcs() -> set[str]:
+    """Every RPC declared in the checked-in protos."""
+    rpcs: set[str] = set()
+    for proto in sorted(PROTO_DIR.glob("*.proto")):
+        text = proto.read_text()
+        package = PACKAGE_RE.search(text)
+        if not package:
+            continue
+        for service in SERVICE_RE.finditer(text):
+            for rpc in RPC_RE.finditer(service.group(2)):
+                rpcs.add(f"{package.group(1)}.{service.group(1)}/{rpc.group(1)}")
+    return rpcs
+
+
+def known_acceptance_ids() -> set[str]:
+    """Acceptance IDs the phase plans actually declare."""
+    ids: set[str] = set()
+    for plan in sorted(PLAN_DIR.glob("*.md")):
+        ids.update(re.findall(r"\*\*(A[\d.]+?) —", plan.read_text()))
+    return ids
+
+
+all_rpcs = published_rpcs()
+if not all_rpcs:
+    errors.append("no RPCs found in proto/ultra/v1; the completeness check cannot run")
+
+claimed: dict[str, list[str]] = {}
+for capability, evidence in data.items():
+    for rpc in (evidence or {}).get("rpcs", []) if isinstance(evidence, dict) else []:
+        claimed.setdefault(rpc, []).append(capability)
+
+for rpc, capabilities in claimed.items():
+    if rpc not in all_rpcs:
+        errors.append(
+            f"{capabilities[0]}: claims {rpc}, which no proto declares; "
+            "a capability cannot cover an RPC that does not exist"
+        )
+
+acceptance_ids = known_acceptance_ids()
+for rpc, note in deferred.items():
+    if rpc not in all_rpcs:
+        errors.append(f"deferred: {rpc} is not a published RPC")
+        continue
+    if rpc in claimed:
+        errors.append(f"deferred: {rpc} is also claimed by {claimed[rpc]}; pick one")
+    if not isinstance(note, dict) or not note.get("owner") or not note.get("reason"):
+        errors.append(f"deferred: {rpc} requires an 'owner' acceptance ID and a 'reason'")
+        continue
+    if note["owner"] not in acceptance_ids:
+        errors.append(
+            f"deferred: {rpc} is owned by {note['owner']!r}, which no plan declares; "
+            "deferral must name a real future acceptance test"
+        )
+
+for rpc in sorted(all_rpcs - set(claimed) - set(deferred)):
+    errors.append(
+        f"{rpc} is neither covered by a capability nor listed in 'deferred'; "
+        "every published RPC must be accounted for"
+    )
+
 for capability, evidence in data.items():
     if not isinstance(evidence, dict):
         errors.append(f"{capability}: evidence must be an object")
         continue
+    rpcs = evidence.get("rpcs")
+    if not isinstance(rpcs, list) or not rpcs:
+        errors.append(
+            f"{capability}: requires a non-empty 'rpcs' list naming the API surface it covers"
+        )
     for client in ("web", "rust"):
         item = evidence.get(client)
         if not isinstance(item, dict) or not item.get("file") or not item.get("test"):
@@ -211,4 +308,7 @@ for client, references in seen.items():
 if errors:
     print("\n".join(errors))
     sys.exit(1)
-print(f"{len(data)} capabilities have validated, CI-executed web and GPUI evidence")
+print(
+    f"{len(data)} capabilities have validated, CI-executed web and GPUI evidence; "
+    f"{len(claimed)}/{len(all_rpcs)} RPCs covered, {len(deferred)} explicitly deferred"
+)

@@ -41,6 +41,18 @@ supersession.
   run awaiting input. No worker or queue job is held.
 - `post_event` appends an agent-authored Annotation to the session log.
 
+## Environment tools when an environment dies
+
+Environment tools are discovered per step through the epoch-keyed MCP client
+cache. An environment can die between the state write that marked it ready and
+the next step's discovery. Dropping its tools in that window would silently
+shrink the model's capabilities mid-run and hide the failure, so the cache
+remembers the last discovered tool names and the resolver re-offers them as
+stubs that fail with a typed `environment unavailable` result. A call against a
+lost environment is therefore always observable as an error-flagged
+`ToolResult`, never as a missing tool or a hang. Calls that do reach a wedged
+environment are bounded by `toolCallTimeout` instead.
+
 ## Credentials
 
 `ModelConfig{provider, model_id, credential}` resolves inside the worker via
