@@ -135,6 +135,65 @@ pub struct WaitView {
     pub member_count: usize,
 }
 
+/// CredentialView is one rendered inference credential. Only its identity is
+/// ever rendered: the secret is write-only, and a client that could display it
+/// would be a place for it to leak.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct CredentialView {
+    pub kind: String,
+    pub name: String,
+}
+
+/// ProviderView is one rendered provider registration: where environments run,
+/// how it is metered, and what its control plane reported it can do.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ProviderView {
+    pub id: String,
+    pub name: String,
+    pub kind: String,
+    pub rate_class: String,
+    pub state: String,
+    /// capabilities lists every optional behavior with whether this
+    /// registration has it, and why not when it does not. Showing only what
+    /// works would leave an operator unable to explain a refusal.
+    pub capabilities: Vec<ProviderCapabilityView>,
+}
+
+/// ProviderCapabilityView is one capability as the window paints it.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ProviderCapabilityView {
+    pub name: String,
+    pub supported: bool,
+    pub reason: String,
+}
+
+impl ProviderView {
+    /// from_proto converts the API's registration into rendered state.
+    pub fn from_proto(provider: &v1::ProviderInstance) -> Self {
+        Self {
+            id: provider.id.clone(),
+            name: provider.name.clone(),
+            kind: provider.kind.clone(),
+            rate_class: provider.rate_class.clone(),
+            state: provider.state.clone(),
+            capabilities: provider
+                .capabilities
+                .iter()
+                .map(|c| ProviderCapabilityView {
+                    name: c.name.clone(),
+                    supported: c.supported,
+                    reason: c.reason.clone(),
+                })
+                .collect(),
+        }
+    }
+
+    /// supports reports whether a named capability was confirmed.
+    pub fn supports(&self, name: &str) -> bool {
+        self.capabilities.iter().any(|c| c.name == name && c.supported)
+    }
+}
+
 /// FlowSummary is one row of the rendered flow catalog.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FlowSummary {
@@ -316,6 +375,11 @@ pub struct DesktopState {
     /// invocations are the session's flow invocations, newest first.
     pub invocations: Vec<FlowInvocationView>,
     pub active_invocation: Option<String>,
+    /// providers are the org's registrations, as the settings surface shows
+    /// them.
+    pub providers: Vec<ProviderView>,
+    /// credentials are the org's inference credentials, by identity only.
+    pub credentials: Vec<CredentialView>,
 }
 
 impl DesktopState {

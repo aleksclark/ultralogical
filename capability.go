@@ -40,6 +40,21 @@ const (
 	CapabilityResourceQuota ProviderCapability = "resource_quota"
 )
 
+// OptionalProviderCapabilities is every capability a provider may or may not
+// have. Enumerating them means a client can render the whole picture, rather
+// than only the ones a given registration happens to support.
+func OptionalProviderCapabilities() []ProviderCapability {
+	return []ProviderCapability{
+		CapabilityRestartPreservesWorkspace,
+		CapabilityToleratesDisconnect,
+		CapabilityAdoptsOrphans,
+		CapabilityEnumeratesResources,
+		CapabilityServesToolEndpoint,
+		CapabilityNamespaceIsolation,
+		CapabilityResourceQuota,
+	}
+}
+
 // CoreProviderContract is every behavior no capability may waive. It exists so
 // a manifest can be checked against it: a provider that tried to declare one
 // of these optional would be rejected rather than quietly skipping it.

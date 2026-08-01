@@ -115,6 +115,18 @@ message DeleteCredentialRequest {
 
 message DeleteCredentialResponse {}
 
+// ProviderCapability names one optional behavior a registration's control
+// plane reported it can perform, or explains why it cannot. Capabilities are
+// discovered by probing at registration rather than inferred from the kind,
+// because two clusters registered under one kind can differ.
+message ProviderCapability {
+  string name = 1;
+  bool supported = 2;
+  // reason explains an unsupported capability, so an operator can act on it
+  // rather than only observe its absence.
+  string reason = 3;
+}
+
 message ProviderInstance {
   string id = 1;
   string org_id = 2;
@@ -124,6 +136,7 @@ message ProviderInstance {
   string state = 6;
   google.protobuf.Timestamp last_healthy_at = 7;
   google.protobuf.Timestamp created_at = 8;
+  repeated ProviderCapability capabilities = 9;
 }
 message RegisterProviderRequest { string org_id = 1; string kind = 2; string name = 3; string config_json = 4; }
 message RegisterProviderResponse { ProviderInstance provider = 1; }

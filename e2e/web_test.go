@@ -135,6 +135,12 @@ func TestA16_WebGolden(t *testing.T) {
 		"ULTRA_CANARY_KEY="+harness.CanaryAPIKey,
 		"WEB_PORT=15317",
 	)
+	// A10.7: the browser registers a real cluster when one is available, so
+	// the suite proves registration reaches a control plane rather than only
+	// that a form submits.
+	if kubeconfig := kindKubeconfigBody(); kubeconfig != "" {
+		cmd.Env = append(cmd.Env, "ULTRA_TEST_KUBECONFIG_BODY="+kubeconfig)
+	}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Playwright failed: %v\n%s", err, out)
@@ -150,6 +156,21 @@ func TestA16_WebGolden(t *testing.T) {
 		t.Fatalf("Playwright reported %d passing tests but %d are declared:\n%s", passed, declared, out)
 	}
 	t.Logf("Playwright passed %d/%d declared browser tests", passed, declared)
+}
+
+// kindKubeconfigBody returns the test cluster's kubeconfig, or empty when no
+// cluster is running. The browser suite skips its cluster evidence rather than
+// failing on a developer machine without kind.
+func kindKubeconfigBody() string {
+	cluster := os.Getenv("ULTRA_TEST_KIND_CLUSTER")
+	if cluster == "" {
+		cluster = "ultra-test"
+	}
+	out, err := exec.Command("kind", "get", "kubeconfig", "--name", cluster).Output()
+	if err != nil {
+		return ""
+	}
+	return string(out)
 }
 
 // countWebSpecs counts declared Playwright tests across the spec directory.

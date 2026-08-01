@@ -247,6 +247,16 @@ func providerToProto(p ultra.ProviderInstance) *ultrav1.ProviderInstance {
 	if p.LastHealthyAt != nil {
 		out.LastHealthyAt = timestamppb.New(*p.LastHealthyAt)
 	}
+	// Every optional capability is reported, supported or not, with the reason
+	// when it is not. A client showing only what works cannot tell an operator
+	// why a flow was refused against this provider.
+	for _, capability := range ultra.OptionalProviderCapabilities() {
+		out.Capabilities = append(out.Capabilities, &ultrav1.ProviderCapability{
+			Name:      string(capability),
+			Supported: p.Capabilities.Has(capability),
+			Reason:    p.Capabilities.Reason(capability),
+		})
+	}
 	return out
 }
 

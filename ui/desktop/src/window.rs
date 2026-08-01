@@ -18,8 +18,8 @@ use gpui::{
 
 use crate::client::{DesktopClient, StreamMessage};
 use crate::state::{
-    ConnectionState, DesktopState, FlowFieldErrorView, FlowInvocationView, FlowSummary,
-    SessionSummary, TimelineItem,
+    ConnectionState, CredentialView, DesktopState, FlowFieldErrorView, FlowInvocationView,
+    FlowSummary, ProviderView, SessionSummary, TimelineItem,
 };
 
 /// DarkTheme is the required dark palette. There is no light variant.
@@ -118,6 +118,18 @@ impl DesktopWindow {
         }
         self.state.connection = ConnectionState::Connecting;
         self.stream = Some(stream);
+        cx.notify();
+    }
+
+    /// set_credentials replaces the rendered credential list.
+    pub fn set_credentials(&mut self, credentials: Vec<CredentialView>, cx: &mut Context<Self>) {
+        self.state.credentials = credentials;
+        cx.notify();
+    }
+
+    /// set_providers replaces the rendered provider registrations.
+    pub fn set_providers(&mut self, providers: Vec<ProviderView>, cx: &mut Context<Self>) {
+        self.state.providers = providers;
         cx.notify();
     }
 
@@ -380,6 +392,8 @@ impl DesktopWindow {
             .gap_2()
             .p_3()
             .debug_selector(|| "main".to_string())
+            .child(self.render_credentials())
+            .child(self.render_providers())
             .child(self.render_flows(cx))
             .child(self.render_run_tree(cx))
             .child(self.render_environments(cx))
@@ -440,6 +454,94 @@ impl DesktopWindow {
                         .debug_selector(move || format!("exec-output:{output}")),
                 )
             })
+    }
+
+    /// render_credentials paints which inference credentials exist, by
+    /// identity only. The secret is write-only, so there is deliberately
+    /// nothing here that could display it.
+    fn render_credentials(&self) -> impl IntoElement {
+        div()
+            .flex()
+            .flex_col()
+            .gap_1()
+            .debug_selector(|| "credential-panel".to_string())
+            .child(
+                div()
+                    .text_color(DarkTheme::MUTED)
+                    .child(format!("credentials: {}", self.state.credentials.len()))
+                    .debug_selector({
+                        let count = self.state.credentials.len();
+                        move || format!("credential-count:{count}")
+                    }),
+            )
+            .children(self.state.credentials.iter().map(|credential| {
+                let label = format!("credential:{}:{}", credential.kind, credential.name);
+                div()
+                    .child(format!("{} ({})", credential.name, credential.kind))
+                    .debug_selector(move || label.clone())
+            }))
+    }
+
+    /// render_providers paints where environments run: each registration's
+    /// kind, how it is metered, its health, and what its control plane
+    /// reported it can do. The unsupported capabilities are painted too, with
+    /// their reasons, because that is what explains a refused flow.
+    fn render_providers(&self) -> impl IntoElement {
+        div()
+            .flex()
+            .flex_col()
+            .gap_1()
+            .debug_selector(|| "provider-panel".to_string())
+            .child(
+                div()
+                    .text_color(DarkTheme::MUTED)
+                    .child(format!("providers: {}", self.state.providers.len()))
+                    .debug_selector({
+                        let count = self.state.providers.len();
+                        move || format!("provider-count:{count}")
+                    }),
+            )
+            .children(self.state.providers.iter().map(|provider| {
+                let label = format!(
+                    "provider:{}:{}:{}",
+                    provider.name, provider.kind, provider.rate_class
+                );
+                let mut row = div()
+                    .flex()
+                    .flex_col()
+                    .child(
+                        div()
+                            .child(format!(
+                                "{} ({}) {} · {}",
+                                provider.name, provider.kind, provider.rate_class, provider.state
+                            ))
+                            .debug_selector(move || label.clone()),
+                    );
+                for capability in &provider.capabilities {
+                    let selector = format!(
+                        "capability:{}:{}:{}",
+                        provider.name,
+                        capability.name,
+                        if capability.supported { "yes" } else { "no" }
+                    );
+                    let text = if capability.supported {
+                        format!("  {} available", capability.name)
+                    } else {
+                        format!("  {} unavailable: {}", capability.name, capability.reason)
+                    };
+                    row = row.child(
+                        div()
+                            .text_color(if capability.supported {
+                                DarkTheme::MUTED
+                            } else {
+                                DarkTheme::DANGER
+                            })
+                            .child(text)
+                            .debug_selector(move || selector.clone()),
+                    );
+                }
+                row
+            }))
     }
 
     /// render_flows paints the flow catalog, the selected version, structured

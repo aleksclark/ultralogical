@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
-import type { Org } from "@client/gen/ultra/v1/org_pb";
+import type { Org, ProviderInstance } from "@client/gen/ultra/v1/org_pb";
 import type { Session } from "@client/gen/ultra/v1/session_pb";
 import type { DevEnv, UsageInterval } from "@client/gen/ultra/v1/env_pb";
 import type { RunTreeNode } from "@client/gen/ultra/v1/agent_pb";
@@ -67,6 +67,7 @@ export function App() {
   const [invocations, setInvocations] = useState<FlowInvocation[]>([]);
   const [activeInvocationId, setActiveInvocationId] = useState<string>();
   const [credential, setCredential] = useState<CredentialForm>({ apiKey: "", baseUrl: "", extraHeaders: "{}" });
+  const [providers, setProviders] = useState<ProviderInstance[]>([]);
   const [provider, setProvider] = useState<ProviderForm>({ kind: "byo_k8s", name: "", config: '{"mode":"loopback"}' });
   const [error, setError] = useState("");
 
@@ -117,7 +118,10 @@ export function App() {
       setOrgs(listed.orgs);
       const selected = org ?? listed.orgs[0];
       setOrg(selected);
-      if (selected) setSessions((await api.sessions.listSessions({ orgId: selected.id })).sessions);
+      if (selected) {
+        setSessions((await api.sessions.listSessions({ orgId: selected.id })).sessions);
+        setProviders((await api.orgs.listProviders({ orgId: selected.id })).providers);
+      }
       setError("");
     } catch (e) {
       setError(String(e));
@@ -417,6 +421,7 @@ export function App() {
     try {
       JSON.parse(provider.config);
       await api.orgs.registerProvider({ orgId: org.id, kind: provider.kind, name: provider.name, configJson: provider.config });
+      setProviders((await api.orgs.listProviders({ orgId: org.id })).providers);
       setError("");
     } catch (e) {
       setError(String(e));
@@ -464,6 +469,7 @@ export function App() {
             provider={provider}
             onProviderChange={setProvider}
             onRegisterProvider={registerProvider}
+            providers={providers}
           />
         ) : directInvocation ? (
           <FlowInvocationView

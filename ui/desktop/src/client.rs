@@ -14,7 +14,10 @@ use tokio::runtime::Handle;
 use tonic::transport::Channel;
 use ultralogical_client::{Auth, ultra::v1};
 
-use crate::state::{FlowFieldErrorView, FlowInvocationView, FlowSummary, SessionSummary, UsageView};
+use crate::state::{
+    CredentialView, FlowFieldErrorView, FlowInvocationView, FlowSummary, ProviderView,
+    SessionSummary, UsageView,
+};
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
@@ -310,6 +313,111 @@ impl DesktopClient {
                 .await?
                 .into_inner();
             Ok(crate::state::DesktopState::flatten_tree(&resp.roots))
+        })
+        .await
+    }
+
+    /// put_credential stores an inference credential. The gateway fields are
+    /// part of the contract: an org routing inference through a gateway needs
+    /// a base URL and extra headers, not just a key.
+    pub async fn put_credential(
+        &mut self,
+        org_id: &str,
+        name: &str,
+        api_key: &str,
+        base_url: &str,
+        extra_headers_json: &str,
+    ) -> Result<CredentialView, BoxError> {
+        let mut client = self.clone();
+        let org_id = org_id.to_string();
+        let name = name.to_string();
+        let api_key = api_key.to_string();
+        let base_url = base_url.to_string();
+        let extra_headers_json = extra_headers_json.to_string();
+        self.dispatch(async move {
+            let credential = client
+                .orgs
+                .put_credential(client.auth.request(v1::PutCredentialRequest {
+                    org_id,
+                    kind: "inference:openai".into(),
+                    name,
+                    api_key,
+                    base_url,
+                    extra_headers_json,
+                }))
+                .await?
+                .into_inner()
+                .credential
+                .ok_or_else(|| BoxError::from("put_credential returned no credential"))?;
+            Ok(CredentialView { kind: credential.kind, name: credential.name })
+        })
+        .await
+    }
+
+    /// list_credentials fetches the org's credentials by identity. The API
+    /// never returns secret material, so neither can this.
+    pub async fn list_credentials(&mut self, org_id: &str) -> Result<Vec<CredentialView>, BoxError> {
+        let mut client = self.clone();
+        let org_id = org_id.to_string();
+        self.dispatch(async move {
+            let resp = client
+                .orgs
+                .list_credentials(client.auth.request(v1::ListCredentialsRequest { org_id }))
+                .await?
+                .into_inner();
+            Ok(resp
+                .credentials
+                .into_iter()
+                .map(|c| CredentialView { kind: c.kind, name: c.name })
+                .collect())
+        })
+        .await
+    }
+
+    /// register_provider registers where environments run. The server probes
+    /// the real control plane before storing anything, so a failure here is a
+    /// cluster that could not be reached rather than a value that looked wrong.
+    pub async fn register_provider(
+        &mut self,
+        org_id: &str,
+        kind: &str,
+        name: &str,
+        config_json: &str,
+    ) -> Result<ProviderView, BoxError> {
+        let mut client = self.clone();
+        let org_id = org_id.to_string();
+        let kind = kind.to_string();
+        let name = name.to_string();
+        let config_json = config_json.to_string();
+        self.dispatch(async move {
+            let provider = client
+                .orgs
+                .register_provider(client.auth.request(v1::RegisterProviderRequest {
+                    org_id,
+                    kind,
+                    name,
+                    config_json,
+                }))
+                .await?
+                .into_inner()
+                .provider
+                .ok_or_else(|| BoxError::from("register_provider returned no provider"))?;
+            Ok(ProviderView::from_proto(&provider))
+        })
+        .await
+    }
+
+    /// list_providers fetches the org's registrations with their capabilities.
+    pub async fn list_providers(&mut self, org_id: &str) -> Result<Vec<ProviderView>, BoxError> {
+        let mut client = self.clone();
+        let org_id = org_id.to_string();
+        self.dispatch(async move {
+            let resp = client
+                .orgs
+                .list_providers(client.auth.request(v1::ListProvidersRequest { org_id }))
+                .await?
+                .into_inner();
+            Ok(resp.providers.iter().map(ProviderView::from_proto).collect())
         })
         .await
     }
