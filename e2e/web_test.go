@@ -135,12 +135,15 @@ func TestA16_WebGolden(t *testing.T) {
 		"ULTRA_CANARY_KEY="+harness.CanaryAPIKey,
 		"WEB_PORT=15317",
 	)
-	// A10.7: the browser registers a real cluster when one is available, so
-	// the suite proves registration reaches a control plane rather than only
-	// that a form submits.
-	if kubeconfig := kindKubeconfigBody(); kubeconfig != "" {
-		cmd.Env = append(cmd.Env, "ULTRA_TEST_KUBECONFIG_BODY="+kubeconfig)
+	// A10.7: the browser registers a real cluster, so the suite proves
+	// registration reaches a control plane rather than only that a form
+	// submits. Running without one would silently drop that evidence.
+	kubeconfig := kindKubeconfigBody()
+	if kubeconfig == "" {
+		t.Fatal("the browser suite needs a kind cluster for its provider evidence; " +
+			"run: kind create cluster --name ultra-test")
 	}
+	cmd.Env = append(cmd.Env, "ULTRA_TEST_KUBECONFIG_BODY="+kubeconfig)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Playwright failed: %v\n%s", err, out)

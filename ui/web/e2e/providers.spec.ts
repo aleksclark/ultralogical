@@ -28,8 +28,10 @@ test("shows provider validation errors", async ({ page }) => {
 // unsupported capabilities are shown too, with their reasons: that is what
 // explains a flow being refused against this provider.
 test("registers a real cluster and shows its capabilities", async ({ page }) => {
+  // The suite forbids skipped specs, and the Go runner always supplies a
+  // cluster, so its absence is a failure rather than a reason to pass.
   const kubeconfig = process.env.ULTRA_TEST_KUBECONFIG_BODY;
-  test.skip(!kubeconfig, "no kind cluster available");
+  expect(kubeconfig, "provider evidence requires a kind cluster").toBeTruthy();
   await page.addInitScript((token) => localStorage.setItem("ultra-token", token), process.env.ULTRA_TOKEN ?? "tok-alice");
   await page.goto("/");
   await page.getByRole("button", { name: "Settings" }).click();

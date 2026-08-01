@@ -34,10 +34,12 @@ fn kubeconfig() -> Option<String> {
 /// the registration with what its control plane can actually do.
 #[gpui::test]
 async fn registers_provider_and_shows_capabilities(cx: &mut TestAppContext) {
-    let Some(kubeconfig) = kubeconfig() else {
-        eprintln!("no kind cluster available; skipping provider registration evidence");
-        return;
-    };
+    // A test that quietly returned when no cluster was available would be
+    // indistinguishable from one that proved something. CI always provides a
+    // cluster, so its absence is a failure.
+    let kubeconfig = kubeconfig().expect(
+        "no kind cluster available; provider evidence requires one (set ULTRA_TEST_KUBECONFIG          or run: kind create cluster --name ultra-test)",
+    );
     let (window, mut cx, mut client, org_id) = open_app(cx).await;
     let cx = &mut cx;
     await_rendered(cx, "window:dark", FRAME_ATTEMPTS);
