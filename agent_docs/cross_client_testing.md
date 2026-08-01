@@ -27,10 +27,16 @@ nonexistent file **does not count**.
   that does is not executed by required CI;
 - a Rust row does not open the GPUI window (`gpui::test` + `open_app`) or never
   inspects a rendered frame (`await_rendered`/`debug_bounds`);
-- one named scenario backs more than three capabilities.
+- one named scenario backs more than three capabilities;
+- a published RPC is neither claimed by a capability nor listed under
+  `deferred`, which makes deleting a row as loud as fabricating one;
+- a `deferred` entry names an owner that no phase plan declares as an
+  acceptance test.
 
 `scripts/mutate-coverage-gate.sh` proves each of those rejections still works by
 introducing them deliberately and restoring the tree; it runs in required CI.
+Those CI jobs are required status checks on the default branch, and
+`TestA79_RequiredChecksAreEnforced` fails if that stops being true.
 
 ## Required workflow for every public change
 
@@ -74,6 +80,10 @@ either client. Never skip because the backend test passes.
   name the assertion strings inside them that prove the capability.
 - Do not add unimplemented planned behavior to the matrix. Track it in the
   phase plan as incomplete instead.
+- Every row declares the `rpcs` it covers. The matrix is checked against the
+  protos, so a shipped RPC must be covered or explicitly deferred.
+- Deferrals live under `deferred` and name the owning acceptance ID and a
+  reason. A capability that moves to a later phase is recorded, never deleted.
 - Do not remove a row to make CI pass unless the product capability is removed
   from API, clients, docs, and migration compatibility deliberately.
 - When adding a new first-party client, every existing row must gain that

@@ -3,9 +3,11 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -32,6 +34,20 @@ func repoRoot(t *testing.T) string {
 	return root
 }
 
+// assertCIOwnsGate fails when required CI does not run a gate script. Tests
+// that skip locally rely on CI to enforce their gate; if that job is ever
+// removed, the skip must become a failure instead of silently passing.
+func assertCIOwnsGate(t *testing.T, script string) {
+	t.Helper()
+	workflow, err := os.ReadFile(filepath.Join(repoRoot(t), ".github/workflows/ci.yml"))
+	if err != nil {
+		t.Fatalf("cannot read required CI workflow: %v", err)
+	}
+	if !strings.Contains(string(workflow), script) {
+		t.Fatalf("required CI no longer runs %s; this gate would be unenforced", script)
+	}
+}
+
 // runScript runs a repository script and returns its combined output.
 func runScript(t *testing.T, timeout time.Duration, name string, args ...string) (string, error) {
 	t.Helper()
@@ -48,10 +64,12 @@ func runScript(t *testing.T, timeout time.Duration, name string, args ...string)
 // half of A7.1 is the shared conformance suite, which both river and inproc run
 // in the unit job.
 //
-// Required CI runs this gate in its own `gates` job, which installs the
-// generator. Here it self-skips when the generator is absent, so the gate is
-// never silently unenforced: `gates` is the job that must stay green.
+// The generator is not installed in every job, so this test can skip when buf
+// is absent. A skip is only acceptable because another required job owns the
+// gate, and that ownership is asserted here rather than assumed: a skip whose
+// owning job has been deleted would otherwise look exactly like a pass.
 func TestA71_CodegenDriftGate(t *testing.T) {
+	assertCIOwnsGate(t, "scripts/mutate-codegen-gate.sh")
 	if _, err := exec.LookPath("buf"); err != nil {
 		t.Skip("buf unavailable; the required CI 'gates' job enforces this")
 	}
@@ -325,8 +343,15 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 		t.Fatalf("cached client could not initialize before rotation: %v", err)
 	}
 
-	// Kill the control plane entirely and bring it back.
+	// Kill the control plane entirely — both ultrad and the worker — and
+	// bring it back. The environment is a separate process tree, so its
+	// survival must not depend on either.
 	stack.KillWorker()
+	stack.KillUltrad()
+	if _, err := alice.Envs.GetEnv(ctx, connect.NewRequest(&ultrav1.GetEnvRequest{EnvId: envID})); err == nil {
+		t.Fatal("ultrad still answered after being killed; the restart proves nothing")
+	}
+	stack.StartUltrad()
 	stack.StartWorker()
 
 	// The environment is still reachable and still holds its file.
@@ -444,6 +469,24 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 		t.Fatalf("run reached an undocumented terminal state %q", testclient.Kind(terminal))
 	}
 
+	// The second tool call must fail in a typed way: an error-flagged result
+	// naming the lost environment, not a silent success and not a hang. A run
+	// that terminated without ever reporting the failed call would leave the
+	// model unable to react, so the flagged result is the contract.
+	typedFailure := false
+	for _, ev := range events {
+		result, ok := ev.GetPayload().GetPayload().(*ultrav1.EventPayload_ToolResult)
+		if !ok || !result.ToolResult.GetIsError() {
+			continue
+		}
+		if strings.Contains(strings.ToLower(result.ToolResult.GetContent()), "environment unavailable") {
+			typedFailure = true
+		}
+	}
+	if !typedFailure {
+		t.Fatalf("no typed tool failure was recorded after the environment died: %v", kinds(events))
+	}
+
 	// The environment is failed, with a structured reason, and EnvFailed
 	// precedes the run's terminal event.
 	failed := awaitEnvState(t, alice, string(envID), ultrav1.EnvState_ENV_STATE_FAILED, 60*time.Second)
@@ -536,36 +579,58 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 	}
 	defer func() { _ = provider.Close() }()
 
-	requested, err := alice.Envs.ProvisionEnv(ctx, connect.NewRequest(&ultrav1.ProvisionEnvRequest{
-		SessionId:        sess.GetId(),
-		Spec:             &ultrav1.EnvSpec{Name: "interrupted", Workdir: "/work"},
-		ProviderInstance: "default",
-	}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	envID := ultra.EnvID(requested.Msg.GetEnv().GetId())
-
-	// Kill the worker while it is provisioning, before readiness is durable.
-	killDeadline := time.Now().Add(60 * time.Second)
+	// The interruption window is a race against provisioning, so a missed
+	// window is retried with a fresh environment rather than skipped: a
+	// skipped test is silently absent evidence.
+	var envID ultra.EnvID
 	killed := false
-	for time.Now().Before(killDeadline) {
-		current, err := stack.Store.Org(stack.OrgA.ID).Envs().Get(ctx, envID)
+	for attempt := 1; attempt <= 5 && !killed; attempt++ {
+		requested, err := alice.Envs.ProvisionEnv(ctx, connect.NewRequest(&ultrav1.ProvisionEnvRequest{
+			SessionId:        sess.GetId(),
+			Spec:             &ultrav1.EnvSpec{Name: fmt.Sprintf("interrupted-%d", attempt), Workdir: "/work"},
+			ProviderInstance: "default",
+		}))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if current.State == ultra.EnvProvisioning {
-			stack.KillWorker()
-			killed = true
+		envID = ultra.EnvID(requested.Msg.GetEnv().GetId())
+
+		// Kill the worker while it is provisioning, before readiness is
+		// durable.
+		killDeadline := time.Now().Add(60 * time.Second)
+		missed := false
+		for time.Now().Before(killDeadline) {
+			current, err := stack.Store.Org(stack.OrgA.ID).Envs().Get(ctx, envID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if current.State == ultra.EnvProvisioning {
+				stack.KillWorker()
+				killed = true
+				break
+			}
+			if current.State == ultra.EnvReady || current.State == ultra.EnvFailed {
+				missed = true
+				break
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		if killed {
 			break
 		}
-		if current.State == ultra.EnvReady {
-			t.Skip("environment became ready before the interruption window; rerun")
+		if !missed {
+			t.Fatal("environment never entered provisioning")
 		}
-		time.Sleep(50 * time.Millisecond)
+		// Clean up the environment that won the race and try again.
+		if _, err := alice.Envs.TerminateEnv(ctx, connect.NewRequest(&ultrav1.TerminateEnvRequest{
+			EnvId: string(envID),
+		})); err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("attempt %d: environment settled before the interruption window; retrying", attempt)
 	}
 	if !killed {
-		t.Fatal("environment never entered provisioning")
+		t.Fatal("never observed a provisioning window to interrupt after 5 attempts")
 	}
 
 	// A fresh worker must converge the environment, adopting whatever resource
@@ -742,6 +807,7 @@ func assertSameDenial(t *testing.T, rpc string, crossTenant, missing error) {
 // exercises sessions, streaming, environments, and usage, and teardown leaves
 // no owned process or container.
 func TestA78_DevStackSmoke(t *testing.T) {
+	assertCIOwnsGate(t, "scripts/dev-stack.sh smoke")
 	if os.Getenv("CI") == "" && os.Getenv("ULTRA_DEV_STACK_TESTS") == "" {
 		t.Skip("set ULTRA_DEV_STACK_TESTS=1 to run the dev-stack smoke locally")
 	}
@@ -801,9 +867,11 @@ func ownedContainers(t *testing.T) map[string]bool {
 }
 
 // A7.9 — coverage verification rejects nonexistent tests, tests absent from
-// required CI, references whose tests do not assert the capability, and desktop
-// evidence that bypasses the rendered GPUI application. The unmutated tree
-// passes.
+// required CI, references whose tests do not assert the capability, desktop
+// evidence that bypasses the rendered GPUI application, a capability quietly
+// deleted from the matrix, a published RPC with no coverage and no explicit
+// deferral, and a deferral parked on an acceptance test no plan declares. The
+// unmutated tree passes.
 func TestA79_EvidenceIntegrity(t *testing.T) {
 	out, err := runScript(t, 5*time.Minute, "scripts/mutate-coverage-gate.sh")
 	if err != nil {
@@ -815,6 +883,9 @@ func TestA79_EvidenceIntegrity(t *testing.T) {
 		"an assertion the referenced test does not contain",
 		"evidence that required CI never executes",
 		"desktop evidence that never inspects a rendered GPUI frame",
+		"a capability deleted from the matrix, leaving its RPCs unaccounted for",
+		"a published RPC with neither coverage nor an explicit deferral",
+		"a deferral owned by an acceptance test no plan declares",
 		"the restored tree passes",
 	} {
 		if !strings.Contains(out, want) {
@@ -827,5 +898,48 @@ func TestA79_EvidenceIntegrity(t *testing.T) {
 	verify.Dir = repoRoot(t)
 	if verified, err := verify.CombinedOutput(); err != nil {
 		t.Fatalf("coverage verification failed on the restored tree: %v\n%s", err, verified)
+	}
+}
+
+// A7.9 — "required CI" must be a fact about the repository, not a claim in a
+// document. Every job the evidence gates depend on has to exist in the
+// workflow and be listed as a required status check on the default branch;
+// otherwise a red build can merge and every gate above becomes advisory.
+func TestA79_RequiredChecksAreEnforced(t *testing.T) {
+	if _, err := exec.LookPath("gh"); err != nil {
+		t.Skip("gh unavailable; cannot query branch protection")
+	}
+	root := repoRoot(t)
+	workflow, err := os.ReadFile(filepath.Join(root, ".github/workflows/ci.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	required := []string{"lint", "gates", "test", "dev-stack", "functional"}
+	for _, job := range required {
+		if !strings.Contains(string(workflow), "\n  "+job+":") {
+			t.Fatalf("required CI job %q is missing from the workflow", job)
+		}
+	}
+
+	out, err := exec.Command("gh", "api",
+		"repos/aleksclark/ultralogical/branches/master/protection/required_status_checks",
+	).Output()
+	if err != nil {
+		t.Skipf("cannot read branch protection (needs repo admin token): %v", err)
+	}
+	var checks struct {
+		Strict   bool     `json:"strict"`
+		Contexts []string `json:"contexts"`
+	}
+	if err := json.Unmarshal(out, &checks); err != nil {
+		t.Fatal(err)
+	}
+	if !checks.Strict {
+		t.Fatal("required status checks are not strict; a stale branch can merge past the gates")
+	}
+	for _, job := range required {
+		if !slices.Contains(checks.Contexts, job) {
+			t.Fatalf("CI job %q is not a required status check: %v", job, checks.Contexts)
+		}
 	}
 }
