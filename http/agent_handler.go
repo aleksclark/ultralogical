@@ -226,6 +226,12 @@ func (h *agentHandler) CancelRun(ctx context.Context, req *connect.Request[ultra
 			if err := scope.Runs().SetState(ctx, run.ID, ultra.RunCancelled, "", ""); err != nil {
 				return err
 			}
+			// A run awaiting child agents holds an open wait. Closing it here
+			// is what stops a child that finishes later from resuming a run
+			// the user has already cancelled.
+			if err := loop.AbandonWaits(ctx, txs, run.OrgID, run.ID); err != nil {
+				return err
+			}
 			payload, _ := json.Marshal(ultra.RunCancelledPayload{RunID: run.ID})
 			_, err = scope.Events().Append(ctx, run.SessionID, ultra.Event{
 				Actor:   ultra.Actor{Type: ultra.ActorSystem},

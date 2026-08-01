@@ -154,8 +154,6 @@ func (w *StepWorker) tryCloseWait(ctx context.Context, txs ultra.Store, org ultr
 	if err != nil {
 		return false, err
 	}
-	// ClaimDue already moved a timed-out wait out of `open`, so only the
-	// child-driven path still needs to close it.
 	if wait.State == ultra.WaitOpen {
 		closed, err := scope.Waits().Close(ctx, waitID, state, raw)
 		if err != nil {
@@ -164,6 +162,13 @@ func (w *StepWorker) tryCloseWait(ctx context.Context, txs ultra.Store, org ultr
 		if !closed {
 			// Someone else closed it first; they own the resumption.
 			return false, nil
+		}
+	} else {
+		// The timeout sweeper closed this wait by claiming it, which is what
+		// makes timing out exactly-once, but the outcome could only be
+		// computed afterwards. Record it now.
+		if err := scope.Waits().SetResult(ctx, waitID, raw); err != nil {
+			return false, err
 		}
 	}
 	return w.resumeParent(ctx, txs, org, wait, outcome, raw)
@@ -270,6 +275,13 @@ func (w *StepWorker) resolveChildWaits(ctx context.Context, txs ultra.Store, chi
 		}
 	}
 	return nil
+}
+
+// AbandonWaits closes a terminal run's open waits from outside the loop
+// package. The API's cancel path needs it: a cancelled parent must not be
+// resumable by a child that finishes afterwards.
+func AbandonWaits(ctx context.Context, txs ultra.Store, org ultra.OrgID, parent ultra.RunID) error {
+	return (&StepWorker{}).abandonParentWaits(ctx, txs, org, parent)
 }
 
 // abandonParentWaits closes a terminal parent's open waits. Without it a

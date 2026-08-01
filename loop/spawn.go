@@ -21,6 +21,10 @@ const defaultWaitTimeout = 5 * time.Minute
 // single tool call cannot enqueue unbounded work.
 const maxCohortSize = 16
 
+// waitOnAllChildren lets wait_for_agents name every child of the calling run
+// without the model having to echo back generated identifiers.
+const waitOnAllChildren = "*"
+
 // spawnKey identifies the tool call that created a child: the same parent,
 // step, and model tool-call id always produce the same key, which is what
 // makes spawning idempotent under queue redelivery.
@@ -113,12 +117,35 @@ func (w *StepWorker) waitForAgentsTool(run ultra.AgentRun, rec *stepRecorder) fa
 			}
 			ids := make([]ultra.RunID, 0, len(in.RunIDs))
 			for _, raw := range in.RunIDs {
+				// "*" waits on every child this run has spawned so far, which
+				// a model can express without knowing generated run ids.
+				if raw == waitOnAllChildren {
+					for _, c := range children {
+						ids = append(ids, c.ID)
+					}
+					continue
+				}
 				id := ultra.RunID(raw)
 				if !owned[id] {
 					return w.permissionDenied(ctx, run, "wait_for_agents", nil, "run is not a child of this agent"), nil
 				}
 				ids = append(ids, id)
 			}
+			if len(ids) == 0 {
+				return fantasy.NewTextErrorResponse("wait_for_agents matched no child agents"), nil
+			}
+			// Deduplicate: a wait may name a child once, and its member rows
+			// are keyed by (wait, run).
+			seen := map[ultra.RunID]bool{}
+			unique := ids[:0]
+			for _, id := range ids {
+				if seen[id] {
+					continue
+				}
+				seen[id] = true
+				unique = append(unique, id)
+			}
+			ids = unique
 			rec.waitRunIDs = ids
 			rec.waitToolCallID = call.ID
 			rec.waitTimeout = parseWaitTimeout(in.Timeout)

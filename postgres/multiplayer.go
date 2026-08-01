@@ -278,6 +278,20 @@ func (s *waitStore) Close(ctx context.Context, id, state string, result json.Raw
 	return tag.RowsAffected() > 0, nil
 }
 
+// SetResult stores a closed wait's aggregate result. Claiming a due wait is
+// what closes it, so the timeout path writes its result here rather than in
+// the same statement.
+func (s *waitStore) SetResult(ctx context.Context, id string, result json.RawMessage) error {
+	tag, err := s.scope.s.db().Exec(ctx, `UPDATE run_waits w SET result=$2 FROM agent_runs ar WHERE w.parent_run_id=ar.id AND w.id=$1 AND ar.org_id=$3`, id, result, string(s.scope.org))
+	if err != nil {
+		return fmt.Errorf("postgres: set wait result: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ultra.ErrNotFound
+	}
+	return nil
+}
+
 // MarkResumed records that the parent's next step was enqueued. The
 // `resumed_at IS NULL` predicate makes parent resumption at-most-once even if
 // two paths (last child and timeout sweeper) both reach a closed wait.

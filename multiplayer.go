@@ -220,6 +220,10 @@ type RunWaitStore interface {
 	// Close leaves the open state with the given terminal state and result.
 	// It reports false when the wait was already closed by someone else.
 	Close(ctx context.Context, id, state string, result json.RawMessage) (bool, error)
+	// SetResult records the aggregate for a wait that is already closed. The
+	// timeout sweeper closes a wait by claiming it, before the outcome can be
+	// computed, so the result is written immediately afterwards.
+	SetResult(ctx context.Context, id string, result json.RawMessage) error
 	// MarkResumed records that the parent's next step was enqueued. It
 	// reports false when a resumption was already recorded, which is what
 	// makes parent resumption at-most-once.
