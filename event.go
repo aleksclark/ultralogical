@@ -41,6 +41,7 @@ const (
 	EventKindEnvProvisioning     = "env_provisioning"
 	EventKindEnvReady            = "env_ready"
 	EventKindEnvFailed           = "env_failed"
+	EventKindEnvSuspended        = "env_suspended"
 	EventKindEnvTerminating      = "env_terminating"
 	EventKindEnvTerminated       = "env_terminated"
 	EventKindExecPreviewRan      = "exec_preview_ran"

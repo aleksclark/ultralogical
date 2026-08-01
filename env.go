@@ -161,6 +161,11 @@ type EnvStore interface {
 	SetHandle(ctx context.Context, id EnvID, handle ProviderHandle) error
 	SetReady(ctx context.Context, id EnvID, handle ProviderHandle, endpoint string) error
 	SetFailed(ctx context.Context, id EnvID, message string) error
+	// SetSuspended records that an environment's host is temporarily
+	// unreachable. It is distinct from failure because the workspace still
+	// exists: a user's machine that went offline will come back, and marking
+	// it failed would tell every other surface the work was destroyed.
+	SetSuspended(ctx context.Context, id EnvID, message string) error
 	SetTerminating(ctx context.Context, id EnvID) error
 	SetTerminated(ctx context.Context, id EnvID) error
 	RotateToken(ctx context.Context, id EnvID, tokenHash, tokenEnc []byte) error

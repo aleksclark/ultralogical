@@ -13,25 +13,45 @@ Legend: `go:` real-stack Go test, `conf:` shared provider conformance run,
 
 ## Progress
 
-Phase 10 is **in progress**. Delivered and asserted so far:
+Phase 10 is **in progress and not closeable**. The independent completion audit
+is in [phase_10_audit.md](phase_10_audit.md); it is the authoritative statement
+of what is closed, and this table is a summary of it rather than a separate
+claim.
 
 | Area | State |
 |---|---|
 | Capability manifest, conformance parameterization, native-inspection requirement | done (A10.1) |
-| Real Kubernetes adapter passing the unmodified contract on kind | done (A10.1, A10.2 partial) |
-| Hosted namespace/RBAC/NetworkPolicy/quota isolation, proven by real cross-namespace traffic | done (A10.3) |
-| Real Nomad adapter passing the unmodified contract on a dev agent | done (A10.1, A10.4 partial) |
-| Tunnel agent control API, request signing, suspend/resume, lease revocation | done (A10.1, A10.5 partial) |
-| Provider registry, per-registration adapters, registration dry run; loopback alias deleted | done (A10.6 partial) |
-| Provider and credential surfaces in both applications | done (A10.7 partial) |
+| Real Kubernetes adapter passing the unmodified contract on kind | done (A10.1) |
+| Kubernetes convergence after out-of-band deletion, with no duplicate | done (A10.2) |
+| Hosted namespace/RBAC/NetworkPolicy/quota isolation, proven by real cross-namespace traffic | done (A10.3), but no CI guard against it skipping |
+| Real Nomad adapter passing the unmodified contract on a dev agent | done (A10.1) |
+| Nomad convergence after an out-of-band allocation stop, with no duplicate | done (A10.4) |
+| Nomad allocation resources asserted against the declaration | **open** (A10.4) |
+| Tunnel agent control API, request signing, reconnect, lease revocation | done (A10.1); the transport is still a loopback listener rather than a real outbound tunnel |
+| Durable suspension: a lost host suspends rather than fails, pauses metering, and resumes | done (A10.5) |
+| Tunnel suspension persisted by the platform | **open, confirmed defect** (A10.5) |
+| A real outbound tunnel process | **unimplemented** (A10.5, A10.8) |
+| Provider registry, per-registration adapters, registration dry run; loopback alias deleted | done (A10.6) |
+| Credential rotation takes effect and leaks neither old nor new value | done (A10.6), Go-proven only |
+| Provider registration and refusal surfaces in both applications | done (A10.7) |
+| Environment names its host, provider fault recovery, removal ownership, quota/health rendering | **open** (A10.7) |
+| kind, Nomad, tunnel, and static CI legs with native-inspection guards | done (A10.8) |
+| Scheduled pinned-version and real-cluster matrices | **unimplemented** (A10.8) |
+| Static walkthrough provider passing the unmodified contract, under the documented size | done (A10.9) |
+| `docs/providers.md` walkthrough | done (A10.9) |
+| Executed onboarding guides; static configuration selected by the worker | **unimplemented** (A10.9) |
 | Capability decided behaviorally rather than by kind | done (A10.10) |
 | Direct invocation route in both applications | done (A10.11) |
+| `GetFlowInvocation` cross-org denial | **open** — the row below maps a test that does not exist (A10.11) |
 
-Still open: reconciliation of externally deleted or replaced resources, the
-kind/Nomad/tunnel CI legs with native inspection (A10.8), the static-provider
-walkthrough and executed onboarding guides (A10.9), credential rotation
-evidence, and the independent completion audit. The rows below remain the
-contract for that work.
+Three corrections to this document's own rows, found while auditing. The A10.1
+tests named `TestCapabilityManifestCannotSkipCoreContract` and
+`TestProviderNativeInspectionIsRequired` never existed under those names; the
+behaviors are covered by `TestCapabilityManifestCannotNameCoreContract` and by a
+mandatory step inside the conformance suite, and the rows now cite those.
+`TestA1011_DirectInvocationTenancy` did not exist at all, so it was written
+rather than the row being quietly reworded. Naming a test that does not exist is
+the failure rule 9 describes, and it is recorded here rather than erased.
 
 ## Reconciliation: what Phase 5 actually shipped
 
@@ -64,7 +84,7 @@ a row says otherwise.
 | Bounded behavior | Production entrypoint | Named test |
 |---|---|---|
 | Every adapter passes the unmodified contract | `envprovider/conformance.Run` | `conf: TestKubernetesConformance`, `TestNomadConformance`, `TestTunnelConformance`, `TestLocalDockerConformance` |
-| A capability flag changes *how* a step runs, never *whether* | capability manifest (**unimplemented**) | `go: TestCapabilityManifestCannotSkipCoreContract` |
+| A capability flag changes *how* a step runs, never *whether* | capability manifest | `go: TestCapabilityManifestCannotNameCoreContract` |
 | A skipped step names a declared capability and a reason | conformance skip guard | same test |
 | Termination leaves no provider-native resource | `EnvResourceLister` per adapter | asserted inside each conformance run |
 
@@ -139,7 +159,7 @@ a row says otherwise.
 | Bounded behavior | Production entrypoint | Named test |
 |---|---|---|
 | Required CI runs kind, Nomad, and tunnel legs | `.github/workflows/ci.yml` (**unimplemented**) | CI job definitions |
-| A leg fails if the adapter did not create provider-native resources | native inspection inside each conformance run | `go: TestProviderNativeInspectionIsRequired` |
+| A leg fails if the adapter did not create provider-native resources | native inspection inside each conformance run | asserted structurally: `conformance.RunWith` fails when `Inspect` is nil, and each CI leg greps for its `ProviderNativeResources` pass |
 | Scheduled jobs cover pinned versions and publish artifacts | scheduled workflow | workflow definition |
 
 ## A10.9 — Documentation and static wiring

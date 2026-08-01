@@ -158,6 +158,31 @@ func (s *envStore) SetFailed(ctx context.Context, id ultra.EnvID, message string
 		terminated_at=now(), updated_at=now() WHERE id=$1 AND org_id=$2`, message)
 }
 
+// SetSuspended parks an environment whose host is unreachable. It deliberately
+// leaves terminated_at unset and keeps the handle and endpoint: the resource
+// still exists, so resuming is a transition back to ready rather than a new
+// provisioning.
+//
+// Only a ready or already-suspended environment can be suspended. A terminal
+// one that raced this update is left alone rather than resurrected, and that
+// is a no-op rather than an error: losing a race is not a failure.
+func (s *envStore) SetSuspended(ctx context.Context, id ultra.EnvID, message string) error {
+	tag, err := s.scope.s.db().Exec(ctx,
+		`UPDATE dev_envs SET state='suspended', failure_message=$3, updated_at=now()
+		 WHERE id=$1 AND org_id=$2 AND state IN ('ready','suspended')`,
+		string(id), string(s.scope.org), message)
+	if err != nil {
+		return fmt.Errorf("postgres: suspend env: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		// Either the environment is gone or it is no longer suspendable.
+		if _, getErr := s.Get(ctx, id); getErr != nil {
+			return getErr
+		}
+	}
+	return nil
+}
+
 func (s *envStore) SetTerminating(ctx context.Context, id ultra.EnvID) error {
 	return s.update(ctx, id, `UPDATE dev_envs SET state='terminating', updated_at=now()
 		WHERE id=$1 AND org_id=$2`)

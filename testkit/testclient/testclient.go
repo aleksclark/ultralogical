@@ -205,6 +205,8 @@ func Kind(ev *ultrav1.SessionEvent) string {
 		return "env_ready"
 	case *ultrav1.EventPayload_EnvFailed:
 		return "env_failed"
+	case *ultrav1.EventPayload_EnvSuspended:
+		return "env_suspended"
 	case *ultrav1.EventPayload_EnvTerminating:
 		return "env_terminating"
 	case *ultrav1.EventPayload_EnvTerminated:
