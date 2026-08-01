@@ -28,8 +28,35 @@ type Factory func(t *testing.T) ultra.EnvProvider
 // provider that cannot expose these cannot host a run.
 var requiredTools = []string{"bash", "view", "write", "edit", "job_output", "lsp_diagnostics"}
 
-// Run executes the complete provider contract.
+// Options parameterize a conformance run.
+//
+// Capabilities change *how* a behavior is verified, never *whether* it is.
+// A provider that does not preserve workspaces across restart is still
+// required to restart and still required to rotate its token; only the
+// file-survival assertion changes. Anything in ultra.CoreProviderContract is
+// unconditional, and declaring it optional is itself a failure.
+type Options struct {
+	// Capabilities are the optional behaviors this provider claims. Empty
+	// means the provider claims none, which is a valid, fully-tested
+	// configuration rather than a lenient one.
+	Capabilities ultra.ProviderCapabilities
+	// Inspect proves the adapter created resources in its own control plane.
+	// A provider that quietly delegated its lifecycle elsewhere would pass
+	// every behavioral assertion below, so this is what makes the suite
+	// alias-proof. It must return a non-empty description of live,
+	// provider-native resources for the environment.
+	Inspect func(t *testing.T, ctx context.Context, envID ultra.EnvID) []string
+}
+
+// Run executes the complete provider contract with no optional capabilities
+// claimed. It is the strictest configuration.
 func Run(t *testing.T, factory Factory) {
+	RunWith(t, factory, Options{})
+}
+
+// RunWith executes the complete provider contract under the given options.
+func RunWith(t *testing.T, factory Factory, options Options) {
+	assertCapabilitiesCannotWaiveCore(t, options.Capabilities)
 	ctx := context.Background()
 	provider := factory(t)
 	envID := ultra.EnvID(uuid.NewString())
@@ -57,6 +84,21 @@ func Run(t *testing.T, factory Factory) {
 	if endpoint == "" {
 		t.Fatal("provisioning did not yield an endpoint; remaining contract cannot run")
 	}
+
+	// A provider must have created resources in its own control plane. Every
+	// behavioral assertion below would also pass if the adapter had delegated
+	// the work to some other runtime, so this is the step that distinguishes
+	// an implementation from an alias.
+	t.Run("ProviderNativeResources", func(t *testing.T) {
+		if options.Inspect == nil {
+			t.Fatal("conformance requires provider-native inspection; without it a delegating alias passes")
+		}
+		found := options.Inspect(t, ctx, envID)
+		if len(found) == 0 {
+			t.Fatal("the provider reported no native resources for a provisioned environment")
+		}
+		t.Logf("provider-native resources: %v", found)
+	})
 
 	t.Run("Health", func(t *testing.T) {
 		if err := mcp.Healthy(ctx, endpoint); err != nil {
@@ -212,9 +254,19 @@ func Run(t *testing.T, factory Factory) {
 		if err := rotated.Initialize(ctx); err != nil {
 			t.Fatalf("rotated token rejected: %v", err)
 		}
+		// Restarting and rotating are unconditional. Whether the workspace
+		// survives is the only capability-conditional part, and a provider
+		// that does not claim it must still come back serving tools.
 		got, err := rotated.Call(ctx, "view", json.RawMessage(`{"file_path":"/work/state.txt"}`))
-		if err != nil || got.IsError || !strings.Contains(got.Text, "after") {
-			t.Fatalf("restart lost the workspace: %+v %v", got, err)
+		if options.Capabilities.Has(ultra.CapabilityRestartPreservesWorkspace) {
+			if err != nil || got.IsError || !strings.Contains(got.Text, "after") {
+				t.Fatalf("provider claims restart_preserves_workspace but restart lost the workspace: %+v %v", got, err)
+			}
+		} else {
+			probe, probeErr := rotated.Call(ctx, "bash", json.RawMessage(`{"command":"echo restarted"}`))
+			if probeErr != nil || probe.IsError || !strings.Contains(probe.Text, "restarted") {
+				t.Fatalf("restart did not yield a working environment: %+v %v", probe, probeErr)
+			}
 		}
 		client = rotated
 	})
@@ -240,8 +292,25 @@ func Run(t *testing.T, factory Factory) {
 
 	t.Run("LeakCheck", func(t *testing.T) {
 		lister, ok := provider.(ultra.EnvResourceLister)
+		claimed := options.Capabilities.Has(ultra.CapabilityEnumeratesResources)
+		if claimed && !ok {
+			t.Fatal("provider claims enumerates_resources but implements no resource lister")
+		}
 		if !ok {
-			t.Skip("provider does not expose resource enumeration")
+			// Enumeration is optional, but proving termination is not: fall
+			// back to the control plane's own view of the environment, which
+			// every provider must be able to produce.
+			if options.Inspect == nil {
+				t.Fatal("a provider without resource enumeration must still support native inspection")
+			}
+			deadline := time.Now().Add(30 * time.Second)
+			for time.Now().Before(deadline) {
+				if len(options.Inspect(t, ctx, envID)) == 0 {
+					return
+				}
+				time.Sleep(200 * time.Millisecond)
+			}
+			t.Fatal("native inspection still reports resources after terminate")
 		}
 		deadline := time.Now().Add(30 * time.Second)
 		var leaked []string
@@ -326,4 +395,22 @@ func randomToken(t *testing.T) string {
 		t.Fatal(err)
 	}
 	return hex.EncodeToString(b)
+}
+
+// assertCapabilitiesCannotWaiveCore rejects a manifest that tries to make a
+// core behavior optional. Capability flags exist so a suite can adapt to a
+// provider, not so a provider can shrink the suite; making that a checked
+// property is what keeps "capability-flagged" from becoming a synonym for
+// "untested".
+func assertCapabilitiesCannotWaiveCore(t *testing.T, capabilities ultra.ProviderCapabilities) {
+	t.Helper()
+	core := map[string]bool{}
+	for _, name := range ultra.CoreProviderContract() {
+		core[strings.ToLower(name)] = true
+	}
+	for _, capability := range capabilities.Supported {
+		if core[strings.ToLower(string(capability))] {
+			t.Fatalf("capability %q names a core contract behavior; core behaviors are never optional", capability)
+		}
+	}
 }
