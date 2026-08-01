@@ -175,6 +175,11 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 		}
 		tools = append(tools, dynamic...)
 	}
+	// Every canonical tool this run lacks is offered as an explicit refusal
+	// rather than left absent. The agent framework answers an unknown tool
+	// call by listing the tools that do exist, which would turn a denial into
+	// an inventory disclosure.
+	tools = append(tools, w.denialStubs(ctx, run, tools)...)
 
 	agent := fantasy.NewAgent(model,
 		fantasy.WithSystemPrompt(def.SystemPrompt),

@@ -35,6 +35,27 @@ func envSet(values []EnvID) map[EnvID]bool {
 	return out
 }
 
+// CanonicalTools is every capability a run can be granted: the native tools
+// plus the environment tools Bezalel exposes.
+//
+// It exists so a run can be offered an explicit denial stub for the tools it
+// lacks. Simply omitting them would be worse: the agent framework answers an
+// unknown tool call by listing every tool that *does* exist, which is an
+// existence oracle. A uniform refusal reveals nothing.
+func CanonicalTools() []string {
+	return []string{
+		// Native session and orchestration tools.
+		"ask_user", "post_event",
+		"session_memory_get", "session_memory_list", "session_memory_set", "session_memory_delete",
+		"spawn_agent", "wait_for_agents", "run_agent_cohort",
+		"provision_env", "list_envs", "terminate_env",
+		// Environment tools served over MCP.
+		"bash", "view", "write", "edit", "multiedit", "delete", "ls", "glob", "grep",
+		"job_output", "job_kill", "download", "fetch", "web_fetch",
+		"lsp_diagnostics", "lsp_references", "lsp_restart",
+	}
+}
+
 // AllowsTool checks a canonical capability (not a displayed env alias).
 func (g Grants) AllowsTool(name string) bool { s := stringSet(g.Tools); return s["*"] || s[name] }
 

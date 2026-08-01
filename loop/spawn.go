@@ -325,6 +325,31 @@ func (w *StepWorker) spawnChild(ctx context.Context, run ultra.AgentRun, job Ste
 // delivery already created the child. It is a control signal, not a failure.
 var errAdoptedChild = errors.New("loop: child already spawned for this tool call")
 
+// denialStubs returns a refusing tool for every canonical capability the run
+// was not granted and that nothing else already provides. Each stub answers
+// with the same uniform denial and records a PermissionDenied event, so a
+// forged or replayed call is refused identically to a filtered one and reveals
+// nothing about what exists.
+func (w *StepWorker) denialStubs(ctx context.Context, run ultra.AgentRun, offered []fantasy.AgentTool) []fantasy.AgentTool {
+	present := make(map[string]bool, len(offered))
+	for _, tool := range offered {
+		present[tool.Info().Name] = true
+	}
+	var stubs []fantasy.AgentTool
+	for _, name := range ultra.CanonicalTools() {
+		if present[name] {
+			continue
+		}
+		tool := name
+		stubs = append(stubs, fantasy.NewAgentTool(tool, "Not available to this agent.",
+			func(callCtx context.Context, _ struct{}, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+				return w.permissionDenied(callCtx, run, tool, nil, "tool not granted"), nil
+			}))
+	}
+	_ = ctx
+	return stubs
+}
+
 func (w *StepWorker) permissionDenied(ctx context.Context, run ultra.AgentRun, tool string, envID *ultra.EnvID, reason string) fantasy.ToolResponse {
 	payload, _ := json.Marshal(ultra.PermissionDeniedPayload{RunID: run.ID, Tool: tool, EnvID: envID, Reason: reason})
 	_, _ = w.Store.Org(run.OrgID).Events().Append(ctx, run.SessionID, ultra.Event{Actor: ultra.Actor{Type: ultra.ActorSystem}, Kind: ultra.EventKindPermissionDenied, Payload: payload})
