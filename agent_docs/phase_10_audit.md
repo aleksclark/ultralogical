@@ -26,7 +26,7 @@ than a real outbound tunnel.
 
 | Behavior | Evidence | Verdict |
 |---|---|---|
-| Every adapter passes the unmodified contract | `TestConformance` (local Docker), `TestKubernetesConformance`, `TestNomadConformance`, `TestTunnelConformance`, `TestA109_StaticProviderWalkthrough` — all through `conformance.RunWith`, same suite body, different factory | closed |
+| Every adapter passes the unmodified contract | `TestConformance` (local Docker), `TestKubernetesConformance`, `TestNomadConformance`, `TestTunnelConformance` — all through `conformance.RunWith`, same suite body, different factory | closed |
 | A capability flag changes *how* a step runs, never *whether* | `assertCapabilitiesCannotWaiveCore` runs before any step; `TestCapabilityManifestCannotNameCoreContract` asserts the guard rejects a manifest naming a core behavior | closed |
 | Termination leaves no provider-native resource | the suite's `LeakCheck` step, per adapter, polling `Resources` to empty | closed |
 | A delegating alias cannot pass | the suite's `ProviderNativeResources` step is mandatory (`t.Fatal` when `Inspect` is nil), and each adapter's callback reads its own control plane's API | closed |
@@ -231,7 +231,7 @@ did not work on A10.7 and am not claiming it.
 | Required CI runs a kind leg | `providers-kubernetes` creates a real kind cluster, loads the pinned image, and greps for `--- PASS: TestKubernetesConformance/ProviderNativeResources` | closed |
 | Required CI runs a Nomad leg | `providers-nomad` installs Nomad, starts a dev agent, fails if it never becomes healthy, and greps for the native-inspection step | closed |
 | A leg fails if reconciliation did not run | **added here**: the kind and Nomad legs now also require `--- PASS` for the A10.2 and A10.4 tests, so a skip fails the leg | closed |
-| The walkthrough provider is executed in CI | **added here**: `providers-static` builds the image and requires `--- PASS` for the walkthrough's native-inspection, restart, and leak steps and for the size check | closed |
+| The walkthrough provider is executed in CI | **open**: a worked example provider was written and then withdrawn, because it passed locally and failed on GitHub's runners for reasons I could not establish. Shipping a documented example that CI cannot run would be worse than shipping none | **open** |
 | A leg fails if provider-native inspection is bypassed | the suite fatals when `Inspect` is nil, and each leg greps for the step | closed |
 | **Required CI runs a real tunnel leg** | `providers-tunnel` runs the tunnel tests, but over a loopback listener | **open** (same gap as A10.5) |
 | **A hosted-isolation guard** | `TestA103_HostedIsolationAndQuota` executes but is not grepped for | **open** |
@@ -245,12 +245,12 @@ implementation at all, not a partial one.
 
 | Behavior | Evidence | Verdict |
 |---|---|---|
-| **The walkthrough provider passes the shared contract** | **`TestA109_StaticProviderWalkthrough`** via `conformance.RunWith`, the unmodified suite | closed |
-| **It stays under the documented size** | **`TestA109_StaticProviderStaysUnderTheDocumentedSize`**: 167 lines of code in a 241-line file | closed, with the caveat below |
-| **Its probe reports real capabilities and refuses an unusable host** | `TestA109_StaticProviderProbeReportsRealCapabilities`, `TestA109_StaticProviderRefusesAMissingBinary` | closed |
+| **The walkthrough provider passes the shared contract** | none: an example provider was written and withdrawn (see below) | **open** |
+| **It stays under the documented size** | none | **open** |
+| **The walkthrough document exists** | `docs/providers.md` describes the seam and cites the shipped adapters as the worked examples | closed |
 | **The walkthrough is written** | `docs/providers.md` (new): the contract, the optional seams, the four decisions worth copying, and the steps to add a kind | closed |
 | **Onboarding guides are executed, not merely written** | none | **open** |
-| **Static provider configuration is selected by the worker** | none — `envprovider/static` is deliberately not registered in `envprovider/wiring.go` | **open** |
+| **Static provider configuration is selected by the worker** | none — no example provider ships | **open** |
 
 Two notes on how the size promise is kept, because the number is the acceptance
 criterion:
@@ -271,6 +271,14 @@ criterion:
   used once in the *test* only, to extract the Bezalel binary from the pinned
   image, so the agent under test is the same one every other provider test runs.
 
+**Open — no shipped example provider.** An example provider was written, passed
+the unmodified contract locally, and failed on GitHub's runners for reasons I
+could not establish within the time I gave it. It was withdrawn rather than
+merged: a documented walkthrough that required a reader to reproduce a CI
+failure would be worse than none, and per rule 9 an unrunnable example is not
+evidence. `docs/providers.md` now teaches the seam from the shipped adapters,
+which do run in CI. Closing this bullet needs an example whose CI leg is green.
+
 **Open — worker selection.** A10.9 asks that static provider configuration be
 "selected by the worker and proven via native resource inspection". The
 walkthrough provider is intentionally not a deployment target and is not in the
@@ -288,7 +296,7 @@ and no per-kind onboarding guide beyond the reference material in
 
 | Behavior | Evidence | Verdict |
 |---|---|---|
-| A registration reports the capabilities its control plane actually has | `Probe` on the Nomad, tunnel, and static adapters; `Registry.DryRun` stores the answer; `e2e TestA51_A106_...` asserts the stored capabilities came from a real cluster | closed |
+| A registration reports the capabilities its control plane actually has | `Probe` on the Kubernetes, Nomad, and tunnel adapters; `Registry.DryRun` stores the answer; `e2e TestA51_A106_...` asserts the stored capabilities came from a real cluster | closed |
 | A flow declaring an unservable policy is rejected at invoke time | `TestA1010_ProviderCapabilityIsBehavioral` | closed |
 | The rejection is the typed field error and persists nothing | same test asserts `unsupported_provider_capability` at `envs.main.readiness` and that no invocation was persisted | closed |
 | The rejection follows from probed capabilities, not a kind list | same test registers **two providers of the same kind**, one capable and one not, and requires them to behave differently — a hard-coded kind list cannot pass this | closed |
@@ -333,7 +341,7 @@ failure, and the test now exists rather than the row being reworded.
 | A10.2 out-of-band deletion converges without duplicates | no test | `TestA102_KubernetesReconcilesExternallyDeletedPod`, `TestA102_KubernetesAdoptsInterruptedProvisioning`, both CI-guarded |
 | A10.4 out-of-band allocation stop converges without duplicates | no test | `TestA104_NomadReconcilesExternallyStoppedAllocation`, `TestA104_NomadReusesInterruptedRegistration`, both CI-guarded |
 | A10.6 credential rotation | no test | `TestA106_CredentialRotationTakesEffectAndLeaksNothing`, `TestA106_RotationAppliesToAlreadyRunningSessions` |
-| A10.9 walkthrough provider and document | neither existed | `envprovider/static` passing the unmodified suite, `docs/providers.md`, and a `providers-static` CI leg |
+| A10.9 walkthrough document | neither existed | `docs/providers.md`, teaching the seam from the shipped adapters; the example provider itself remains open |
 
 ## Open items, in the order they should be picked up
 

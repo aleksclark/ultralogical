@@ -166,7 +166,7 @@ a row says otherwise.
 
 | Bounded behavior | Production entrypoint | Named test |
 |---|---|---|
-| The stub-provider walkthrough produces a passing provider under the documented size | `docs/providers.md` + `envprovider/static` (**unimplemented**) | `go: TestA109_StaticProviderWalkthrough` |
+| The stub-provider walkthrough produces a passing provider under the documented size | `docs/providers.md` exists; the example provider is **unimplemented** (written, then withdrawn for failing on CI runners) | none yet |
 | Onboarding guides are executed, not merely written | scripted guide runner | `go: e2e TestA109_OnboardingGuides` |
 | Static provider configuration is selected by the worker | worker provider wiring | same test, proven by native inspection |
 

@@ -1,8 +1,9 @@
 # Adding an environment provider
 
 A provider is where an org's environments run. This is the walkthrough for
-adding a new kind, written by building the one in `envprovider/static/` and
-keeping it small enough to read in one sitting.
+adding a new kind, written against the shipped adapters: `envprovider/nomad`
+is the smallest complete one to read end to end, and `envprovider/k8s` shows
+hosted policy layered on the same seam.
 
 For what the shipped kinds do and how registration behaves, see
 [agent_docs/providers.md](../agent_docs/providers.md).
@@ -32,37 +33,22 @@ Everything in `ultra.CoreProviderContract()` is unconditional. A capability
 manifest naming one of those as optional is itself a failure, asserted by the
 suite before it runs a step.
 
-## The walkthrough provider
+## Four decisions worth copying
 
-`envprovider/static/` runs one environment as one Bezalel process inside an
-unprivileged Linux namespace sandbox, with the environment's workspace
-bind-mounted at the declared workdir. It deliberately drives no remote control
-plane: it exists so the shape of a provider is readable without the noise of a
-real API client, and it is not a deployment target.
-
-It is under 200 lines of code, checked by
-`TestA109_StaticProviderStaysUnderTheDocumentedSize`. The check counts code
-rather than raw file length, because this repository requires comments that
-explain why a decision was made and an example is exactly the place that
-reasoning belongs. The whole file is bounded too, so the allowance cannot hide
-unbounded growth.
-
-Four decisions in it are worth copying:
-
-1. **A deterministic identity per environment.** The static provider uses one
-   directory per environment id. Kubernetes derives object names from the id,
-   and Nomad derives a job id. That identity is what makes adoption,
-   reconciliation, and leak detection exact instead of heuristic.
+1. **A deterministic identity per environment.** Kubernetes derives object
+   names from the environment id, and Nomad derives a job id. That identity is
+   what makes adoption, reconciliation, and leak detection exact instead of
+   heuristic.
 2. **Configuration is validated when the provider is built, not when it is
-   used.** `static.New` refuses a Bezalel binary that does not exist, so the
-   failure appears at registration rather than at every later provision.
+   used.** A bad kubeconfig or an unreachable Nomad address fails at
+   registration rather than at every later provision.
 3. **A vanished resource is `EnvFailed`, not merely unready.** Something
    outside the platform removed it, and reconciliation has to be able to see
    the difference. Reporting "still starting" forever is how an environment
    sits stale.
-4. **Terminate and restart are not the same operation.** Restart stops the
-   process and leaves the workspace; terminate removes both. Collapsing them is
-   what breaks a `restart_preserves_workspace` claim.
+4. **An unreachable *host* is `EnvSuspended`, not failed.** The resource still
+   exists on a machine that will come back, so the platform pauses metering and
+   resumes rather than telling every other surface the work was destroyed.
 
 ## Adding your kind
 
