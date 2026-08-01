@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"charm.land/fantasy"
@@ -35,7 +36,14 @@ func spawnKey(parent ultra.RunID, stepIndex int, toolCallID string) string {
 // childSpec is one requested child, shared by spawn_agent and
 // run_agent_cohort so both produce identical children.
 type childSpec struct {
-	Prompt      string   `json:"prompt"`
+	// Prompt is optional only when AgentRef names a flow-declared agent, whose
+	// prompt the server supplies. One of the two is always required.
+	Prompt string `json:"prompt,omitempty"`
+	// AgentRef names an agent published as spawnable by the flow that started
+	// this run. Resolving it server-side means a model can launch a
+	// flow-declared agent without being trusted to reproduce its prompt,
+	// tools, or environments.
+	AgentRef    string   `json:"agent_ref,omitempty"`
 	Tools       []string `json:"tools,omitempty"`
 	EnvIDs      []string `json:"env_ids,omitempty"`
 	MaySpawn    bool     `json:"may_spawn,omitempty"`
@@ -83,6 +91,9 @@ func (w *StepWorker) spawnAgentTool(run ultra.AgentRun, job StepJob) fantasy.Age
 				var denied *deniedError
 				if errors.As(err, &denied) {
 					return w.permissionDenied(ctx, run, "spawn_agent", denied.reason), nil
+				}
+				if errors.Is(err, errMissingChildPrompt) {
+					return fantasy.NewTextErrorResponse(errMissingChildPrompt.Error()), nil
 				}
 				return fantasy.NewTextErrorResponse("spawn failed"), nil
 			}
@@ -194,6 +205,9 @@ func (w *StepWorker) runAgentCohortTool(run ultra.AgentRun, job StepJob, rec *st
 					if errors.As(err, &denied) {
 						return w.permissionDenied(ctx, run, "run_agent_cohort", denied.reason), nil
 					}
+					if errors.Is(err, errMissingChildPrompt) {
+						return fantasy.NewTextErrorResponse(errMissingChildPrompt.Error()), nil
+					}
 					return fantasy.NewTextErrorResponse("cohort spawn failed"), nil
 				}
 				ids = append(ids, child.ID)
@@ -226,6 +240,11 @@ func normalizeTimeoutPolicy(raw string) string {
 	return ultra.TimeoutPolicyResolve
 }
 
+// errMissingChildPrompt reports a spawn that named neither a prompt nor a
+// resolvable flow agent. It is a caller mistake, not an authority failure, so
+// it is reported to the model rather than recorded as a denial.
+var errMissingChildPrompt = errors.New("loop: a spawn requires either a prompt or an agent_ref")
+
 // deniedError marks an authority failure so callers emit PermissionDenied
 // rather than a generic error.
 type deniedError struct{ reason string }
@@ -239,10 +258,72 @@ type spawnRequest struct {
 	ordinal    int
 }
 
+// resolveAgentRef expands an agent_ref into the concrete child specification
+// the flow declared. The flow definition is the ceiling: a referenced agent
+// must be published as spawnable, and its declared prompt, tools, and
+// environments replace anything the model supplied, so a model cannot widen a
+// catalog agent by describing it differently. The parent's grants still clamp
+// the result through the usual lattice check.
+func (w *StepWorker) resolveAgentRef(ctx context.Context, run ultra.AgentRun, spec childSpec) (childSpec, error) {
+	if spec.AgentRef == "" {
+		return spec, nil
+	}
+	if run.FlowInvocationID == nil {
+		// A run outside a flow has no catalog, and saying so would reveal
+		// whether a named agent exists elsewhere. Deny uniformly instead.
+		return spec, &deniedError{reason: "agent_ref is not available to this agent"}
+	}
+	inv, err := w.Store.Org(run.OrgID).Flows().GetInvocation(ctx, *run.FlowInvocationID)
+	if err != nil {
+		return spec, &deniedError{reason: "agent_ref is not available to this agent"}
+	}
+	var rendered ultra.RenderedFlow
+	if err := json.Unmarshal(inv.Rendered, &rendered); err != nil {
+		return spec, &deniedError{reason: "agent_ref is not available to this agent"}
+	}
+	agent, ok := rendered.FindAgent(spec.AgentRef)
+	// An agent that exists but is not spawnable is refused exactly like one
+	// that does not exist: the catalog must not be an existence oracle.
+	if !ok || !agent.Spawnable {
+		return spec, &deniedError{reason: "agent_ref is not available to this agent"}
+	}
+	resolved := childSpec{
+		AgentRef: spec.AgentRef, Prompt: agent.Prompt,
+		Tools: agent.Grants.Tools, MaySpawn: agent.Grants.MaySpawn,
+		MaxChildren: agent.Grants.MaxChildren,
+	}
+	// Environments are named symbolically in the flow; the concrete ids belong
+	// to the invocation that provisioned them.
+	envs, err := w.Store.Org(run.OrgID).Flows().InvocationEnvs(ctx, *run.FlowInvocationID)
+	if err != nil {
+		return spec, err
+	}
+	byName := map[string]ultra.EnvID{}
+	for _, env := range envs {
+		byName[env.FlowEnvName] = env.ID
+	}
+	for _, name := range agent.EnvNames {
+		id, ok := byName[name]
+		if !ok {
+			return spec, &deniedError{reason: "agent_ref is not available to this agent"}
+		}
+		resolved.EnvIDs = append(resolved.EnvIDs, string(id))
+	}
+	return resolved, nil
+}
+
 // spawnChild durably creates one child. It is idempotent: the child's spawn
 // key is derived from the originating tool call, so a redelivered step adopts
 // the existing child and enqueues no second first step.
 func (w *StepWorker) spawnChild(ctx context.Context, run ultra.AgentRun, job StepJob, req spawnRequest) (ultra.AgentRun, bool, error) {
+	spec, err := w.resolveAgentRef(ctx, run, req.spec)
+	if err != nil {
+		return ultra.AgentRun{}, false, err
+	}
+	if strings.TrimSpace(spec.Prompt) == "" {
+		return ultra.AgentRun{}, false, errMissingChildPrompt
+	}
+	req.spec = spec
 	grants := req.spec.grants()
 	if !grants.SubsetOf(run.Grants) {
 		return ultra.AgentRun{}, false, &deniedError{reason: "requested grants exceed parent"}

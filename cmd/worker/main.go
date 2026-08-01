@@ -22,6 +22,7 @@ import (
 	"github.com/aleksclark/ultralogical/envprovider/localdocker"
 	"github.com/aleksclark/ultralogical/envprovider/proxy"
 	"github.com/aleksclark/ultralogical/envwork"
+	"github.com/aleksclark/ultralogical/flowwork"
 	"github.com/aleksclark/ultralogical/jobqueue"
 	riverqueue "github.com/aleksclark/ultralogical/jobqueue/river"
 	"github.com/aleksclark/ultralogical/loop"
@@ -84,6 +85,20 @@ func run(log *slog.Logger) error {
 		Providers: providers, Log: log,
 		ReconcileInterval: envDuration("ULTRA_RECONCILE_INTERVAL", 5*time.Second),
 		ProvisionTimeout:  envDuration("ULTRA_PROVISION_TIMEOUT", time.Minute)}
+	// Flow invocations advance on any worker: provisioning, readiness,
+	// topology, cleanup, and cancellation are all persisted state, so the
+	// process that accepted an invocation need not survive it.
+	flows := &flowwork.Service{
+		Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Envs: envs, Log: log,
+		DefaultModel: ultra.ModelConfig{
+			Provider:   envOr("ULTRA_DEFAULT_PROVIDER", "openai"),
+			ModelID:    envOr("ULTRA_DEFAULT_MODEL", "gpt-4.1-mini"),
+			Credential: "default",
+		},
+		AdvanceInterval:   envDuration("ULTRA_FLOW_ADVANCE_INTERVAL", flowwork.DefaultAdvanceInterval),
+		ReadinessTimeout:  envDuration("ULTRA_FLOW_READINESS_TIMEOUT", flowwork.DefaultReadinessTimeout),
+		InvocationTimeout: envDuration("ULTRA_FLOW_INVOCATION_TIMEOUT", flowwork.DefaultInvocationTimeout),
+	}
 	stepWorker := &loop.StepWorker{
 		Store: store, Keyring: keyring, Enqueue: postgres.TxEnqueuer{Queue: queue},
 		Registry: loop.NewRegistry(), Log: log, ToolResolver: &loop.EnvTools{Store: store, Envs: envs},
@@ -107,6 +122,7 @@ func run(log *slog.Logger) error {
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.TerminateJob](envs.Terminate))
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.ReconcileJob](envs.Reconcile))
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.RestartJob](envs.Restart))
+	jobqueue.Register(queue, jobqueue.WorkerFunc[flowwork.AdvanceJob](flows.Advance))
 
 	if err := queue.Start(ctx); err != nil {
 		return err

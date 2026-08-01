@@ -176,8 +176,12 @@ type DevEnv struct {
 	UpdatedAt          *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ReadyAt            *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=ready_at,json=readyAt,proto3" json:"ready_at,omitempty"`
 	TerminatedAt       *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=terminated_at,json=terminatedAt,proto3" json:"terminated_at,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Flow provenance: which invocation created this environment and which flow
+	// environment declaration it satisfies. Both are immutable once written.
+	FlowInvocationId string `protobuf:"bytes,13,opt,name=flow_invocation_id,json=flowInvocationId,proto3" json:"flow_invocation_id,omitempty"`
+	FlowEnvName      string `protobuf:"bytes,14,opt,name=flow_env_name,json=flowEnvName,proto3" json:"flow_env_name,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *DevEnv) Reset() {
@@ -292,6 +296,20 @@ func (x *DevEnv) GetTerminatedAt() *timestamppb.Timestamp {
 		return x.TerminatedAt
 	}
 	return nil
+}
+
+func (x *DevEnv) GetFlowInvocationId() string {
+	if x != nil {
+		return x.FlowInvocationId
+	}
+	return ""
+}
+
+func (x *DevEnv) GetFlowEnvName() string {
+	if x != nil {
+		return x.FlowEnvName
+	}
+	return ""
 }
 
 type ProvisionEnvRequest struct {
@@ -1104,7 +1122,7 @@ const file_ultra_v1_env_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x83\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd5\x04\n" +
 	"\x06DevEnv\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -1121,7 +1139,9 @@ const file_ultra_v1_env_proto_rawDesc = "" +
 	"updated_at\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x125\n" +
 	"\bready_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\areadyAt\x12?\n" +
-	"\rterminated_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\fterminatedAt\"\x88\x01\n" +
+	"\rterminated_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\fterminatedAt\x12,\n" +
+	"\x12flow_invocation_id\x18\r \x01(\tR\x10flowInvocationId\x12\"\n" +
+	"\rflow_env_name\x18\x0e \x01(\tR\vflowEnvName\"\x88\x01\n" +
 	"\x13ProvisionEnvRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12%\n" +

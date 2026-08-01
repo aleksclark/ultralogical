@@ -21,6 +21,7 @@ import (
 	ultra "github.com/aleksclark/ultralogical"
 	"github.com/aleksclark/ultralogical/envprovider/proxy"
 	"github.com/aleksclark/ultralogical/envwork"
+	"github.com/aleksclark/ultralogical/flowwork"
 	ultrahttp "github.com/aleksclark/ultralogical/http"
 	riverqueue "github.com/aleksclark/ultralogical/jobqueue/river"
 	"github.com/aleksclark/ultralogical/postgres"
@@ -87,6 +88,13 @@ func run(log *slog.Logger) error {
 		Credential: "default",
 	}
 
+	// ultrad only accepts and cancels invocations; workers advance them. The
+	// service is shared so acceptance and orchestration cannot drift.
+	flows := &flowwork.Service{
+		Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Envs: envs,
+		Log: log, DefaultModel: defaultModel,
+	}
+
 	providerKinds := map[string]func(context.Context, []byte) error{ultra.ProviderKindLocalDocker: func(context.Context, []byte) error { return nil }}
 	for _, kind := range []string{ultra.ProviderKindBYOKubernetes, ultra.ProviderKindHostedEKS, ultra.ProviderKindBYONomad, ultra.ProviderKindTunnelLocal} {
 		k := kind
@@ -108,6 +116,7 @@ func run(log *slog.Logger) error {
 		Enqueue:       postgres.TxEnqueuer{Queue: queue},
 		DefaultModel:  defaultModel,
 		Envs:          envs,
+		Flows:         flows,
 	})
 
 	protocols := new(http.Protocols)

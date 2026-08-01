@@ -249,6 +249,18 @@ func payloadFromDomain(kind string, payload []byte) (*ultrav1.EventPayload, erro
 		return decodeAs(payload, &ultrav1.PermissionDenied{}, func(m *ultrav1.PermissionDenied) *ultrav1.EventPayload {
 			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_PermissionDenied{PermissionDenied: m}}
 		})
+	case ultra.EventKindFlowInvoked:
+		return decodeAs(payload, &ultrav1.FlowInvoked{}, func(m *ultrav1.FlowInvoked) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_FlowInvoked{FlowInvoked: m}}
+		})
+	case ultra.EventKindFlowProgressed:
+		return decodeAs(payload, &ultrav1.FlowInvocationProgressed{}, func(m *ultrav1.FlowInvocationProgressed) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_FlowInvocationProgressed{FlowInvocationProgressed: m}}
+		})
+	case ultra.EventKindFlowTerminal:
+		return decodeAs(payload, &ultrav1.FlowInvocationTerminal{}, func(m *ultrav1.FlowInvocationTerminal) *ultrav1.EventPayload {
+			return &ultrav1.EventPayload{Payload: &ultrav1.EventPayload_FlowInvocationTerminal{FlowInvocationTerminal: m}}
+		})
 	default:
 		return nil, errors.New("unknown event kind " + kind)
 	}
@@ -294,9 +306,13 @@ func runToProto(r ultra.AgentRun) *ultrav1.AgentRun {
 		ResultJson:     string(r.Result),
 		CohortId:       r.CohortID,
 		CohortOrdinal:  int32(r.CohortOrdinal),
+		FlowAgentName:  r.FlowAgentName,
 	}
 	if r.ParentRunID != nil {
 		out.ParentRunId = string(*r.ParentRunID)
+	}
+	if r.FlowInvocationID != nil {
+		out.FlowInvocationId = string(*r.FlowInvocationID)
 	}
 	return out
 }

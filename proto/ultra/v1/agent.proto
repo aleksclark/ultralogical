@@ -48,6 +48,11 @@ message AgentRun {
   // cohort_ordinal preserves their declaration order.
   string cohort_id = 15;
   int32 cohort_ordinal = 16;
+  // Flow provenance. Both are immutable once written: a run created by a flow
+  // names the invocation that created it and the flow agent that declared it,
+  // so a later flow version can never reattribute finished work.
+  string flow_invocation_id = 17;
+  string flow_agent_name = 18;
 }
 
 // RunWait is a parent's durable fan-in on child runs. It leaves the open state

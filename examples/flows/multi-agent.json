@@ -1,0 +1,28 @@
+{
+  "description": "A planner starts two workers, then a summarizer collects them.",
+  "params": {
+    "topic": {"type": "string", "required": true}
+  },
+  "agents": {
+    "planner": {
+      "prompt": "example multi agent planner: plan {{.topic}}",
+      "entry": true,
+      "tools": ["post_event"]
+    },
+    "worker_alpha": {
+      "prompt": "example multi agent worker alpha: work on {{.topic}}",
+      "after": ["planner"],
+      "tools": ["post_event"]
+    },
+    "worker_beta": {
+      "prompt": "example multi agent worker beta: work on {{.topic}}",
+      "after": ["planner"],
+      "tools": ["post_event"]
+    },
+    "summarizer": {
+      "prompt": "example multi agent summarizer: summarize {{.topic}}",
+      "after": ["worker_alpha", "worker_beta"],
+      "tools": ["post_event"]
+    }
+  }
+}

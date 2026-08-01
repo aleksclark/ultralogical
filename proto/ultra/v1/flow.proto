@@ -1,21 +1,114 @@
 syntax = "proto3";
 package ultra.v1;
 
+import "google/protobuf/timestamp.proto";
+import "ultra/v1/agent.proto";
+import "ultra/v1/env.proto";
+
 option go_package = "github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1";
+
+// FlowInvocationState is the durable invocation state machine. Provisioning,
+// readiness, topology, cleanup, and cancellation are all states of a persisted
+// row, so a client can explain an invocation without reconstructing it.
+enum FlowInvocationState {
+  FLOW_INVOCATION_STATE_UNSPECIFIED = 0;
+  FLOW_INVOCATION_STATE_PENDING = 1;
+  FLOW_INVOCATION_STATE_PROVISIONING = 2;
+  FLOW_INVOCATION_STATE_RUNNING = 3;
+  FLOW_INVOCATION_STATE_CANCELLING = 4;
+  FLOW_INVOCATION_STATE_COMPLETED = 5;
+  FLOW_INVOCATION_STATE_FAILED = 6;
+  FLOW_INVOCATION_STATE_CANCELLED = 7;
+}
+
 message Flow {
   string id = 1;
   string org_id = 2;
   string name = 3;
   int32 version = 4;
   string definition_json = 5;
+  google.protobuf.Timestamp created_at = 6;
 }
+
+// FlowFieldError is one validation failure addressed by a stable field path.
+// The code is machine-readable and stable; the message is for humans.
+message FlowFieldError {
+  string path = 1;
+  string code = 2;
+  string message = 3;
+}
+
+// FlowInvocationProgressEntry is one recorded step of an invocation's
+// lifecycle. Entries are append-only and gapless per invocation.
+message FlowInvocationProgressEntry {
+  int64 seq = 1;
+  string stage = 2;
+  string key = 3;
+  string detail = 4;
+  google.protobuf.Timestamp at = 5;
+}
+
+// FlowInvocationRun links one agent run to the flow agent that declared it.
+message FlowInvocationRun {
+  string run_id = 1;
+  string agent_name = 2;
+  RunState state = 3;
+  string prompt = 4;
+  string parent_run_id = 5;
+  string cohort_id = 6;
+  int32 cohort_ordinal = 7;
+}
+
+// FlowInvocationEnv links one environment to the flow environment that
+// declared it.
+message FlowInvocationEnv {
+  string env_id = 1;
+  string env_name = 2;
+  EnvState state = 3;
+  string endpoint = 4;
+  string failure_message = 5;
+}
+
+// FlowInvocation is one durable attempt to run a flow version into a session.
+message FlowInvocation {
+  string id = 1;
+  string session_id = 2;
+  string flow_id = 3;
+  string flow_name = 4;
+  int32 flow_version = 5;
+  string params_json = 6;
+  // rendered_json is the frozen rendering this invocation executed: prompts,
+  // grants, and environment specs exactly as it resolved them.
+  string rendered_json = 7;
+  FlowInvocationState state = 8;
+  string terminal_reason = 9;
+  string message = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+  repeated FlowInvocationProgressEntry progress = 13;
+  repeated FlowInvocationRun runs = 14;
+  repeated FlowInvocationEnv envs = 15;
+}
+
 message PutFlowRequest {
   string org_id = 1;
   string name = 2;
   string definition_json = 3;
+  // version pins the version being written. Zero assigns the next version;
+  // an explicit version that already exists is rejected rather than
+  // overwritten.
+  int32 version = 4;
 }
 message PutFlowResponse {
   Flow flow = 1;
+}
+message ValidateFlowRequest {
+  string org_id = 1;
+  string definition_json = 2;
+}
+message ValidateFlowResponse {
+  bool valid = 1;
+  repeated FlowFieldError errors = 2;
 }
 message GetFlowRequest {
   string org_id = 1;
@@ -31,6 +124,13 @@ message ListFlowsRequest {
 message ListFlowsResponse {
   repeated Flow flows = 1;
 }
+message ListFlowVersionsRequest {
+  string org_id = 1;
+  string name = 2;
+}
+message ListFlowVersionsResponse {
+  repeated Flow flows = 1;
+}
 message InvokeFlowRequest {
   string session_id = 1;
   string name = 2;
@@ -41,10 +141,36 @@ message InvokeFlowResponse {
   string invocation_id = 1;
   repeated string run_ids = 2;
   int64 event_seq = 3;
+  FlowInvocation invocation = 4;
 }
+message GetFlowInvocationRequest {
+  string invocation_id = 1;
+}
+message GetFlowInvocationResponse {
+  FlowInvocation invocation = 1;
+}
+message ListFlowInvocationsRequest {
+  string session_id = 1;
+}
+message ListFlowInvocationsResponse {
+  repeated FlowInvocation invocations = 1;
+}
+message CancelFlowInvocationRequest {
+  string invocation_id = 1;
+}
+message CancelFlowInvocationResponse {
+  FlowInvocation invocation = 1;
+}
+
 service FlowService {
   rpc PutFlow(PutFlowRequest) returns (PutFlowResponse);
+  // ValidateFlow reports structured field errors without persisting anything.
+  rpc ValidateFlow(ValidateFlowRequest) returns (ValidateFlowResponse);
   rpc GetFlow(GetFlowRequest) returns (GetFlowResponse);
   rpc ListFlows(ListFlowsRequest) returns (ListFlowsResponse);
+  rpc ListFlowVersions(ListFlowVersionsRequest) returns (ListFlowVersionsResponse);
   rpc InvokeFlow(InvokeFlowRequest) returns (InvokeFlowResponse);
+  rpc GetFlowInvocation(GetFlowInvocationRequest) returns (GetFlowInvocationResponse);
+  rpc ListFlowInvocations(ListFlowInvocationsRequest) returns (ListFlowInvocationsResponse);
+  rpc CancelFlowInvocation(CancelFlowInvocationRequest) returns (CancelFlowInvocationResponse);
 }

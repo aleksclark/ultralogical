@@ -82,6 +82,16 @@ func webScript() modelscript.Script {
 			}}},
 		},
 		{Scenario: webScenario, Match: modelscript.UserContains("remember something"), Sticky: true, Text: "remembered"},
+		// A9.8: flows the browser authors and invokes.
+		{Scenario: webScenario, Match: modelscript.UserContains("browser flow reviewer"), Sticky: true, Text: "browser flow reviewed"},
+		// A slow agent so the browser can cancel an invocation mid-execution.
+		{
+			Scenario:   webScenario,
+			Match:      modelscript.UserContains("browser flow slow"),
+			Sticky:     true,
+			Text:       "far too late",
+			ChunkDelay: 30 * time.Second,
+		},
 	}}
 }
 

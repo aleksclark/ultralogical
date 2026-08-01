@@ -15,7 +15,7 @@ Implementation is present or substantially present, but acceptance remains pendi
 | Durable wait records and terminal-child resumption groundwork | completed in Phase 8: full race matrix and cohort fan-in | A6.7.3, then A8.2–A8.3 — **closed** |
 | Queue panic redelivery for River and inproc | implementation present, acceptance pending | A6.7.4 |
 | Non-busy provisioning polling | implementation present, acceptance pending | A6.7.5 |
-| Flow invocation provenance groundwork | partial implementation; complete flow provenance remains Phase 9 | A9.2 |
+| Flow invocation provenance groundwork | closed in Phase 9: runs and environments carry immutable invocation and declaration provenance, and the rendering is frozen per invocation | A9.2 |
 
 No row is closed merely because code exists. Phase 6.7 closes only under its plan exit criteria.
 

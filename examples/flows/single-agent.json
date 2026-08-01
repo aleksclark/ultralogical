@@ -1,0 +1,14 @@
+{
+  "description": "One agent reviews a subject with no environment.",
+  "params": {
+    "subject": {"type": "string", "required": true, "description": "What to review"},
+    "depth": {"type": "number", "default": 1, "description": "How deep to go"}
+  },
+  "agents": {
+    "reviewer": {
+      "prompt": "example single agent: review {{.subject}} at depth {{.depth}}",
+      "entry": true,
+      "tools": ["post_event"]
+    }
+  }
+}

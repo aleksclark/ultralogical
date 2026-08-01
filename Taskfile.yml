@@ -33,6 +33,11 @@ tasks:
     cmds:
       - go test ./e2e/ -count=1 -timeout 40m
 
+  cli:test:
+    desc: Run the ultra CLI suite against the real stack
+    cmds:
+      - go test ./cmd/ultra/... -count=1 -timeout 20m
+
   test:all:
     desc: Everything
     cmds:

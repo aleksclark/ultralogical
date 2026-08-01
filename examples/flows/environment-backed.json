@@ -1,0 +1,24 @@
+{
+  "description": "One agent works inside an environment the flow provisions.",
+  "params": {
+    "workspace": {"type": "string", "default": "/work"}
+  },
+  "envs": {
+    "main": {
+      "provider_instance": "default",
+      "workdir": "{{.workspace}}",
+      "env": {"ULTRA_EXAMPLE": "environment-backed"},
+      "setup": ["mkdir -p {{.workspace}}/reports"],
+      "readiness": "health",
+      "timeout": "3m"
+    }
+  },
+  "agents": {
+    "inspector": {
+      "prompt": "example environment agent: inspect {{.workspace}}",
+      "entry": true,
+      "envs": ["main"],
+      "tools": ["bash", "view", "post_event"]
+    }
+  }
+}

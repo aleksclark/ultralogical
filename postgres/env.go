@@ -18,14 +18,15 @@ type usageStore struct{ scope *orgScope }
 
 const envColumns = `id, org_id, session_id, provider_instance_id, state, spec, handle,
 endpoint, token_hash, token_enc, epoch, failure_message, created_by_run_id,
-created_at, updated_at, ready_at, terminated_at`
+flow_invocation_id, flow_env_name, created_at, updated_at, ready_at, terminated_at`
 
 func scanEnv(row pgx.Row) (ultra.DevEnv, error) {
 	var env ultra.DevEnv
 	var spec, handle []byte
 	err := row.Scan(&env.ID, &env.OrgID, &env.SessionID, &env.ProviderInstanceID,
 		&env.State, &spec, &handle, &env.Endpoint, &env.TokenHash, &env.TokenEnc,
-		&env.Epoch, &env.FailureMessage, &env.CreatedByRunID, &env.CreatedAt,
+		&env.Epoch, &env.FailureMessage, &env.CreatedByRunID,
+		&env.FlowInvocationID, &env.FlowEnvName, &env.CreatedAt,
 		&env.UpdatedAt, &env.ReadyAt, &env.TerminatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ultra.DevEnv{}, ultra.ErrNotFound
@@ -51,14 +52,19 @@ func (s *envStore) Create(ctx context.Context, env ultra.DevEnv) error {
 	if env.CreatedByRunID != nil {
 		createdBy = string(*env.CreatedByRunID)
 	}
+	// Flow provenance is written with the row, never patched afterwards: an
+	// environment must be attributable to the invocation that created it from
+	// the moment it exists, or a crash between create and patch would orphan it
+	// outside that invocation's cleanup scope.
 	tag, err := s.scope.s.db().Exec(ctx,
 		`INSERT INTO dev_envs (id, org_id, session_id, provider_instance_id, spec,
-		 token_hash, token_enc, created_by_run_id)
-		 SELECT $1, se.org_id, se.id, pi.id, $4, $5, $6, $7
+		 token_hash, token_enc, created_by_run_id, flow_invocation_id, flow_env_name)
+		 SELECT $1, se.org_id, se.id, pi.id, $4, $5, $6, $7, $9, $10
 		 FROM sessions se JOIN provider_instances pi ON pi.org_id = se.org_id
 		 WHERE se.id = $2 AND se.org_id = $3 AND pi.id = $8`,
 		string(env.ID), string(env.SessionID), string(s.scope.org), spec,
-		env.TokenHash, env.TokenEnc, createdBy, string(env.ProviderInstanceID))
+		env.TokenHash, env.TokenEnc, createdBy, string(env.ProviderInstanceID),
+		env.FlowInvocationID, env.FlowEnvName)
 	if isUniqueViolation(err) {
 		return ultra.ErrAlreadyExists
 	}

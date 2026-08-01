@@ -17,7 +17,10 @@ use gpui::{
 };
 
 use crate::client::{DesktopClient, StreamMessage};
-use crate::state::{ConnectionState, DesktopState, SessionSummary, TimelineItem};
+use crate::state::{
+    ConnectionState, DesktopState, FlowFieldErrorView, FlowInvocationView, FlowSummary,
+    SessionSummary, TimelineItem,
+};
 
 /// DarkTheme is the required dark palette. There is no light variant.
 pub struct DarkTheme;
@@ -115,6 +118,55 @@ impl DesktopWindow {
         }
         self.state.connection = ConnectionState::Connecting;
         self.stream = Some(stream);
+        cx.notify();
+    }
+
+    /// set_flows replaces the rendered flow catalog.
+    pub fn set_flows(&mut self, flows: Vec<FlowSummary>, cx: &mut Context<Self>) {
+        self.state.set_flow_catalog(flows);
+        cx.notify();
+    }
+
+    /// set_flow_versions replaces the version list for the selected flow and
+    /// shows the newest version's definition.
+    pub fn set_flow_versions(&mut self, name: String, versions: Vec<FlowSummary>, cx: &mut Context<Self>) {
+        self.state.selected_flow = Some(name);
+        self.state.flow_versions = versions;
+        if let Some(latest) = self.state.flow_versions.first().cloned() {
+            self.state.selected_version = latest.version;
+            self.state.flow_definition = latest.definition;
+        }
+        cx.notify();
+    }
+
+    /// select_flow_version shows one version's own definition, which is how a
+    /// user inspects an older version rather than always seeing the latest.
+    pub fn select_flow_version(&mut self, version: i32, cx: &mut Context<Self>) {
+        self.state.select_flow_version(version);
+        cx.notify();
+    }
+
+    /// set_flow_definition replaces the definition text being edited.
+    pub fn set_flow_definition(&mut self, definition: String, cx: &mut Context<Self>) {
+        self.state.flow_definition = definition;
+        cx.notify();
+    }
+
+    /// set_flow_errors replaces the rendered validation failures.
+    pub fn set_flow_errors(&mut self, errors: Vec<FlowFieldErrorView>, cx: &mut Context<Self>) {
+        self.state.flow_errors = errors;
+        cx.notify();
+    }
+
+    /// set_invocations replaces the rendered invocation list.
+    pub fn set_invocations(&mut self, invocations: Vec<FlowInvocationView>, cx: &mut Context<Self>) {
+        self.state.invocations = invocations;
+        cx.notify();
+    }
+
+    /// select_invocation shows one invocation's progress and topology.
+    pub fn select_invocation(&mut self, id: Option<String>, cx: &mut Context<Self>) {
+        self.state.active_invocation = id;
         cx.notify();
     }
 
@@ -315,6 +367,7 @@ impl DesktopWindow {
             .gap_2()
             .p_3()
             .debug_selector(|| "main".to_string())
+            .child(self.render_flows(cx))
             .child(self.render_run_tree(cx))
             .child(self.render_environments(cx))
             .child(self.render_usage())
@@ -374,6 +427,182 @@ impl DesktopWindow {
                         .debug_selector(move || format!("exec-output:{output}")),
                 )
             })
+    }
+
+    /// render_flows paints the flow catalog, the selected version, structured
+    /// validation errors, and the active invocation's provenance, ordered
+    /// progress, and topology. Selecting a version and cancelling an
+    /// invocation are rendered controls, so the tests drive the same actions a
+    /// user does.
+    fn render_flows(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let active = self.state.active_invocation_view().cloned();
+        div()
+            .flex()
+            .flex_col()
+            .gap_1()
+            .debug_selector(|| "flow-panel".to_string())
+            .child(
+                div()
+                    .text_color(DarkTheme::MUTED)
+                    .child(format!("flows: {}", self.state.flows.len()))
+                    .debug_selector({
+                        let count = self.state.flows.len();
+                        move || format!("flow-count:{count}")
+                    }),
+            )
+            .children(self.state.flows.iter().map(|flow| {
+                let label = format!("flow:{}:{}", flow.name, flow.version);
+                div().child(format!("{} (latest v{})", flow.name, flow.version)).debug_selector(move || label.clone())
+            }))
+            .children(self.state.flow_versions.iter().map(|version| {
+                let selected = self.state.selected_version == version.version;
+                let label = format!("flow-version:{}", version.version);
+                let number = version.version;
+                div()
+                    .id("flow-version")
+                    .when(selected, |el| el.bg(DarkTheme::BORDER))
+                    .child(format!("v{number}"))
+                    .debug_selector(move || label.clone())
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(move |this, _, _, cx| this.select_flow_version(number, cx)),
+                    )
+            }))
+            .when(!self.state.flow_definition.is_empty(), |el| {
+                // The definition digest is painted rather than the whole body:
+                // a test asserts which version's text is shown without the
+                // frame carrying a screenful of JSON.
+                let shown = definition_marker(&self.state.flow_definition);
+                el.child(
+                    div()
+                        .text_color(DarkTheme::MUTED)
+                        .child(format!("definition: {shown}"))
+                        .debug_selector(move || format!("flow-definition:{shown}")),
+                )
+            })
+            .child(
+                // The count is painted, not merely the rows: "the errors are
+                // gone" is then a positive assertion about a rendered frame
+                // rather than an assertion about something's absence.
+                div()
+                    .text_color(DarkTheme::MUTED)
+                    .child(format!("validation errors: {}", self.state.flow_errors.len()))
+                    .debug_selector({
+                        let count = self.state.flow_errors.len();
+                        move || format!("flow-errors:{count}")
+                    }),
+            )
+            .children(self.state.flow_errors.iter().map(|error| {
+                let label = format!("flow-error:{}:{}", error.path, error.code);
+                div()
+                    .text_color(DarkTheme::DANGER)
+                    .child(format!("{}: {}: {}", error.path, error.code, error.message))
+                    .debug_selector(move || label.clone())
+            }))
+            .children(self.state.invocations.iter().map(|invocation| {
+                let label = format!("invocation:{}:{}", short_label(&invocation.id), invocation.state);
+                let id = invocation.id.clone();
+                div()
+                    .id("invocation-row")
+                    .child(format!(
+                        "{} v{}: {}",
+                        invocation.flow_name, invocation.flow_version, invocation.state
+                    ))
+                    .debug_selector(move || label.clone())
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(move |this, _, _, cx| this.select_invocation(Some(id.clone()), cx)),
+                    )
+            }))
+            .when_some(active, |el, invocation| {
+                let state_label = format!("invocation-state:{}", invocation.state);
+                let provenance = format!(
+                    "provenance:{}:{}:{}",
+                    invocation.flow_name,
+                    invocation.flow_version,
+                    short_label(&invocation.id)
+                );
+                let reason = format!("invocation-reason:{}", invocation.terminal_reason);
+                let cancel_id = invocation.id.clone();
+                el.child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_1()
+                        .debug_selector(|| "invocation-detail".to_string())
+                        .child(
+                            div()
+                                .child(format!(
+                                    "{} v{} · invocation {}",
+                                    invocation.flow_name,
+                                    invocation.flow_version,
+                                    short_label(&invocation.id)
+                                ))
+                                .debug_selector(move || provenance.clone()),
+                        )
+                        .child(
+                            div()
+                                .child(format!("state: {}", invocation.state))
+                                .debug_selector(move || state_label.clone()),
+                        )
+                        .when(!invocation.terminal_reason.is_empty(), |el| {
+                            el.child(
+                                div()
+                                    .child(format!("reason: {}", invocation.terminal_reason))
+                                    .debug_selector(move || reason.clone()),
+                            )
+                        })
+                        .children(invocation.progress.iter().map(|entry| {
+                            let label = format!("progress:{}", entry.key);
+                            div()
+                                .text_color(DarkTheme::MUTED)
+                                .child(format!("{}. {} {}", entry.seq, entry.stage, entry.key))
+                                .debug_selector(move || label.clone())
+                        }))
+                        .children(invocation.envs.iter().map(|env| {
+                            let label = format!("flow-env:{}:{}", env.declaration, env.state);
+                            div()
+                                .child(format!("env {}: {}", env.declaration, env.state))
+                                .debug_selector(move || label.clone())
+                        }))
+                        .children(invocation.runs.iter().map(|run| {
+                            let label = format!("flow-run:{}:{}", run.declaration, run.state);
+                            div()
+                                .child(format!("agent {}: {} ({})", run.declaration, run.state, short_label(&run.id)))
+                                .debug_selector(move || label.clone())
+                        }))
+                        .child(
+                            div()
+                                .id("cancel-invocation")
+                                .w(px(140.0))
+                                .h(px(24.0))
+                                .bg(DarkTheme::SURFACE)
+                                .child("Cancel invocation")
+                                .debug_selector(|| "cancel-invocation".to_string())
+                                .on_mouse_down(
+                                    MouseButton::Left,
+                                    cx.listener(move |this, _, _, cx| {
+                                        this.request_cancel_invocation(cancel_id.clone(), cx);
+                                    }),
+                                ),
+                        ),
+                )
+            })
+    }
+
+    /// request_cancel_invocation is the window's cancel action, invoked by the
+    /// rendered control and by tests through the same entity update.
+    pub fn request_cancel_invocation(&mut self, invocation_id: String, cx: &mut Context<Self>) {
+        let Some(mut client) = self.client.clone() else { return };
+        cx.spawn(async move |this, cx| {
+            let result = client.cancel_invocation(&invocation_id).await;
+            let _ = this.update(cx, |window: &mut DesktopWindow, cx| {
+                if let Err(err) = result {
+                    window.set_error(err.to_string(), cx);
+                }
+            });
+        })
+        .detach();
     }
 
     /// render_run_tree paints the spawn tree with each run's state, its cohort
@@ -576,6 +805,17 @@ impl DesktopWindow {
         })
         .detach();
     }
+}
+
+/// definition_marker names which stored definition is being shown, without
+/// painting the whole body. A version selector is only meaningful if a test can
+/// tell one version's text from another's, and this is the smallest thing that
+/// makes that observable.
+fn definition_marker(definition: &str) -> String {
+    let digest: u32 = definition.bytes().fold(2166136261, |acc, byte| {
+        (acc ^ u32::from(byte)).wrapping_mul(16777619)
+    });
+    format!("{digest:08x}")
 }
 
 /// short_label abbreviates an identifier for display and for selectors.
