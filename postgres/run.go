@@ -13,13 +13,15 @@ import (
 
 type runStore struct{ scope *orgScope }
 
-const runColumns = `id, session_id, org_id, parent_run_id, flow_invocation_id, grants, result, state, loop_kind, loop_version, model_config,
+const runColumns = `id, session_id, org_id, parent_run_id, COALESCE(spawn_key,''), COALESCE(cohort_id::text,''), COALESCE(cohort_ordinal,0),
+	flow_invocation_id, grants, result, state, loop_kind, loop_version, model_config,
 	prompt, history, failure_reason, failure_message, cancel_requested_at, created_at, updated_at`
 
 func (r *runStore) scan(row pgx.Row) (ultra.AgentRun, error) {
 	var run ultra.AgentRun
 	var modelConfig, grants []byte
-	err := row.Scan(&run.ID, &run.SessionID, &run.OrgID, &run.ParentRunID, &run.FlowInvocationID, &grants, &run.Result, &run.State, &run.LoopKind,
+	err := row.Scan(&run.ID, &run.SessionID, &run.OrgID, &run.ParentRunID, &run.SpawnKey, &run.CohortID, &run.CohortOrdinal,
+		&run.FlowInvocationID, &grants, &run.Result, &run.State, &run.LoopKind,
 		&run.LoopVersion, &modelConfig, &run.Prompt, &run.History, &run.FailureReason,
 		&run.FailureMessage, &run.CancelRequestedAt, &run.CreatedAt, &run.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -46,21 +48,28 @@ func (r *runStore) Create(ctx context.Context, run ultra.AgentRun) error {
 	if err != nil {
 		return err
 	}
-	if len(run.Grants.Tools) == 0 && !run.Grants.EnvAll && !run.Grants.MaySpawn {
-		grants, _ = json.Marshal(ultra.RootGrants())
-	}
+	// A run with no grants is a run that may do nothing. Substituting root
+	// authority here would silently escalate exactly the case that matters:
+	// a child deliberately spawned with an empty tool list.
 	history := run.History
 	if len(history) == 0 {
 		history = []byte(`{"v":1,"messages":[]}`)
 	}
 	// Session ownership is enforced in the same statement: the insert only
 	// succeeds if the session belongs to this scope's org.
+	var spawnKey, cohortID any
+	if run.SpawnKey != "" {
+		spawnKey = run.SpawnKey
+	}
+	if run.CohortID != "" {
+		cohortID = run.CohortID
+	}
 	tag, err := r.scope.s.db().Exec(ctx,
-		`INSERT INTO agent_runs (id, session_id, org_id, parent_run_id, flow_invocation_id, grants, state, loop_kind, loop_version, model_config, prompt, history)
-		 SELECT $1, s.id, s.org_id, $3, $4, $5, $6, $7, $8, $9, $10, $11
+		`INSERT INTO agent_runs (id, session_id, org_id, parent_run_id, flow_invocation_id, grants, state, loop_kind, loop_version, model_config, prompt, history, spawn_key, cohort_id, cohort_ordinal)
+		 SELECT $1, s.id, s.org_id, $3, $4, $5, $6, $7, $8, $9, $10, $11, $13, $14, $15
 		   FROM sessions s WHERE s.id = $2 AND s.org_id = $12`,
 		string(run.ID), string(run.SessionID), run.ParentRunID, run.FlowInvocationID, grants, string(ultra.RunPending), run.LoopKind,
-		run.LoopVersion, modelConfig, run.Prompt, history, string(r.scope.org))
+		run.LoopVersion, modelConfig, run.Prompt, history, string(r.scope.org), spawnKey, cohortID, run.CohortOrdinal)
 	if isUniqueViolation(err) {
 		return ultra.ErrAlreadyExists
 	}
@@ -116,6 +125,46 @@ func (r *runStore) SetState(ctx context.Context, id ultra.RunID, state ultra.Run
 		`UPDATE agent_runs SET state = $3, failure_reason = $4, failure_message = $5, updated_at = now()
 		  WHERE id = $1 AND org_id = $2`,
 		string(id), string(r.scope.org), string(state), failureReason, failureMessage)
+}
+
+// SetResult persists a run's final result. It is written in the same
+// transaction that marks the run terminal, so a parent reading a terminal
+// child always sees the result that child produced.
+func (r *runStore) SetResult(ctx context.Context, id ultra.RunID, result json.RawMessage) error {
+	return r.exec(ctx,
+		`UPDATE agent_runs SET result = $3, updated_at = now() WHERE id = $1 AND org_id = $2`,
+		string(id), string(r.scope.org), result)
+}
+
+// GetBySpawnKey is the read half of spawn idempotency: a redelivered step
+// replaying the same tool call finds the child it already created.
+func (r *runStore) GetBySpawnKey(ctx context.Context, key string) (ultra.AgentRun, error) {
+	return r.scan(r.scope.s.db().QueryRow(ctx,
+		`SELECT `+runColumns+` FROM agent_runs WHERE spawn_key = $1 AND org_id = $2`,
+		key, string(r.scope.org)))
+}
+
+// Children lists direct children in creation order, which is the order clients
+// render a run tree in.
+func (r *runStore) Children(ctx context.Context, id ultra.RunID) ([]ultra.AgentRun, error) {
+	rows, err := r.scope.s.db().Query(ctx,
+		`SELECT `+runColumns+` FROM agent_runs
+		  WHERE parent_run_id = $1 AND org_id = $2
+		  ORDER BY COALESCE(cohort_ordinal, 0), created_at`,
+		string(id), string(r.scope.org))
+	if err != nil {
+		return nil, fmt.Errorf("postgres: list children: %w", err)
+	}
+	defer rows.Close()
+	var runs []ultra.AgentRun
+	for rows.Next() {
+		run, err := r.scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		runs = append(runs, run)
+	}
+	return runs, rows.Err()
 }
 
 func (r *runStore) RequestCancel(ctx context.Context, id ultra.RunID) error {

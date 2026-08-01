@@ -64,10 +64,12 @@ impl DesktopWindow {
         Self { state: DesktopState::default(), client: None, stream: None, focus: cx.focus_handle() }
     }
 
-    /// attach binds a connected client and the org the window works in.
-    pub fn attach(&mut self, client: DesktopClient, org_id: String, cx: &mut Context<Self>) {
+    /// attach binds a connected client, the org the window works in, and the
+    /// replica address it reached, so a later reconnect is observably different.
+    pub fn attach(&mut self, client: DesktopClient, org_id: String, endpoint: String, cx: &mut Context<Self>) {
         self.client = Some(client);
         self.state.org_id = org_id;
+        self.state.endpoint = endpoint;
         cx.notify();
     }
 
@@ -116,6 +118,27 @@ impl DesktopWindow {
         cx.notify();
     }
 
+    /// set_runs replaces the rendered spawn tree.
+    pub fn set_runs(&mut self, runs: Vec<crate::state::RunNode>, cx: &mut Context<Self>) {
+        self.state.set_runs(runs);
+        cx.notify();
+    }
+
+    /// select_lane filters the timeline to one agent, or clears the filter.
+    /// This is the window's own action: the rendered lane control invokes it,
+    /// and so do the UI tests.
+    pub fn select_lane(&mut self, run_id: Option<String>, cx: &mut Context<Self>) {
+        self.state.lane_run_id = run_id;
+        cx.notify();
+    }
+
+    /// set_endpoint records which replica the window is talking to, so a
+    /// reconnect is visible rather than silent.
+    pub fn set_endpoint(&mut self, endpoint: String, cx: &mut Context<Self>) {
+        self.state.endpoint = endpoint;
+        cx.notify();
+    }
+
     pub fn set_exec_output(&mut self, output: String, cx: &mut Context<Self>) {
         self.state.exec_output = output;
         cx.notify();
@@ -130,14 +153,16 @@ impl DesktopWindow {
         window: &WindowEntity,
         client: &mut DesktopClient,
         org_id: &str,
+        endpoint: &str,
         cx: &mut gpui::AsyncApp,
     ) {
         let sessions = client.list_sessions(org_id).await.unwrap_or_default();
         let first = sessions.first().cloned();
         let attach = client.clone();
         let org = org_id.to_string();
+        let endpoint = endpoint.to_string();
         let _ = window.update(cx, |view: &mut DesktopWindow, cx| {
-            view.attach(attach, org, cx);
+            view.attach(attach, org, endpoint, cx);
             view.set_sessions(sessions, cx);
         });
         if let Some(session) = first {
@@ -255,6 +280,15 @@ impl DesktopWindow {
             )
             .child(
                 div()
+                    .text_color(DarkTheme::MUTED)
+                    .child(format!("replica: {}", self.state.endpoint))
+                    .debug_selector({
+                        let endpoint = self.state.endpoint.clone();
+                        move || format!("endpoint:{endpoint}")
+                    }),
+            )
+            .child(
+                div()
                     .flex()
                     .flex_col()
                     .gap_1()
@@ -281,6 +315,7 @@ impl DesktopWindow {
             .gap_2()
             .p_3()
             .debug_selector(|| "main".to_string())
+            .child(self.render_run_tree(cx))
             .child(self.render_environments(cx))
             .child(self.render_usage())
             .child(self.render_memory())
@@ -341,6 +376,89 @@ impl DesktopWindow {
             })
     }
 
+    /// render_run_tree paints the spawn tree with each run's state, its cohort
+    /// position, and the waits it holds. Selecting a row filters the timeline.
+    fn render_run_tree(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let lane = self.state.lane_run_id.clone();
+        div()
+            .flex()
+            .flex_col()
+            .gap_1()
+            .debug_selector(|| "run-tree".to_string())
+            .child(
+                div()
+                    .id("all-lanes")
+                    .w(px(90.0))
+                    .h(px(22.0))
+                    .bg(DarkTheme::SURFACE)
+                    .child("All lanes")
+                    .debug_selector(|| "lane:all".to_string())
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(|this, _, _, cx| this.select_lane(None, cx)),
+                    ),
+            )
+            .child(
+                div()
+                    .text_color(DarkTheme::MUTED)
+                    .child(format!("runs: {}", self.state.runs.len()))
+                    .debug_selector({
+                        let count = self.state.runs.len();
+                        move || format!("run-count:{count}")
+                    }),
+            )
+            .children(self.state.runs.iter().map(|node| {
+                let selected = lane.as_deref() == Some(node.run_id.as_str());
+                let run_id = node.run_id.clone();
+                let label = format!(
+                    "run:{}:{}:{}",
+                    short_label(&node.run_id),
+                    node.state,
+                    node.depth
+                );
+                let mut row = div()
+                    .flex()
+                    .flex_col()
+                    .pl(px(node.depth as f32 * 16.0))
+                    .child(
+                        div()
+                            .id("run-row")
+                            .when(selected, |el| el.bg(DarkTheme::BORDER))
+                            .child(format!(
+                                "{} [{}]{}",
+                                if node.prompt.is_empty() { short_label(&node.run_id) } else { node.prompt.clone() },
+                                node.state,
+                                if node.cohort_id.is_empty() {
+                                    String::new()
+                                } else {
+                                    format!(" cohort #{}", node.cohort_ordinal)
+                                },
+                            ))
+                            .debug_selector(move || label.clone())
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |this, _, _, cx| {
+                                    this.select_lane(Some(run_id.clone()), cx)
+                                }),
+                            ),
+                    );
+                for wait in &node.waits {
+                    let wait_label = format!("wait:{}:{}:{}", wait.kind, wait.state, wait.member_count);
+                    row = row.child(
+                        div()
+                            .pl(px(16.0))
+                            .text_color(DarkTheme::MUTED)
+                            .child(format!(
+                                "{} on {} agent(s): {}",
+                                wait.kind, wait.member_count, wait.state
+                            ))
+                            .debug_selector(move || wait_label.clone()),
+                    );
+                }
+                row
+            }))
+    }
+
     fn render_usage(&self) -> impl IntoElement {
         let total = self.state.usage_total_seconds;
         div()
@@ -396,6 +514,10 @@ impl DesktopWindow {
 
     fn render_timeline(&self) -> impl IntoElement {
         let frames = self.state.delta_frames;
+        let lane = self.state.lane_run_id.clone();
+        let visible = self.state.timeline_for(lane.as_deref());
+        let lane_label = lane.clone().unwrap_or_else(|| "all".to_string());
+        let visible_count = visible.len();
         div()
             .flex_1()
             .flex()
@@ -406,10 +528,16 @@ impl DesktopWindow {
             .child(
                 div()
                     .text_color(DarkTheme::MUTED)
+                    .child(format!("lane {lane_label}: {visible_count} rows"))
+                    .debug_selector(move || format!("lane-rows:{lane_label}:{visible_count}")),
+            )
+            .child(
+                div()
+                    .text_color(DarkTheme::MUTED)
                     .child(format!("streamed frames: {frames}"))
                     .debug_selector(move || format!("delta-frames:{frames}")),
             )
-            .children(self.state.timeline.iter().map(|item| {
+            .children(visible.into_iter().map(|item| {
                 let label = item.render_label();
                 let selector = label.clone();
                 div()
@@ -448,6 +576,11 @@ impl DesktopWindow {
         })
         .detach();
     }
+}
+
+/// short_label abbreviates an identifier for display and for selectors.
+fn short_label(id: &str) -> String {
+    id.chars().take(8).collect()
 }
 
 /// SESSION_WINDOW_SIZE is the default window size for the native entrypoint.

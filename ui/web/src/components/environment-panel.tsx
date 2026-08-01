@@ -91,6 +91,7 @@ export function EnvironmentPanel({
           <Button
             size="sm"
             variant="outline"
+            aria-label="Execute in environment"
             onClick={async () => {
               await onExec(command);
               setCommand("");

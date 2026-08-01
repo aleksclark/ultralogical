@@ -43,6 +43,8 @@ const (
 	AgentServiceGetRunProcedure = "/ultra.v1.AgentService/GetRun"
 	// AgentServiceListRunsProcedure is the fully-qualified name of the AgentService's ListRuns RPC.
 	AgentServiceListRunsProcedure = "/ultra.v1.AgentService/ListRuns"
+	// AgentServiceGetRunTreeProcedure is the fully-qualified name of the AgentService's GetRunTree RPC.
+	AgentServiceGetRunTreeProcedure = "/ultra.v1.AgentService/GetRunTree"
 )
 
 // AgentServiceClient is a client for the ultra.v1.AgentService service.
@@ -52,6 +54,9 @@ type AgentServiceClient interface {
 	CancelRun(context.Context, *connect.Request[v1.CancelRunRequest]) (*connect.Response[v1.CancelRunResponse], error)
 	GetRun(context.Context, *connect.Request[v1.GetRunRequest]) (*connect.Response[v1.GetRunResponse], error)
 	ListRuns(context.Context, *connect.Request[v1.ListRunsRequest]) (*connect.Response[v1.ListRunsResponse], error)
+	// GetRunTree returns a session's runs as parent/child trees with their
+	// waits, which is what clients render as run lanes and spawn trees.
+	GetRunTree(context.Context, *connect.Request[v1.GetRunTreeRequest]) (*connect.Response[v1.GetRunTreeResponse], error)
 }
 
 // NewAgentServiceClient constructs a client for the ultra.v1.AgentService service. By default, it
@@ -95,16 +100,23 @@ func NewAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(agentServiceMethods.ByName("ListRuns")),
 			connect.WithClientOptions(opts...),
 		),
+		getRunTree: connect.NewClient[v1.GetRunTreeRequest, v1.GetRunTreeResponse](
+			httpClient,
+			baseURL+AgentServiceGetRunTreeProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("GetRunTree")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // agentServiceClient implements AgentServiceClient.
 type agentServiceClient struct {
-	startRun  *connect.Client[v1.StartRunRequest, v1.StartRunResponse]
-	promptRun *connect.Client[v1.PromptRunRequest, v1.PromptRunResponse]
-	cancelRun *connect.Client[v1.CancelRunRequest, v1.CancelRunResponse]
-	getRun    *connect.Client[v1.GetRunRequest, v1.GetRunResponse]
-	listRuns  *connect.Client[v1.ListRunsRequest, v1.ListRunsResponse]
+	startRun   *connect.Client[v1.StartRunRequest, v1.StartRunResponse]
+	promptRun  *connect.Client[v1.PromptRunRequest, v1.PromptRunResponse]
+	cancelRun  *connect.Client[v1.CancelRunRequest, v1.CancelRunResponse]
+	getRun     *connect.Client[v1.GetRunRequest, v1.GetRunResponse]
+	listRuns   *connect.Client[v1.ListRunsRequest, v1.ListRunsResponse]
+	getRunTree *connect.Client[v1.GetRunTreeRequest, v1.GetRunTreeResponse]
 }
 
 // StartRun calls ultra.v1.AgentService.StartRun.
@@ -132,6 +144,11 @@ func (c *agentServiceClient) ListRuns(ctx context.Context, req *connect.Request[
 	return c.listRuns.CallUnary(ctx, req)
 }
 
+// GetRunTree calls ultra.v1.AgentService.GetRunTree.
+func (c *agentServiceClient) GetRunTree(ctx context.Context, req *connect.Request[v1.GetRunTreeRequest]) (*connect.Response[v1.GetRunTreeResponse], error) {
+	return c.getRunTree.CallUnary(ctx, req)
+}
+
 // AgentServiceHandler is an implementation of the ultra.v1.AgentService service.
 type AgentServiceHandler interface {
 	StartRun(context.Context, *connect.Request[v1.StartRunRequest]) (*connect.Response[v1.StartRunResponse], error)
@@ -139,6 +156,9 @@ type AgentServiceHandler interface {
 	CancelRun(context.Context, *connect.Request[v1.CancelRunRequest]) (*connect.Response[v1.CancelRunResponse], error)
 	GetRun(context.Context, *connect.Request[v1.GetRunRequest]) (*connect.Response[v1.GetRunResponse], error)
 	ListRuns(context.Context, *connect.Request[v1.ListRunsRequest]) (*connect.Response[v1.ListRunsResponse], error)
+	// GetRunTree returns a session's runs as parent/child trees with their
+	// waits, which is what clients render as run lanes and spawn trees.
+	GetRunTree(context.Context, *connect.Request[v1.GetRunTreeRequest]) (*connect.Response[v1.GetRunTreeResponse], error)
 }
 
 // NewAgentServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -178,6 +198,12 @@ func NewAgentServiceHandler(svc AgentServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(agentServiceMethods.ByName("ListRuns")),
 		connect.WithHandlerOptions(opts...),
 	)
+	agentServiceGetRunTreeHandler := connect.NewUnaryHandler(
+		AgentServiceGetRunTreeProcedure,
+		svc.GetRunTree,
+		connect.WithSchema(agentServiceMethods.ByName("GetRunTree")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/ultra.v1.AgentService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AgentServiceStartRunProcedure:
@@ -190,6 +216,8 @@ func NewAgentServiceHandler(svc AgentServiceHandler, opts ...connect.HandlerOpti
 			agentServiceGetRunHandler.ServeHTTP(w, r)
 		case AgentServiceListRunsProcedure:
 			agentServiceListRunsHandler.ServeHTTP(w, r)
+		case AgentServiceGetRunTreeProcedure:
+			agentServiceGetRunTreeHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -217,4 +245,8 @@ func (UnimplementedAgentServiceHandler) GetRun(context.Context, *connect.Request
 
 func (UnimplementedAgentServiceHandler) ListRuns(context.Context, *connect.Request[v1.ListRunsRequest]) (*connect.Response[v1.ListRunsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.AgentService.ListRuns is not implemented"))
+}
+
+func (UnimplementedAgentServiceHandler) GetRunTree(context.Context, *connect.Request[v1.GetRunTreeRequest]) (*connect.Response[v1.GetRunTreeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ultra.v1.AgentService.GetRunTree is not implemented"))
 }

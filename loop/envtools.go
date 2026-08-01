@@ -123,7 +123,7 @@ func (r *EnvTools) Tools(ctx context.Context, run ultra.AgentRun) ([]fantasy.Age
 					if !run.Grants.AllowsTool(dt.Name) {
 						continue
 					}
-					tools = append(tools, newMCPTool(prefix+dt.Name, dt, client))
+					tools = append(tools, newMCPTool(prefix+dt.Name, dt, client, r, run, env.ID))
 				}
 				// Remember the toolset so a later step can still name
 				// these tools if the environment disappears.
@@ -164,9 +164,16 @@ type mcpTool struct {
 	info   fantasy.ToolInfo
 	remote string
 	client *mcp.Client
+	// The authority this tool was discovered under, re-checked at dispatch.
+	// Discovery-time filtering only decides what the model is *offered*; a
+	// call that arrives anyway (replayed from history, or invented) must still
+	// be refused here.
+	tools *EnvTools
+	run   ultra.AgentRun
+	envID ultra.EnvID
 }
 
-func newMCPTool(name string, t mcp.Tool, c *mcp.Client) fantasy.AgentTool {
+func newMCPTool(name string, t mcp.Tool, c *mcp.Client, owner *EnvTools, run ultra.AgentRun, envID ultra.EnvID) fantasy.AgentTool {
 	var schema map[string]any
 	_ = json.Unmarshal(t.InputSchema, &schema)
 	params, _ := schema["properties"].(map[string]any)
@@ -178,7 +185,10 @@ func newMCPTool(name string, t mcp.Tool, c *mcp.Client) fantasy.AgentTool {
 			}
 		}
 	}
-	return &mcpTool{name: name, remote: t.Name, client: c, info: fantasy.ToolInfo{Name: name, Description: t.Description, Parameters: params, Required: required}}
+	return &mcpTool{
+		name: name, remote: t.Name, client: c, tools: owner, run: run, envID: envID,
+		info: fantasy.ToolInfo{Name: name, Description: t.Description, Parameters: params, Required: required},
+	}
 }
 func (t *mcpTool) Info() fantasy.ToolInfo                     { return t.info }
 func (t *mcpTool) ProviderOptions() fantasy.ProviderOptions   { return nil }
@@ -190,6 +200,26 @@ func (t *mcpTool) SetProviderOptions(fantasy.ProviderOptions) {}
 const toolCallTimeout = 5 * time.Minute
 
 func (t *mcpTool) Run(ctx context.Context, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+	// Authority is decided at dispatch, not at discovery. A tool call can
+	// arrive without having been offered — replayed from an older step whose
+	// grants were wider, or simply invented by the model — and the answer must
+	// be the same uniform denial either way.
+	if t.tools != nil {
+		if !t.run.Grants.AllowsTool(t.remote) {
+			return t.tools.deny(ctx, t.run, t.remote, nil, "tool not granted"), nil
+		}
+		if !t.run.Grants.AllowsEnv(t.envID) {
+			envID := t.envID
+			return t.tools.deny(ctx, t.run, t.remote, &envID, "environment not granted"), nil
+		}
+		// The environment must still be reachable *and* still ready: a
+		// terminated environment must read as unavailable, never as a
+		// silently-succeeding call against a stale endpoint.
+		env, err := t.tools.Store.Org(t.run.OrgID).Envs().Get(ctx, t.envID)
+		if err != nil || env.State != ultra.EnvReady {
+			return fantasy.NewTextErrorResponse("environment unavailable"), nil
+		}
+	}
 	callCtx, cancel := context.WithTimeout(ctx, toolCallTimeout)
 	defer cancel()
 	result, err := t.client.Call(callCtx, t.remote, json.RawMessage(call.Input))

@@ -118,10 +118,16 @@ func (r *Registry) Resolve(kind string, version int) (Definition, error) {
 
 // stepRecorder captures per-step tool activity the outcome classifier needs.
 type stepRecorder struct {
-	question       *ultra.Question
+	question *ultra.Question
+	// A pending wait recorded by wait_for_agents or run_agent_cohort. The
+	// tool-call id is the model's own id for that call: when the wait
+	// resolves, the injected result must be correlated to it, or the model
+	// sees an answer to a question it never asked.
 	waitRunIDs     []ultra.RunID
 	waitToolCallID string
 	waitTimeout    time.Duration
+	waitKind       string
+	waitPolicy     string
 	toolsCalled    int
 }
 

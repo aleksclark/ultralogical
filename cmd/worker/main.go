@@ -88,7 +88,21 @@ func run(log *slog.Logger) error {
 		Store: store, Keyring: keyring, Enqueue: postgres.TxEnqueuer{Queue: queue},
 		Registry: loop.NewRegistry(), Log: log, ToolResolver: &loop.EnvTools{Store: store, Envs: envs},
 	}
+	// Wait deadlines are enforced by any worker, not by the process that
+	// created the wait, so a parked parent is released even after a crash.
+	waitSweeper := &loop.WaitSweeper{
+		Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Worker: stepWorker, Log: log,
+	}
 	jobqueue.Register(queue, jobqueue.Worker[loop.StepJob](stepWorker))
+	// Presence expires on its own: a client that vanishes without leaving must
+	// stop appearing active.
+	presenceReaper := &loop.PresenceReaper{
+		Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Log: log,
+		After:    envDuration("ULTRA_PRESENCE_AFTER", loop.DefaultPresenceAfter),
+		Interval: envDuration("ULTRA_PRESENCE_INTERVAL", 15*time.Second),
+	}
+	jobqueue.Register(queue, jobqueue.WorkerFunc[loop.WaitTimeoutJob](waitSweeper.Sweep))
+	jobqueue.Register(queue, jobqueue.WorkerFunc[loop.PresenceReapJob](presenceReaper.Reap))
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.ProvisionJob](envs.Provision))
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.TerminateJob](envs.Terminate))
 	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.ReconcileJob](envs.Reconcile))

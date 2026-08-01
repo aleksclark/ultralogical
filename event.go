@@ -2,7 +2,6 @@ package ultra
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 )
 
@@ -209,11 +208,30 @@ type RunSpawnedPayload struct {
 	ParentRunID RunID `json:"parent_run_id"`
 	ChildRunID  RunID `json:"child_run_id"`
 }
+
+// MemoryEventPayload records a session-memory change. Its JSON field names
+// mirror the proto message exactly: the transport decodes stored payloads with
+// unknown fields discarded, so a shape that merely looks similar would reach
+// clients with those fields silently empty.
 type MemoryEventPayload struct {
-	Key       string          `json:"key"`
-	UpdatedBy Actor           `json:"updated_by"`
-	Value     json.RawMessage `json:"value,omitempty"`
+	Key           string `json:"key"`
+	UpdatedByType string `json:"updated_by_type"`
+	UpdatedByID   string `json:"updated_by_id"`
+	// ValueJSON carries the new value when it is small enough to inline; large
+	// values are fetched through the API instead of duplicated into the log.
+	ValueJSON string `json:"value_json,omitempty"`
 }
+
+// NewMemoryEventPayload builds the payload from a domain actor and value.
+func NewMemoryEventPayload(key string, updatedBy Actor, value []byte) MemoryEventPayload {
+	return MemoryEventPayload{
+		Key:           key,
+		UpdatedByType: string(updatedBy.Type),
+		UpdatedByID:   updatedBy.ID,
+		ValueJSON:     string(value),
+	}
+}
+
 type HistoryCompactedPayload struct {
 	RunID           RunID `json:"run_id"`
 	CoveredMessages int   `json:"covered_messages"`

@@ -27,16 +27,27 @@ pub fn selector(value: impl Into<String>) -> &'static str {
 pub async fn open_app(
     cx: &mut TestAppContext,
 ) -> (WindowEntity, VisualTestContext, DesktopClient, String) {
+    open_app_at(cx, &env("ULTRAD_URL")).await
+}
+
+/// open_app_at opens the window against a specific replica, which is how the
+/// reconnect test proves state is rebuilt from the log rather than carried in
+/// one server's memory.
+pub async fn open_app_at(
+    cx: &mut TestAppContext,
+    endpoint: &str,
+) -> (WindowEntity, VisualTestContext, DesktopClient, String) {
     cx.executor().allow_parking();
-    let client = DesktopClient::connect(runtime::handle(), env("ULTRAD_URL"), &env("ULTRA_TOKEN"))
+    let client = DesktopClient::connect(runtime::handle(), endpoint.to_string(), &env("ULTRA_TOKEN"))
         .await
         .expect("connect to ultrad");
     let org_id = env("ULTRA_ORG_ID");
     let (window, visual) = cx.add_window_view(|_, cx| build_window(cx));
     let attach = client.clone();
     let attach_org = org_id.clone();
+    let attach_endpoint = endpoint.to_string();
     window.update(visual, |view: &mut DesktopWindow, cx| {
-        view.attach(attach, attach_org, cx);
+        view.attach(attach, attach_org, attach_endpoint, cx);
     });
     visual.run_until_parked();
     let visual = visual.clone();

@@ -170,8 +170,15 @@ type AgentRun struct {
 	UpdatedAt      *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ParentRunId    string                 `protobuf:"bytes,12,opt,name=parent_run_id,json=parentRunId,proto3" json:"parent_run_id,omitempty"`
 	Grants         *Grants                `protobuf:"bytes,13,opt,name=grants,proto3" json:"grants,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Result is the run's final output, persisted at terminal transition so a
+	// parent (or a client) can read what a child produced after it is gone.
+	ResultJson string `protobuf:"bytes,14,opt,name=result_json,json=resultJson,proto3" json:"result_json,omitempty"`
+	// Cohort linkage for children launched by one run_agent_cohort call.
+	// cohort_ordinal preserves their declaration order.
+	CohortId      string `protobuf:"bytes,15,opt,name=cohort_id,json=cohortId,proto3" json:"cohort_id,omitempty"`
+	CohortOrdinal int32  `protobuf:"varint,16,opt,name=cohort_ordinal,json=cohortOrdinal,proto3" json:"cohort_ordinal,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AgentRun) Reset() {
@@ -295,6 +302,295 @@ func (x *AgentRun) GetGrants() *Grants {
 	return nil
 }
 
+func (x *AgentRun) GetResultJson() string {
+	if x != nil {
+		return x.ResultJson
+	}
+	return ""
+}
+
+func (x *AgentRun) GetCohortId() string {
+	if x != nil {
+		return x.CohortId
+	}
+	return ""
+}
+
+func (x *AgentRun) GetCohortOrdinal() int32 {
+	if x != nil {
+		return x.CohortOrdinal
+	}
+	return 0
+}
+
+// RunWait is a parent's durable fan-in on child runs. It leaves the open state
+// exactly once, and clients render its state as the parent's awaiting reason.
+type RunWait struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ParentRunId   string                 `protobuf:"bytes,2,opt,name=parent_run_id,json=parentRunId,proto3" json:"parent_run_id,omitempty"`
+	StepIndex     int32                  `protobuf:"varint,3,opt,name=step_index,json=stepIndex,proto3" json:"step_index,omitempty"`
+	ToolCallId    string                 `protobuf:"bytes,4,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
+	Kind          string                 `protobuf:"bytes,5,opt,name=kind,proto3" json:"kind,omitempty"`   // wait | cohort
+	State         string                 `protobuf:"bytes,6,opt,name=state,proto3" json:"state,omitempty"` // open | resolved | timed_out | abandoned
+	TimeoutPolicy string                 `protobuf:"bytes,7,opt,name=timeout_policy,json=timeoutPolicy,proto3" json:"timeout_policy,omitempty"`
+	Deadline      *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=deadline,proto3" json:"deadline,omitempty"`
+	ResultJson    string                 `protobuf:"bytes,9,opt,name=result_json,json=resultJson,proto3" json:"result_json,omitempty"`
+	MemberRunIds  []string               `protobuf:"bytes,10,rep,name=member_run_ids,json=memberRunIds,proto3" json:"member_run_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RunWait) Reset() {
+	*x = RunWait{}
+	mi := &file_ultra_v1_agent_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunWait) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunWait) ProtoMessage() {}
+
+func (x *RunWait) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_agent_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunWait.ProtoReflect.Descriptor instead.
+func (*RunWait) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *RunWait) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RunWait) GetParentRunId() string {
+	if x != nil {
+		return x.ParentRunId
+	}
+	return ""
+}
+
+func (x *RunWait) GetStepIndex() int32 {
+	if x != nil {
+		return x.StepIndex
+	}
+	return 0
+}
+
+func (x *RunWait) GetToolCallId() string {
+	if x != nil {
+		return x.ToolCallId
+	}
+	return ""
+}
+
+func (x *RunWait) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *RunWait) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *RunWait) GetTimeoutPolicy() string {
+	if x != nil {
+		return x.TimeoutPolicy
+	}
+	return ""
+}
+
+func (x *RunWait) GetDeadline() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Deadline
+	}
+	return nil
+}
+
+func (x *RunWait) GetResultJson() string {
+	if x != nil {
+		return x.ResultJson
+	}
+	return ""
+}
+
+func (x *RunWait) GetMemberRunIds() []string {
+	if x != nil {
+		return x.MemberRunIds
+	}
+	return nil
+}
+
+// RunTreeNode is one run plus its children, so a client can render a spawn
+// tree without N+1 requests.
+type RunTreeNode struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Run           *AgentRun              `protobuf:"bytes,1,opt,name=run,proto3" json:"run,omitempty"`
+	Children      []*RunTreeNode         `protobuf:"bytes,2,rep,name=children,proto3" json:"children,omitempty"`
+	Waits         []*RunWait             `protobuf:"bytes,3,rep,name=waits,proto3" json:"waits,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RunTreeNode) Reset() {
+	*x = RunTreeNode{}
+	mi := &file_ultra_v1_agent_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunTreeNode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunTreeNode) ProtoMessage() {}
+
+func (x *RunTreeNode) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_agent_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunTreeNode.ProtoReflect.Descriptor instead.
+func (*RunTreeNode) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RunTreeNode) GetRun() *AgentRun {
+	if x != nil {
+		return x.Run
+	}
+	return nil
+}
+
+func (x *RunTreeNode) GetChildren() []*RunTreeNode {
+	if x != nil {
+		return x.Children
+	}
+	return nil
+}
+
+func (x *RunTreeNode) GetWaits() []*RunWait {
+	if x != nil {
+		return x.Waits
+	}
+	return nil
+}
+
+type GetRunTreeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRunTreeRequest) Reset() {
+	*x = GetRunTreeRequest{}
+	mi := &file_ultra_v1_agent_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRunTreeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRunTreeRequest) ProtoMessage() {}
+
+func (x *GetRunTreeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_agent_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRunTreeRequest.ProtoReflect.Descriptor instead.
+func (*GetRunTreeRequest) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetRunTreeRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type GetRunTreeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Roots         []*RunTreeNode         `protobuf:"bytes,1,rep,name=roots,proto3" json:"roots,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRunTreeResponse) Reset() {
+	*x = GetRunTreeResponse{}
+	mi := &file_ultra_v1_agent_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRunTreeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRunTreeResponse) ProtoMessage() {}
+
+func (x *GetRunTreeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ultra_v1_agent_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRunTreeResponse.ProtoReflect.Descriptor instead.
+func (*GetRunTreeResponse) Descriptor() ([]byte, []int) {
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GetRunTreeResponse) GetRoots() []*RunTreeNode {
+	if x != nil {
+		return x.Roots
+	}
+	return nil
+}
+
 type Grants struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Tools         []string               `protobuf:"bytes,1,rep,name=tools,proto3" json:"tools,omitempty"`
@@ -308,7 +604,7 @@ type Grants struct {
 
 func (x *Grants) Reset() {
 	*x = Grants{}
-	mi := &file_ultra_v1_agent_proto_msgTypes[2]
+	mi := &file_ultra_v1_agent_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -320,7 +616,7 @@ func (x *Grants) String() string {
 func (*Grants) ProtoMessage() {}
 
 func (x *Grants) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_agent_proto_msgTypes[2]
+	mi := &file_ultra_v1_agent_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -333,7 +629,7 @@ func (x *Grants) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Grants.ProtoReflect.Descriptor instead.
 func (*Grants) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{2}
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Grants) GetTools() []string {
@@ -387,7 +683,7 @@ type StartRunRequest struct {
 
 func (x *StartRunRequest) Reset() {
 	*x = StartRunRequest{}
-	mi := &file_ultra_v1_agent_proto_msgTypes[3]
+	mi := &file_ultra_v1_agent_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -399,7 +695,7 @@ func (x *StartRunRequest) String() string {
 func (*StartRunRequest) ProtoMessage() {}
 
 func (x *StartRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_agent_proto_msgTypes[3]
+	mi := &file_ultra_v1_agent_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -412,7 +708,7 @@ func (x *StartRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartRunRequest.ProtoReflect.Descriptor instead.
 func (*StartRunRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{3}
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *StartRunRequest) GetSessionId() string {
@@ -454,7 +750,7 @@ type StartRunResponse struct {
 
 func (x *StartRunResponse) Reset() {
 	*x = StartRunResponse{}
-	mi := &file_ultra_v1_agent_proto_msgTypes[4]
+	mi := &file_ultra_v1_agent_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -466,7 +762,7 @@ func (x *StartRunResponse) String() string {
 func (*StartRunResponse) ProtoMessage() {}
 
 func (x *StartRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_agent_proto_msgTypes[4]
+	mi := &file_ultra_v1_agent_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -479,7 +775,7 @@ func (x *StartRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartRunResponse.ProtoReflect.Descriptor instead.
 func (*StartRunResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{4}
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *StartRunResponse) GetRun() *AgentRun {
@@ -508,7 +804,7 @@ type PromptRunRequest struct {
 
 func (x *PromptRunRequest) Reset() {
 	*x = PromptRunRequest{}
-	mi := &file_ultra_v1_agent_proto_msgTypes[5]
+	mi := &file_ultra_v1_agent_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -520,7 +816,7 @@ func (x *PromptRunRequest) String() string {
 func (*PromptRunRequest) ProtoMessage() {}
 
 func (x *PromptRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_agent_proto_msgTypes[5]
+	mi := &file_ultra_v1_agent_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -533,7 +829,7 @@ func (x *PromptRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PromptRunRequest.ProtoReflect.Descriptor instead.
 func (*PromptRunRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{5}
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *PromptRunRequest) GetRunId() string {
@@ -559,7 +855,7 @@ type PromptRunResponse struct {
 
 func (x *PromptRunResponse) Reset() {
 	*x = PromptRunResponse{}
-	mi := &file_ultra_v1_agent_proto_msgTypes[6]
+	mi := &file_ultra_v1_agent_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -571,7 +867,7 @@ func (x *PromptRunResponse) String() string {
 func (*PromptRunResponse) ProtoMessage() {}
 
 func (x *PromptRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_agent_proto_msgTypes[6]
+	mi := &file_ultra_v1_agent_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -584,7 +880,7 @@ func (x *PromptRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PromptRunResponse.ProtoReflect.Descriptor instead.
 func (*PromptRunResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{6}
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *PromptRunResponse) GetEventSeq() int64 {
@@ -603,7 +899,7 @@ type CancelRunRequest struct {
 
 func (x *CancelRunRequest) Reset() {
 	*x = CancelRunRequest{}
-	mi := &file_ultra_v1_agent_proto_msgTypes[7]
+	mi := &file_ultra_v1_agent_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -615,7 +911,7 @@ func (x *CancelRunRequest) String() string {
 func (*CancelRunRequest) ProtoMessage() {}
 
 func (x *CancelRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_agent_proto_msgTypes[7]
+	mi := &file_ultra_v1_agent_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -628,7 +924,7 @@ func (x *CancelRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelRunRequest.ProtoReflect.Descriptor instead.
 func (*CancelRunRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{7}
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *CancelRunRequest) GetRunId() string {
@@ -646,7 +942,7 @@ type CancelRunResponse struct {
 
 func (x *CancelRunResponse) Reset() {
 	*x = CancelRunResponse{}
-	mi := &file_ultra_v1_agent_proto_msgTypes[8]
+	mi := &file_ultra_v1_agent_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -658,7 +954,7 @@ func (x *CancelRunResponse) String() string {
 func (*CancelRunResponse) ProtoMessage() {}
 
 func (x *CancelRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_agent_proto_msgTypes[8]
+	mi := &file_ultra_v1_agent_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -671,7 +967,7 @@ func (x *CancelRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelRunResponse.ProtoReflect.Descriptor instead.
 func (*CancelRunResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{8}
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{12}
 }
 
 type GetRunRequest struct {
@@ -683,7 +979,7 @@ type GetRunRequest struct {
 
 func (x *GetRunRequest) Reset() {
 	*x = GetRunRequest{}
-	mi := &file_ultra_v1_agent_proto_msgTypes[9]
+	mi := &file_ultra_v1_agent_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -695,7 +991,7 @@ func (x *GetRunRequest) String() string {
 func (*GetRunRequest) ProtoMessage() {}
 
 func (x *GetRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_agent_proto_msgTypes[9]
+	mi := &file_ultra_v1_agent_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -708,7 +1004,7 @@ func (x *GetRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunRequest.ProtoReflect.Descriptor instead.
 func (*GetRunRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{9}
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetRunRequest) GetRunId() string {
@@ -727,7 +1023,7 @@ type GetRunResponse struct {
 
 func (x *GetRunResponse) Reset() {
 	*x = GetRunResponse{}
-	mi := &file_ultra_v1_agent_proto_msgTypes[10]
+	mi := &file_ultra_v1_agent_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -739,7 +1035,7 @@ func (x *GetRunResponse) String() string {
 func (*GetRunResponse) ProtoMessage() {}
 
 func (x *GetRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_agent_proto_msgTypes[10]
+	mi := &file_ultra_v1_agent_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -752,7 +1048,7 @@ func (x *GetRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunResponse.ProtoReflect.Descriptor instead.
 func (*GetRunResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{10}
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetRunResponse) GetRun() *AgentRun {
@@ -771,7 +1067,7 @@ type ListRunsRequest struct {
 
 func (x *ListRunsRequest) Reset() {
 	*x = ListRunsRequest{}
-	mi := &file_ultra_v1_agent_proto_msgTypes[11]
+	mi := &file_ultra_v1_agent_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -783,7 +1079,7 @@ func (x *ListRunsRequest) String() string {
 func (*ListRunsRequest) ProtoMessage() {}
 
 func (x *ListRunsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_agent_proto_msgTypes[11]
+	mi := &file_ultra_v1_agent_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -796,7 +1092,7 @@ func (x *ListRunsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRunsRequest.ProtoReflect.Descriptor instead.
 func (*ListRunsRequest) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{11}
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ListRunsRequest) GetSessionId() string {
@@ -815,7 +1111,7 @@ type ListRunsResponse struct {
 
 func (x *ListRunsResponse) Reset() {
 	*x = ListRunsResponse{}
-	mi := &file_ultra_v1_agent_proto_msgTypes[12]
+	mi := &file_ultra_v1_agent_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -827,7 +1123,7 @@ func (x *ListRunsResponse) String() string {
 func (*ListRunsResponse) ProtoMessage() {}
 
 func (x *ListRunsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ultra_v1_agent_proto_msgTypes[12]
+	mi := &file_ultra_v1_agent_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -840,7 +1136,7 @@ func (x *ListRunsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRunsResponse.ProtoReflect.Descriptor instead.
 func (*ListRunsResponse) Descriptor() ([]byte, []int) {
-	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{12}
+	return file_ultra_v1_agent_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListRunsResponse) GetRuns() []*AgentRun {
@@ -861,7 +1157,7 @@ const file_ultra_v1_agent_proto_rawDesc = "" +
 	"\n" +
 	"credential\x18\x03 \x01(\tR\n" +
 	"credential\x123\n" +
-	"\tfallbacks\x18\x04 \x03(\v2\x15.ultra.v1.ModelConfigR\tfallbacks\"\x89\x04\n" +
+	"\tfallbacks\x18\x04 \x03(\v2\x15.ultra.v1.ModelConfigR\tfallbacks\"\xee\x04\n" +
 	"\bAgentRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -879,7 +1175,35 @@ const file_ultra_v1_agent_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\"\n" +
 	"\rparent_run_id\x18\f \x01(\tR\vparentRunId\x12(\n" +
-	"\x06grants\x18\r \x01(\v2\x10.ultra.v1.GrantsR\x06grants\"\x90\x01\n" +
+	"\x06grants\x18\r \x01(\v2\x10.ultra.v1.GrantsR\x06grants\x12\x1f\n" +
+	"\vresult_json\x18\x0e \x01(\tR\n" +
+	"resultJson\x12\x1b\n" +
+	"\tcohort_id\x18\x0f \x01(\tR\bcohortId\x12%\n" +
+	"\x0ecohort_ordinal\x18\x10 \x01(\x05R\rcohortOrdinal\"\xce\x02\n" +
+	"\aRunWait\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\"\n" +
+	"\rparent_run_id\x18\x02 \x01(\tR\vparentRunId\x12\x1d\n" +
+	"\n" +
+	"step_index\x18\x03 \x01(\x05R\tstepIndex\x12 \n" +
+	"\ftool_call_id\x18\x04 \x01(\tR\n" +
+	"toolCallId\x12\x12\n" +
+	"\x04kind\x18\x05 \x01(\tR\x04kind\x12\x14\n" +
+	"\x05state\x18\x06 \x01(\tR\x05state\x12%\n" +
+	"\x0etimeout_policy\x18\a \x01(\tR\rtimeoutPolicy\x126\n" +
+	"\bdeadline\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\bdeadline\x12\x1f\n" +
+	"\vresult_json\x18\t \x01(\tR\n" +
+	"resultJson\x12$\n" +
+	"\x0emember_run_ids\x18\n" +
+	" \x03(\tR\fmemberRunIds\"\x8f\x01\n" +
+	"\vRunTreeNode\x12$\n" +
+	"\x03run\x18\x01 \x01(\v2\x12.ultra.v1.AgentRunR\x03run\x121\n" +
+	"\bchildren\x18\x02 \x03(\v2\x15.ultra.v1.RunTreeNodeR\bchildren\x12'\n" +
+	"\x05waits\x18\x03 \x03(\v2\x11.ultra.v1.RunWaitR\x05waits\"2\n" +
+	"\x11GetRunTreeRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"A\n" +
+	"\x12GetRunTreeResponse\x12+\n" +
+	"\x05roots\x18\x01 \x03(\v2\x15.ultra.v1.RunTreeNodeR\x05roots\"\x90\x01\n" +
 	"\x06Grants\x12\x14\n" +
 	"\x05tools\x18\x01 \x03(\tR\x05tools\x12\x17\n" +
 	"\aenv_all\x18\x02 \x01(\bR\x06envAll\x12\x17\n" +
@@ -919,13 +1243,15 @@ const file_ultra_v1_agent_proto_rawDesc = "" +
 	"\x12RUN_STATE_AWAITING\x10\x03\x12\x17\n" +
 	"\x13RUN_STATE_COMPLETED\x10\x04\x12\x14\n" +
 	"\x10RUN_STATE_FAILED\x10\x05\x12\x17\n" +
-	"\x13RUN_STATE_CANCELLED\x10\x062\xdd\x02\n" +
+	"\x13RUN_STATE_CANCELLED\x10\x062\xa6\x03\n" +
 	"\fAgentService\x12A\n" +
 	"\bStartRun\x12\x19.ultra.v1.StartRunRequest\x1a\x1a.ultra.v1.StartRunResponse\x12D\n" +
 	"\tPromptRun\x12\x1a.ultra.v1.PromptRunRequest\x1a\x1b.ultra.v1.PromptRunResponse\x12D\n" +
 	"\tCancelRun\x12\x1a.ultra.v1.CancelRunRequest\x1a\x1b.ultra.v1.CancelRunResponse\x12;\n" +
 	"\x06GetRun\x12\x17.ultra.v1.GetRunRequest\x1a\x18.ultra.v1.GetRunResponse\x12A\n" +
-	"\bListRuns\x12\x19.ultra.v1.ListRunsRequest\x1a\x1a.ultra.v1.ListRunsResponseB<Z:github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1b\x06proto3"
+	"\bListRuns\x12\x19.ultra.v1.ListRunsRequest\x1a\x1a.ultra.v1.ListRunsResponse\x12G\n" +
+	"\n" +
+	"GetRunTree\x12\x1b.ultra.v1.GetRunTreeRequest\x1a\x1c.ultra.v1.GetRunTreeResponseB<Z:github.com/aleksclark/ultralogical/gen/go/ultra/v1;ultrav1b\x06proto3"
 
 var (
 	file_ultra_v1_agent_proto_rawDescOnce sync.Once
@@ -940,51 +1266,62 @@ func file_ultra_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_ultra_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ultra_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_ultra_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_ultra_v1_agent_proto_goTypes = []any{
 	(RunState)(0),                 // 0: ultra.v1.RunState
 	(*ModelConfig)(nil),           // 1: ultra.v1.ModelConfig
 	(*AgentRun)(nil),              // 2: ultra.v1.AgentRun
-	(*Grants)(nil),                // 3: ultra.v1.Grants
-	(*StartRunRequest)(nil),       // 4: ultra.v1.StartRunRequest
-	(*StartRunResponse)(nil),      // 5: ultra.v1.StartRunResponse
-	(*PromptRunRequest)(nil),      // 6: ultra.v1.PromptRunRequest
-	(*PromptRunResponse)(nil),     // 7: ultra.v1.PromptRunResponse
-	(*CancelRunRequest)(nil),      // 8: ultra.v1.CancelRunRequest
-	(*CancelRunResponse)(nil),     // 9: ultra.v1.CancelRunResponse
-	(*GetRunRequest)(nil),         // 10: ultra.v1.GetRunRequest
-	(*GetRunResponse)(nil),        // 11: ultra.v1.GetRunResponse
-	(*ListRunsRequest)(nil),       // 12: ultra.v1.ListRunsRequest
-	(*ListRunsResponse)(nil),      // 13: ultra.v1.ListRunsResponse
-	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
+	(*RunWait)(nil),               // 3: ultra.v1.RunWait
+	(*RunTreeNode)(nil),           // 4: ultra.v1.RunTreeNode
+	(*GetRunTreeRequest)(nil),     // 5: ultra.v1.GetRunTreeRequest
+	(*GetRunTreeResponse)(nil),    // 6: ultra.v1.GetRunTreeResponse
+	(*Grants)(nil),                // 7: ultra.v1.Grants
+	(*StartRunRequest)(nil),       // 8: ultra.v1.StartRunRequest
+	(*StartRunResponse)(nil),      // 9: ultra.v1.StartRunResponse
+	(*PromptRunRequest)(nil),      // 10: ultra.v1.PromptRunRequest
+	(*PromptRunResponse)(nil),     // 11: ultra.v1.PromptRunResponse
+	(*CancelRunRequest)(nil),      // 12: ultra.v1.CancelRunRequest
+	(*CancelRunResponse)(nil),     // 13: ultra.v1.CancelRunResponse
+	(*GetRunRequest)(nil),         // 14: ultra.v1.GetRunRequest
+	(*GetRunResponse)(nil),        // 15: ultra.v1.GetRunResponse
+	(*ListRunsRequest)(nil),       // 16: ultra.v1.ListRunsRequest
+	(*ListRunsResponse)(nil),      // 17: ultra.v1.ListRunsResponse
+	(*timestamppb.Timestamp)(nil), // 18: google.protobuf.Timestamp
 }
 var file_ultra_v1_agent_proto_depIdxs = []int32{
 	1,  // 0: ultra.v1.ModelConfig.fallbacks:type_name -> ultra.v1.ModelConfig
 	0,  // 1: ultra.v1.AgentRun.state:type_name -> ultra.v1.RunState
 	1,  // 2: ultra.v1.AgentRun.model_config:type_name -> ultra.v1.ModelConfig
-	14, // 3: ultra.v1.AgentRun.created_at:type_name -> google.protobuf.Timestamp
-	14, // 4: ultra.v1.AgentRun.updated_at:type_name -> google.protobuf.Timestamp
-	3,  // 5: ultra.v1.AgentRun.grants:type_name -> ultra.v1.Grants
-	1,  // 6: ultra.v1.StartRunRequest.model_config:type_name -> ultra.v1.ModelConfig
-	3,  // 7: ultra.v1.StartRunRequest.grants:type_name -> ultra.v1.Grants
-	2,  // 8: ultra.v1.StartRunResponse.run:type_name -> ultra.v1.AgentRun
-	2,  // 9: ultra.v1.GetRunResponse.run:type_name -> ultra.v1.AgentRun
-	2,  // 10: ultra.v1.ListRunsResponse.runs:type_name -> ultra.v1.AgentRun
-	4,  // 11: ultra.v1.AgentService.StartRun:input_type -> ultra.v1.StartRunRequest
-	6,  // 12: ultra.v1.AgentService.PromptRun:input_type -> ultra.v1.PromptRunRequest
-	8,  // 13: ultra.v1.AgentService.CancelRun:input_type -> ultra.v1.CancelRunRequest
-	10, // 14: ultra.v1.AgentService.GetRun:input_type -> ultra.v1.GetRunRequest
-	12, // 15: ultra.v1.AgentService.ListRuns:input_type -> ultra.v1.ListRunsRequest
-	5,  // 16: ultra.v1.AgentService.StartRun:output_type -> ultra.v1.StartRunResponse
-	7,  // 17: ultra.v1.AgentService.PromptRun:output_type -> ultra.v1.PromptRunResponse
-	9,  // 18: ultra.v1.AgentService.CancelRun:output_type -> ultra.v1.CancelRunResponse
-	11, // 19: ultra.v1.AgentService.GetRun:output_type -> ultra.v1.GetRunResponse
-	13, // 20: ultra.v1.AgentService.ListRuns:output_type -> ultra.v1.ListRunsResponse
-	16, // [16:21] is the sub-list for method output_type
-	11, // [11:16] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	18, // 3: ultra.v1.AgentRun.created_at:type_name -> google.protobuf.Timestamp
+	18, // 4: ultra.v1.AgentRun.updated_at:type_name -> google.protobuf.Timestamp
+	7,  // 5: ultra.v1.AgentRun.grants:type_name -> ultra.v1.Grants
+	18, // 6: ultra.v1.RunWait.deadline:type_name -> google.protobuf.Timestamp
+	2,  // 7: ultra.v1.RunTreeNode.run:type_name -> ultra.v1.AgentRun
+	4,  // 8: ultra.v1.RunTreeNode.children:type_name -> ultra.v1.RunTreeNode
+	3,  // 9: ultra.v1.RunTreeNode.waits:type_name -> ultra.v1.RunWait
+	4,  // 10: ultra.v1.GetRunTreeResponse.roots:type_name -> ultra.v1.RunTreeNode
+	1,  // 11: ultra.v1.StartRunRequest.model_config:type_name -> ultra.v1.ModelConfig
+	7,  // 12: ultra.v1.StartRunRequest.grants:type_name -> ultra.v1.Grants
+	2,  // 13: ultra.v1.StartRunResponse.run:type_name -> ultra.v1.AgentRun
+	2,  // 14: ultra.v1.GetRunResponse.run:type_name -> ultra.v1.AgentRun
+	2,  // 15: ultra.v1.ListRunsResponse.runs:type_name -> ultra.v1.AgentRun
+	8,  // 16: ultra.v1.AgentService.StartRun:input_type -> ultra.v1.StartRunRequest
+	10, // 17: ultra.v1.AgentService.PromptRun:input_type -> ultra.v1.PromptRunRequest
+	12, // 18: ultra.v1.AgentService.CancelRun:input_type -> ultra.v1.CancelRunRequest
+	14, // 19: ultra.v1.AgentService.GetRun:input_type -> ultra.v1.GetRunRequest
+	16, // 20: ultra.v1.AgentService.ListRuns:input_type -> ultra.v1.ListRunsRequest
+	5,  // 21: ultra.v1.AgentService.GetRunTree:input_type -> ultra.v1.GetRunTreeRequest
+	9,  // 22: ultra.v1.AgentService.StartRun:output_type -> ultra.v1.StartRunResponse
+	11, // 23: ultra.v1.AgentService.PromptRun:output_type -> ultra.v1.PromptRunResponse
+	13, // 24: ultra.v1.AgentService.CancelRun:output_type -> ultra.v1.CancelRunResponse
+	15, // 25: ultra.v1.AgentService.GetRun:output_type -> ultra.v1.GetRunResponse
+	17, // 26: ultra.v1.AgentService.ListRuns:output_type -> ultra.v1.ListRunsResponse
+	6,  // 27: ultra.v1.AgentService.GetRunTree:output_type -> ultra.v1.GetRunTreeResponse
+	22, // [22:28] is the sub-list for method output_type
+	16, // [16:22] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_ultra_v1_agent_proto_init() }
@@ -998,7 +1335,7 @@ func file_ultra_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ultra_v1_agent_proto_rawDesc), len(file_ultra_v1_agent_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   13,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

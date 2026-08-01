@@ -93,6 +93,15 @@ type Turn struct {
 	// Status, when non-zero, makes the server respond with this HTTP status
 	// and no body (for auth/fallback tests).
 	Status int
+	// Gate, when non-nil, blocks the response until the channel is closed.
+	// Tests use it to hold a run in a known state (for example a parent
+	// parked on children) without sleeping and hoping.
+	Gate <-chan struct{}
+	// Scenario labels which independent scenario a turn belongs to. Turns from
+	// two different labelled scenarios must never match one request: that
+	// means one scenario's prompt is a substring of another's, and the server
+	// refuses rather than guessing.
+	Scenario int
 	// Sticky keeps a matched turn available for later requests instead of
 	// consuming it. A suite that drives several independent scenarios against
 	// one server (a browser suite whose specs each start their own run, for
@@ -112,7 +121,6 @@ type Server struct {
 
 	mu       sync.Mutex
 	script   Script
-	nextTurn int
 	requests []Request
 	errors   []string
 }
@@ -139,7 +147,6 @@ func (s *Server) SetScript(script Script) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.script = script
-	s.nextTurn = 0
 	s.requests = nil
 	s.errors = nil
 }
@@ -190,6 +197,11 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Gating happens outside the lock so a held turn cannot stall the whole
+	// server for other runs.
+	if turn.Gate != nil {
+		<-turn.Gate
+	}
 	if turn.Status != 0 {
 		w.WriteHeader(turn.Status)
 		_, _ = w.Write([]byte(`{"error":{"message":"scripted error"}}`))
@@ -203,8 +215,14 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 }
 
 // selectTurn picks the turn for a request. Caller holds the lock.
+//
+// Matcher-based scripts are selected by conversation depth rather than by
+// consumption order: among the turns whose matcher accepts this request, the
+// one chosen is the one at the position matching how many assistant messages
+// the conversation already contains. That makes a script independent of the
+// order scenarios run in (several runs can share one server) while still
+// letting one conversation walk through several turns.
 func (s *Server) selectTurn(req Request) (Turn, error) {
-	// Matcher-based selection: first unconsumed matching turn.
 	hasMatchers := false
 	for _, t := range s.script.Turns {
 		if t.Match != nil {
@@ -212,37 +230,74 @@ func (s *Server) selectTurn(req Request) (Turn, error) {
 			break
 		}
 	}
-	if hasMatchers {
-		// Sticky turns are matched from the whole script and never
-		// consumed, so they answer the same prompt in any scenario order.
-		for _, t := range s.script.Turns {
-			if t.Sticky && t.Match != nil && t.Match(req.Messages) {
-				return t, nil
-			}
+	if !hasMatchers {
+		// Index-based selection: the i-th model call gets Turns[i].
+		assistants := countAssistants(req.Messages)
+		if assistants >= len(s.script.Turns) {
+			return Turn{}, fmt.Errorf("modelscript: request for turn %d but script has %d turns", assistants, len(s.script.Turns))
 		}
-		for i := s.nextTurn; i < len(s.script.Turns); i++ {
-			t := s.script.Turns[i]
-			if t.Sticky {
-				continue
-			}
-			if t.Match == nil || t.Match(req.Messages) {
-				s.nextTurn = i + 1
-				return t, nil
-			}
+		return s.script.Turns[assistants], nil
+	}
+
+	var matching []Turn
+	var matchedGroups []int
+	for _, t := range s.script.Turns {
+		if t.Match == nil || t.Match(req.Messages) {
+			matching = append(matching, t)
+			matchedGroups = append(matchedGroups, t.group())
 		}
+	}
+	// A prompt that matches turns from two different scenarios is almost
+	// always an accident: one scenario's prompt is a substring of another's.
+	// Silently choosing one produces a baffling failure far from the cause, so
+	// say so here instead.
+	if distinct := distinctGroups(matchedGroups); len(distinct) > 1 {
+		return Turn{}, fmt.Errorf("modelscript: request matched turns from %d scenarios (%v); make the prompts distinct", len(distinct), distinct)
+	}
+	if len(matching) == 0 {
 		return Turn{}, fmt.Errorf("modelscript: no turn matched request with %d messages", len(req.Messages))
 	}
-	// Index-based selection: the i-th model call gets Turns[i].
-	assistants := 0
-	for _, m := range req.Messages {
+	depth := countAssistants(req.Messages)
+	if depth < len(matching) {
+		return matching[depth], nil
+	}
+	// Past the end of the scripted turns, a sticky turn keeps answering; a
+	// script without one has run out and should say so loudly.
+	last := matching[len(matching)-1]
+	if last.Sticky {
+		return last, nil
+	}
+	return Turn{}, fmt.Errorf("modelscript: conversation reached depth %d but only %d turns matched", depth, len(matching))
+}
+
+// group reports which scenario a turn belongs to. Turns default to group zero,
+// which is treated as "unlabelled" and never conflicts.
+func (t Turn) group() int { return t.Scenario }
+
+// distinctGroups lists the labelled scenarios present in a match set.
+func distinctGroups(groups []int) []int {
+	seen := map[int]bool{}
+	var out []int
+	for _, g := range groups {
+		if g == 0 || seen[g] {
+			continue
+		}
+		seen[g] = true
+		out = append(out, g)
+	}
+	return out
+}
+
+// countAssistants reports how many model turns a conversation already
+// contains, which is its depth.
+func countAssistants(messages []Message) int {
+	n := 0
+	for _, m := range messages {
 		if m.Role == "assistant" {
-			assistants++
+			n++
 		}
 	}
-	if assistants >= len(s.script.Turns) {
-		return Turn{}, fmt.Errorf("modelscript: request for turn %d but script has %d turns", assistants, len(s.script.Turns))
-	}
-	return s.script.Turns[assistants], nil
+	return n
 }
 
 // UserContains returns a matcher for the most recent user message.

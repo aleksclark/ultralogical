@@ -34,10 +34,41 @@ pub enum TimelineItem {
     Tool { run_id: String, name: String, output: Option<String>, is_error: bool },
     Question { run_id: String, text: String, choices: Vec<String> },
     Status { run_id: String, status: String, message: String },
-    Note { text: String },
+    Note { text: String, run_id: Option<String> },
+}
+
+/// short_id abbreviates an identifier for display.
+fn short_id(id: &str) -> String {
+    id.chars().take(8).collect()
+}
+
+/// run_state_label maps the wire enum to the word the window paints.
+pub fn run_state_label(state: i32) -> String {
+    match v1::RunState::try_from(state) {
+        Ok(v1::RunState::Pending) => "pending",
+        Ok(v1::RunState::Running) => "running",
+        Ok(v1::RunState::Awaiting) => "awaiting",
+        Ok(v1::RunState::Completed) => "completed",
+        Ok(v1::RunState::Failed) => "failed",
+        Ok(v1::RunState::Cancelled) => "cancelled",
+        _ => "unknown",
+    }
+    .to_string()
 }
 
 impl TimelineItem {
+    /// run_id reports which run a row belongs to, so lanes can filter.
+    pub fn run_id(&self) -> Option<&str> {
+        match self {
+            TimelineItem::Assistant { run_id, .. }
+            | TimelineItem::Tool { run_id, .. }
+            | TimelineItem::Question { run_id, .. }
+            | TimelineItem::Status { run_id, .. } => Some(run_id),
+            TimelineItem::Note { run_id, .. } => run_id.as_deref(),
+            TimelineItem::User { .. } => None,
+        }
+    }
+
     /// render_label is the text the window paints for this row. Tests assert
     /// against it through the rendered element tree, never against internals.
     pub fn render_label(&self) -> String {
@@ -57,7 +88,7 @@ impl TimelineItem {
             TimelineItem::Status { status, message, .. } => {
                 if message.is_empty() { format!("run {status}") } else { format!("run {status}: {message}") }
             }
-            TimelineItem::Note { text } => format!("note: {text}"),
+            TimelineItem::Note { text, .. } => format!("note: {text}"),
         }
     }
 }
@@ -79,6 +110,29 @@ pub struct UsageView {
     pub seconds: i64,
     pub rate_class: String,
     pub open: bool,
+}
+
+/// RunNode is one run in the rendered spawn tree, flattened with its depth so
+/// the window can paint indentation without recursive layout.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct RunNode {
+    pub run_id: String,
+    pub parent_run_id: String,
+    pub prompt: String,
+    pub state: String,
+    pub depth: usize,
+    pub cohort_id: String,
+    pub cohort_ordinal: i32,
+    pub waits: Vec<WaitView>,
+}
+
+/// WaitView is a rendered fan-in wait: why a run parked and how it ended.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct WaitView {
+    pub wait_id: String,
+    pub kind: String,
+    pub state: String,
+    pub member_count: usize,
 }
 
 /// SessionSummary is one row of the rendered session list.
@@ -108,9 +162,68 @@ pub struct DesktopState {
     pub memory_keys: Vec<String>,
     pub error: String,
     pub prompt: String,
+    /// runs is the flattened spawn tree. A session runs several agents at once,
+    /// so "which agent did this" is unanswerable without it.
+    pub runs: Vec<RunNode>,
+    /// lane_run_id filters the timeline to one agent's activity.
+    pub lane_run_id: Option<String>,
+    /// endpoint records which replica the window is currently talking to.
+    pub endpoint: String,
 }
 
 impl DesktopState {
+    /// set_runs replaces the rendered spawn tree.
+    pub fn set_runs(&mut self, runs: Vec<RunNode>) {
+        self.runs = runs;
+    }
+
+    /// flatten_tree converts the API's nested tree into rendered rows, carrying
+    /// depth so parent/child structure survives flattening.
+    pub fn flatten_tree(roots: &[v1::RunTreeNode]) -> Vec<RunNode> {
+        fn walk(node: &v1::RunTreeNode, depth: usize, out: &mut Vec<RunNode>) {
+            let Some(run) = &node.run else { return };
+            out.push(RunNode {
+                run_id: run.id.clone(),
+                parent_run_id: run.parent_run_id.clone(),
+                prompt: run.prompt.clone(),
+                state: run_state_label(run.state),
+                depth,
+                cohort_id: run.cohort_id.clone(),
+                cohort_ordinal: run.cohort_ordinal,
+                waits: node
+                    .waits
+                    .iter()
+                    .map(|w| WaitView {
+                        wait_id: w.id.clone(),
+                        kind: w.kind.clone(),
+                        state: w.state.clone(),
+                        member_count: w.member_run_ids.len(),
+                    })
+                    .collect(),
+            });
+            for child in &node.children {
+                walk(child, depth + 1, out);
+            }
+        }
+        let mut out = Vec::new();
+        for root in roots {
+            walk(root, 0, &mut out);
+        }
+        out
+    }
+
+    /// timeline_for returns the rows a lane shows: one agent's activity when a
+    /// lane is selected, everything otherwise.
+    pub fn timeline_for(&self, lane: Option<&str>) -> Vec<&TimelineItem> {
+        self.timeline
+            .iter()
+            .filter(|item| match lane {
+                None => true,
+                Some(run) => item.run_id().is_some_and(|id| id == run),
+            })
+            .collect()
+    }
+
     /// reset_session clears per-session state when the window switches
     /// sessions or replays one from seq 0.
     pub fn reset_session(&mut self, session_id: String) {
@@ -122,6 +235,8 @@ impl DesktopState {
         self.exec_output.clear();
         self.participants.clear();
         self.memory_keys.clear();
+        self.runs.clear();
+        self.lane_run_id = None;
     }
 
     /// assistant_text returns the concatenated assistant text, used by the
@@ -252,6 +367,13 @@ impl DesktopState {
             Some(Payload::MemoryDeleted(x)) => self.memory_keys.retain(|k| k != &x.key),
             Some(Payload::PermissionDenied(x)) => self.timeline.push(TimelineItem::Note {
                 text: format!("permission denied: {} ({})", x.tool, x.reason),
+                run_id: Some(x.run_id.clone()),
+            }),
+            // Spawn links are folded so a lane knows about its children even
+            // before the run tree is fetched.
+            Some(Payload::RunSpawned(x)) => self.timeline.push(TimelineItem::Note {
+                text: format!("spawned agent {}", short_id(&x.child_run_id)),
+                run_id: Some(x.parent_run_id.clone()),
             }),
             _ => {}
         }
@@ -280,6 +402,7 @@ impl DesktopState {
         );
         self.timeline.push(TimelineItem::Note {
             text: format!("environment {} is {phase}", event.name),
+            run_id: None,
         });
     }
 }

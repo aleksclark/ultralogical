@@ -8,7 +8,7 @@
 mod support;
 
 use gpui::TestAppContext;
-use support::{await_rendered, open_app, pump, rendered, selector};
+use support::{await_rendered, env, open_app, pump, rendered, selector};
 use ultralogical_desktop::{DesktopWindow, TimelineItem};
 
 const FRAME_ATTEMPTS: usize = 600;
@@ -129,7 +129,8 @@ async fn drives_same_actions_as_entrypoint(cx: &mut TestAppContext) {
 
     // Exactly what main.rs does once the client is connected.
     let mut async_app = cx.to_async();
-    DesktopWindow::start_up(&window, &mut client, &org_id, &mut async_app).await;
+    let endpoint = env("ULTRAD_URL");
+    DesktopWindow::start_up(&window, &mut client, &org_id, &endpoint, &mut async_app).await;
 
     await_rendered(cx, "session:GPUI entrypoint", FRAME_ATTEMPTS);
     await_rendered(cx, "connection:live", FRAME_ATTEMPTS);

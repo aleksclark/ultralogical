@@ -2,8 +2,8 @@
 
 Ultralogical: a durable-session platform for agentic work — multi-tenant,
 event-sourced sessions that humans and agents share. Go backend, ConnectRPC
-API, Postgres, React/gpui UIs. **Phase 7** (Phase 0–2 completion) is closed;
-Phase 8 owns orchestration and distributed-session completion.
+API, Postgres, React/gpui UIs. **Phase 8** (orchestration and
+distributed-session completion) is closed; Phase 9 owns flow completion.
 
 ## Cheatsheet
 
@@ -66,6 +66,10 @@ task desktop:test      # GPUI golden on real stack
 | [agent_docs/phases_0_6_audit.md](agent_docs/phases_0_6_audit.md) | authoritative incomplete-work audit |
 | [agent_docs/phase_7_inventory.md](agent_docs/phase_7_inventory.md) | Phase 7 behavior-to-test inventory |
 | [agent_docs/phase_7_audit.md](agent_docs/phase_7_audit.md) | Phase 7 independent completion audit |
+| [agent_docs/phase_8_inventory.md](agent_docs/phase_8_inventory.md) | Phase 8 behavior-to-test inventory |
+| [agent_docs/phase_8_audit.md](agent_docs/phase_8_audit.md) | Phase 8 independent completion audit |
+| [agent_docs/throughput_baseline.md](agent_docs/throughput_baseline.md) | recording or comparing a throughput regression baseline |
+| [docs/security.md](docs/security.md) | grant lattice, denial visibility, tenancy, credential scope |
 | [agent_docs/cross_client_testing.md](agent_docs/cross_client_testing.md) | adding public capabilities or client tests |
 | [agent_docs/package_layout.md](agent_docs/package_layout.md) | deciding where new code goes |
 | [agent_docs/testing.md](agent_docs/testing.md) | writing/running tests, using the harness |
@@ -74,8 +78,8 @@ task desktop:test      # GPUI golden on real stack
 | [plan/index.md](plan/index.md) | architecture rationale + full roadmap |
 | [plan/phase_6_7.md](plan/phase_6_7.md) | security-critical remediation phase |
 | [plan/phase_7.md](plan/phase_7.md) | Phase 0–2 completion (closed) |
-| [plan/phase_8.md](plan/phase_8.md) | current phase: orchestration and distributed-session completion |
-| [plan/phase_9.md](plan/phase_9.md) | flow completion |
+| [plan/phase_8.md](plan/phase_8.md) | orchestration and distributed-session completion (closed) |
+| [plan/phase_9.md](plan/phase_9.md) | current phase: flow completion |
 | [plan/phase_10.md](plan/phase_10.md) | real remote providers |
 | [plan/phase_11.md](plan/phase_11.md) | advanced loop and automation completion |
 | [plan/phase_12.md](plan/phase_12.md) | production hardening and billing |

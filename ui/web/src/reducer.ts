@@ -6,7 +6,8 @@ export type TimelineItem =
   | { type: "tool"; runId: string; name: string; input: string; output?: string; error?: boolean }
   | { type: "question"; runId: string; text: string; choices: string[] }
   | { type: "status"; runId: string; status: string; message?: string }
-  | { type: "annotation"; text: string };
+  // Annotations may be attributed to a run so lane filtering can include them.
+  | { type: "annotation"; text: string; runId?: string };
 
 export type EnvLifecycleState = {
   envId: string;
@@ -18,6 +19,9 @@ export type EnvLifecycleState = {
 
 export type SessionView = {
   items: TimelineItem[];
+  /** spawns records parent/child links seen in the log, so lanes are known
+   * even before the run tree is fetched. */
+  spawns: { parentRunId: string; childRunId: string }[];
   lastSeq: bigint;
   /**
    * deltaFrames counts the streamed assistant deltas folded so far.
@@ -29,7 +33,7 @@ export type SessionView = {
   envs: Record<string, EnvLifecycleState>;
 };
 
-export const initialView: SessionView = { items: [], lastSeq: 0n, deltaFrames: 0, envs: {} };
+export const initialView: SessionView = { items: [], lastSeq: 0n, deltaFrames: 0, envs: {}, spawns: [] };
 
 const envPhases: Record<string, string> = {
   envRequested: "requested",
@@ -40,13 +44,27 @@ const envPhases: Record<string, string> = {
   envTerminated: "terminated",
 };
 
+/**
+ * ViewAction is either a session event to fold or an explicit reset. Reset
+ * exists because switching sessions or replicas must discard everything and
+ * rebuild from the log, rather than layering a new stream over stale state.
+ */
+export type ViewAction = { reset: true } | { event: SessionEvent };
+
+export function reduceView(state: SessionView, action: ViewAction): SessionView {
+  if ("reset" in action) return initialView;
+  return foldEvent(state, action.event);
+}
+
 export function foldEvent(state: SessionView, event: SessionEvent): SessionView {
   if (event.seq <= state.lastSeq) return state;
   const items = [...state.items];
   let deltaFrames = state.deltaFrames;
   const envs = { ...state.envs };
+  const spawns = [...state.spawns];
   const payload = event.payload?.payload;
   if (!payload) return { ...state, items, lastSeq: event.seq };
+
 
   switch (payload.case) {
     case "userMessage":
@@ -66,6 +84,28 @@ export function foldEvent(state: SessionView, event: SessionEvent): SessionView 
       else items.push({ type: "assistant", runId: d.runId, text: d.text, streaming: true });
       break;
     }
+    case "runSpawned":
+      spawns.push({ parentRunId: payload.value.parentRunId, childRunId: payload.value.childRunId });
+      items.push({
+        type: "annotation",
+        text: `spawned agent ${payload.value.childRunId.slice(0, 8)}`,
+        runId: payload.value.parentRunId,
+      });
+      break;
+    case "memorySet":
+      items.push({ type: "annotation", text: `memory set: ${payload.value.key}` });
+      break;
+    case "memoryDeleted":
+      items.push({ type: "annotation", text: `memory deleted: ${payload.value.key}` });
+      break;
+    case "permissionDenied":
+      items.push({
+        type: "status",
+        runId: payload.value.runId,
+        status: "denied",
+        message: `${payload.value.tool}: ${payload.value.reason}`,
+      });
+      break;
     case "toolCallStarted":
       items.push({ type: "tool", runId: payload.value.runId, name: payload.value.name, input: payload.value.input });
       break;
@@ -107,5 +147,5 @@ export function foldEvent(state: SessionView, event: SessionEvent): SessionView 
       break;
     }
   }
-  return { items, lastSeq: event.seq, deltaFrames, envs };
+  return { items, lastSeq: event.seq, deltaFrames, envs, spawns };
 }

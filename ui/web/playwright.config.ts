@@ -23,6 +23,11 @@ export default defineConfig({
     url: webURL,
     timeout: 180_000,
     reuseExistingServer: !process.env.CI,
-    env: { VITE_ULTRAD_URL: process.env.ULTRAD_URL ?? "http://127.0.0.1:8080" },
+    env: {
+      VITE_ULTRAD_URL: process.env.ULTRAD_URL ?? "http://127.0.0.1:8080",
+      // The alternate replica enables the reconnect control. Empty means the
+      // deployment has one replica and the control stays hidden.
+      VITE_ULTRAD_ALT_URL: process.env.ULTRAD_ALT_URL ?? "",
+    },
   },
 });

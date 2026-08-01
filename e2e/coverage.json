@@ -343,24 +343,129 @@
           "memory entry was never painted"
         ]
       }
+    },
+    "run_tree_linkage": {
+      "web": {
+        "file": "run-tree.spec.ts",
+        "test": "renders a spawned run tree with child lanes",
+        "asserts": [
+          "toHaveAttribute(\"data-parent-run-id\", parentId!)",
+          "getByTestId(\"cohort-marker\")"
+        ]
+      },
+      "rust": {
+        "file": "run_tree_e2e.rs",
+        "test": "renders_run_tree_and_lanes",
+        "asserts": [
+          "await_rendered(cx, \"run-tree\", FRAME_ATTEMPTS)",
+          "does not point at the parent"
+        ]
+      },
+      "rpcs": [
+        "ultra.v1.AgentService/GetRunTree"
+      ]
+    },
+    "run_lane_filter": {
+      "web": {
+        "file": "run-tree.spec.ts",
+        "test": "filters the timeline to one run lane",
+        "asserts": [
+          "toHaveAttribute(\"data-lane\", childId!)",
+          "Show all runs"
+        ]
+      },
+      "rust": {
+        "file": "run_tree_e2e.rs",
+        "test": "filters_timeline_to_one_lane",
+        "asserts": [
+          "await_rendered(cx, selector(format!(\"lane-rows:all:{all_rows}\")), FRAME_ATTEMPTS)",
+          "did not narrow the timeline"
+        ]
+      },
+      "rpcs": [
+        "ultra.v1.AgentService/ListRuns"
+      ]
+    },
+    "wait_transitions": {
+      "web": {
+        "file": "run-tree.spec.ts",
+        "test": "shows wait and failure transitions",
+        "asserts": [
+          ".toBe(\"timed_out\")",
+          "data-run-state=\"completed\""
+        ]
+      },
+      "rust": {
+        "file": "run_tree_e2e.rs",
+        "test": "renders_wait_transitions",
+        "asserts": [
+          "rendered(cx, \"wait:cohort:timed_out:1\")",
+          "await_rendered(cx, \"row:run completed\", FRAME_ATTEMPTS)"
+        ]
+      },
+      "rpcs": [
+        "ultra.v1.AgentService/GetRun"
+      ]
+    },
+    "agent_memory_inspection": {
+      "web": {
+        "file": "run-tree.spec.ts",
+        "test": "inspects agent-written session memory",
+        "asserts": [
+          "data-testid=\"memory-entry\"][data-key=\"browser.note\"",
+          "toContainText(\"written by an agent\")"
+        ]
+      },
+      "rust": {
+        "file": "run_tree_e2e.rs",
+        "test": "inspects_memory_and_reconnects",
+        "asserts": [
+          "await_rendered(cx, \"memory:desktop.note\", FRAME_ATTEMPTS)",
+          "await_rendered(cx, \"memory-count:1\", FRAME_ATTEMPTS)"
+        ]
+      },
+      "rpcs": [
+        "ultra.v1.SessionService/ListMemory"
+      ]
+    },
+    "replica_reconnect": {
+      "web": {
+        "file": "run-tree.spec.ts",
+        "test": "reconnects through a second replica",
+        "asserts": [
+          "getByTestId(\"replica-switch\")",
+          ".toBe(normalize(before))"
+        ]
+      },
+      "rust": {
+        "file": "run_tree_e2e.rs",
+        "test": "inspects_memory_and_reconnects",
+        "asserts": [
+          "open_app_at(cx, &alt)",
+          "the second replica rendered a different timeline"
+        ]
+      },
+      "rpcs": [
+        "ultra.v1.EventService/Subscribe"
+      ]
     }
   },
   "deferred": {
     "ultra.v1.SessionService/Leave": {
-      "owner": "A8.6",
-      "reason": "Presence expiry and explicit leave are proven together with stale-presence semantics in Phase 8."
+      "owner": "A12.11",
+      "reason": "Phase 8 proved leave and stale-presence expiry through the Go functional suite, but no first-party client exposes an explicit leave control yet; that ships with the complete client applications."
     },
     "ultra.v1.SessionService/GetMemory": {
-      "owner": "A8.6",
-      "reason": "Single-key reads are covered alongside memory caps, atomicity, and namespace rules in Phase 8."
+      "owner": "A12.11",
+      "reason": "Phase 8 proved single-key reads, caps, and namespace rules through the Go functional suite; the shipped clients list memory rather than reading one key, so client evidence waits for the complete applications."
     },
     "ultra.v1.SessionService/DeleteMemory": {
-      "owner": "A8.6",
-      "reason": "Deletion semantics and replay after deletion are proven with the Phase 8 memory matrix."
+      "owner": "A12.11",
+      "reason": "Phase 8 proved deletion and replay after deletion through the Go functional suite; no client offers a delete control yet."
     },
     "ultra.v1.AgentService/CancelRun": {
-      "owner": "A8.2",
-      "reason": "Client-driven cancellation is proven with the Phase 8 wait/cancellation race matrix."
+      "owner": "A9.8",
+      "reason": "Phase 8 proved cancellation and its wait-abandonment races through the Go functional suite; the cancel control itself is part of Phase 9 application parity."
     },
     "ultra.v1.OrgService/CreateOrg": {
       "owner": "A12.11",

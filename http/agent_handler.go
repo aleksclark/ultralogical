@@ -74,6 +74,18 @@ func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[ultrav
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
+	// A human-started run receives server-defined root authority. A caller may
+	// ask for *less* — launching a deliberately restricted run is useful — but
+	// never for more, so the request can only narrow what the server grants.
+	grants := ultra.RootGrants()
+	if requested := req.Msg.GetGrants(); requested != nil {
+		narrowed := grantsFromProto(requested)
+		if !narrowed.SubsetOf(grants) {
+			return nil, connect.NewError(connect.CodePermissionDenied,
+				errors.New("requested grants exceed the authority of a human-started run"))
+		}
+		grants = narrowed
+	}
 	run := ultra.AgentRun{
 		ID:          ultra.RunID(uuid.NewString()),
 		SessionID:   sessionID,
@@ -83,7 +95,7 @@ func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[ultrav
 		ModelConfig: modelConfig,
 		Prompt:      req.Msg.GetPrompt(),
 		History:     history,
-		Grants:      ultra.RootGrants(),
+		Grants:      grants,
 	}
 
 	var eventSeq int64
@@ -214,6 +226,12 @@ func (h *agentHandler) CancelRun(ctx context.Context, req *connect.Request[ultra
 			if err := scope.Runs().SetState(ctx, run.ID, ultra.RunCancelled, "", ""); err != nil {
 				return err
 			}
+			// A run awaiting child agents holds an open wait. Closing it here
+			// is what stops a child that finishes later from resuming a run
+			// the user has already cancelled.
+			if err := loop.AbandonWaits(ctx, txs, run.OrgID, run.ID); err != nil {
+				return err
+			}
 			payload, _ := json.Marshal(ultra.RunCancelledPayload{RunID: run.ID})
 			_, err = scope.Events().Append(ctx, run.SessionID, ultra.Event{
 				Actor:   ultra.Actor{Type: ultra.ActorSystem},
@@ -240,6 +258,55 @@ func (h *agentHandler) GetRun(ctx context.Context, req *connect.Request[ultrav1.
 		return nil, err
 	}
 	return connect.NewResponse(&ultrav1.GetRunResponse{Run: runToProto(run)}), nil
+}
+
+// GetRunTree returns a session's runs as parent/child trees with their waits.
+// Clients need the whole shape at once to render a spawn tree or lane view;
+// walking it request by request would race the live event stream.
+func (h *agentHandler) GetRunTree(ctx context.Context, req *connect.Request[ultrav1.GetRunTreeRequest]) (*connect.Response[ultrav1.GetRunTreeResponse], error) {
+	sessionID := ultra.SessionID(req.Msg.GetSessionId())
+	org, _, err := resolveSessionOrg(ctx, h.store, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	scope := h.store.Org(org)
+	runs, err := scope.Runs().List(ctx, sessionID)
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+
+	nodes := make(map[ultra.RunID]*ultrav1.RunTreeNode, len(runs))
+	order := make([]ultra.RunID, 0, len(runs))
+	for _, run := range runs {
+		node := &ultrav1.RunTreeNode{Run: runToProto(run)}
+		waits, err := scope.Waits().ListForParent(ctx, run.ID)
+		if err != nil {
+			return nil, mapStoreErr(err)
+		}
+		for _, wait := range waits {
+			members, err := scope.Waits().Members(ctx, wait.ID)
+			if err != nil {
+				return nil, mapStoreErr(err)
+			}
+			node.Waits = append(node.Waits, waitToProto(wait, members))
+		}
+		nodes[run.ID] = node
+		order = append(order, run.ID)
+	}
+
+	resp := &ultrav1.GetRunTreeResponse{}
+	for _, id := range order {
+		node := nodes[id]
+		parentID := node.GetRun().GetParentRunId()
+		// A child whose parent is in this session hangs off it; anything else
+		// (including a child of a run in another session) is a root here.
+		if parent, ok := nodes[ultra.RunID(parentID)]; ok && parentID != "" {
+			parent.Children = append(parent.Children, node)
+			continue
+		}
+		resp.Roots = append(resp.Roots, node)
+	}
+	return connect.NewResponse(resp), nil
 }
 
 func (h *agentHandler) ListRuns(ctx context.Context, req *connect.Request[ultrav1.ListRunsRequest]) (*connect.Response[ultrav1.ListRunsResponse], error) {

@@ -2,7 +2,7 @@
 
 Ultralogical is a durable-session platform for agentic work. Full design +
 roadmap: [`plan/index.md`](../plan/index.md). This doc describes the current
-Phase 6.7 implementation snapshot and load-bearing patterns. Incomplete
+Phase 8 implementation snapshot and load-bearing patterns. Incomplete
 capabilities are governed by `phases_0_6_audit.md`.
 
 Package organization follows the standard layout in

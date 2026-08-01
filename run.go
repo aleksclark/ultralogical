@@ -50,10 +50,19 @@ type ModelConfig struct {
 // is persisted per step, so execution-time state is disposable: any worker
 // can resume it from the envelope.
 type AgentRun struct {
-	ID                RunID
-	SessionID         SessionID
-	OrgID             OrgID
-	ParentRunID       *RunID
+	ID          RunID
+	SessionID   SessionID
+	OrgID       OrgID
+	ParentRunID *RunID
+	// SpawnKey identifies the tool call that created this run, formatted as
+	// "<parent run>:<step index>:<tool call id>". It is unique per org, so a
+	// redelivered step replaying the same spawn adopts the existing child
+	// rather than creating a second one.
+	SpawnKey string
+	// CohortID and CohortOrdinal link children launched by one
+	// run_agent_cohort call and preserve their declaration order.
+	CohortID          string
+	CohortOrdinal     int
 	FlowInvocationID  *FlowInvocationID
 	Grants            Grants
 	Result            json.RawMessage
@@ -95,6 +104,15 @@ type RunStore interface {
 	// SetState transitions the run state; failure fields only apply to
 	// RunFailed.
 	SetState(ctx context.Context, id RunID, state RunState, failureReason, failureMessage string) error
+	// SetResult persists a run's final result so a parent can read what its
+	// child produced after the child's process is long gone.
+	SetResult(ctx context.Context, id RunID, result json.RawMessage) error
+	// GetBySpawnKey returns the run a given spawn tool call already created,
+	// or ErrNotFound. This is the read half of spawn idempotency.
+	GetBySpawnKey(ctx context.Context, key string) (AgentRun, error)
+	// Children lists a run's direct children in creation order, which is what
+	// clients render as a run tree.
+	Children(ctx context.Context, id RunID) ([]AgentRun, error)
 	// RequestCancel stamps cancel_requested_at (idempotent).
 	RequestCancel(ctx context.Context, id RunID) error
 	// InsertStep records a step audit row; returns ErrAlreadyExists on a

@@ -48,7 +48,7 @@ func NewHandler(cfg Config) http.Handler {
 	orgPath, orgH := ultrav1connect.NewOrgServiceHandler(&orgHandler{store: cfg.Store, keyring: cfg.Keyring, providerKinds: cfg.ProviderKinds}, interceptors)
 	mux.Handle(orgPath, orgH)
 
-	sessPath, sessH := ultrav1connect.NewSessionServiceHandler(&sessionHandler{store: cfg.Store}, interceptors)
+	sessPath, sessH := ultrav1connect.NewSessionServiceHandler(&sessionHandler{store: cfg.Store, enqueue: cfg.Enqueue}, interceptors)
 	mux.Handle(sessPath, sessH)
 
 	agentPath, agentH := ultrav1connect.NewAgentServiceHandler(&agentHandler{

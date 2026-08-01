@@ -22,6 +22,9 @@ export function SessionSidebar({
   token,
   onTokenChange,
   onToggleSettings,
+  endpoint,
+  altEndpoint,
+  onSwitchEndpoint,
 }: {
   orgs: Org[];
   org?: Org;
@@ -36,6 +39,11 @@ export function SessionSidebar({
   token: string;
   onTokenChange: (value: string) => void;
   onToggleSettings: () => void;
+  /** The replica this client is currently talking to. */
+  endpoint: string;
+  /** An alternate replica, when the deployment has more than one. */
+  altEndpoint: string;
+  onSwitchEndpoint: () => void;
 }) {
   return (
     <aside className="flex w-72 flex-col gap-4 border-r border-zinc-800 p-4">
@@ -74,6 +82,16 @@ export function SessionSidebar({
           </Button>
         ))}
       </nav>
+      {altEndpoint !== "" && (
+        <div className="flex flex-col gap-1" data-testid="replica-switch" data-endpoint={endpoint}>
+          <span className="text-xs text-zinc-500">
+            replica: {endpoint.replace(/^https?:\/\//, "")}
+          </span>
+          <Button variant="outline" size="sm" onClick={onSwitchEndpoint} aria-label="Reconnect through another replica">
+            Switch replica
+          </Button>
+        </div>
+      )}
       <div className="mt-auto flex items-center gap-2">
         <Button variant="ghost" size="sm" onClick={onToggleSettings}>
           Settings
