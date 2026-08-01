@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"net"
 
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -74,18 +75,55 @@ func (p *Provider) applyNetworkPolicy(ctx context.Context, namespace string) err
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{MatchLabels: map[string]string{LabelManagedBy: ManagedByValue}},
 			PolicyTypes: []networkingv1.PolicyType{networkingv1.PolicyTypeIngress},
-			Ingress: []networkingv1.NetworkPolicyIngressRule{{
-				From: []networkingv1.NetworkPolicyPeer{{
-					NamespaceSelector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{"kubernetes.io/metadata.name": namespace},
-					},
-				}},
-			}},
+			Ingress:     []networkingv1.NetworkPolicyIngressRule{{From: p.allowedIngress(namespace)}},
 		},
 	}
 	_, err := p.client.NetworkingV1().NetworkPolicies(namespace).Create(ctx, policy, metav1.CreateOptions{})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("k8s: create network policy: %w", err)
+	}
+	return nil
+}
+
+// allowedIngress names exactly who may reach an org's environments: the
+// org's own namespace, and the platform ranges that drive them. Every other
+// namespace in the cluster is excluded, which is the isolation guarantee;
+// omitting the platform ranges would instead produce an environment nothing
+// can use.
+func (p *Provider) allowedIngress(namespace string) []networkingv1.NetworkPolicyPeer {
+	peers := []networkingv1.NetworkPolicyPeer{{
+		NamespaceSelector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{"kubernetes.io/metadata.name": namespace},
+		},
+	}}
+	for _, cidr := range p.cfg.PlatformIngressCIDRs {
+		peers = append(peers, networkingv1.NetworkPolicyPeer{
+			IPBlock: &networkingv1.IPBlock{
+				CIDR: cidr,
+				// Pod traffic is excluded from every platform range. A range
+				// broad enough to include the cluster's own pod network would
+				// otherwise re-admit the neighbouring orgs the policy exists
+				// to exclude.
+				Except: p.podCIDRs,
+			},
+		})
+	}
+	return peers
+}
+
+// validatePlatformIngress refuses a range that would defeat isolation. An
+// operator who allows the whole internet has not configured a boundary, and
+// discovering that from a passing test later is worse than failing now.
+func validatePlatformIngress(cidrs []string, podCIDRs []string) error {
+	for _, cidr := range cidrs {
+		_, network, err := net.ParseCIDR(cidr)
+		if err != nil {
+			return fmt.Errorf("k8s: platform ingress %q is not a CIDR: %w", cidr, err)
+		}
+		ones, bits := network.Mask.Size()
+		if ones == 0 && bits > 0 && len(podCIDRs) == 0 {
+			return fmt.Errorf("k8s: platform ingress %q admits every address and no pod range is excluded", cidr)
+		}
 	}
 	return nil
 }

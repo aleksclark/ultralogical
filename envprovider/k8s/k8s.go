@@ -9,9 +9,12 @@
 package k8s
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -65,6 +68,12 @@ type Config struct {
 	EndpointMode string `json:"endpoint_mode,omitempty"`
 	// EndpointHost overrides the host used with nodeport endpoints.
 	EndpointHost string `json:"endpoint_host,omitempty"`
+	// PlatformIngressCIDRs are the source ranges the platform's own control
+	// plane reaches environments from. A NetworkPolicy that only allowed the
+	// environment's own namespace would also lock out the workers that have
+	// to drive it, so the boundary has to name who is allowed in rather than
+	// denying everyone equally.
+	PlatformIngressCIDRs []string `json:"platform_ingress_cidrs,omitempty"`
 	// NodePortRange bounds the node ports this provider may assign, as
 	// [low, high]. A worker outside the cluster can only reach ports its
 	// host actually forwards, so a deployment that publishes a fixed range
@@ -86,6 +95,9 @@ const DefaultMaxEnvironments = 8
 type Provider struct {
 	client kubernetes.Interface
 	cfg    Config
+	// podCIDRs are the cluster's pod networks, excluded from every platform
+	// ingress range so a broad range cannot re-admit neighbouring orgs.
+	podCIDRs []string
 }
 
 // handleData is the persisted, provider-native identity of one environment.
@@ -124,7 +136,43 @@ func NewWithClient(client kubernetes.Interface, cfg Config) (*Provider, error) {
 	if cfg.MaxEnvironments <= 0 {
 		cfg.MaxEnvironments = DefaultMaxEnvironments
 	}
-	return &Provider{client: client, cfg: cfg}, nil
+	provider := &Provider{client: client, cfg: cfg}
+	if cfg.Hosted && len(cfg.PlatformIngressCIDRs) > 0 {
+		podCIDRs, err := discoverPodCIDRs(client)
+		if err != nil {
+			return nil, err
+		}
+		provider.podCIDRs = podCIDRs
+		if err := validatePlatformIngress(cfg.PlatformIngressCIDRs, podCIDRs); err != nil {
+			return nil, err
+		}
+	}
+	return provider, nil
+}
+
+// discoverPodCIDRs asks the cluster which ranges its pods use. Isolation
+// depends on excluding them from platform ingress, so they are read from the
+// cluster rather than assumed.
+func discoverPodCIDRs(client kubernetes.Interface) ([]string, error) {
+	nodes, err := client.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("k8s: read pod CIDRs: %w", err)
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, node := range nodes.Items {
+		for _, cidr := range append([]string{node.Spec.PodCIDR}, node.Spec.PodCIDRs...) {
+			if cidr == "" || seen[cidr] {
+				continue
+			}
+			seen[cidr] = true
+			out = append(out, cidr)
+		}
+	}
+	if len(out) == 0 {
+		return nil, errors.New("k8s: the cluster reports no pod CIDRs, so platform ingress cannot be bounded")
+	}
+	return out, nil
 }
 
 func restConfigFor(cfg Config) (*rest.Config, error) {
