@@ -136,7 +136,17 @@ func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.
 		return ultra.ProviderHandle{}, fmt.Errorf("localdocker: create: %w", err)
 	}
 	if err := p.docker.ContainerStart(ctx, resp.ID, containertypes.StartOptions{}); err != nil {
-		return ultra.ProviderHandle{}, fmt.Errorf("localdocker: start: %w", err)
+		// Docker publishes on a port from the kernel's ephemeral range, the
+		// same range every outgoing connection draws from, so on a busy host
+		// the port can be taken in the window before the bind. The container
+		// is recreated rather than restarted: a container whose start failed
+		// this way comes back with no port map at all, and restarting it in
+		// place yields an environment nothing can reach.
+		if !strings.Contains(err.Error(), "address already in use") {
+			return ultra.ProviderHandle{}, fmt.Errorf("localdocker: start: %w", err)
+		}
+		_ = p.docker.ContainerRemove(ctx, resp.ID, containertypes.RemoveOptions{Force: true})
+		return p.provisionRetry(ctx, envID, spec, token)
 	}
 	d, err := p.inspect(ctx, resp.ID, vol)
 	if err != nil {
@@ -145,12 +155,53 @@ func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.
 	return encodeHandle(d)
 }
 
-func (p *Provider) inspect(ctx context.Context, containerID, vol string) (handleData, error) {
-	info, err := p.docker.ContainerInspect(ctx, containerID)
-	if err != nil {
-		return handleData{}, fmt.Errorf("localdocker: inspect: %w", err)
+// provisionRetry re-attempts provisioning after a transient host-port
+// collision. The attempt budget is carried on the context so a pathological
+// host cannot make this recurse forever.
+func (p *Provider) provisionRetry(ctx context.Context, envID ultra.EnvID, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+	attempt, _ := ctx.Value(provisionAttemptKey{}).(int)
+	if attempt >= 5 {
+		return ultra.ProviderHandle{}, errors.New("localdocker: every published port this host offered was already in use")
 	}
-	bindings := info.NetworkSettings.Ports[nat.Port("8080/tcp")]
+	select {
+	case <-ctx.Done():
+		return ultra.ProviderHandle{}, ctx.Err()
+	case <-time.After(time.Duration(attempt+1) * 100 * time.Millisecond):
+	}
+	return p.Provision(context.WithValue(ctx, provisionAttemptKey{}, attempt+1), envID, spec, token)
+}
+
+// provisionAttemptKey carries the retry count without widening the provider
+// interface, which every other adapter would then have to honor.
+type provisionAttemptKey struct{}
+
+func (p *Provider) inspect(ctx context.Context, containerID, vol string) (handleData, error) {
+	// The port mapping appears a moment after start returns, so inspection
+	// polls rather than reading once. Treating the first empty answer as
+	// failure would make provisioning flaky on a loaded machine.
+	var bindings []nat.PortBinding
+	deadline := time.Now().Add(15 * time.Second)
+	for {
+		info, err := p.docker.ContainerInspect(ctx, containerID)
+		if err != nil {
+			return handleData{}, fmt.Errorf("localdocker: inspect: %w", err)
+		}
+		bindings = info.NetworkSettings.Ports[nat.Port("8080/tcp")]
+		if len(bindings) > 0 {
+			break
+		}
+		if !info.State.Running {
+			return handleData{}, fmt.Errorf("localdocker: container exited before publishing a port: %s", info.State.Status)
+		}
+		if time.Now().After(deadline) {
+			break
+		}
+		select {
+		case <-ctx.Done():
+			return handleData{}, ctx.Err()
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
 	if len(bindings) == 0 {
 		return handleData{}, errors.New("localdocker: no published Bezalel port")
 	}

@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	ultra "github.com/aleksclark/ultralogical"
@@ -24,6 +26,11 @@ type Config struct {
 	Secret string `json:"secret"`
 	// Timeout bounds one control request.
 	Timeout time.Duration `json:"-"`
+	// Transport carries control requests. A deployment sets it to the
+	// broker's transport for the agent, so requests travel down connections
+	// the agent dialed out. Left nil the default transport is used, which
+	// only works when the control URL is directly reachable.
+	Transport http.RoundTripper `json:"-"`
 }
 
 // Provider implements ultra.EnvProvider by driving a remote agent.
@@ -51,7 +58,7 @@ func New(cfg Config) (*Provider, error) {
 	if cfg.Timeout <= 0 {
 		cfg.Timeout = 30 * time.Second
 	}
-	return &Provider{cfg: cfg, client: &http.Client{Timeout: cfg.Timeout}}, nil
+	return &Provider{cfg: cfg, client: &http.Client{Timeout: cfg.Timeout, Transport: cfg.Transport}}, nil
 }
 
 // call issues one signed control request.
@@ -83,7 +90,12 @@ func (p *Provider) call(ctx context.Context, path string, in, out any) error {
 	case http.StatusGone:
 		return ErrRevoked
 	default:
-		return fmt.Errorf("tunnel: %s returned HTTP %d", path, resp.StatusCode)
+		// The agent's message is the useful part: it is the provider error
+		// from the user's own machine, and hiding it behind a status code
+		// leaves an operator with nothing to act on.
+		detail, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("tunnel: %s returned HTTP %d: %s", path, resp.StatusCode,
+			strings.TrimSpace(string(detail)))
 	}
 	if out == nil {
 		return nil

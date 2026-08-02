@@ -132,7 +132,7 @@ jobs:
           # A skipped provider test looks exactly like a passing one, so the
           # leg fails when its cluster evidence did not execute.
           out=$(go test ./envprovider/k8s/... -count=1 -v -timeout 30m \
-            -run 'TestKubernetesConformance|TestA102_' 2>&1)
+            -run 'TestKubernetesConformance|TestA102_|TestA103_' 2>&1)
           echo "$out"
           echo "$out" | grep -q -- "--- PASS: TestKubernetesConformance/ProviderNativeResources" || {
             echo "the Kubernetes leg did not inspect provider-native resources" >&2
@@ -141,7 +141,8 @@ jobs:
           # A10.2: convergence after an out-of-band deletion is the evidence
           # that an environment does not sit stale, so a skip must fail the leg.
           for name in TestA102_KubernetesReconcilesExternallyDeletedPod \
-                      TestA102_KubernetesAdoptsInterruptedProvisioning; do
+                      TestA102_KubernetesAdoptsInterruptedProvisioning \
+                      TestA103_HostedIsolationAndQuota; do
             echo "$out" | grep -q -- "--- PASS: $name" || {
               echo "the Kubernetes leg did not run $name" >&2
               exit 1
@@ -230,6 +231,15 @@ jobs:
             echo "the tunnel leg did not prove a lost host suspends rather than fails" >&2
             exit 1
           }
+          # A10.5/A10.8: the contract must pass over a real outbound tunnel,
+          # and the agent must accept no inbound connections. A transport the
+          # platform could dial directly would not be a tunnel at all.
+          for name in TestTunnelConformanceOverRealTransport                       TestA105_TheAgentAcceptsNoInboundConnections                       TestA105_RealTunnelSeveredAndRestored; do
+            echo "$out" | grep -q -- "--- PASS: $name" || {
+              echo "the tunnel leg did not run $name" >&2
+              exit 1
+            }
+          done
 
   functional:
     runs-on: ubuntu-latest
