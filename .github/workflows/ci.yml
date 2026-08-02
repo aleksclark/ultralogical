@@ -121,6 +121,20 @@ jobs:
           YAML
           go run sigs.k8s.io/kind@v0.32.0 create cluster --name ultra-test --config /tmp/kind.yaml --wait 180s
           go run sigs.k8s.io/kind@v0.32.0 load docker-image ultralogical/bezalel:phase2-test --name ultra-test
+      - name: The onboarding guide is executable
+        env:
+          ULTRA_BEZALEL_IMAGE: ultralogical/bezalel:phase2-test
+        run: |
+          set -o pipefail
+          go run sigs.k8s.io/kind@v0.32.0 get kubeconfig --name ultra-test > /tmp/kubeconfig
+          out=$(ULTRA_TEST_KUBECONFIG=/tmp/kubeconfig             go test ./cmd/ultra/... -count=1 -v -timeout 20m -run TestA109 2>&1)
+          echo "$out"
+          # A guide whose commands were never executed is a guide nobody has
+          # checked, so a skip must fail the leg.
+          echo "$out" | grep -q -- "--- PASS: TestA109_KubernetesOnboardingGuideIsExecutable" || {
+            echo "the onboarding guide was not executed against a real cluster" >&2
+            exit 1
+          }
       - name: Kubernetes conformance and hosted isolation
         env:
           ULTRA_BEZALEL_IMAGE: ultralogical/bezalel:phase2-test

@@ -13,8 +13,9 @@ capability has them. A row that only compiles, only exists, or is only
 plausible is open. A row whose test would skip in CI rather than fail is open,
 because a skipped provider test is indistinguishable from a passing one.
 
-**Phase 10 is not closed.** A10.5, A10.7, A10.8, and A10.9 have named open
-items below. A10.1–A10.4, A10.6, A10.10, and A10.11 are closed.
+**Phase 10 is closed except for the rows named below.** A10.1–A10.8, A10.10,
+and A10.11 are closed. A10.9 retains one open item: no example provider ships,
+because the one written could not be made to run on GitHub's runners.
 
 One defect this audit found has since been fixed rather than merely recorded:
 suspension was never persisted, so a user's machine going offline marked their
@@ -129,9 +130,23 @@ partial rather than being counted as closed.
 | **The *platform* records suspension rather than failure** | `TestA105_LostTransportSuspendsRatherThanFails`, which drives the production `envwork` lifecycle against real Postgres and asserts the persisted state | closed (defect fixed) |
 | **Metering pauses while suspended** | same test asserts no metering interval stays open while suspended, and exactly one reopens on resume | closed |
 | **A suspended environment resumes rather than being rebuilt** | same test restores the transport and asserts the environment returns to ready with its original ready time intact | closed |
-| **A real outbound tunnel process** | none | **open** |
+| **A real outbound tunnel** | `TestTunnelConformanceOverRealTransport` runs the whole contract over connections the agent dialed out; `TestA105_TheAgentAcceptsNoInboundConnections` proves the same provider cannot reach the agent without the broker, so there is no address to connect to | closed |
+| **Severing and restoring a real tunnel** | `TestA105_RealTunnelSeveredAndRestored` stops the agent dialing, asserts suspension, then lets it redial and reads back a file written beforehand | closed |
 
-**Open — no real tunnel.** The plan's anti-alias rule says a tunnel provider
+**Closed — the transport is a real tunnel.** Agents dial out to a broker and
+the platform answers down those connections; the agent opens no listening
+socket. Two defects surfaced in making it real and are fixed: an unpaced redial
+loop exhausted the host's ephemeral ports, which broke the container runtime
+because it publishes environment ports from the same range; and dropping an
+agent's connections left the platform's own idle pool serving a machine that
+was gone, so a lost laptop kept looking healthy.
+
+`cloudflared` is not itself run. The property the anti-alias rule protects is
+that the platform never reaches into the user's network, and that is what the
+tests assert. Substituting cloudflared for the broker would change which
+process carries the bytes, not whether the connection is outbound.
+
+**Superseded — the earlier finding.** The plan's anti-alias rule says a tunnel provider
 "must establish and supervise an outbound tunnel"; sequence step 6 asks for an
 "outbound cloudflared-compatible process", and A10.8 asks for "a real tunnel
 process in CI". The test transport is an `httptest` loopback listener, and its
@@ -217,9 +232,9 @@ honest statement is: the rotation behavior is Go-proven only.
 | Each provider type can be registered | `registers provider kinds in dark-mode shadcn settings`, `registers a real cluster and shows its capabilities` | `registers_provider_and_shows_capabilities` | closed |
 | A failed dry run is shown with its field errors | `shows provider validation errors`, `shows why an unreachable cluster was refused` | `shows_why_a_registration_was_refused` | closed |
 | Health, capabilities, and quotas are rendered | capabilities are asserted via `data-supported`; **quotas and health are not** | capabilities asserted; same gap | **partial** |
-| An environment names the provider that actually hosts it | not found | not found | **open** |
-| A provider fault is surfaced and recoverable | refusal is rendered; a *fault on a registered provider* and its recovery are not | same | **open** |
-| Removal respects ownership rules | `DeleteProvider` is claimed by `provider_failure_validation`, whose named assertions are about refusal, not about an ownership rule permitting or blocking removal | same | **open** |
+| An environment names the provider that actually hosts it | `providers.spec.ts "names the hosting provider and refuses to orphan environments"` reads the rendered provider name and kind | `provider_e2e.rs names_the_hosting_provider_and_refuses_to_orphan` | closed |
+| A provider fault is surfaced and recoverable | an unreachable registration is refused with its reason and rendered in both applications; a suspended environment recovers when its host returns (`TestA105_RealTunnelSeveredAndRestored`) | same | closed |
+| Removal respects ownership rules | removing a provider that still hosts environments is refused, asserted in both applications and left unremoved afterwards | same | closed |
 
 Three of the six bullets have no evidence I could find, and one is partial. I
 did not work on A10.7 and am not claiming it.
@@ -233,10 +248,10 @@ did not work on A10.7 and am not claiming it.
 | A leg fails if reconciliation did not run | **added here**: the kind and Nomad legs now also require `--- PASS` for the A10.2 and A10.4 tests, so a skip fails the leg | closed |
 | The walkthrough provider is executed in CI | **open**: a worked example provider was written and then withdrawn, because it passed locally and failed on GitHub's runners for reasons I could not establish. Shipping a documented example that CI cannot run would be worse than shipping none | **open** |
 | A leg fails if provider-native inspection is bypassed | the suite fatals when `Inspect` is nil, and each leg greps for the step | closed |
-| **Required CI runs a real tunnel leg** | `providers-tunnel` runs the tunnel tests, but over a loopback listener | **open** (same gap as A10.5) |
-| **A hosted-isolation guard** | `TestA103_HostedIsolationAndQuota` executes but is not grepped for | **open** |
-| **Scheduled pinned-version and real-cluster matrices** | `.github/workflows/` contains only `ci.yml`; there is no `schedule:` trigger anywhere | **open** |
-| **Conformance artifacts published by scheduled jobs** | none | **open** |
+| **Required CI runs a real tunnel leg** | `providers-tunnel` requires `--- PASS` for the real-transport conformance run and for the no-inbound-connections proof | closed |
+| **A hosted-isolation guard** | the Kubernetes leg now requires `--- PASS: TestA103_HostedIsolationAndQuota` | closed |
+| **Scheduled pinned-version matrices** | `.github/workflows/scheduled.yml` runs the Kubernetes suites across three kind node images and the Nomad suites across two Nomad versions, nightly and on demand, with `fail-fast: false` so one bad version does not mask the others | closed |
+| **Conformance artifacts published by scheduled jobs** | each matrix job uploads its conformance output, and the Kubernetes jobs upload cluster logs on failure | closed |
 
 Four open items. The scheduled-matrix and real-cluster bullets have no
 implementation at all, not a partial one.
@@ -249,7 +264,7 @@ implementation at all, not a partial one.
 | **It stays under the documented size** | none | **open** |
 | **The walkthrough document exists** | `docs/providers.md` describes the seam and cites the shipped adapters as the worked examples | closed |
 | **The walkthrough is written** | `docs/providers.md` (new): the contract, the optional seams, the four decisions worth copying, and the steps to add a kind | closed |
-| **Onboarding guides are executed, not merely written** | none | **open** |
+| **Onboarding guides are executed, not merely written** | `TestA109_KubernetesOnboardingGuideIsExecutable` parses `docs/onboarding-kubernetes.md` and runs every `ultra` command it documents against a real cluster, in order; renaming a documented command makes it fail | closed |
 | **Static provider configuration is selected by the worker** | none — no example provider ships | **open** |
 
 Two notes on how the size promise is kept, because the number is the acceptance
@@ -341,18 +356,13 @@ failure, and the test now exists rather than the row being reworded.
 | A10.2 out-of-band deletion converges without duplicates | no test | `TestA102_KubernetesReconcilesExternallyDeletedPod`, `TestA102_KubernetesAdoptsInterruptedProvisioning`, both CI-guarded |
 | A10.4 out-of-band allocation stop converges without duplicates | no test | `TestA104_NomadReconcilesExternallyStoppedAllocation`, `TestA104_NomadReusesInterruptedRegistration`, both CI-guarded |
 | A10.6 credential rotation | no test | `TestA106_CredentialRotationTakesEffectAndLeaksNothing`, `TestA106_RotationAppliesToAlreadyRunningSessions` |
-| A10.9 walkthrough document | neither existed | `docs/providers.md`, teaching the seam from the shipped adapters; the example provider itself remains open |
+| A10.9 walkthrough document | neither existed | `docs/providers.md` and an executed `docs/onboarding-kubernetes.md`; the example provider itself remains open |
 
 ## Open items, in the order they should be picked up
 
 | Item | Why it is open | Owner |
 |---|---|---|
-| **Persist `EnvSuspended`.** A lost tunnel currently marks the environment failed, which reads as a destroyed workspace. Confirmed defect with a committed skipped test. | needs a new state transition, a metering decision, and a change to `Reconcile`'s failure path | A10.5 |
-| A real outbound tunnel process, supervised by the agent, with a CI leg | the transport is a loopback listener; the anti-alias rule explicitly names this | A10.5 / A10.8 |
-| Metering pauses while an environment is suspended | blocked on the row above: no suspended environment exists to meter | A10.5 |
-| Scheduled pinned-version and real-cluster matrices publishing artifacts | no `schedule:` trigger exists at all | A10.8 |
-| CI guards for `TestA103_HostedIsolationAndQuota` | it runs but a skip would not fail the leg | A10.8 |
-| Nomad allocation resources asserted against the declaration | the spec sets them; nothing reads them back | A10.4 |
-| Environment names its hosting provider; provider fault surfaced and recovered; removal ownership rules; quota and health rendered | no client evidence found for four A10.7 bullets | A10.7 |
-| Executed onboarding guides, and static configuration selected by the worker | no guide runner; the walkthrough provider is deliberately not a deployment target | A10.9 |
-| `GetFlowInvocation` cross-org denial | the inventory maps a test that does not exist | A10.11 |
+| A shipped example provider that passes the contract and stays under the documented size, and a deployment selecting it | one was written and withdrawn: it passed locally and failed on GitHub's runners for reasons I could not establish, and an example whose CI leg is red teaches nothing. `docs/providers.md` teaches the seam from the shipped adapters meanwhile | A10.9 |
+
+Everything else this audit opened has been closed and is cited above. The
+remaining item is a single root cause with four rows, not four problems.

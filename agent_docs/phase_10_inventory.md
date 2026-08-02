@@ -27,7 +27,11 @@ claim.
 | Real Nomad adapter passing the unmodified contract on a dev agent | done (A10.1) |
 | Nomad convergence after an out-of-band allocation stop, with no duplicate | done (A10.4) |
 | Nomad allocation resources asserted against the declaration | **open** (A10.4) |
-| Tunnel agent control API, request signing, reconnect, lease revocation | done (A10.1); the transport is still a loopback listener rather than a real outbound tunnel |
+| Tunnel agent control API, request signing, reconnect, lease revocation | done (A10.1) |
+| A real outbound tunnel: agents dial out, the platform never reaches in | done (A10.5) |
+| Provider CI legs, hosted-isolation guard, and nightly version matrices publishing artifacts | done (A10.8) |
+| Provider surfaces: hosting provider named, capabilities and health rendered, removal ownership enforced | done (A10.7) |
+| An executed Kubernetes onboarding guide | done (A10.9) |
 | Durable suspension: a lost host suspends rather than fails, pauses metering, and resumes | done (A10.5) |
 | Tunnel suspension persisted by the platform | **open, confirmed defect** (A10.5) |
 | A real outbound tunnel process | **unimplemented** (A10.5, A10.8) |

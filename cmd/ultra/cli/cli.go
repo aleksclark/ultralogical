@@ -99,6 +99,11 @@ Usage:
   ultra flow status INVOCATION_ID [--wait] [--json]
   ultra flow cancel INVOCATION_ID [--json]
 
+  ultra provider register NAME --kind KIND --config JSON [--json]
+  ultra provider list [--json]
+  ultra provider show NAME [--json]
+  ultra provider remove NAME [--json]
+
 Environment:
   ULTRA_URL    ultrad base URL (default http://localhost:8080)
   ULTRA_TOKEN  bearer token (required)
@@ -121,6 +126,8 @@ func RunWithEnv(args []string, environment Env, stdout, stderr io.Writer) (int, 
 	switch args[0] {
 	case "flow":
 		return runFlow(args[1:], environment, stdout, stderr)
+	case "provider":
+		return runProvider(args[1:], environment, stdout, stderr)
 	case "help", "-h", "--help":
 		sink := newOut(stdout)
 		sink.printf("%s", usage)
