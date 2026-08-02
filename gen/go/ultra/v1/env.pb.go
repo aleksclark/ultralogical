@@ -180,8 +180,16 @@ type DevEnv struct {
 	// environment declaration it satisfies. Both are immutable once written.
 	FlowInvocationId string `protobuf:"bytes,13,opt,name=flow_invocation_id,json=flowInvocationId,proto3" json:"flow_invocation_id,omitempty"`
 	FlowEnvName      string `protobuf:"bytes,14,opt,name=flow_env_name,json=flowEnvName,proto3" json:"flow_env_name,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Which registration actually hosts this environment. The id alone is not
+	// usable by a person: an operator diagnosing a fault needs to know it is
+	// "the staging cluster" rather than a UUID, and which kind it is.
+	ProviderName string `protobuf:"bytes,15,opt,name=provider_name,json=providerName,proto3" json:"provider_name,omitempty"`
+	ProviderKind string `protobuf:"bytes,16,opt,name=provider_kind,json=providerKind,proto3" json:"provider_kind,omitempty"`
+	// The hosting provider's health at the time of the read, so a client can
+	// explain an environment that is failing because its provider is.
+	ProviderState string `protobuf:"bytes,17,opt,name=provider_state,json=providerState,proto3" json:"provider_state,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DevEnv) Reset() {
@@ -308,6 +316,27 @@ func (x *DevEnv) GetFlowInvocationId() string {
 func (x *DevEnv) GetFlowEnvName() string {
 	if x != nil {
 		return x.FlowEnvName
+	}
+	return ""
+}
+
+func (x *DevEnv) GetProviderName() string {
+	if x != nil {
+		return x.ProviderName
+	}
+	return ""
+}
+
+func (x *DevEnv) GetProviderKind() string {
+	if x != nil {
+		return x.ProviderKind
+	}
+	return ""
+}
+
+func (x *DevEnv) GetProviderState() string {
+	if x != nil {
+		return x.ProviderState
 	}
 	return ""
 }
@@ -1122,7 +1151,7 @@ const file_ultra_v1_env_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd5\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc6\x05\n" +
 	"\x06DevEnv\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -1141,7 +1170,10 @@ const file_ultra_v1_env_proto_rawDesc = "" +
 	"\bready_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\areadyAt\x12?\n" +
 	"\rterminated_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\fterminatedAt\x12,\n" +
 	"\x12flow_invocation_id\x18\r \x01(\tR\x10flowInvocationId\x12\"\n" +
-	"\rflow_env_name\x18\x0e \x01(\tR\vflowEnvName\"\x88\x01\n" +
+	"\rflow_env_name\x18\x0e \x01(\tR\vflowEnvName\x12#\n" +
+	"\rprovider_name\x18\x0f \x01(\tR\fproviderName\x12#\n" +
+	"\rprovider_kind\x18\x10 \x01(\tR\fproviderKind\x12%\n" +
+	"\x0eprovider_state\x18\x11 \x01(\tR\rproviderState\"\x88\x01\n" +
 	"\x13ProvisionEnvRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12%\n" +

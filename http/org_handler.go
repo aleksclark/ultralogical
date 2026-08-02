@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
@@ -320,7 +321,26 @@ func (h *orgHandler) DeleteProvider(ctx context.Context, req *connect.Request[ul
 	if err := requireAdmin(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
-	if err := h.store.Org(orgID).Providers().Delete(ctx, ultra.ProviderInstanceID(req.Msg.GetProviderId())); err != nil {
+	// A provider that still hosts live environments cannot be removed. Doing
+	// so would orphan them: the records would survive with no adapter able to
+	// reach, reconcile, or terminate the resources they represent, and the
+	// user would be left paying for containers nothing can find.
+	providerID := ultra.ProviderInstanceID(req.Msg.GetProviderId())
+	active, err := h.store.Org(orgID).Envs().ListActive(ctx)
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	hosted := 0
+	for _, env := range active {
+		if env.ProviderInstanceID == providerID {
+			hosted++
+		}
+	}
+	if hosted > 0 {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf(
+			"this provider still hosts %d environment(s); terminate them before removing it", hosted))
+	}
+	if err := h.store.Org(orgID).Providers().Delete(ctx, providerID); err != nil {
 		return nil, mapStoreErr(err)
 	}
 	return connect.NewResponse(&ultrav1.DeleteProviderResponse{}), nil

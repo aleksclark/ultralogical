@@ -23,6 +23,7 @@ export function SettingsView({
   onSaveCredential,
   provider,
   providers,
+  onRemoveProvider,
   onProviderChange,
   onRegisterProvider,
 }: {
@@ -31,6 +32,7 @@ export function SettingsView({
   onSaveCredential: () => Promise<void>;
   provider: ProviderForm;
   providers: ProviderInstance[];
+  onRemoveProvider: (id: string) => Promise<void>;
   onProviderChange: (next: ProviderForm) => void;
   onRegisterProvider: () => Promise<void>;
 }) {
@@ -127,6 +129,14 @@ export function SettingsView({
                 <div className="text-sm">
                   {instance.name} ({instance.kind}) · {instance.rateClass} · {instance.state}
                 </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label={`Remove ${instance.name}`}
+                  onClick={() => onRemoveProvider(instance.id)}
+                >
+                  Remove
+                </Button>
                 <ul className="mt-1 space-y-0.5">
                   {instance.capabilities.map((capability) => (
                     <li

@@ -144,6 +144,18 @@ pub struct CredentialView {
     pub name: String,
 }
 
+/// EnvHostView says where one environment actually runs. An operator
+/// diagnosing a fault needs the registration's name and health, not the
+/// identifier of a record they cannot look up.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct EnvHostView {
+    pub env_id: String,
+    pub name: String,
+    pub provider_name: String,
+    pub provider_kind: String,
+    pub provider_state: String,
+}
+
 /// ProviderView is one rendered provider registration: where environments run,
 /// how it is metered, and what its control plane reported it can do.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -380,6 +392,8 @@ pub struct DesktopState {
     pub providers: Vec<ProviderView>,
     /// credentials are the org's inference credentials, by identity only.
     pub credentials: Vec<CredentialView>,
+    /// env_hosts says which registration hosts each environment.
+    pub env_hosts: Vec<EnvHostView>,
 }
 
 impl DesktopState {
