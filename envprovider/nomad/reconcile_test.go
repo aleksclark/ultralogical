@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	nomadapi "github.com/hashicorp/nomad/api"
 
 	ultra "github.com/aleksclark/ultralogical"
@@ -195,4 +196,84 @@ func countPrefixed(items []string, prefix string) int {
 		}
 	}
 	return count
+}
+
+// A10.4 — the allocation Nomad scheduled carries the resources the job
+// declared. Setting them in the spec proves nothing on its own: a provider
+// that quietly dropped the limits would still pass every behavioral step while
+// letting one environment starve a cluster.
+func TestA104_AllocationCarriesDeclaredResources(t *testing.T) {
+	address := nomadAddress(t)
+	const (
+		declaredCPU    = 700
+		declaredMemory = 384
+	)
+	provider, err := nomad.New(nomad.Config{
+		Address: address, Image: clusterImage(t), EndpointHost: "127.0.0.1",
+		CPU: declaredCPU, Memory: declaredMemory,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	envID := ultra.EnvID(uuid.NewString())
+	handle, err := provider.Provision(ctx, envID, ultra.EnvSpec{Name: "resources", Workdir: "/work"}, "token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = provider.Terminate(context.Background(), handle) })
+
+	client, err := nomadapi.NewClient(&nomadapi.Config{Address: address})
+	if err != nil {
+		t.Fatal(err)
+	}
+	jobID := "ultra-env-" + strings.ToLower(string(envID))
+
+	// The registered job is read back from Nomad rather than from the request.
+	job, _, err := client.Jobs().Info(jobID, nil)
+	if err != nil {
+		t.Fatalf("the job is not registered: %v", err)
+	}
+	if len(job.TaskGroups) != 1 || len(job.TaskGroups[0].Tasks) != 1 {
+		t.Fatalf("unexpected job shape: %d groups", len(job.TaskGroups))
+	}
+	resources := job.TaskGroups[0].Tasks[0].Resources
+	if resources == nil || resources.CPU == nil || resources.MemoryMB == nil {
+		t.Fatal("the registered task declares no resources, so one environment could starve the cluster")
+	}
+	if *resources.CPU != declaredCPU {
+		t.Fatalf("registered CPU = %d, want %d", *resources.CPU, declaredCPU)
+	}
+	if *resources.MemoryMB != declaredMemory {
+		t.Fatalf("registered memory = %d MiB, want %d", *resources.MemoryMB, declaredMemory)
+	}
+
+	// The allocation Nomad actually scheduled carries them too, which is the
+	// claim that matters: a job can declare limits the scheduler ignored.
+	deadline := time.Now().Add(60 * time.Second)
+	for time.Now().Before(deadline) {
+		allocations, _, err := client.Jobs().Allocations(jobID, true, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, stub := range allocations {
+			allocation, _, err := client.Allocations().Info(stub.ID, nil)
+			if err != nil || allocation.AllocatedResources == nil {
+				continue
+			}
+			task, ok := allocation.AllocatedResources.Tasks["bezalel"]
+			if !ok {
+				continue
+			}
+			if task.Cpu.CpuShares != declaredCPU {
+				t.Fatalf("allocated CPU = %d, want %d", task.Cpu.CpuShares, declaredCPU)
+			}
+			if task.Memory.MemoryMB != declaredMemory {
+				t.Fatalf("allocated memory = %d MiB, want %d", task.Memory.MemoryMB, declaredMemory)
+			}
+			return
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	t.Fatal("no allocation reported its allocated resources within the deadline")
 }

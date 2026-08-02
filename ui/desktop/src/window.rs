@@ -18,8 +18,8 @@ use gpui::{
 
 use crate::client::{DesktopClient, StreamMessage};
 use crate::state::{
-    ConnectionState, CredentialView, DesktopState, FlowFieldErrorView, FlowInvocationView,
-    FlowSummary, ProviderView, SessionSummary, TimelineItem,
+    ConnectionState, CredentialView, DesktopState, EnvHostView, FlowFieldErrorView,
+    FlowInvocationView, FlowSummary, ProviderView, SessionSummary, TimelineItem,
 };
 
 /// DarkTheme is the required dark palette. There is no light variant.
@@ -118,6 +118,12 @@ impl DesktopWindow {
         }
         self.state.connection = ConnectionState::Connecting;
         self.stream = Some(stream);
+        cx.notify();
+    }
+
+    /// set_env_hosts records which registration hosts each environment.
+    pub fn set_env_hosts(&mut self, hosts: Vec<EnvHostView>, cx: &mut Context<Self>) {
+        self.state.env_hosts = hosts;
         cx.notify();
     }
 
@@ -419,6 +425,22 @@ impl DesktopWindow {
             .gap_1()
             .debug_selector(|| "environment-panel".to_string())
             .child(div().child("Environments").text_color(DarkTheme::MUTED))
+            .children(self.state.env_hosts.iter().map(|host| {
+                // Where an environment runs is painted alongside its
+                // lifecycle: an operator seeing a failure needs to know which
+                // registration is responsible for it.
+                let label = format!(
+                    "env-host:{}:{}:{}",
+                    host.name, host.provider_name, host.provider_state
+                );
+                div()
+                    .text_color(DarkTheme::MUTED)
+                    .child(format!(
+                        "{} runs on {} ({}) · {}",
+                        host.name, host.provider_name, host.provider_kind, host.provider_state
+                    ))
+                    .debug_selector(move || label.clone())
+            }))
             .children(self.state.envs.values().map(|env| {
                 let label = format!("env:{}:{}:{}", env.name, env.phase, env.epoch);
                 let env_id = env.env_id.clone();

@@ -61,6 +61,16 @@ export function EnvironmentPanel({
               <span className="text-xs text-zinc-500" data-testid="environment-epoch">
                 epoch {env.epoch}
               </span>
+              <span
+                className="text-xs text-zinc-500"
+                data-testid="environment-provider"
+                data-provider-name={env.providerName}
+                data-provider-kind={env.providerKind}
+                data-provider-state={env.providerState}
+              >
+                on {env.providerName || "unknown provider"} ({env.providerKind})
+                {env.providerState && env.providerState !== "ready" ? ` · ${env.providerState}` : ""}
+              </span>
               <Button
                 size="sm"
                 variant="ghost"

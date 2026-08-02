@@ -39,6 +39,19 @@ func envStateToProto(s ultra.EnvState) ultrav1.EnvState {
 	}
 	return ultrav1.EnvState_ENV_STATE_UNSPECIFIED
 }
+
+// envToProtoWith renders an environment together with the registration hosting
+// it. Naming the provider is what lets a client explain a fault: an
+// environment failing because its cluster is unreachable is a different
+// problem from one whose container crashed.
+func envToProtoWith(e ultra.DevEnv, provider ultra.ProviderInstance) *ultrav1.DevEnv {
+	out := envToProto(e)
+	out.ProviderName = provider.Name
+	out.ProviderKind = provider.Kind
+	out.ProviderState = provider.State
+	return out
+}
+
 func envToProto(e ultra.DevEnv) *ultrav1.DevEnv {
 	out := &ultrav1.DevEnv{Id: string(e.ID), SessionId: string(e.SessionID), ProviderInstanceId: string(e.ProviderInstanceID), State: envStateToProto(e.State), Spec: &ultrav1.EnvSpec{Name: e.Spec.Name, Image: e.Spec.Image, Workdir: e.Spec.Workdir, Env: e.Spec.Env, Metadata: e.Spec.Metadata}, Endpoint: e.Endpoint, Epoch: int32(e.Epoch), FailureMessage: e.FailureMessage, FlowEnvName: e.FlowEnvName, CreatedAt: timestamppb.New(e.CreatedAt), UpdatedAt: timestamppb.New(e.UpdatedAt)}
 	if e.FlowInvocationID != nil {
@@ -52,6 +65,31 @@ func envToProto(e ultra.DevEnv) *ultrav1.DevEnv {
 	}
 	return out
 }
+
+// providersByID indexes an org's registrations for rendering.
+func (h *envHandler) providersByID(ctx context.Context, org ultra.OrgID) map[ultra.ProviderInstanceID]ultra.ProviderInstance {
+	out := map[ultra.ProviderInstanceID]ultra.ProviderInstance{}
+	items, err := h.store.Org(org).Providers().List(ctx)
+	if err != nil {
+		// A provider read failing must not hide the environments themselves:
+		// they are still real and still need to be listed.
+		return out
+	}
+	for _, item := range items {
+		out[item.ID] = item
+	}
+	return out
+}
+
+// provider reads one registration for rendering, tolerating its absence.
+func (h *envHandler) provider(ctx context.Context, org ultra.OrgID, id ultra.ProviderInstanceID) ultra.ProviderInstance {
+	instance, err := h.store.Org(org).Providers().Get(ctx, id)
+	if err != nil {
+		return ultra.ProviderInstance{}
+	}
+	return instance
+}
+
 func (h *envHandler) resolve(ctx context.Context, id ultra.EnvID) (ultra.DevEnv, error) {
 	user, ok := userFrom(ctx)
 	if !ok {
@@ -97,7 +135,9 @@ func (h *envHandler) GetEnv(ctx context.Context, req *connect.Request[ultrav1.Ge
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(&ultrav1.GetEnvResponse{Env: envToProto(e)}), nil
+	return connect.NewResponse(&ultrav1.GetEnvResponse{
+		Env: envToProtoWith(e, h.provider(ctx, e.OrgID, e.ProviderInstanceID)),
+	}), nil
 }
 func (h *envHandler) ListEnvs(ctx context.Context, req *connect.Request[ultrav1.ListEnvsRequest]) (*connect.Response[ultrav1.ListEnvsResponse], error) {
 	session := ultra.SessionID(req.Msg.GetSessionId())
@@ -109,9 +149,12 @@ func (h *envHandler) ListEnvs(ctx context.Context, req *connect.Request[ultrav1.
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
+	// The registrations are read once and shared, so listing many
+	// environments does not issue one provider query per row.
+	providers := h.providersByID(ctx, org)
 	resp := &ultrav1.ListEnvsResponse{}
 	for _, e := range items {
-		resp.Envs = append(resp.Envs, envToProto(e))
+		resp.Envs = append(resp.Envs, envToProtoWith(e, providers[e.ProviderInstanceID]))
 	}
 	return connect.NewResponse(resp), nil
 }

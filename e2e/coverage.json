@@ -284,7 +284,7 @@
     },
     "provider_failure_validation": {
       "rpcs": [
-        "ultra.v1.OrgService/DeleteProvider"
+        "ultra.v1.EnvService/GetEnv"
       ],
       "web": {
         "file": "providers.spec.ts",
@@ -558,6 +558,27 @@
         "asserts": [
           "the two routes rendered different progress",
           "await_rendered(direct_cx, \"flow-run:reviewer:completed\", FRAME_ATTEMPTS)"
+        ]
+      }
+    },
+    "provider_ownership_and_hosting": {
+      "rpcs": [
+        "ultra.v1.OrgService/DeleteProvider"
+      ],
+      "web": {
+        "file": "providers.spec.ts",
+        "test": "names the hosting provider and refuses to orphan environments",
+        "asserts": [
+          "toHaveAttribute(\"data-provider-name\", \"default\")",
+          "toContainText(/still hosts/i)"
+        ]
+      },
+      "rust": {
+        "file": "provider_e2e.rs",
+        "test": "names_the_hosting_provider_and_refuses_to_orphan",
+        "asserts": [
+          "the environment does not name the registration hosting it",
+          "a refused removal deleted the provider anyway"
         ]
       }
     }

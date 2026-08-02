@@ -15,7 +15,7 @@ use tonic::transport::Channel;
 use ultralogical_client::{Auth, ultra::v1};
 
 use crate::state::{
-    CredentialView, FlowFieldErrorView, FlowInvocationView, FlowSummary, ProviderView,
+    CredentialView, EnvHostView, FlowFieldErrorView, FlowInvocationView, FlowSummary, ProviderView,
     SessionSummary, UsageView,
 };
 
@@ -418,6 +418,48 @@ impl DesktopClient {
                 .await?
                 .into_inner();
             Ok(resp.providers.iter().map(ProviderView::from_proto).collect())
+        })
+        .await
+    }
+
+    /// delete_provider removes a registration. The server refuses while it
+    /// still hosts environments, so the error is the useful part here.
+    pub async fn delete_provider(&mut self, org_id: &str, provider_id: &str) -> Result<(), BoxError> {
+        let mut client = self.clone();
+        let org_id = org_id.to_string();
+        let provider_id = provider_id.to_string();
+        self.dispatch(async move {
+            client
+                .orgs
+                .delete_provider(client.auth.request(v1::DeleteProviderRequest { org_id, provider_id }))
+                .await?;
+            Ok(())
+        })
+        .await
+    }
+
+    /// list_envs reports a session's environments with the registration that
+    /// hosts each one, which is what lets the window name where work runs.
+    pub async fn list_envs(&mut self, session_id: &str) -> Result<Vec<EnvHostView>, BoxError> {
+        let mut client = self.clone();
+        let session_id = session_id.to_string();
+        self.dispatch(async move {
+            let resp = client
+                .envs
+                .list_envs(client.auth.request(v1::ListEnvsRequest { session_id }))
+                .await?
+                .into_inner();
+            Ok(resp
+                .envs
+                .into_iter()
+                .map(|env| EnvHostView {
+                    env_id: env.id,
+                    name: env.spec.map(|s| s.name).unwrap_or_default(),
+                    provider_name: env.provider_name,
+                    provider_kind: env.provider_kind,
+                    provider_state: env.provider_state,
+                })
+                .collect())
         })
         .await
     }

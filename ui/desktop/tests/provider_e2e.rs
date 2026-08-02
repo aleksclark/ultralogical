@@ -6,7 +6,7 @@
 mod support;
 
 use gpui::TestAppContext;
-use support::{await_rendered, open_app, rendered, selector};
+use support::{await_rendered, open_app, pump, rendered, selector};
 
 use ultralogical_desktop::DesktopWindow;
 
@@ -161,5 +161,84 @@ async fn stores_credential_with_gateway_fields(cx: &mut TestAppContext) {
     assert!(
         !painted.contains(&canary),
         "the credential surface exposed secret material"
+    );
+}
+
+/// A10.7 — the window says where an environment actually runs, and a provider
+/// that still hosts one cannot be removed. An operator diagnosing a fault
+/// needs the first, and must not be able to orphan environments with the
+/// second.
+#[gpui::test]
+async fn names_the_hosting_provider_and_refuses_to_orphan(cx: &mut TestAppContext) {
+    let (window, mut cx, mut client, org_id) = open_app(cx).await;
+    let cx = &mut cx;
+    await_rendered(cx, "window:dark", FRAME_ATTEMPTS);
+
+    let session = client
+        .create_session(&org_id, "GPUI provider ownership")
+        .await
+        .expect("create session");
+    let env_id = client
+        .provision_env(&session.id, "hosted-here")
+        .await
+        .expect("provision an environment");
+
+    // Wait until the environment is reported with its host, which is what the
+    // native entrypoint refreshes on every environment event.
+    let mut hosts = Vec::new();
+    for _ in 0..FRAME_ATTEMPTS {
+        hosts = client.list_envs(&session.id).await.expect("list environments");
+        if hosts.iter().any(|h| !h.provider_name.is_empty()) {
+            break;
+        }
+        pump(cx);
+    }
+    window.update(cx, |view: &mut DesktopWindow, cx| view.set_env_hosts(hosts.clone(), cx));
+
+    let host = hosts
+        .iter()
+        .find(|h| h.env_id == env_id)
+        .expect("the provisioned environment is missing from the list");
+    assert_eq!(
+        host.provider_name, "default",
+        "the environment does not name the registration hosting it"
+    );
+    assert_eq!(host.provider_kind, "local_docker");
+    await_rendered(
+        cx,
+        selector(format!(
+            "env-host:{}:{}:{}",
+            host.name, host.provider_name, host.provider_state
+        )),
+        FRAME_ATTEMPTS,
+    );
+
+    // Removing that provider is refused while it still hosts the environment,
+    // and the reason says so.
+    let providers = client.list_providers(&org_id).await.expect("list providers");
+    let default = providers
+        .iter()
+        .find(|p| p.name == "default")
+        .expect("the default provider is missing");
+    let refused = client
+        .delete_provider(&org_id, &default.id)
+        .await
+        .err()
+        .expect("removing a provider that still hosts environments must be refused");
+    let message = refused.to_string();
+    assert!(
+        message.contains("still hosts"),
+        "the refusal does not explain that environments are still hosted: {message}"
+    );
+
+    // The window surfaces it, and the provider is still there.
+    window.update(cx, |view: &mut DesktopWindow, cx| {
+        view.set_error(message.clone(), cx)
+    });
+    await_rendered(cx, selector(format!("error:{message}")), FRAME_ATTEMPTS);
+    let still = client.list_providers(&org_id).await.expect("list providers");
+    assert!(
+        still.iter().any(|p| p.name == "default"),
+        "a refused removal deleted the provider anyway"
     );
 }

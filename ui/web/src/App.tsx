@@ -416,6 +416,18 @@ export function App() {
       setError(String(e));
     }
   }
+  // Removing a provider is refused while it still hosts environments, and the
+  // refusal is shown rather than swallowed: an operator needs to know why.
+  async function removeProvider(id: string) {
+    if (!org) return;
+    try {
+      await api.orgs.deleteProvider({ orgId: org.id, providerId: id });
+      setProviders((await api.orgs.listProviders({ orgId: org.id })).providers);
+      setError("");
+    } catch (e) {
+      setError(String(e));
+    }
+  }
   async function registerProvider() {
     if (!org) return;
     try {
@@ -470,6 +482,7 @@ export function App() {
             onProviderChange={setProvider}
             onRegisterProvider={registerProvider}
             providers={providers}
+            onRemoveProvider={removeProvider}
           />
         ) : directInvocation ? (
           <FlowInvocationView

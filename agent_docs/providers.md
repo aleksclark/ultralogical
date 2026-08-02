@@ -79,6 +79,14 @@ only refusing new ones.
 Losing the transport suspends environments instead of failing them, and
 reconnecting resumes the same workspace.
 
+## Onboarding
+
+[docs/onboarding-kubernetes.md](../docs/onboarding-kubernetes.md) walks an
+operator through registering their own cluster. Every `ultra` command it
+documents is executed against a real cluster by
+`TestA109_KubernetesOnboardingGuideIsExecutable`, so a guide that drifts from
+what works fails CI rather than a reader's afternoon.
+
 ## Deployment configuration
 
 | Variable | Effect |

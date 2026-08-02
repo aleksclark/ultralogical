@@ -85,3 +85,32 @@ test("shows why an unreachable cluster was refused", async ({ page }) => {
   await expect(page.getByRole("alert")).toContainText(/unreachable/i);
   await expect(page.locator('[data-provider-name="web-unreachable"]')).toHaveCount(0);
 });
+
+// A10.7 — an environment names the provider actually hosting it, and a
+// provider that still hosts one cannot be removed. Both matter when something
+// breaks: an operator has to know where an environment runs, and must not be
+// able to orphan it by deleting its provider.
+test("names the hosting provider and refuses to orphan environments", async ({ page }) => {
+  await page.addInitScript((token) => localStorage.setItem("ultra-token", token), process.env.ULTRA_TOKEN ?? "tok-alice");
+  await page.goto("/");
+  await expect(page.getByLabel("Organization").locator("option")).not.toHaveCount(0);
+  await page.getByLabel("New session title").fill("Web provider ownership");
+  await page.getByRole("button", { name: "Create session" }).click();
+  await expect(page.getByTestId("environment-panel")).toBeVisible();
+
+  await page.getByRole("button", { name: "New environment" }).click();
+  const chip = page.getByTestId("environment-chip").first();
+  await expect(chip.locator('[data-phase="ready"]')).toBeVisible({ timeout: 90_000 });
+
+  // The environment says where it runs, by name and kind rather than by id.
+  const hosting = chip.getByTestId("environment-provider");
+  await expect(hosting).toHaveAttribute("data-provider-name", "default");
+  await expect(hosting).toHaveAttribute("data-provider-kind", "local_docker");
+  await expect(hosting).toContainText("default");
+
+  // Removing that provider is refused while it still hosts the environment.
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Remove default" }).click();
+  await expect(page.getByRole("alert")).toContainText(/still hosts/i);
+  await expect(page.locator('[data-provider-name="default"]')).toBeVisible();
+});

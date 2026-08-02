@@ -1,0 +1,123 @@
+# Scheduled provider matrices (A10.8).
+#
+# Required CI pins one version of each control plane so a pull request gets a
+# fast, deterministic answer. That leaves a real risk uncovered: an adapter can
+# work against the pinned version and break against another one an operator
+# actually runs. These jobs run the same conformance suites across the
+# supported versions on a schedule, and publish their output so a failure can
+# be read after the fact rather than reproduced.
+name: scheduled
+
+on:
+  schedule:
+    # Nightly, well outside working hours in the maintainers' timezone.
+    - cron: "0 7 * * *"
+  # Runnable on demand, so a suspected version problem does not wait a day.
+  workflow_dispatch:
+
+jobs:
+  kubernetes-versions:
+    runs-on: ubuntu-latest
+    strategy:
+      # One failing version must not hide the others: an operator needs to
+      # know whether their version is the broken one.
+      fail-fast: false
+      matrix:
+        # The kind node images pinned here are the Kubernetes versions this
+        # adapter claims to support.
+        node:
+          - kindest/node:v1.31.0
+          - kindest/node:v1.32.0
+          - kindest/node:v1.33.0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build the pinned Bezalel image
+        run: docker build -t ultralogical/bezalel:phase2-test https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120
+      - name: Create a kind cluster
+        run: |
+          cat > /tmp/kind.yaml <<'CLUSTER'
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+            - role: control-plane
+              extraPortMappings:
+                - containerPort: 30080
+                  hostPort: 30080
+                  listenAddress: "127.0.0.1"
+                - containerPort: 30081
+                  hostPort: 30081
+                  listenAddress: "127.0.0.1"
+                - containerPort: 30082
+                  hostPort: 30082
+                  listenAddress: "127.0.0.1"
+          CLUSTER
+          go run sigs.k8s.io/kind@v0.32.0 create cluster --name ultra-test \
+            --image ${{ matrix.node }} --config /tmp/kind.yaml --wait 180s
+          go run sigs.k8s.io/kind@v0.32.0 load docker-image ultralogical/bezalel:phase2-test --name ultra-test
+      - name: Conformance and hosted isolation
+        env:
+          ULTRA_BEZALEL_IMAGE: ultralogical/bezalel:phase2-test
+        run: |
+          set -o pipefail
+          go test ./envprovider/k8s/... -count=1 -v -timeout 40m 2>&1 | tee /tmp/kubernetes-conformance.txt
+      - name: Publish the conformance record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubernetes-conformance-${{ strategy.job-index }}
+          path: /tmp/kubernetes-conformance.txt
+      - name: Publish cluster state on failure
+        if: failure()
+        run: go run sigs.k8s.io/kind@v0.32.0 export logs /tmp/kind-logs --name ultra-test || true
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: kind-logs-${{ strategy.job-index }}
+          path: /tmp/kind-logs
+
+  nomad-versions:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        nomad: ["1.8.4", "1.9.3"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build the pinned Bezalel image
+        run: docker build -t ultralogical/bezalel:phase2-test https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120
+      - name: Install Nomad ${{ matrix.nomad }}
+        run: |
+          curl -fsSLo /tmp/nomad.zip \
+            "https://releases.hashicorp.com/nomad/${{ matrix.nomad }}/nomad_${{ matrix.nomad }}_linux_amd64.zip"
+          sudo unzip -o /tmp/nomad.zip -d /usr/local/bin
+          nomad version
+      - name: Start a Nomad dev agent
+        run: |
+          sudo nomad agent -dev -bind 127.0.0.1 > /tmp/nomad.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:4646/v1/agent/health >/dev/null 2>&1; then exit 0; fi
+            sleep 1
+          done
+          echo "the Nomad dev agent never became healthy" >&2
+          cat /tmp/nomad.log >&2
+          exit 1
+      - name: Conformance
+        env:
+          ULTRA_BEZALEL_IMAGE: ultralogical/bezalel:phase2-test
+        run: |
+          set -o pipefail
+          go test ./envprovider/nomad/... -count=1 -v -timeout 40m 2>&1 | tee /tmp/nomad-conformance.txt
+      - name: Publish the conformance record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nomad-conformance-${{ matrix.nomad }}
+          path: |
+            /tmp/nomad-conformance.txt
+            /tmp/nomad.log
