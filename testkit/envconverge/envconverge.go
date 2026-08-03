@@ -18,13 +18,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envwork"
-	"github.com/aleksclark/ultralogical/jobqueue"
-	"github.com/aleksclark/ultralogical/jobqueue/inproc"
-	"github.com/aleksclark/ultralogical/postgres"
-	"github.com/aleksclark/ultralogical/secrets"
-	"github.com/aleksclark/ultralogical/testkit/pgtest"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envwork"
+	"github.com/aleksclark/ultracore/jobqueue"
+	"github.com/aleksclark/ultracore/jobqueue/inproc"
+	"github.com/aleksclark/ultracore/postgres"
+	"github.com/aleksclark/ultracore/secrets"
+	"github.com/aleksclark/ultracore/testkit/pgtest"
 )
 
 // masterKey is a fixed test credential key. Environment tokens are encrypted
@@ -37,8 +37,8 @@ type Harness struct {
 	Store   *postgres.Store
 	Envs    *envwork.Service
 	Keyring secrets.Keyring
-	Org     ultra.OrgID
-	Session ultra.SessionID
+	Org     uc.OrgID
+	Session uc.SessionID
 
 	queue *inproc.Queue
 	pool  *pgxpool.Pool
@@ -48,9 +48,9 @@ type Harness struct {
 // Deployment wiring picks an adapter by kind; these tests already know which
 // adapter they are exercising, and resolving it through the registry would
 // only add a way for the test to run against something else.
-type fixedAdapter struct{ provider ultra.EnvProvider }
+type fixedAdapter struct{ provider uc.EnvProvider }
 
-func (f fixedAdapter) Build(context.Context, string, json.RawMessage) (ultra.EnvProvider, error) {
+func (f fixedAdapter) Build(context.Context, string, json.RawMessage) (uc.EnvProvider, error) {
 	return f.provider, nil
 }
 
@@ -70,7 +70,7 @@ type Options struct {
 // New builds a control plane over the given adapter. Jobs are queued but not
 // yet worked: a caller that needs to create state before provisioning runs
 // (an interrupted provisioning, for instance) can do so, then call Start.
-func New(t *testing.T, provider ultra.EnvProvider, options Options) *Harness {
+func New(t *testing.T, provider uc.EnvProvider, options Options) *Harness {
 	t.Helper()
 	ctx := context.Background()
 	if options.ReconcileInterval <= 0 {
@@ -80,7 +80,7 @@ func New(t *testing.T, provider ultra.EnvProvider, options Options) *Harness {
 		options.ProvisionTimeout = 2 * time.Minute
 	}
 	if options.Kind == "" {
-		options.Kind = ultra.ProviderKindLocalDocker
+		options.Kind = uc.ProviderKindLocalDocker
 	}
 
 	databaseURL := pgtest.NewDB(t)
@@ -132,25 +132,25 @@ func New(t *testing.T, provider ultra.EnvProvider, options Options) *Harness {
 func (h *Harness) seed(t *testing.T, kind string) {
 	t.Helper()
 	ctx := context.Background()
-	h.Org = ultra.OrgID(uuid.NewString())
-	if err := h.Store.Orgs().Create(ctx, ultra.Org{ID: h.Org, Name: "converge"}); err != nil {
+	h.Org = uc.OrgID(uuid.NewString())
+	if err := h.Store.Orgs().Create(ctx, uc.Org{ID: h.Org, Name: "converge"}); err != nil {
 		t.Fatal(err)
 	}
-	h.Session = ultra.SessionID(uuid.NewString())
-	if err := h.Store.Org(h.Org).Sessions().Create(ctx, ultra.Session{
+	h.Session = uc.SessionID(uuid.NewString())
+	if err := h.Store.Org(h.Org).Sessions().Create(ctx, uc.Session{
 		ID: h.Session, OrgID: h.Org, Title: "reconciliation",
 	}); err != nil {
 		t.Fatal(err)
 	}
-	err := h.Store.Org(h.Org).Providers().Create(ctx, ultra.ProviderInstance{
-		ID: ultra.ProviderInstanceID(uuid.NewString()), OrgID: h.Org, Kind: kind,
-		Name: "default", RateClass: ultra.RateClassBYO, State: "ready",
-		Capabilities: ultra.ProviderCapabilities{
+	err := h.Store.Org(h.Org).Providers().Create(ctx, uc.ProviderInstance{
+		ID: uc.ProviderInstanceID(uuid.NewString()), OrgID: h.Org, Kind: kind,
+		Name: "default", State: "ready",
+		Capabilities: uc.ProviderCapabilities{
 			Kind: kind,
-			Supported: []ultra.ProviderCapability{
-				ultra.CapabilityServesToolEndpoint,
-				ultra.CapabilityAdoptsOrphans,
-				ultra.CapabilityEnumeratesResources,
+			Supported: []uc.ProviderCapability{
+				uc.CapabilityServesToolEndpoint,
+				uc.CapabilityAdoptsOrphans,
+				uc.CapabilityEnumeratesResources,
 			},
 		},
 	})
@@ -174,7 +174,7 @@ func (h *Harness) Start(t *testing.T) {
 
 // Request creates an environment the way the API does, returning the stored
 // row. Provisioning happens on the queue.
-func (h *Harness) Request(t *testing.T, spec ultra.EnvSpec) ultra.DevEnv {
+func (h *Harness) Request(t *testing.T, spec uc.EnvSpec) uc.DevEnv {
 	t.Helper()
 	env, _, err := h.Envs.Request(context.Background(), h.Org, h.Session, spec, "default", nil)
 	if err != nil {
@@ -184,7 +184,7 @@ func (h *Harness) Request(t *testing.T, spec ultra.EnvSpec) ultra.DevEnv {
 }
 
 // Get reads an environment's persisted state.
-func (h *Harness) Get(t *testing.T, id ultra.EnvID) ultra.DevEnv {
+func (h *Harness) Get(t *testing.T, id uc.EnvID) uc.DevEnv {
 	t.Helper()
 	env, err := h.Store.Org(h.Org).Envs().Get(context.Background(), id)
 	if err != nil {
@@ -196,7 +196,7 @@ func (h *Harness) Get(t *testing.T, id ultra.EnvID) ultra.DevEnv {
 // ClearToken decrypts an environment's bearer token, which is what a caller
 // needs to pre-create a resource the way an interrupted provisioning would
 // have left it.
-func (h *Harness) ClearToken(t *testing.T, env ultra.DevEnv) string {
+func (h *Harness) ClearToken(t *testing.T, env uc.DevEnv) string {
 	t.Helper()
 	clear, err := h.Envs.ClearTokenForTools(env)
 	if err != nil {
@@ -207,10 +207,10 @@ func (h *Harness) ClearToken(t *testing.T, env ultra.DevEnv) string {
 
 // Await polls until an environment reaches a state, failing with the row's
 // own diagnosis rather than a bare timeout.
-func (h *Harness) Await(t *testing.T, id ultra.EnvID, want ultra.EnvState, timeout time.Duration) ultra.DevEnv {
+func (h *Harness) Await(t *testing.T, id uc.EnvID, want uc.EnvState, timeout time.Duration) uc.DevEnv {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
-	var last ultra.DevEnv
+	var last uc.DevEnv
 	for time.Now().Before(deadline) {
 		env, err := h.Store.Org(h.Org).Envs().Get(context.Background(), id)
 		if err == nil {
@@ -218,7 +218,7 @@ func (h *Harness) Await(t *testing.T, id ultra.EnvID, want ultra.EnvState, timeo
 			if env.State == want {
 				return env
 			}
-			if want != ultra.EnvFailed && env.State == ultra.EnvFailed {
+			if want != uc.EnvFailed && env.State == uc.EnvFailed {
 				t.Fatalf("environment failed while waiting for %s: %s", want, env.FailureMessage)
 			}
 		}

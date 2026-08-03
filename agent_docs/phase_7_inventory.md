@@ -46,7 +46,7 @@ Both backends run the same suite: `jobqueue/river` and `jobqueue/inproc`.
 | The canary appears in no RPC response payload | all Connect responses observed in the test | `go: e2e TestA73_RedactionSweep` |
 | The canary appears in no event payload or persisted run history | `events`, `agent_runs.history` | `go: e2e TestA73_RedactionSweep` |
 | The canary appears in no database diagnostic column | `dev_envs`, `credentials` | `go: e2e TestA73_RedactionSweep` |
-| The canary appears in no ultrad or worker structured log line | process stderr captured by the harness | `go: e2e TestA73_RedactionSweep` |
+| The canary appears in no cored or worker structured log line | process stderr captured by the harness | `go: e2e TestA73_RedactionSweep` |
 | The canary appears in no error chain returned to a client | forced failure paths | `go: e2e TestA73_RedactionSweep` |
 | Literal and encoded (URL, base64, JSON-escaped) forms are all checked | redactor + assertion helper | `go: e2e TestA73_RedactionSweep`, `go: secrets TestRedactEncodedForms` |
 | Application state never holds the canary | web local state, GPUI state | `web: never exposes credential material`, `gpui: never_exposes_credential_material` |
@@ -55,7 +55,7 @@ Both backends run the same suite: `jobqueue/river` and `jobqueue/inproc`.
 
 | Bounded behavior | Production entrypoint | Named test |
 |---|---|---|
-| A provisioned environment keeps its workspace across ultrad and worker death | `localdocker` named volume | `go: e2e TestA74_EnvDurabilityAndRotation` |
+| A provisioned environment keeps its workspace across cored and worker death | `localdocker` named volume | `go: e2e TestA74_EnvDurabilityAndRotation` |
 | Reconnecting after restart reads a file written before the restart | `EnvService.ExecPreview` | `go: e2e TestA74_EnvDurabilityAndRotation` |
 | `RestartEnv` rotates the environment token and increments epoch | `EnvService.RestartEnv` (**was unimplemented; added in Phase 7**) | `go: e2e TestA74_EnvDurabilityAndRotation` |
 | The rotated token authenticates against the environment | `envwork.Service.Restart` | `go: e2e TestA74_EnvDurabilityAndRotation` |

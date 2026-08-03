@@ -14,18 +14,18 @@ import (
 
 	"github.com/google/uuid"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider/conformance"
-	"github.com/aleksclark/ultralogical/envprovider/localdocker"
-	"github.com/aleksclark/ultralogical/envprovider/tunnel"
-	"github.com/aleksclark/ultralogical/mcp"
-	"github.com/aleksclark/ultralogical/testkit/harness"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider/conformance"
+	"github.com/aleksclark/ultracore/envprovider/localdocker"
+	"github.com/aleksclark/ultracore/envprovider/tunnel"
+	"github.com/aleksclark/ultracore/mcp"
+	"github.com/aleksclark/ultracore/testkit/harness"
 )
 
 const (
 	agentToken   = "tunnel-registration-token"
 	agentSecret  = "tunnel-signing-secret"
-	bezalelImage = "ULTRA_BEZALEL_IMAGE"
+	bezalelImage = "CORE_BEZALEL_IMAGE"
 )
 
 // startAgent runs the real agent over a real HTTP transport, exactly as the
@@ -66,20 +66,20 @@ func platform(t *testing.T, controlURL string) *tunnel.Provider {
 func TestTunnelConformance(t *testing.T) {
 	_, controlURL := startAgent(t)
 	var provider *tunnel.Provider
-	conformance.RunWith(t, func(t *testing.T) ultra.EnvProvider {
+	conformance.RunWith(t, func(t *testing.T) uc.EnvProvider {
 		provider = platform(t, controlURL)
 		return provider
 	}, conformance.Options{
-		Capabilities: ultra.ProviderCapabilities{
-			Kind: ultra.ProviderKindTunnelLocal,
-			Supported: []ultra.ProviderCapability{
-				ultra.CapabilityRestartPreservesWorkspace,
-				ultra.CapabilityToleratesDisconnect,
-				ultra.CapabilityEnumeratesResources,
-				ultra.CapabilityServesToolEndpoint,
+		Capabilities: uc.ProviderCapabilities{
+			Kind: uc.ProviderKindTunnelLocal,
+			Supported: []uc.ProviderCapability{
+				uc.CapabilityRestartPreservesWorkspace,
+				uc.CapabilityToleratesDisconnect,
+				uc.CapabilityEnumeratesResources,
+				uc.CapabilityServesToolEndpoint,
 			},
 		},
-		Inspect: func(t *testing.T, ctx context.Context, envID ultra.EnvID) []string {
+		Inspect: func(t *testing.T, ctx context.Context, envID uc.EnvID) []string {
 			t.Helper()
 			resources, err := provider.Resources(ctx, envID)
 			if err != nil {
@@ -95,8 +95,8 @@ func TestTunnelConformance(t *testing.T) {
 func TestA105_UnsignedControlRequestsAreRefused(t *testing.T) {
 	_, controlURL := startAgent(t)
 	body, err := json.Marshal(tunnel.ProvisionRequest{
-		EnvID: ultra.EnvID(uuid.NewString()),
-		Spec:  ultra.EnvSpec{Name: "forged", Workdir: "/work"},
+		EnvID: uc.EnvID(uuid.NewString()),
+		Spec:  uc.EnvSpec{Name: "forged", Workdir: "/work"},
 		Token: "forged",
 	})
 	if err != nil {
@@ -197,8 +197,8 @@ func TestA105_DisconnectSuspendsAndReconnectResumes(t *testing.T) {
 	provider := platform(t, controlURL)
 
 	ctx := context.Background()
-	envID := ultra.EnvID(uuid.NewString())
-	handle, err := provider.Provision(ctx, envID, ultra.EnvSpec{Name: "tunnel", Workdir: "/work"}, "env-token")
+	envID := uc.EnvID(uuid.NewString())
+	handle, err := provider.Provision(ctx, envID, uc.EnvSpec{Name: "tunnel", Workdir: "/work"}, "env-token")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +221,7 @@ func TestA105_DisconnectSuspendsAndReconnectResumes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if status.State != ultra.EnvSuspended {
+	if status.State != uc.EnvSuspended {
 		t.Fatalf("a severed tunnel reported %q, want suspended: a disconnected laptop must not destroy work", status.State)
 	}
 
@@ -230,7 +230,7 @@ func TestA105_DisconnectSuspendsAndReconnectResumes(t *testing.T) {
 	t.Cleanup(restored.Close)
 	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
-		if status, err := provider.Status(ctx, handle); err == nil && status.State == ultra.EnvReady {
+		if status, err := provider.Status(ctx, handle); err == nil && status.State == uc.EnvReady {
 			break
 		}
 		time.Sleep(200 * time.Millisecond)
@@ -239,7 +239,7 @@ func TestA105_DisconnectSuspendsAndReconnectResumes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if status.State != ultra.EnvReady {
+	if status.State != uc.EnvReady {
 		t.Fatalf("after reconnecting the environment is %q, want ready", status.State)
 	}
 
@@ -262,8 +262,8 @@ func TestA105_DisconnectSuspendsAndReconnectResumes(t *testing.T) {
 	if !agent.Revoked() {
 		t.Fatal("the agent did not record the revocation")
 	}
-	if _, err := provider.Provision(ctx, ultra.EnvID(uuid.NewString()),
-		ultra.EnvSpec{Name: "after-revoke", Workdir: "/work"}, "token"); err == nil {
+	if _, err := provider.Provision(ctx, uc.EnvID(uuid.NewString()),
+		uc.EnvSpec{Name: "after-revoke", Workdir: "/work"}, "token"); err == nil {
 		t.Fatal("a revoked agent accepted new work")
 	}
 	gone := time.Now().Add(30 * time.Second)
@@ -289,12 +289,12 @@ func restoreAt(t *testing.T, controlURL string, handler http.Handler) *httptest.
 	return server
 }
 
-func awaitReady(t *testing.T, ctx context.Context, provider *tunnel.Provider, handle ultra.ProviderHandle) string {
+func awaitReady(t *testing.T, ctx context.Context, provider *tunnel.Provider, handle uc.ProviderHandle) string {
 	t.Helper()
 	deadline := time.Now().Add(90 * time.Second)
 	for time.Now().Before(deadline) {
 		status, err := provider.Status(ctx, handle)
-		if err == nil && status.State == ultra.EnvReady {
+		if err == nil && status.State == uc.EnvReady {
 			endpoint, err := provider.Endpoint(ctx, handle)
 			if err == nil && mcp.Healthy(ctx, endpoint) == nil {
 				return endpoint

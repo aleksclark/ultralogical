@@ -17,12 +17,12 @@ import (
 
 	"github.com/google/uuid"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/mcp"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/mcp"
 )
 
 // Factory builds a provider for the suite.
-type Factory func(t *testing.T) ultra.EnvProvider
+type Factory func(t *testing.T) uc.EnvProvider
 
 // requiredTools are the Bezalel capabilities the agent loop depends on. A
 // provider that cannot expose these cannot host a run.
@@ -33,19 +33,19 @@ var requiredTools = []string{"bash", "view", "write", "edit", "job_output", "lsp
 // Capabilities change *how* a behavior is verified, never *whether* it is.
 // A provider that does not preserve workspaces across restart is still
 // required to restart and still required to rotate its token; only the
-// file-survival assertion changes. Anything in ultra.CoreProviderContract is
+// file-survival assertion changes. Anything in uc.CoreProviderContract is
 // unconditional, and declaring it optional is itself a failure.
 type Options struct {
 	// Capabilities are the optional behaviors this provider claims. Empty
 	// means the provider claims none, which is a valid, fully-tested
 	// configuration rather than a lenient one.
-	Capabilities ultra.ProviderCapabilities
+	Capabilities uc.ProviderCapabilities
 	// Inspect proves the adapter created resources in its own control plane.
 	// A provider that quietly delegated its lifecycle elsewhere would pass
 	// every behavioral assertion below, so this is what makes the suite
 	// alias-proof. It must return a non-empty description of live,
 	// provider-native resources for the environment.
-	Inspect func(t *testing.T, ctx context.Context, envID ultra.EnvID) []string
+	Inspect func(t *testing.T, ctx context.Context, envID uc.EnvID) []string
 }
 
 // Run executes the complete provider contract with no optional capabilities
@@ -59,11 +59,11 @@ func RunWith(t *testing.T, factory Factory, options Options) {
 	assertCapabilitiesCannotWaiveCore(t, options.Capabilities)
 	ctx := context.Background()
 	provider := factory(t)
-	envID := ultra.EnvID(uuid.NewString())
+	envID := uc.EnvID(uuid.NewString())
 	token := randomToken(t)
-	spec := ultra.EnvSpec{Name: "conformance", Workdir: "/work"}
+	spec := uc.EnvSpec{Name: "conformance", Workdir: "/work"}
 
-	var handle ultra.ProviderHandle
+	var handle uc.ProviderHandle
 	var endpoint string
 	var client *mcp.Client
 	// Cleanup is registered on the parent test, not the Provision subtest, so
@@ -258,7 +258,7 @@ func RunWith(t *testing.T, factory Factory, options Options) {
 		// survives is the only capability-conditional part, and a provider
 		// that does not claim it must still come back serving tools.
 		got, err := rotated.Call(ctx, "view", json.RawMessage(`{"file_path":"/work/state.txt"}`))
-		if options.Capabilities.Has(ultra.CapabilityRestartPreservesWorkspace) {
+		if options.Capabilities.Has(uc.CapabilityRestartPreservesWorkspace) {
 			if err != nil || got.IsError || !strings.Contains(got.Text, "after") {
 				t.Fatalf("provider claims restart_preserves_workspace but restart lost the workspace: %+v %v", got, err)
 			}
@@ -291,8 +291,8 @@ func RunWith(t *testing.T, factory Factory, options Options) {
 	})
 
 	t.Run("LeakCheck", func(t *testing.T) {
-		lister, ok := provider.(ultra.EnvResourceLister)
-		claimed := options.Capabilities.Has(ultra.CapabilityEnumeratesResources)
+		lister, ok := provider.(uc.EnvResourceLister)
+		claimed := options.Capabilities.Has(uc.CapabilityEnumeratesResources)
 		if claimed && !ok {
 			t.Fatal("provider claims enumerates_resources but implements no resource lister")
 		}
@@ -330,13 +330,13 @@ func RunWith(t *testing.T, factory Factory, options Options) {
 
 	t.Run("ConcurrentProvisionDistinctEndpoints", func(t *testing.T) {
 		type provisioned struct {
-			id     ultra.EnvID
-			handle ultra.ProviderHandle
+			id     uc.EnvID
+			handle uc.ProviderHandle
 		}
 		var made []provisioned
 		for range 3 {
-			id := ultra.EnvID(uuid.NewString())
-			h, err := provider.Provision(ctx, id, ultra.EnvSpec{Name: "concurrent", Workdir: "/work"}, randomToken(t))
+			id := uc.EnvID(uuid.NewString())
+			h, err := provider.Provision(ctx, id, uc.EnvSpec{Name: "concurrent", Workdir: "/work"}, randomToken(t))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -371,12 +371,12 @@ func backgroundJobID(text string) string {
 	return strings.Trim(fields[0], ".,")
 }
 
-func awaitReady(t *testing.T, ctx context.Context, provider ultra.EnvProvider, handle ultra.ProviderHandle) string {
+func awaitReady(t *testing.T, ctx context.Context, provider uc.EnvProvider, handle uc.ProviderHandle) string {
 	t.Helper()
 	deadline := time.Now().Add(60 * time.Second)
 	for time.Now().Before(deadline) {
 		status, err := provider.Status(ctx, handle)
-		if err == nil && status.State == ultra.EnvReady {
+		if err == nil && status.State == uc.EnvReady {
 			endpoint, err := provider.Endpoint(ctx, handle)
 			if err == nil && mcp.Healthy(ctx, endpoint) == nil {
 				return endpoint
@@ -402,10 +402,10 @@ func randomToken(t *testing.T) string {
 // provider, not so a provider can shrink the suite; making that a checked
 // property is what keeps "capability-flagged" from becoming a synonym for
 // "untested".
-func assertCapabilitiesCannotWaiveCore(t *testing.T, capabilities ultra.ProviderCapabilities) {
+func assertCapabilitiesCannotWaiveCore(t *testing.T, capabilities uc.ProviderCapabilities) {
 	t.Helper()
 	core := map[string]bool{}
-	for _, name := range ultra.CoreProviderContract() {
+	for _, name := range uc.CoreProviderContract() {
 		core[strings.ToLower(name)] = true
 	}
 	for _, capability := range capabilities.Supported {

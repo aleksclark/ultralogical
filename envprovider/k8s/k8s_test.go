@@ -11,10 +11,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider/conformance"
-	"github.com/aleksclark/ultralogical/envprovider/k8s"
-	"github.com/aleksclark/ultralogical/testkit/harness"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider/conformance"
+	"github.com/aleksclark/ultracore/envprovider/k8s"
+	"github.com/aleksclark/ultracore/testkit/harness"
 )
 
 // kubeconfigFor returns the kubeconfig for the test cluster, skipping when no
@@ -22,14 +22,14 @@ import (
 // a skip rather than a confusing failure.
 func kubeconfigFor(t *testing.T) string {
 	t.Helper()
-	if raw := os.Getenv("ULTRA_TEST_KUBECONFIG"); raw != "" {
+	if raw := os.Getenv("CORE_TEST_KUBECONFIG"); raw != "" {
 		body, err := os.ReadFile(raw)
 		if err != nil {
-			t.Fatalf("ULTRA_TEST_KUBECONFIG is set but unreadable: %v", err)
+			t.Fatalf("CORE_TEST_KUBECONFIG is set but unreadable: %v", err)
 		}
 		return string(body)
 	}
-	cluster := os.Getenv("ULTRA_TEST_KIND_CLUSTER")
+	cluster := os.Getenv("CORE_TEST_KIND_CLUSTER")
 	if cluster == "" {
 		cluster = "ultra-test"
 	}
@@ -46,7 +46,7 @@ func kubeconfigFor(t *testing.T) string {
 // clusterImage is the Bezalel image loaded into the test cluster.
 func clusterImage(t *testing.T) string {
 	t.Helper()
-	if image := os.Getenv("ULTRA_BEZALEL_IMAGE"); image != "" {
+	if image := os.Getenv("CORE_BEZALEL_IMAGE"); image != "" {
 		return image
 	}
 	return harness.BezalelImage
@@ -80,7 +80,7 @@ func TestKubernetesConformance(t *testing.T) {
 	namespace := "ultra-conformance"
 
 	var provider *k8s.Provider
-	conformance.RunWith(t, func(t *testing.T) ultra.EnvProvider {
+	conformance.RunWith(t, func(t *testing.T) uc.EnvProvider {
 		created, err := k8s.NewWithClient(client, k8s.Config{
 			Namespace:    namespace,
 			Image:        image,
@@ -97,22 +97,22 @@ func TestKubernetesConformance(t *testing.T) {
 		provider = created
 		return created
 	}, conformance.Options{
-		Capabilities: ultra.ProviderCapabilities{
-			Kind: ultra.ProviderKindBYOKubernetes,
-			Supported: []ultra.ProviderCapability{
-				ultra.CapabilityAdoptsOrphans,
-				ultra.CapabilityEnumeratesResources,
-				ultra.CapabilityServesToolEndpoint,
+		Capabilities: uc.ProviderCapabilities{
+			Kind: uc.ProviderKindBYOKubernetes,
+			Supported: []uc.ProviderCapability{
+				uc.CapabilityAdoptsOrphans,
+				uc.CapabilityEnumeratesResources,
+				uc.CapabilityServesToolEndpoint,
 			},
 			// A pod's workspace is an emptyDir, so restart does not preserve
 			// it. The capability is deliberately unclaimed rather than the
 			// step being skipped: the contract still requires a restart that
 			// rotates the token and comes back serving tools.
-			Notes: map[ultra.ProviderCapability]string{
-				ultra.CapabilityRestartPreservesWorkspace: "environment workspaces are emptyDir volumes",
+			Notes: map[uc.ProviderCapability]string{
+				uc.CapabilityRestartPreservesWorkspace: "environment workspaces are emptyDir volumes",
 			},
 		},
-		Inspect: func(t *testing.T, ctx context.Context, envID ultra.EnvID) []string {
+		Inspect: func(t *testing.T, ctx context.Context, envID uc.EnvID) []string {
 			t.Helper()
 			resources, err := provider.Resources(ctx, envID)
 			if err != nil {

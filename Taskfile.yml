@@ -19,24 +19,17 @@ tasks:
     cmds:
       - buf lint
       - go vet ./...
-      # Fail loudly when golangci-lint is missing. A silent skip means a
-      # developer believes the lint gate passed locally when it never ran, and
-      # the first real signal is a red PR.
       - |
         if ! golangci-lint version >/dev/null 2>&1; then
           echo "golangci-lint is not installed or has no selected version; CI runs it, so install it before relying on 'task lint'" >&2
           exit 1
         fi
       - golangci-lint run
-      # Extraction term fences: after each E-phase closes, its banned terms may
-      # not reappear in live code. E0 ships with no active terms (no-op).
       - bash scripts/check-extraction-fences.sh
 
   test:
     desc: Unit + store + queue + provider tests (real Postgres via testcontainers)
     cmds:
-      # Excludes e2e/: the real-stack acceptance suite is task test:functional,
-      # which additionally needs browser and Rust toolchains.
       - go test $(go list ./... | grep -v '/e2e$') -count=1 -timeout 30m
 
   test:functional:
@@ -45,9 +38,9 @@ tasks:
       - go test ./e2e/ -count=1 -timeout 40m
 
   cli:test:
-    desc: Run the ultra CLI suite against the real stack
+    desc: Run the CLI suite against the real stack
     cmds:
-      - go test ./cmd/ultra/... -count=1 -timeout 20m
+      - go test ./cmd/core/... -count=1 -timeout 20m
 
   test:all:
     desc: Everything
@@ -58,10 +51,6 @@ tasks:
     desc: Fail if generated code is out of sync with protos
     cmds:
       - bash scripts/verify-codegen.sh
-      - python3 scripts/verify-codegen-rust.py
-      # Generated TypeScript has to compile under the client's own resolution
-      # settings, not merely exist. Skipped when deps are not installed so the
-      # gate stays runnable without a node toolchain.
       - test -d clients/ts/node_modules && (cd clients/ts && npx tsc --noEmit) || echo "clients/ts deps not installed; run npm ci to include the TS typecheck"
 
   verify:codegen:mutation:
@@ -70,7 +59,7 @@ tasks:
       - bash scripts/mutate-codegen-gate.sh
 
   verify:coverage:
-    desc: Validate the cross-client capability coverage matrix
+    desc: Validate the capability coverage matrix
     cmds:
       - python3 scripts/verify-coverage.py
 
@@ -96,24 +85,8 @@ tasks:
     cmds:
       - npx tsc --noEmit
 
-  web:build:
-    desc: Typecheck and build the React SPA
-    dir: ui/web
-    cmds:
-      - npm run build
-
-  web:test:
-    desc: Run the Playwright golden suite (real backend via Go harness)
-    cmds:
-      - go test ./e2e/ -run TestA16 -v -timeout 20m
-
-  desktop:test:
-    desc: Run the GPUI desktop suites (real backend via Go harness)
-    cmds:
-      - go test ./e2e/ -run TestRustDesktop -v -timeout 30m
-
   dev:
-    desc: Boot the full local stack in one command (Postgres, model, ultrad, worker, web)
+    desc: Boot the local stack (Postgres, model, API, worker)
     cmds:
       - bash scripts/dev-stack.sh
 

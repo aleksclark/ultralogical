@@ -7,15 +7,15 @@ import (
 
 	"connectrpc.com/connect"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 type ctxKey struct{}
 
 // userFrom extracts the authenticated user set by the auth interceptor or
 // streaming-handler authentication.
-func userFrom(ctx context.Context) (ultra.User, bool) {
-	u, ok := ctx.Value(ctxKey{}).(ultra.User)
+func userFrom(ctx context.Context) (uc.User, bool) {
+	u, ok := ctx.Value(ctxKey{}).(uc.User)
 	return u, ok
 }
 
@@ -34,7 +34,7 @@ func errUnauthenticated() *connect.Error {
 
 // authenticate resolves the request's bearer token via the domain
 // Authenticator. Both the unary interceptor and streaming handlers use it.
-func authenticate(ctx context.Context, auth ultra.Authenticator, authorization string) (context.Context, error) {
+func authenticate(ctx context.Context, auth uc.Authenticator, authorization string) (context.Context, error) {
 	token := bearer(authorization)
 	if token == "" {
 		return ctx, errUnauthenticated()
@@ -47,7 +47,7 @@ func authenticate(ctx context.Context, auth ultra.Authenticator, authorization s
 }
 
 // NewAuthInterceptor authenticates every unary RPC.
-func NewAuthInterceptor(auth ultra.Authenticator) connect.UnaryInterceptorFunc {
+func NewAuthInterceptor(auth uc.Authenticator) connect.UnaryInterceptorFunc {
 	return func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 			ctx, err := authenticate(ctx, auth, req.Header().Get("Authorization"))

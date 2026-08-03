@@ -11,14 +11,14 @@ import (
 	"charm.land/fantasy/providers/bedrock"
 	"charm.land/fantasy/providers/openai"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/secrets"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/secrets"
 )
 
 // CredentialError is a typed, user-actionable credential failure. Its
 // message never contains secret material or raw provider errors.
 type CredentialError struct {
-	Reason  string // ultra.FailureCredentialMissing | ultra.FailureCredentialInvalid
+	Reason  string // uc.FailureCredentialMissing | uc.FailureCredentialInvalid
 	Message string
 }
 
@@ -27,11 +27,11 @@ func (e *CredentialError) Error() string { return e.Message }
 // ResolveModel resolves a run's model config to a fantasy LanguageModel
 // using the org's credential store. Decrypted secret values are registered
 // with the default redactor before use.
-func ResolveModel(ctx context.Context, scope ultra.OrgScope, keyring secrets.Keyring, cfg ultra.ModelConfig) (fantasy.LanguageModel, error) {
-	kind := ultra.InferenceCredentialKind(cfg.Provider)
+func ResolveModel(ctx context.Context, scope uc.OrgScope, keyring secrets.Keyring, cfg uc.ModelConfig) (fantasy.LanguageModel, error) {
+	kind := uc.InferenceCredentialKind(cfg.Provider)
 	if kind == "" {
 		return nil, &CredentialError{
-			Reason:  ultra.FailureCredentialMissing,
+			Reason:  uc.FailureCredentialMissing,
 			Message: fmt.Sprintf("unknown inference provider %q", cfg.Provider),
 		}
 	}
@@ -40,9 +40,9 @@ func ResolveModel(ctx context.Context, scope ultra.OrgScope, keyring secrets.Key
 		name = "default"
 	}
 	cred, err := scope.Credentials().Get(ctx, kind, name)
-	if errors.Is(err, ultra.ErrNotFound) {
+	if errors.Is(err, uc.ErrNotFound) {
 		return nil, &CredentialError{
-			Reason:  ultra.FailureCredentialMissing,
+			Reason:  uc.FailureCredentialMissing,
 			Message: fmt.Sprintf("no %s credential named %q — add one in org settings", kind, name),
 		}
 	}
@@ -53,7 +53,7 @@ func ResolveModel(ctx context.Context, scope ultra.OrgScope, keyring secrets.Key
 	if err != nil {
 		return nil, fmt.Errorf("loop: decrypt credential: %w", err)
 	}
-	var payload ultra.InferencePayload
+	var payload uc.InferencePayload
 	if err := json.Unmarshal(plaintext, &payload); err != nil {
 		return nil, fmt.Errorf("loop: decode credential payload: %w", err)
 	}
@@ -73,7 +73,7 @@ func ResolveModel(ctx context.Context, scope ultra.OrgScope, keyring secrets.Key
 	return model, nil
 }
 
-func buildProvider(name string, payload ultra.InferencePayload) (fantasy.Provider, error) {
+func buildProvider(name string, payload uc.InferencePayload) (fantasy.Provider, error) {
 	switch name {
 	case "openai":
 		opts := []openai.Option{openai.WithAPIKey(payload.APIKey)}
@@ -114,11 +114,11 @@ func ClassifyProviderError(err error) (reason, message string) {
 	var perr *fantasy.ProviderError
 	if errors.As(err, &perr) {
 		if perr.StatusCode == 401 || perr.StatusCode == 403 || perr.AuthError {
-			return ultra.FailureCredentialInvalid,
+			return uc.FailureCredentialInvalid,
 				"the inference credential was rejected by the provider — rotate it in org settings"
 		}
-		return ultra.FailureProviderError,
+		return uc.FailureProviderError,
 			secrets.DefaultRedactor.Redact(fmt.Sprintf("provider error (HTTP %d)", perr.StatusCode))
 	}
-	return ultra.FailureProviderError, "provider error"
+	return uc.FailureProviderError, "provider error"
 }

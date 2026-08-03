@@ -7,7 +7,7 @@
 //	       JSON describing what it created.
 //	smoke  Drive the running stack through the shipped API: create a session,
 //	       stream an agent run, provision a development environment, run a
-//	       command in it, read usage, and terminate. Exits nonzero on any
+//	       command in it, and terminate. Exits nonzero on any
 //	       failure so the caller can fail the build.
 //	model  Serve a minimal OpenAI-compatible streaming endpoint so the local
 //	       stack can run agents without a vendor account.
@@ -15,13 +15,13 @@
 // Configuration:
 //
 //	DATABASE_URL      Postgres connection string (seed)
-//	ULTRA_MASTER_KEY  credential master key (seed)
-//	ULTRA_DEV_EMAIL   dev user email (seed, default dev@example.com)
-//	ULTRA_MODEL_URL   base URL of the local model endpoint (seed)
-//	ULTRA_SMOKE_API   ultrad base URL (smoke)
-//	ULTRA_SMOKE_TOKEN dev bearer token (smoke)
-//	ULTRA_SMOKE_ORG   org id to work in (smoke)
-//	ULTRA_MODEL_ADDR  listen address for the model endpoint (model)
+//	CORE_MASTER_KEY  credential master key (seed)
+//	CORE_DEV_EMAIL   dev user email (seed, default dev@example.com)
+//	CORE_MODEL_URL   base URL of the local model endpoint (seed)
+//	CORE_SMOKE_API   cored base URL (smoke)
+//	CORE_SMOKE_TOKEN dev bearer token (smoke)
+//	CORE_SMOKE_ORG   org id to work in (smoke)
+//	CORE_MODEL_ADDR  listen address for the model endpoint (model)
 package main
 
 import (
@@ -37,11 +37,11 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 
-	ultra "github.com/aleksclark/ultralogical"
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/gen/go/ultra/v1/ultrav1connect"
-	"github.com/aleksclark/ultralogical/postgres"
-	"github.com/aleksclark/ultralogical/secrets"
+	uc "github.com/aleksclark/ultracore"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/gen/go/core/v1/corev1connect"
+	"github.com/aleksclark/ultracore/postgres"
+	"github.com/aleksclark/ultracore/secrets"
 )
 
 func main() {
@@ -81,7 +81,7 @@ func seed(ctx context.Context) error {
 	if databaseURL == "" {
 		return errors.New("DATABASE_URL is required")
 	}
-	keyring, err := secrets.NewAESKeyring(os.Getenv("ULTRA_MASTER_KEY"))
+	keyring, err := secrets.NewAESKeyring(os.Getenv("CORE_MASTER_KEY"))
 	if err != nil {
 		return err
 	}
@@ -94,10 +94,10 @@ func seed(ctx context.Context) error {
 	}
 	defer pool.Close()
 
-	email := envOr("ULTRA_DEV_EMAIL", "dev@example.com")
+	email := envOr("CORE_DEV_EMAIL", "dev@example.com")
 	user, err := store.Users().GetByEmail(ctx, email)
-	if errors.Is(err, ultra.ErrNotFound) {
-		user = ultra.User{ID: ultra.UserID(uuid.NewString()), Email: email, Display: "Dev"}
+	if errors.Is(err, uc.ErrNotFound) {
+		user = uc.User{ID: uc.UserID(uuid.NewString()), Email: email, Display: "Dev"}
 		if err := store.Users().Create(ctx, user); err != nil {
 			return err
 		}
@@ -109,25 +109,25 @@ func seed(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	var org ultra.Org
+	var org uc.Org
 	if len(orgs) > 0 {
 		org = orgs[0]
 	} else {
-		org = ultra.Org{ID: ultra.OrgID(uuid.NewString()), Name: "dev"}
+		org = uc.Org{ID: uc.OrgID(uuid.NewString()), Name: "dev"}
 		if err := store.Orgs().Create(ctx, org); err != nil {
 			return err
 		}
-		if err := store.Orgs().AddMember(ctx, ultra.OrgMember{OrgID: org.ID, UserID: user.ID, Role: ultra.OrgRoleOwner}); err != nil {
+		if err := store.Orgs().AddMember(ctx, uc.OrgMember{OrgID: org.ID, UserID: user.ID, Role: uc.OrgRoleOwner}); err != nil {
 			return err
 		}
 	}
 
 	scope := store.Org(org.ID)
-	if _, err := scope.Providers().GetByName(ctx, "default"); errors.Is(err, ultra.ErrNotFound) {
-		if err := scope.Providers().Create(ctx, ultra.ProviderInstance{
-			ID: ultra.ProviderInstanceID(uuid.NewString()), OrgID: org.ID,
-			Kind: ultra.ProviderKindLocalDocker, Name: "default",
-			RateClass: ultra.RateClassBYO, State: "ready",
+	if _, err := scope.Providers().GetByName(ctx, "default"); errors.Is(err, uc.ErrNotFound) {
+		if err := scope.Providers().Create(ctx, uc.ProviderInstance{
+			ID: uc.ProviderInstanceID(uuid.NewString()), OrgID: org.ID,
+			Kind: uc.ProviderKindLocalDocker, Name: "default",
+			State: "ready",
 		}); err != nil {
 			return err
 		}
@@ -135,8 +135,8 @@ func seed(ctx context.Context) error {
 		return err
 	}
 
-	if modelURL := os.Getenv("ULTRA_MODEL_URL"); modelURL != "" {
-		payload, err := json.Marshal(ultra.InferencePayload{APIKey: "dev-local-model-key", BaseURL: modelURL})
+	if modelURL := os.Getenv("CORE_MODEL_URL"); modelURL != "" {
+		payload, err := json.Marshal(uc.InferencePayload{APIKey: "dev-local-model-key", BaseURL: modelURL})
 		if err != nil {
 			return err
 		}
@@ -144,8 +144,8 @@ func seed(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if err := scope.Credentials().Put(ctx, ultra.Credential{
-			Kind: ultra.CredentialKindOpenAI, Name: "default", EncPayload: enc,
+		if err := scope.Credentials().Put(ctx, uc.Credential{
+			Kind: uc.CredentialKindOpenAI, Name: "default", EncPayload: enc,
 		}); err != nil {
 			return err
 		}
@@ -159,11 +159,10 @@ func seed(ctx context.Context) error {
 }
 
 type smokeClient struct {
-	sessions ultrav1connect.SessionServiceClient
-	events   ultrav1connect.EventServiceClient
-	agents   ultrav1connect.AgentServiceClient
-	envs     ultrav1connect.EnvServiceClient
-	billing  ultrav1connect.BillingServiceClient
+	sessions corev1connect.SessionServiceClient
+	events   corev1connect.EventServiceClient
+	agents   corev1connect.AgentServiceClient
+	envs     corev1connect.EnvServiceClient
 }
 
 type bearer struct {
@@ -180,22 +179,21 @@ func (b *bearer) RoundTrip(req *http.Request) (*http.Response, error) {
 // smoke exercises the shipped API end to end against the running stack. It is
 // the "is the documented stack actually usable" check, not a unit test.
 func smoke(ctx context.Context) error {
-	api := envOr("ULTRA_SMOKE_API", "http://127.0.0.1:8080")
-	token := envOr("ULTRA_SMOKE_TOKEN", "dev-token")
-	org := os.Getenv("ULTRA_SMOKE_ORG")
+	api := envOr("CORE_SMOKE_API", "http://127.0.0.1:8080")
+	token := envOr("CORE_SMOKE_TOKEN", "dev-token")
+	org := os.Getenv("CORE_SMOKE_ORG")
 	if org == "" {
-		return errors.New("ULTRA_SMOKE_ORG is required")
+		return errors.New("CORE_SMOKE_ORG is required")
 	}
 	httpClient := &http.Client{Transport: &bearer{token: token, base: http.DefaultTransport}, Timeout: 2 * time.Minute}
 	client := smokeClient{
-		sessions: ultrav1connect.NewSessionServiceClient(httpClient, api),
-		events:   ultrav1connect.NewEventServiceClient(httpClient, api),
-		agents:   ultrav1connect.NewAgentServiceClient(httpClient, api),
-		envs:     ultrav1connect.NewEnvServiceClient(httpClient, api),
-		billing:  ultrav1connect.NewBillingServiceClient(httpClient, api),
-	}
+		sessions: corev1connect.NewSessionServiceClient(httpClient, api),
+		events:   corev1connect.NewEventServiceClient(httpClient, api),
+		agents:   corev1connect.NewAgentServiceClient(httpClient, api),
+		envs:     corev1connect.NewEnvServiceClient(httpClient, api),
+		}
 
-	created, err := client.sessions.CreateSession(ctx, connect.NewRequest(&ultrav1.CreateSessionRequest{
+	created, err := client.sessions.CreateSession(ctx, connect.NewRequest(&corev1.CreateSessionRequest{
 		OrgId: org, Title: "dev stack smoke",
 	}))
 	if err != nil {
@@ -208,7 +206,7 @@ func smoke(ctx context.Context) error {
 	// is not usable for agent work.
 	streamCtx, cancelStream := context.WithCancel(ctx)
 	defer cancelStream()
-	stream, err := client.events.Subscribe(streamCtx, connect.NewRequest(&ultrav1.SubscribeRequest{
+	stream, err := client.events.Subscribe(streamCtx, connect.NewRequest(&corev1.SubscribeRequest{
 		SessionId: session, FromSeq: 0,
 	}))
 	if err != nil {
@@ -216,7 +214,7 @@ func smoke(ctx context.Context) error {
 	}
 	defer func() { _ = stream.Close() }()
 
-	run, err := client.agents.StartRun(ctx, connect.NewRequest(&ultrav1.StartRunRequest{
+	run, err := client.agents.StartRun(ctx, connect.NewRequest(&corev1.StartRunRequest{
 		SessionId: session, Prompt: "say hello from the dev stack",
 	}))
 	if err != nil {
@@ -235,13 +233,13 @@ func smoke(ctx context.Context) error {
 			continue
 		}
 		switch payload := event.GetPayload().GetPayload().(type) {
-		case *ultrav1.EventPayload_TextDelta:
+		case *corev1.EventPayload_TextDelta:
 			deltas++
-		case *ultrav1.EventPayload_RunCompleted:
+		case *corev1.EventPayload_RunCompleted:
 			terminal = "completed"
-		case *ultrav1.EventPayload_RunFailed:
+		case *corev1.EventPayload_RunFailed:
 			terminal = "failed: " + payload.RunFailed.GetReason() + " " + payload.RunFailed.GetMessage()
-		case *ultrav1.EventPayload_RunCancelled:
+		case *corev1.EventPayload_RunCancelled:
 			terminal = "cancelled"
 		}
 	}
@@ -254,9 +252,9 @@ func smoke(ctx context.Context) error {
 	fmt.Printf("smoke: streamed %d deltas and completed\n", deltas)
 
 	// Provision a real environment and run a command in it.
-	provisioned, err := client.envs.ProvisionEnv(ctx, connect.NewRequest(&ultrav1.ProvisionEnvRequest{
+	provisioned, err := client.envs.ProvisionEnv(ctx, connect.NewRequest(&corev1.ProvisionEnvRequest{
 		SessionId:        session,
-		Spec:             &ultrav1.EnvSpec{Name: "smoke", Workdir: "/work"},
+		Spec:             &corev1.EnvSpec{Name: "smoke", Workdir: "/work"},
 		ProviderInstance: "default",
 	}))
 	if err != nil {
@@ -266,12 +264,12 @@ func smoke(ctx context.Context) error {
 	ready := false
 	deadline = time.Now().Add(3 * time.Minute)
 	for time.Now().Before(deadline) {
-		got, err := client.envs.GetEnv(ctx, connect.NewRequest(&ultrav1.GetEnvRequest{EnvId: envID}))
+		got, err := client.envs.GetEnv(ctx, connect.NewRequest(&corev1.GetEnvRequest{EnvId: envID}))
 		if err == nil {
 			switch got.Msg.GetEnv().GetState() {
-			case ultrav1.EnvState_ENV_STATE_READY:
+			case corev1.EnvState_ENV_STATE_READY:
 				ready = true
-			case ultrav1.EnvState_ENV_STATE_FAILED:
+			case corev1.EnvState_ENV_STATE_FAILED:
 				return fmt.Errorf("env failed: %s", got.Msg.GetEnv().GetFailureMessage())
 			}
 		}
@@ -285,7 +283,7 @@ func smoke(ctx context.Context) error {
 	}
 	fmt.Printf("smoke: environment %s ready\n", envID)
 
-	exec, err := client.envs.ExecPreview(ctx, connect.NewRequest(&ultrav1.ExecPreviewRequest{
+	exec, err := client.envs.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
 		EnvId: envID, Command: "echo dev-stack-smoke",
 	}))
 	if err != nil {
@@ -296,22 +294,13 @@ func smoke(ctx context.Context) error {
 	}
 	fmt.Println("smoke: ran a command in the environment")
 
-	usage, err := client.billing.GetUsage(ctx, connect.NewRequest(&ultrav1.GetUsageRequest{OrgId: org}))
-	if err != nil {
-		return fmt.Errorf("get usage: %w", err)
-	}
-	if len(usage.Msg.GetIntervals()) == 0 {
-		return errors.New("no usage recorded for a ready environment")
-	}
-	fmt.Printf("smoke: %d usage interval(s)\n", len(usage.Msg.GetIntervals()))
-
-	if _, err := client.envs.TerminateEnv(ctx, connect.NewRequest(&ultrav1.TerminateEnvRequest{EnvId: envID})); err != nil {
+	if _, err := client.envs.TerminateEnv(ctx, connect.NewRequest(&corev1.TerminateEnvRequest{EnvId: envID})); err != nil {
 		return fmt.Errorf("terminate env: %w", err)
 	}
 	deadline = time.Now().Add(2 * time.Minute)
 	for time.Now().Before(deadline) {
-		got, err := client.envs.GetEnv(ctx, connect.NewRequest(&ultrav1.GetEnvRequest{EnvId: envID}))
-		if err == nil && got.Msg.GetEnv().GetState() == ultrav1.EnvState_ENV_STATE_TERMINATED {
+		got, err := client.envs.GetEnv(ctx, connect.NewRequest(&corev1.GetEnvRequest{EnvId: envID}))
+		if err == nil && got.Msg.GetEnv().GetState() == corev1.EnvState_ENV_STATE_TERMINATED {
 			fmt.Println("smoke: environment terminated")
 			return nil
 		}
@@ -324,7 +313,7 @@ func smoke(ctx context.Context) error {
 // stack can run agents without a vendor account. It streams several small
 // chunks so the local UI shows real incremental rendering.
 func serveModel() error {
-	addr := envOr("ULTRA_MODEL_ADDR", "127.0.0.1:8091")
+	addr := envOr("CORE_MODEL_ADDR", "127.0.0.1:8091")
 	mux := http.NewServeMux()
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var body struct {

@@ -1,6 +1,6 @@
 // Package testclient wraps the generated Go Connect client — the same
 // artifact real consumers use — with helpers for the functional suite. It is
-// deliberately the only way tests talk to ultrad: if the public API can't do
+// deliberately the only way tests talk to cored: if the public API can't do
 // it, the test can't do it.
 package testclient
 
@@ -13,20 +13,18 @@ import (
 
 	"connectrpc.com/connect"
 
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/gen/go/ultra/v1/ultrav1connect"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/gen/go/core/v1/corev1connect"
 )
 
 // Client is an authenticated API client for one user.
 type Client struct {
-	Orgs       ultrav1connect.OrgServiceClient
-	Sessions   ultrav1connect.SessionServiceClient
-	Events     ultrav1connect.EventServiceClient
-	Agents     ultrav1connect.AgentServiceClient
-	Envs       ultrav1connect.EnvServiceClient
-	Billing    ultrav1connect.BillingServiceClient
-	Flows      ultrav1connect.FlowServiceClient
-	Automation ultrav1connect.AutomationServiceClient
+	Orgs       corev1connect.OrgServiceClient
+	Sessions   corev1connect.SessionServiceClient
+	Events     corev1connect.EventServiceClient
+	Agents     corev1connect.AgentServiceClient
+	Envs       corev1connect.EnvServiceClient
+	Automation corev1connect.AutomationServiceClient
 }
 
 type authTransport struct {
@@ -47,23 +45,21 @@ func New(baseURL, token string) *Client {
 		Transport: &authTransport{token: token, base: http.DefaultTransport},
 	}
 	return &Client{
-		Orgs:       ultrav1connect.NewOrgServiceClient(httpClient, baseURL),
-		Sessions:   ultrav1connect.NewSessionServiceClient(httpClient, baseURL),
-		Events:     ultrav1connect.NewEventServiceClient(httpClient, baseURL),
-		Agents:     ultrav1connect.NewAgentServiceClient(httpClient, baseURL),
-		Envs:       ultrav1connect.NewEnvServiceClient(httpClient, baseURL),
-		Billing:    ultrav1connect.NewBillingServiceClient(httpClient, baseURL),
-		Flows:      ultrav1connect.NewFlowServiceClient(httpClient, baseURL),
-		Automation: ultrav1connect.NewAutomationServiceClient(httpClient, baseURL),
+		Orgs:       corev1connect.NewOrgServiceClient(httpClient, baseURL),
+		Sessions:   corev1connect.NewSessionServiceClient(httpClient, baseURL),
+		Events:     corev1connect.NewEventServiceClient(httpClient, baseURL),
+		Agents:     corev1connect.NewAgentServiceClient(httpClient, baseURL),
+		Envs:       corev1connect.NewEnvServiceClient(httpClient, baseURL),
+				Automation: corev1connect.NewAutomationServiceClient(httpClient, baseURL),
 	}
 }
 
 // AppendUserMessage appends a user message and returns its seq.
 func (c *Client) AppendUserMessage(ctx context.Context, sessionID, text string) (int64, error) {
-	resp, err := c.Events.Append(ctx, connect.NewRequest(&ultrav1.AppendRequest{
+	resp, err := c.Events.Append(ctx, connect.NewRequest(&corev1.AppendRequest{
 		SessionId: sessionID,
-		Payload: &ultrav1.EventPayload{
-			Payload: &ultrav1.EventPayload_UserMessage{UserMessage: &ultrav1.UserMessage{Text: text}},
+		Payload: &corev1.EventPayload{
+			Payload: &corev1.EventPayload_UserMessage{UserMessage: &corev1.UserMessage{Text: text}},
 		},
 	}))
 	if err != nil {
@@ -74,14 +70,14 @@ func (c *Client) AppendUserMessage(ctx context.Context, sessionID, text string) 
 
 // Subscription is a live event stream with collection helpers.
 type Subscription struct {
-	stream *connect.ServerStreamForClient[ultrav1.SubscribeResponse]
+	stream *connect.ServerStreamForClient[corev1.SubscribeResponse]
 	cancel context.CancelFunc
 }
 
 // Subscribe opens an event stream from fromSeq.
 func (c *Client) Subscribe(ctx context.Context, sessionID string, fromSeq int64) (*Subscription, error) {
 	ctx, cancel := context.WithCancel(ctx)
-	stream, err := c.Events.Subscribe(ctx, connect.NewRequest(&ultrav1.SubscribeRequest{
+	stream, err := c.Events.Subscribe(ctx, connect.NewRequest(&corev1.SubscribeRequest{
 		SessionId: sessionID,
 		FromSeq:   fromSeq,
 	}))
@@ -100,7 +96,7 @@ func (s *Subscription) Close() {
 
 // Next returns the next event or an error when the stream ends/times out.
 // Keepalive frames (responses without an event) are skipped transparently.
-func (s *Subscription) Next() (*ultrav1.SessionEvent, error) {
+func (s *Subscription) Next() (*corev1.SessionEvent, error) {
 	for s.stream.Receive() {
 		if ev := s.stream.Msg().GetEvent(); ev != nil {
 			return ev, nil
@@ -113,9 +109,9 @@ func (s *Subscription) Next() (*ultrav1.SessionEvent, error) {
 }
 
 // Collect receives exactly n events or fails the test after timeout.
-func (s *Subscription) Collect(t *testing.T, n int, timeout time.Duration) []*ultrav1.SessionEvent {
+func (s *Subscription) Collect(t *testing.T, n int, timeout time.Duration) []*corev1.SessionEvent {
 	t.Helper()
-	var out []*ultrav1.SessionEvent
+	var out []*corev1.SessionEvent
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -139,9 +135,9 @@ func (s *Subscription) Collect(t *testing.T, n int, timeout time.Duration) []*ul
 
 // CollectUntil receives events until match returns true (inclusive) or the
 // timeout elapses (test failure). Returns everything received.
-func (s *Subscription) CollectUntil(t *testing.T, timeout time.Duration, match func(*ultrav1.SessionEvent) bool) []*ultrav1.SessionEvent {
+func (s *Subscription) CollectUntil(t *testing.T, timeout time.Duration, match func(*corev1.SessionEvent) bool) []*corev1.SessionEvent {
 	t.Helper()
-	var out []*ultrav1.SessionEvent
+	var out []*corev1.SessionEvent
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -169,86 +165,74 @@ func (s *Subscription) CollectUntil(t *testing.T, timeout time.Duration, match f
 
 // Kind returns a short string naming the payload variant of an event, for
 // compact sequence assertions.
-func Kind(ev *ultrav1.SessionEvent) string {
+func Kind(ev *corev1.SessionEvent) string {
 	switch ev.GetPayload().GetPayload().(type) {
-	case *ultrav1.EventPayload_UserMessage:
+	case *corev1.EventPayload_UserMessage:
 		return "user_message"
-	case *ultrav1.EventPayload_Annotation:
+	case *corev1.EventPayload_Annotation:
 		return "annotation"
-	case *ultrav1.EventPayload_RunStarted:
+	case *corev1.EventPayload_RunStarted:
 		return "run_started"
-	case *ultrav1.EventPayload_StepStarted:
+	case *corev1.EventPayload_StepStarted:
 		return "step_started"
-	case *ultrav1.EventPayload_TextDelta:
+	case *corev1.EventPayload_TextDelta:
 		return "text_delta"
-	case *ultrav1.EventPayload_ReasoningDelta:
+	case *corev1.EventPayload_ReasoningDelta:
 		return "reasoning_delta"
-	case *ultrav1.EventPayload_ToolCallStarted:
+	case *corev1.EventPayload_ToolCallStarted:
 		return "tool_call_started"
-	case *ultrav1.EventPayload_ToolResult:
+	case *corev1.EventPayload_ToolResult:
 		return "tool_result"
-	case *ultrav1.EventPayload_StepFinished:
+	case *corev1.EventPayload_StepFinished:
 		return "step_finished"
-	case *ultrav1.EventPayload_RunAwaiting:
+	case *corev1.EventPayload_RunAwaiting:
 		return "run_awaiting"
-	case *ultrav1.EventPayload_RunCompleted:
+	case *corev1.EventPayload_RunCompleted:
 		return "run_completed"
-	case *ultrav1.EventPayload_RunFailed:
+	case *corev1.EventPayload_RunFailed:
 		return "run_failed"
-	case *ultrav1.EventPayload_RunCancelled:
+	case *corev1.EventPayload_RunCancelled:
 		return "run_cancelled"
-	case *ultrav1.EventPayload_EnvRequested:
+	case *corev1.EventPayload_EnvRequested:
 		return "env_requested"
-	case *ultrav1.EventPayload_EnvProvisioning:
+	case *corev1.EventPayload_EnvProvisioning:
 		return "env_provisioning"
-	case *ultrav1.EventPayload_EnvReady:
+	case *corev1.EventPayload_EnvReady:
 		return "env_ready"
-	case *ultrav1.EventPayload_EnvFailed:
+	case *corev1.EventPayload_EnvFailed:
 		return "env_failed"
-	case *ultrav1.EventPayload_EnvSuspended:
+	case *corev1.EventPayload_EnvSuspended:
 		return "env_suspended"
-	case *ultrav1.EventPayload_EnvTerminating:
+	case *corev1.EventPayload_EnvTerminating:
 		return "env_terminating"
-	case *ultrav1.EventPayload_EnvTerminated:
+	case *corev1.EventPayload_EnvTerminated:
 		return "env_terminated"
-	case *ultrav1.EventPayload_ExecPreviewRan:
+	case *corev1.EventPayload_ExecPreviewRan:
 		return "exec_preview_ran"
-	case *ultrav1.EventPayload_ParticipantJoined:
-		return "participant_joined"
-	case *ultrav1.EventPayload_ParticipantLeft:
-		return "participant_left"
-	case *ultrav1.EventPayload_ParticipantIdle:
-		return "participant_idle"
-	case *ultrav1.EventPayload_RunSpawned:
+	case *corev1.EventPayload_RunSpawned:
 		return "run_spawned"
-	case *ultrav1.EventPayload_MemorySet:
+	case *corev1.EventPayload_MemorySet:
 		return "memory_set"
-	case *ultrav1.EventPayload_MemoryDeleted:
+	case *corev1.EventPayload_MemoryDeleted:
 		return "memory_deleted"
-	case *ultrav1.EventPayload_PermissionDenied:
+	case *corev1.EventPayload_PermissionDenied:
 		return "permission_denied"
-	case *ultrav1.EventPayload_HistoryCompacted:
+	case *corev1.EventPayload_HistoryCompacted:
 		return "history_compacted"
-	case *ultrav1.EventPayload_ModelFallback:
+	case *corev1.EventPayload_ModelFallback:
 		return "model_fallback"
-	case *ultrav1.EventPayload_HookFired:
+	case *corev1.EventPayload_HookFired:
 		return "hook_fired"
-	case *ultrav1.EventPayload_PeriodicPromptFired:
+	case *corev1.EventPayload_PeriodicPromptFired:
 		return "periodic_prompt_fired"
-	case *ultrav1.EventPayload_FlowInvoked:
-		return "flow_invoked"
-	case *ultrav1.EventPayload_FlowInvocationProgressed:
-		return "flow_invocation_progressed"
-	case *ultrav1.EventPayload_FlowInvocationTerminal:
-		return "flow_invocation_terminal"
 	default:
 		return "unknown"
 	}
 }
 
 // StartRun starts an agent run with the default model config.
-func (c *Client) StartRun(ctx context.Context, sessionID, prompt string) (*ultrav1.AgentRun, int64, error) {
-	resp, err := c.Agents.StartRun(ctx, connect.NewRequest(&ultrav1.StartRunRequest{
+func (c *Client) StartRun(ctx context.Context, sessionID, prompt string) (*corev1.AgentRun, int64, error) {
+	resp, err := c.Agents.StartRun(ctx, connect.NewRequest(&corev1.StartRunRequest{
 		SessionId: sessionID,
 		Prompt:    prompt,
 	}))
@@ -260,12 +244,12 @@ func (c *Client) StartRun(ctx context.Context, sessionID, prompt string) (*ultra
 
 // AwaitRunState polls GetRun until the run reaches the wanted state or the
 // timeout elapses (test failure).
-func (c *Client) AwaitRunState(t *testing.T, runID string, want ultrav1.RunState, timeout time.Duration) *ultrav1.AgentRun {
+func (c *Client) AwaitRunState(t *testing.T, runID string, want corev1.RunState, timeout time.Duration) *corev1.AgentRun {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
-	var last *ultrav1.AgentRun
+	var last *corev1.AgentRun
 	for time.Now().Before(deadline) {
-		resp, err := c.Agents.GetRun(context.Background(), connect.NewRequest(&ultrav1.GetRunRequest{RunId: runID}))
+		resp, err := c.Agents.GetRun(context.Background(), connect.NewRequest(&corev1.GetRunRequest{RunId: runID}))
 		if err == nil {
 			last = resp.Msg.GetRun()
 			if last.GetState() == want {

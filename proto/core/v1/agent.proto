@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+package core.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aleksclark/ultracore/gen/go/core/v1;corev1";
+
+// RunState is the agent-run state machine.
+enum RunState {
+  RUN_STATE_UNSPECIFIED = 0;
+  RUN_STATE_PENDING = 1;
+  RUN_STATE_RUNNING = 2;
+  RUN_STATE_AWAITING = 3;
+  RUN_STATE_COMPLETED = 4;
+  RUN_STATE_FAILED = 5;
+  RUN_STATE_CANCELLED = 6;
+}
+
+// ModelConfig names the model a run uses and which org credential pays for
+// it. Inference is always on org credentials.
+message ModelConfig {
+  string provider = 1;   // openai | anthropic | bedrock
+  string model_id = 2;
+  string credential = 3; // credential name within the org; "default" if empty
+  repeated ModelConfig fallbacks = 4;
+}
+
+// AgentRun is one durable agent loop bound to a session.
+message AgentRun {
+  string id = 1;
+  string session_id = 2;
+  RunState state = 3;
+  string loop_kind = 4;
+  int32 loop_version = 5;
+  ModelConfig model_config = 6;
+  string prompt = 7;
+  string failure_reason = 8;  // typed: credential_missing | credential_invalid | provider_error | internal
+  string failure_message = 9; // user-actionable, never raw provider errors
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  string parent_run_id = 12;
+  Grants grants = 13;
+  // Result is the run's final output, persisted at terminal transition so a
+  // parent (or a client) can read what a child produced after it is gone.
+  string result_json = 14;
+  // Cohort linkage for children launched by one run_agent_cohort call.
+  // cohort_ordinal preserves their declaration order.
+  string cohort_id = 15;
+  int32 cohort_ordinal = 16;
+}
+
+// RunWait is a parent's durable fan-in on child runs. It leaves the open state
+// exactly once, and clients render its state as the parent's awaiting reason.
+message RunWait {
+  string id = 1;
+  string parent_run_id = 2;
+  int32 step_index = 3;
+  string tool_call_id = 4;
+  string kind = 5;          // wait | cohort
+  string state = 6;         // open | resolved | timed_out | abandoned
+  string timeout_policy = 7;
+  google.protobuf.Timestamp deadline = 8;
+  string result_json = 9;
+  repeated string member_run_ids = 10;
+}
+
+// RunTreeNode is one run plus its children, so a client can render a spawn
+// tree without N+1 requests.
+message RunTreeNode {
+  AgentRun run = 1;
+  repeated RunTreeNode children = 2;
+  repeated RunWait waits = 3;
+}
+
+message GetRunTreeRequest { string session_id = 1; }
+message GetRunTreeResponse { repeated RunTreeNode roots = 1; }
+
+message Grants { repeated string tools=1; }
+
+message StartRunRequest {
+  string session_id = 1;
+  string prompt = 2;
+  // Optional; defaults to {provider: "openai", model from server default,
+  // credential: "default"}.
+  ModelConfig model_config = 3;
+  // Optional only for child-spawn internals; human StartRun ignores this
+  // and receives server-defined root grants.
+  Grants grants = 4;
+}
+
+message StartRunResponse {
+  AgentRun run = 1;
+  // Seq of the RunStarted event.
+  int64 event_seq = 2;
+}
+
+// PromptRun wakes an awaiting run with an answer, or starts a new turn on a
+// completed run.
+message PromptRunRequest {
+  string run_id = 1;
+  string message = 2;
+}
+
+message PromptRunResponse {
+  int64 event_seq = 1;
+}
+
+message CancelRunRequest {
+  string run_id = 1;
+}
+
+message CancelRunResponse {}
+
+message GetRunRequest {
+  string run_id = 1;
+}
+
+message GetRunResponse {
+  AgentRun run = 1;
+}
+
+message ListRunsRequest {
+  string session_id = 1;
+}
+
+message ListRunsResponse {
+  repeated AgentRun runs = 1;
+}
+
+// AgentService manages agent runs. Access requires membership in the run's
+// session's org.
+service AgentService {
+  rpc StartRun(StartRunRequest) returns (StartRunResponse);
+  rpc PromptRun(PromptRunRequest) returns (PromptRunResponse);
+  rpc CancelRun(CancelRunRequest) returns (CancelRunResponse);
+  rpc GetRun(GetRunRequest) returns (GetRunResponse);
+  rpc ListRuns(ListRunsRequest) returns (ListRunsResponse);
+  // GetRunTree returns a session's runs as parent/child trees with their
+  // waits, which is what clients render as run lanes and spawn trees.
+  rpc GetRunTree(GetRunTreeRequest) returns (GetRunTreeResponse);
+}

@@ -10,26 +10,25 @@ package k8s
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
+	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 // Labels applied to every object this provider creates. They are the identity
 // the adapter uses to find its own resources again after a restart, a crash,
 // or an out-of-band deletion.
 const (
-	LabelEnvID     = "ultralogical.dev/env-id"
+	LabelEnvID     = "ultracore.dev/env-id"
 	LabelManagedBy = "app.kubernetes.io/managed-by"
-	ManagedByValue = "ultralogical"
+	ManagedByValue = "ultracore"
 )
 
 // toolPort is the port Bezalel serves its authenticated tool endpoint on.
@@ -38,12 +37,11 @@ const toolPort = 8080
 // Config configures the provider.
 type Config struct {
 	// Kubeconfig is the raw kubeconfig for the target cluster. Empty means
-	// in-cluster configuration, which is how the hosted deployment runs.
+	// in-cluster configuration.
 	Kubeconfig string `json:"kubeconfig,omitempty"`
 	// Context selects a context within the kubeconfig.
 	Context string `json:"context,omitempty"`
-	// Namespace is where environments are created for a BYO cluster. Hosted
-	// mode derives a namespace per org instead and ignores this.
+	// Namespace is where environments are created.
 	Namespace string `json:"namespace,omitempty"`
 	// Image is the Bezalel image to run.
 	Image string `json:"image,omitempty"`
@@ -53,14 +51,6 @@ type Config struct {
 	CPULimit      string `json:"cpu_limit,omitempty"`
 	MemoryRequest string `json:"memory_request,omitempty"`
 	MemoryLimit   string `json:"memory_limit,omitempty"`
-	// Hosted enables platform policy: a namespace per org with RBAC, a
-	// NetworkPolicy, and a ResourceQuota.
-	Hosted bool `json:"hosted,omitempty"`
-	// OrgID scopes hosted namespaces. Required when Hosted is set.
-	OrgID string `json:"org_id,omitempty"`
-	// MaxEnvironments caps concurrent environments in hosted mode. Zero means
-	// the platform default.
-	MaxEnvironments int `json:"max_environments,omitempty"`
 	// EndpointMode selects how the tool endpoint is reached: "cluster" uses
 	// the Service's cluster DNS name, which is correct when workers run in
 	// the same cluster; "nodeport" publishes a node port, which is how a
@@ -68,12 +58,6 @@ type Config struct {
 	EndpointMode string `json:"endpoint_mode,omitempty"`
 	// EndpointHost overrides the host used with nodeport endpoints.
 	EndpointHost string `json:"endpoint_host,omitempty"`
-	// PlatformIngressCIDRs are the source ranges the platform's own control
-	// plane reaches environments from. A NetworkPolicy that only allowed the
-	// environment's own namespace would also lock out the workers that have
-	// to drive it, so the boundary has to name who is allowed in rather than
-	// denying everyone equally.
-	PlatformIngressCIDRs []string `json:"platform_ingress_cidrs,omitempty"`
 	// NodePortRange bounds the node ports this provider may assign, as
 	// [low, high]. A worker outside the cluster can only reach ports its
 	// host actually forwards, so a deployment that publishes a fixed range
@@ -87,17 +71,10 @@ const (
 	EndpointModeNodePort = "nodeport"
 )
 
-// DefaultMaxEnvironments is the hosted concurrent-environment ceiling when a
-// registration names none.
-const DefaultMaxEnvironments = 8
-
-// Provider implements ultra.EnvProvider on Kubernetes.
+// Provider implements uc.EnvProvider on Kubernetes.
 type Provider struct {
 	client kubernetes.Interface
 	cfg    Config
-	// podCIDRs are the cluster's pod networks, excluded from every platform
-	// ingress range so a broad range cannot re-admit neighbouring orgs.
-	podCIDRs []string
 }
 
 // handleData is the persisted, provider-native identity of one environment.
@@ -124,55 +101,13 @@ func New(cfg Config) (*Provider, error) {
 
 // NewWithClient builds a provider on an existing client.
 func NewWithClient(client kubernetes.Interface, cfg Config) (*Provider, error) {
-	if cfg.Hosted && cfg.OrgID == "" {
-		return nil, errors.New("k8s: hosted mode requires an org id")
-	}
 	if cfg.Image == "" {
-		cfg.Image = "ultralogical/bezalel:local"
+		cfg.Image = "ultracore/bezalel:local"
 	}
 	if cfg.EndpointMode == "" {
 		cfg.EndpointMode = EndpointModeCluster
 	}
-	if cfg.MaxEnvironments <= 0 {
-		cfg.MaxEnvironments = DefaultMaxEnvironments
-	}
-	provider := &Provider{client: client, cfg: cfg}
-	if cfg.Hosted && len(cfg.PlatformIngressCIDRs) > 0 {
-		podCIDRs, err := discoverPodCIDRs(client)
-		if err != nil {
-			return nil, err
-		}
-		provider.podCIDRs = podCIDRs
-		if err := validatePlatformIngress(cfg.PlatformIngressCIDRs, podCIDRs); err != nil {
-			return nil, err
-		}
-	}
-	return provider, nil
-}
-
-// discoverPodCIDRs asks the cluster which ranges its pods use. Isolation
-// depends on excluding them from platform ingress, so they are read from the
-// cluster rather than assumed.
-func discoverPodCIDRs(client kubernetes.Interface) ([]string, error) {
-	nodes, err := client.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("k8s: read pod CIDRs: %w", err)
-	}
-	seen := map[string]bool{}
-	var out []string
-	for _, node := range nodes.Items {
-		for _, cidr := range append([]string{node.Spec.PodCIDR}, node.Spec.PodCIDRs...) {
-			if cidr == "" || seen[cidr] {
-				continue
-			}
-			seen[cidr] = true
-			out = append(out, cidr)
-		}
-	}
-	if len(out) == 0 {
-		return nil, errors.New("k8s: the cluster reports no pod CIDRs, so platform ingress cannot be bounded")
-	}
-	return out, nil
+	return &Provider{client: client, cfg: cfg}, nil
 }
 
 func restConfigFor(cfg Config) (*rest.Config, error) {
@@ -201,21 +136,17 @@ func restConfigFor(cfg Config) (*rest.Config, error) {
 	return restConfig, nil
 }
 
-// Namespace is where this provider places environments. Hosted mode derives a
-// namespace per org so one org's environments cannot name another's.
+// Namespace is where this provider places environments.
 func (p *Provider) Namespace() string {
-	if p.cfg.Hosted {
-		return "ultra-org-" + sanitize(p.cfg.OrgID)
-	}
 	if p.cfg.Namespace != "" {
 		return p.cfg.Namespace
 	}
-	return "ultralogical-envs"
+	return "ultracore-envs"
 }
 
 // objectName is the deterministic name every object for one environment
 // shares, so an interrupted provisioning finds its own work again.
-func objectName(envID ultra.EnvID) string { return "ultra-env-" + sanitize(string(envID)) }
+func objectName(envID uc.EnvID) string { return "ultra-env-" + sanitize(string(envID)) }
 
 // sanitize reduces an identifier to a DNS-1123 label.
 func sanitize(value string) string {
@@ -239,13 +170,61 @@ func sanitize(value string) string {
 	return out
 }
 
-func (p *Provider) labels(envID ultra.EnvID) map[string]string {
+func (p *Provider) labels(envID uc.EnvID) map[string]string {
 	return map[string]string{
 		LabelEnvID:     sanitize(string(envID)),
 		LabelManagedBy: ManagedByValue,
 	}
 }
 
-func (p *Provider) selector(envID ultra.EnvID) string {
+func (p *Provider) selector(envID uc.EnvID) string {
 	return fmt.Sprintf("%s=%s,%s=%s", LabelEnvID, sanitize(string(envID)), LabelManagedBy, ManagedByValue)
+}
+
+// Probe implements uc.CapabilityProber. It asks the cluster what it can
+// actually do rather than inferring capability from the provider kind.
+func (p *Provider) Probe(ctx context.Context) (uc.ProviderCapabilities, error) {
+	capabilities := uc.ProviderCapabilities{
+		Kind:  uc.ProviderKindBYOKubernetes,
+		Notes: map[uc.ProviderCapability]string{},
+	}
+	if _, err := p.client.Discovery().ServerVersion(); err != nil {
+		return capabilities, fmt.Errorf("k8s: control plane unreachable: %w", err)
+	}
+	if err := p.canCreate(ctx, "pods"); err != nil {
+		return capabilities, fmt.Errorf("k8s: cannot create pods: %w", err)
+	}
+	capabilities.Supported = append(capabilities.Supported,
+		uc.CapabilityAdoptsOrphans,
+		uc.CapabilityEnumeratesResources,
+	)
+	if err := p.canCreate(ctx, "services"); err == nil {
+		capabilities.Supported = append(capabilities.Supported, uc.CapabilityServesToolEndpoint)
+	} else {
+		capabilities.Notes[uc.CapabilityServesToolEndpoint] =
+			"the cluster does not allow creating Services, so no tool endpoint can be published"
+	}
+	// emptyDir workspaces do not survive a restart.
+	capabilities.Notes[uc.CapabilityRestartPreservesWorkspace] =
+		"environment workspaces are emptyDir volumes"
+	return capabilities, nil
+}
+
+// canCreate performs a read-only permission check for one resource.
+func (p *Provider) canCreate(ctx context.Context, resourceName string) error {
+	review := &authorizationv1.SelfSubjectAccessReview{
+		Spec: authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace: p.Namespace(), Verb: "create", Resource: resourceName,
+			},
+		},
+	}
+	result, err := p.client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, review, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("permission check for %s failed: %w", resourceName, err)
+	}
+	if !result.Status.Allowed {
+		return fmt.Errorf("not permitted to create %s: %s", resourceName, result.Status.Reason)
+	}
+	return nil
 }

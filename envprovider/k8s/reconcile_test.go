@@ -9,9 +9,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider/k8s"
-	"github.com/aleksclark/ultralogical/testkit/envconverge"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider/k8s"
+	"github.com/aleksclark/ultracore/testkit/envconverge"
 )
 
 // reconcileNamespace keeps these environments away from the conformance run's
@@ -50,21 +50,21 @@ func TestA102_KubernetesReconcilesExternallyDeletedPod(t *testing.T) {
 	ctx := context.Background()
 
 	harness := envconverge.New(t, provider, envconverge.Options{
-		Kind: ultra.ProviderKindBYOKubernetes,
+		Kind: uc.ProviderKindBYOKubernetes,
 		// Reconciliation has to notice the deletion quickly enough for the
 		// test to be about convergence rather than about waiting.
 		ReconcileInterval: 500 * time.Millisecond,
 	})
 	harness.Start(t)
 
-	env := harness.Request(t, ultra.EnvSpec{Name: "reconcile", Workdir: "/work"})
+	env := harness.Request(t, uc.EnvSpec{Name: "reconcile", Workdir: "/work"})
 	t.Cleanup(func() {
 		current, err := harness.Store.Org(harness.Org).Envs().Get(context.Background(), env.ID)
 		if err == nil {
 			_ = provider.Terminate(context.Background(), current.Handle)
 		}
 	})
-	ready := harness.Await(t, env.ID, ultra.EnvReady, 3*time.Minute)
+	ready := harness.Await(t, env.ID, uc.EnvReady, 3*time.Minute)
 
 	// The pod really exists before it is destroyed, so the convergence below
 	// is a response to a deletion rather than to a provisioning that never
@@ -89,7 +89,7 @@ func TestA102_KubernetesReconcilesExternallyDeletedPod(t *testing.T) {
 	}
 
 	// Convergence: the environment must reach a terminal state on its own.
-	converged := harness.Await(t, env.ID, ultra.EnvFailed, 90*time.Second)
+	converged := harness.Await(t, env.ID, uc.EnvFailed, 90*time.Second)
 	if converged.FailureMessage == "" {
 		t.Fatal("the environment converged with no diagnosis of why")
 	}
@@ -146,9 +146,9 @@ func TestA102_KubernetesAdoptsInterruptedProvisioning(t *testing.T) {
 	ctx := context.Background()
 
 	harness := envconverge.New(t, provider, envconverge.Options{
-		Kind: ultra.ProviderKindBYOKubernetes, ReconcileInterval: 500 * time.Millisecond,
+		Kind: uc.ProviderKindBYOKubernetes, ReconcileInterval: 500 * time.Millisecond,
 	})
-	env := harness.Request(t, ultra.EnvSpec{Name: "adopt", Workdir: "/work"})
+	env := harness.Request(t, uc.EnvSpec{Name: "adopt", Workdir: "/work"})
 
 	// Create the resource before any worker runs, using the environment's own
 	// token: this is the state an interrupted provisioning leaves behind.
@@ -160,7 +160,7 @@ func TestA102_KubernetesAdoptsInterruptedProvisioning(t *testing.T) {
 	created := podNameFor(t, ctx, client, env.ID)
 
 	harness.Start(t)
-	harness.Await(t, env.ID, ultra.EnvReady, 3*time.Minute)
+	harness.Await(t, env.ID, uc.EnvReady, 3*time.Minute)
 
 	// Exactly one pod, and it is the one that already existed.
 	live, err := client.CoreV1().Pods(reconcileNamespace).List(ctx, metav1.ListOptions{
@@ -181,7 +181,7 @@ func TestA102_KubernetesAdoptsInterruptedProvisioning(t *testing.T) {
 // podNameFor reads the environment's pod name from the cluster, so the test
 // addresses the object Kubernetes actually holds rather than recomputing a
 // name the adapter is responsible for.
-func podNameFor(t *testing.T, ctx context.Context, client kubernetes.Interface, envID ultra.EnvID) string {
+func podNameFor(t *testing.T, ctx context.Context, client kubernetes.Interface, envID uc.EnvID) string {
 	t.Helper()
 	pods, err := client.CoreV1().Pods(reconcileNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: k8s.LabelEnvID + "=" + sanitizedEnvID(envID),
@@ -198,7 +198,7 @@ func podNameFor(t *testing.T, ctx context.Context, client kubernetes.Interface, 
 // sanitizedEnvID mirrors the label value the adapter writes. A UUID is already
 // a valid label value, so this only guards against a future id shape that is
 // not.
-func sanitizedEnvID(id ultra.EnvID) string { return string(id) }
+func sanitizedEnvID(id uc.EnvID) string { return string(id) }
 
 func countPrefixed(items []string, prefix string) int {
 	count := 0

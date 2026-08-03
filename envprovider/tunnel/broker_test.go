@@ -13,12 +13,12 @@ import (
 
 	"github.com/google/uuid"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider/conformance"
-	"github.com/aleksclark/ultralogical/envprovider/localdocker"
-	"github.com/aleksclark/ultralogical/envprovider/tunnel"
-	"github.com/aleksclark/ultralogical/mcp"
-	"github.com/aleksclark/ultralogical/testkit/harness"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider/conformance"
+	"github.com/aleksclark/ultracore/envprovider/localdocker"
+	"github.com/aleksclark/ultracore/envprovider/tunnel"
+	"github.com/aleksclark/ultracore/mcp"
+	"github.com/aleksclark/ultracore/testkit/harness"
 )
 
 // tunnelled starts a real outbound tunnel: a broker the platform owns, and an
@@ -112,19 +112,19 @@ func startTunnel(t *testing.T) *tunnelled {
 // down that connection.
 func TestTunnelConformanceOverRealTransport(t *testing.T) {
 	link := startTunnel(t)
-	conformance.RunWith(t, func(t *testing.T) ultra.EnvProvider {
+	conformance.RunWith(t, func(t *testing.T) uc.EnvProvider {
 		return link.provider
 	}, conformance.Options{
-		Capabilities: ultra.ProviderCapabilities{
-			Kind: ultra.ProviderKindTunnelLocal,
-			Supported: []ultra.ProviderCapability{
-				ultra.CapabilityRestartPreservesWorkspace,
-				ultra.CapabilityToleratesDisconnect,
-				ultra.CapabilityEnumeratesResources,
-				ultra.CapabilityServesToolEndpoint,
+		Capabilities: uc.ProviderCapabilities{
+			Kind: uc.ProviderKindTunnelLocal,
+			Supported: []uc.ProviderCapability{
+				uc.CapabilityRestartPreservesWorkspace,
+				uc.CapabilityToleratesDisconnect,
+				uc.CapabilityEnumeratesResources,
+				uc.CapabilityServesToolEndpoint,
 			},
 		},
-		Inspect: func(t *testing.T, ctx context.Context, envID ultra.EnvID) []string {
+		Inspect: func(t *testing.T, ctx context.Context, envID uc.EnvID) []string {
 			t.Helper()
 			resources, err := link.provider.Resources(ctx, envID)
 			if err != nil {
@@ -144,8 +144,8 @@ func TestA105_TheAgentAcceptsNoInboundConnections(t *testing.T) {
 	ctx := context.Background()
 
 	// Work flows through the tunnel.
-	envID := ultra.EnvID(uuid.NewString())
-	handle, err := link.provider.Provision(ctx, envID, ultra.EnvSpec{Name: "tunnel", Workdir: "/work"}, "env-token")
+	envID := uc.EnvID(uuid.NewString())
+	handle, err := link.provider.Provision(ctx, envID, uc.EnvSpec{Name: "tunnel", Workdir: "/work"}, "env-token")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,8 +172,8 @@ func TestA105_RealTunnelSeveredAndRestored(t *testing.T) {
 	link := startTunnel(t)
 	ctx := context.Background()
 
-	envID := ultra.EnvID(uuid.NewString())
-	handle, err := link.provider.Provision(ctx, envID, ultra.EnvSpec{Name: "tunnel", Workdir: "/work"}, "env-token")
+	envID := uc.EnvID(uuid.NewString())
+	handle, err := link.provider.Provision(ctx, envID, uc.EnvSpec{Name: "tunnel", Workdir: "/work"}, "env-token")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,7 +195,7 @@ func TestA105_RealTunnelSeveredAndRestored(t *testing.T) {
 	link.pause()
 	link.broker.Disconnect("laptop")
 	status := suspendedWithin(t, ctx, link.provider, handle, 30*time.Second)
-	if status.State != ultra.EnvSuspended {
+	if status.State != uc.EnvSuspended {
 		t.Fatalf("a severed tunnel reported %q, want suspended", status.State)
 	}
 
@@ -203,7 +203,7 @@ func TestA105_RealTunnelSeveredAndRestored(t *testing.T) {
 	link.resume(t)
 	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
-		if s, err := link.provider.Status(ctx, handle); err == nil && s.State == ultra.EnvReady {
+		if s, err := link.provider.Status(ctx, handle); err == nil && s.State == uc.EnvReady {
 			break
 		}
 		time.Sleep(200 * time.Millisecond)
@@ -212,7 +212,7 @@ func TestA105_RealTunnelSeveredAndRestored(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if status.State != ultra.EnvReady {
+	if status.State != uc.EnvReady {
 		t.Fatalf("after the agent redialed the environment is %q, want ready", status.State)
 	}
 
@@ -227,14 +227,14 @@ func TestA105_RealTunnelSeveredAndRestored(t *testing.T) {
 // suspendedWithin polls until the platform reports suspension, because the
 // transport failure surfaces on the next control request rather than instantly.
 func suspendedWithin(t *testing.T, ctx context.Context, provider *tunnel.Provider,
-	handle ultra.ProviderHandle, within time.Duration) ultra.ProviderStatus {
+	handle uc.ProviderHandle, within time.Duration) uc.ProviderStatus {
 	t.Helper()
 	deadline := time.Now().Add(within)
-	var status ultra.ProviderStatus
+	var status uc.ProviderStatus
 	for time.Now().Before(deadline) {
 		var err error
 		status, err = provider.Status(ctx, handle)
-		if err == nil && status.State == ultra.EnvSuspended {
+		if err == nil && status.State == uc.EnvSuspended {
 			return status
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -243,12 +243,12 @@ func suspendedWithin(t *testing.T, ctx context.Context, provider *tunnel.Provide
 }
 
 // awaitReadyThrough waits for an environment reached over the tunnel.
-func awaitReadyThrough(t *testing.T, ctx context.Context, provider *tunnel.Provider, handle ultra.ProviderHandle) string {
+func awaitReadyThrough(t *testing.T, ctx context.Context, provider *tunnel.Provider, handle uc.ProviderHandle) string {
 	t.Helper()
 	deadline := time.Now().Add(90 * time.Second)
 	for time.Now().Before(deadline) {
 		status, err := provider.Status(ctx, handle)
-		if err == nil && status.State == ultra.EnvReady {
+		if err == nil && status.State == uc.EnvReady {
 			endpoint, err := provider.Endpoint(ctx, handle)
 			if err == nil && mcp.Healthy(ctx, endpoint) == nil {
 				return endpoint

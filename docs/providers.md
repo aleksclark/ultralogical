@@ -5,8 +5,7 @@ adding a new kind. Start with `envprovider/static`: it is the smallest
 adapter that still passes the shared conformance contract unmodified (under
 200 lines of code), and its CI leg is what proves the seam stays
 implementable. `envprovider/nomad` is the next step up when you need a real
-control plane, and `envprovider/k8s` shows hosted policy layered on the same
-seam.
+control plane, and `envprovider/k8s` is the BYO Kubernetes adapter.
 
 For what the shipped kinds do and how registration behaves, see
 [agent_docs/providers.md](../agent_docs/providers.md).
@@ -26,21 +25,21 @@ go test ./envprovider/static/... -count=1 -v -timeout 15m
 A worker offers the kind when a Bezalel binary is configured:
 
 ```sh
-export ULTRA_BEZALEL_BINARY=/path/to/bezalel
+export CORE_BEZALEL_BINARY=/path/to/bezalel
 # Optional: narrow the deployment to the example alone.
-export ULTRA_PROVIDER_KINDS=static
+export CORE_PROVIDER_KINDS=static
 ```
 
 Registration then names a root directory for per-environment state:
 
 ```sh
-ultra provider register walkthrough --kind static \
-  --config '{"root":"/var/lib/ultra-static"}'
+core provider register walkthrough --kind static \
+  --config '{"root":"/var/lib/ultracore-static"}'
 ```
 
 ## The contract
 
-A provider implements `ultra.EnvProvider`: five methods over an opaque,
+A provider implements `core.EnvProvider`: five methods over an opaque,
 versioned handle you define.
 
 | Method | Obligation |
@@ -55,11 +54,11 @@ Three optional seams change how the suite verifies you, never whether it does:
 
 | Seam | Why you would implement it |
 |---|---|
-| `ultra.EnvAdopter` | provisioning is create-then-persist, so a crash between the two would otherwise create a second resource |
-| `ultra.EnvResourceLister` | makes the leak check a positive statement instead of an absence of evidence |
-| `ultra.CapabilityProber` | reports what your control plane can actually do, rather than having it inferred from your kind |
+| `core.EnvAdopter` | provisioning is create-then-persist, so a crash between the two would otherwise create a second resource |
+| `core.EnvResourceLister` | makes the leak check a positive statement instead of an absence of evidence |
+| `core.CapabilityProber` | reports what your control plane can actually do, rather than having it inferred from your kind |
 
-Everything in `ultra.CoreProviderContract()` is unconditional. A capability
+Everything in `core.CoreProviderContract()` is unconditional. A capability
 manifest naming one of those as optional is itself a failure, asserted by the
 suite before it runs a step.
 
@@ -77,8 +76,8 @@ suite before it runs a step.
    the difference. Reporting "still starting" forever is how an environment
    sits stale.
 4. **An unreachable *host* is `EnvSuspended`, not failed.** The resource still
-   exists on a machine that will come back, so the platform pauses metering and
-   resumes rather than telling every other surface the work was destroyed.
+   exists on a machine that will come back, so the platform pauses and resumes
+   rather than telling every other surface the work was destroyed.
 
 ## Adding your kind
 
@@ -89,19 +88,18 @@ suite before it runs a step.
 2. **Implement `Probe`** if the control plane can be asked what it supports.
    Return an error only when it is unreachable or refuses you; a reachable
    control plane missing a feature reports that feature unsupported *with a
-   reason*. The reason is what lets both applications explain a flow refused
-   against your provider.
+   reason*.
 3. **Run the shared suite** with `conformance.RunWith`, declaring only the
    capabilities you genuinely have and supplying an `Inspect` callback that
    reads your own control plane:
 
    ```go
    conformance.RunWith(t, factory, conformance.Options{
-       Capabilities: ultra.ProviderCapabilities{Kind: "mykind", Supported: []ultra.ProviderCapability{
-           ultra.CapabilityEnumeratesResources,
-           ultra.CapabilityServesToolEndpoint,
+       Capabilities: core.ProviderCapabilities{Kind: "mykind", Supported: []core.ProviderCapability{
+           core.CapabilityEnumeratesResources,
+           core.CapabilityServesToolEndpoint,
        }},
-       Inspect: func(t *testing.T, ctx context.Context, envID ultra.EnvID) []string {
+       Inspect: func(t *testing.T, ctx context.Context, envID core.EnvID) []string {
            // Read the resources back through the control plane's own API.
            return provider.Resources(ctx, envID)
        },

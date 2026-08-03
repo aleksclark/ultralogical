@@ -359,15 +359,15 @@ Source files walked: `ultra.go`, `run.go`, `env.go`, `event.go`, `flow.go`,
 
 | Path | Disposition | Phase | Notes |
 |---|---|---|---|
-| `cmd/ultrad/` | keep (rename → `cored` at end of E1) | E1 rename | API daemon |
-| `cmd/worker/` | keep (rename → `coreworker`) | E1 rename | |
-| `cmd/ultra/` (`main.go`) | keep (rename → `core`) | E1 | CLI entrypoint |
-| `cmd/ultra/cli/cli.go` | keep | E1 strips flow verbs | |
-| `cmd/ultra/cli/provider.go` | keep | — | Provider onboarding |
-| `cmd/ultra/cli/cli_test.go` / `onboarding_test.go` | keep | E1 trims flow cases | |
-| `cmd/ultra/cli` flow subcommands | drop | E1 | |
+| `cmd/cored/` | keep (rename → `cored` at end of E1) | E1 rename | API daemon |
+| `cmd/coreworker/` | keep (rename → `coreworker`) | E1 rename | |
+| `cmd/core/` (`main.go`) | keep (rename → `core`) | E1 | CLI entrypoint |
+| `cmd/core/cli/cli.go` | keep | E1 strips flow verbs | |
+| `cmd/core/cli/provider.go` | keep | — | Provider onboarding |
+| `cmd/core/cli/cli_test.go` / `onboarding_test.go` | keep | E1 trims flow cases | |
+| `cmd/core/cli` flow subcommands | drop | E1 | |
 | `cmd/devstack/` | keep | E1 drops web leg | pg + model + daemon + worker |
-| `cmd/ultra-env-agent/` | keep (generalize name later) | E2 optional rename | Tunnel/static agent helper |
+| `cmd/core-env-agent/` | keep (generalize name later) | E2 optional rename | Tunnel/static agent helper |
 
 ### 2.11 `ui/*`
 
@@ -612,7 +612,7 @@ E1 does not renegotiate mid-deletion.
 | `Grants` | **drop lattice in E1**, keep flat tool allowlist | E3 policy hook is the real replacement; interim safety required |
 | `CanonicalTools` + denial stubs | **keep** | Existence-oracle defense is loop correctness |
 | `clients/ts` | **keep** | Seed of TS SDK (E4); rust client drops with GPUI |
-| `cmd/ultra-env-agent` | **keep** | Required by tunnel/static providers |
+| `cmd/core-env-agent` | **keep** | Required by tunnel/static providers |
 | `AgentRun.Grants` field name | flat `Tools` (or keep struct with only Tools) in E1 | Implementer choice inside E1; lattice fields must die |
 | Human `User` / org membership | **drop in E3** (not E1) | E1 can still boot with dev tokens; E3 replaces identity |
 | `Org` naming | stay through E1–E2; **rename Tenant in E3** | Avoid rename noise during mass deletion |

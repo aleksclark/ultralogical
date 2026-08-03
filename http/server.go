@@ -10,24 +10,23 @@ import (
 
 	"connectrpc.com/connect"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider"
-	"github.com/aleksclark/ultralogical/envwork"
-	"github.com/aleksclark/ultralogical/flowwork"
-	"github.com/aleksclark/ultralogical/gen/go/ultra/v1/ultrav1connect"
-	"github.com/aleksclark/ultralogical/jobqueue"
-	"github.com/aleksclark/ultralogical/secrets"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider"
+	"github.com/aleksclark/ultracore/envwork"
+	"github.com/aleksclark/ultracore/gen/go/core/v1/corev1connect"
+	"github.com/aleksclark/ultracore/jobqueue"
+	"github.com/aleksclark/ultracore/secrets"
 )
 
 // Config carries handler dependencies, injected by the main package.
 type Config struct {
-	Store ultra.Store
+	Store uc.Store
 	// Providers is the provider seam's registry. Registration builds the
 	// adapter through it and probes the real control plane, so a stored
 	// registration is one that has answered rather than one that parsed.
 	Providers *envprovider.Registry
-	Auth      ultra.Authenticator
-	Bus       ultra.EventBus
+	Auth      uc.Authenticator
+	Bus       uc.EventBus
 	Log       *slog.Logger
 	// Keyring encrypts credential payloads (write path only; decryption
 	// happens in workers).
@@ -35,15 +34,12 @@ type Config struct {
 	// Enqueue enqueues step jobs transactionally with run creation.
 	Enqueue jobqueue.TxEnqueuer
 	// DefaultModel fills StartRun requests that omit a model config.
-	DefaultModel ultra.ModelConfig
+	DefaultModel uc.ModelConfig
 	// Envs orchestrates development-environment lifecycle and ExecPreview.
 	Envs *envwork.Service
-	// Flows orchestrates flow invocations: validation, rendering, and the
-	// durable provisioning/readiness/topology state machine.
-	Flows *flowwork.Service
 }
 
-// NewHandler builds the full ultrad http.Handler: all Connect services under
+// NewHandler builds the full cored http.Handler: all Connect services under
 // their generated paths plus /healthz. Serve it with unencrypted HTTP/2
 // enabled (http.Server.Protocols) so gRPC and Connect streaming work over
 // cleartext.
@@ -52,33 +48,27 @@ func NewHandler(cfg Config) http.Handler {
 
 	mux := http.NewServeMux()
 
-	orgPath, orgH := ultrav1connect.NewOrgServiceHandler(&orgHandler{store: cfg.Store, keyring: cfg.Keyring, providers: cfg.Providers}, interceptors)
+	orgPath, orgH := corev1connect.NewOrgServiceHandler(&orgHandler{store: cfg.Store, keyring: cfg.Keyring, providers: cfg.Providers}, interceptors)
 	mux.Handle(orgPath, orgH)
 
-	sessPath, sessH := ultrav1connect.NewSessionServiceHandler(&sessionHandler{store: cfg.Store, enqueue: cfg.Enqueue}, interceptors)
+	sessPath, sessH := corev1connect.NewSessionServiceHandler(&sessionHandler{store: cfg.Store}, interceptors)
 	mux.Handle(sessPath, sessH)
 
-	agentPath, agentH := ultrav1connect.NewAgentServiceHandler(&agentHandler{
+	agentPath, agentH := corev1connect.NewAgentServiceHandler(&agentHandler{
 		store: cfg.Store, enqueue: cfg.Enqueue, defaultModel: cfg.DefaultModel,
 	}, interceptors)
 	mux.Handle(agentPath, agentH)
-	automationPath, automationH := ultrav1connect.NewAutomationServiceHandler(&automationHandler{store: cfg.Store}, interceptors)
+	automationPath, automationH := corev1connect.NewAutomationServiceHandler(&automationHandler{store: cfg.Store}, interceptors)
 	mux.Handle(automationPath, automationH)
-	if cfg.Flows != nil {
-		flowPath, flowH := ultrav1connect.NewFlowServiceHandler(&flowHandler{store: cfg.Store, flows: cfg.Flows}, interceptors)
-		mux.Handle(flowPath, flowH)
-	}
 
 	if cfg.Envs != nil {
-		envPath, envH := ultrav1connect.NewEnvServiceHandler(&envHandler{store: cfg.Store, envs: cfg.Envs}, interceptors)
+		envPath, envH := corev1connect.NewEnvServiceHandler(&envHandler{store: cfg.Store, envs: cfg.Envs}, interceptors)
 		mux.Handle(envPath, envH)
-		billingPath, billingH := ultrav1connect.NewBillingServiceHandler(&billingHandler{store: cfg.Store}, interceptors)
-		mux.Handle(billingPath, billingH)
 	}
 
 	// The unary interceptor covers Append; Subscribe is a streaming RPC and
 	// authenticates inside the handler.
-	evPath, evH := ultrav1connect.NewEventServiceHandler(&eventHandler{store: cfg.Store, auth: cfg.Auth, bus: cfg.Bus}, interceptors)
+	evPath, evH := corev1connect.NewEventServiceHandler(&eventHandler{store: cfg.Store, auth: cfg.Auth, bus: cfg.Bus}, interceptors)
 	mux.Handle(evPath, evH)
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
@@ -86,8 +76,8 @@ func NewHandler(cfg Config) http.Handler {
 		_, _ = w.Write([]byte("ok"))
 	})
 
-	// Browser clients are first-class. Phase 0/1 allows any origin; hosted
-	// deployments restrict this via the edge proxy in Phase 7.
+	// Consumers may call from browsers; CORS is open here and restricted at
+	// the edge in production deployments.
 	return cors(mux)
 }
 

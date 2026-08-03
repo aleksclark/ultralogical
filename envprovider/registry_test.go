@@ -8,15 +8,15 @@ import (
 	"strings"
 	"testing"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider"
 )
 
 // A10.11 anti-alias rule — no provider adapter may delegate its lifecycle to
 // local Docker. The tunnel agent is the one legitimate exception: it runs on
 // the user's own machine, which is exactly where their Docker is.
 func TestNoProviderAliasesToLocalDocker(t *testing.T) {
-	const dockerPackage = "github.com/aleksclark/ultralogical/envprovider/localdocker"
+	const dockerPackage = "github.com/aleksclark/ultracore/envprovider/localdocker"
 	allowed := map[string]bool{
 		// The adapter that is local Docker.
 		filepath.Join("localdocker", "local.go"): true,
@@ -60,9 +60,9 @@ func TestNoProviderAliasesToLocalDocker(t *testing.T) {
 func TestStandardRegistryOffersEveryKind(t *testing.T) {
 	registry := envprovider.StandardRegistry(envprovider.Deployment{BezalelImage: "test"})
 	for _, kind := range []string{
-		ultra.ProviderKindLocalDocker, ultra.ProviderKindBYOKubernetes,
-		ultra.ProviderKindHostedEKS, ultra.ProviderKindBYONomad, ultra.ProviderKindTunnelLocal,
-		ultra.ProviderKindStatic,
+		uc.ProviderKindLocalDocker, uc.ProviderKindBYOKubernetes,
+		uc.ProviderKindBYONomad, uc.ProviderKindTunnelLocal,
+		uc.ProviderKindStatic,
 	} {
 		if !registry.Enabled(kind) {
 			t.Errorf("the standard registry does not offer %q", kind)
@@ -71,12 +71,12 @@ func TestStandardRegistryOffersEveryKind(t *testing.T) {
 	// A deployment can narrow what it hosts, and a kind it did not enable is
 	// refused rather than quietly substituted.
 	narrow := envprovider.StandardRegistry(envprovider.Deployment{
-		BezalelImage: "test", EnabledKinds: []string{ultra.ProviderKindLocalDocker},
+		BezalelImage: "test", EnabledKinds: []string{uc.ProviderKindLocalDocker},
 	})
-	if narrow.Enabled(ultra.ProviderKindBYOKubernetes) {
+	if narrow.Enabled(uc.ProviderKindBYOKubernetes) {
 		t.Error("a narrowed deployment still offers Kubernetes")
 	}
-	if !narrow.Enabled(ultra.ProviderKindLocalDocker) {
+	if !narrow.Enabled(uc.ProviderKindLocalDocker) {
 		t.Error("a narrowed deployment dropped the kind it enabled")
 	}
 }
@@ -86,7 +86,7 @@ func TestStandardRegistryOffersEveryKind(t *testing.T) {
 // send environments somewhere unexpected.
 func TestRegistryRejectsUnknownConfigurationFields(t *testing.T) {
 	registry := envprovider.StandardRegistry(envprovider.Deployment{BezalelImage: "test"})
-	_, err := registry.Build(t.Context(), ultra.ProviderKindBYOKubernetes,
+	_, err := registry.Build(t.Context(), uc.ProviderKindBYOKubernetes,
 		[]byte(`{"namespcae":"typo"}`))
 	if err == nil {
 		t.Fatal("a misspelled configuration field was accepted")
@@ -100,9 +100,9 @@ func TestRegistryRejectsUnknownConfigurationFields(t *testing.T) {
 // falling back to something that happens to be available.
 func TestRegistryRefusesDisabledKinds(t *testing.T) {
 	registry := envprovider.StandardRegistry(envprovider.Deployment{
-		BezalelImage: "test", EnabledKinds: []string{ultra.ProviderKindLocalDocker},
+		BezalelImage: "test", EnabledKinds: []string{uc.ProviderKindLocalDocker},
 	})
-	if _, err := registry.Build(t.Context(), ultra.ProviderKindBYONomad, nil); err == nil {
+	if _, err := registry.Build(t.Context(), uc.ProviderKindBYONomad, nil); err == nil {
 		t.Fatal("a disabled kind was built")
 	}
 }

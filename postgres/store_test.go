@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/postgres"
-	"github.com/aleksclark/ultralogical/testkit/pgtest"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/postgres"
+	"github.com/aleksclark/ultracore/testkit/pgtest"
 )
 
 func newStore(t *testing.T) *postgres.Store {
@@ -22,18 +22,18 @@ func newStore(t *testing.T) *postgres.Store {
 	return postgres.NewStore(pool)
 }
 
-func seedOrgUser(t *testing.T, s *postgres.Store, orgName, email string) (ultra.Org, ultra.User) {
+func seedOrgUser(t *testing.T, s *postgres.Store, orgName, email string) (uc.Org, uc.User) {
 	t.Helper()
 	ctx := context.Background()
-	org := ultra.Org{ID: ultra.OrgID(uuid.NewString()), Name: orgName}
-	user := ultra.User{ID: ultra.UserID(uuid.NewString()), Email: email}
+	org := uc.Org{ID: uc.OrgID(uuid.NewString()), Name: orgName}
+	user := uc.User{ID: uc.UserID(uuid.NewString()), Email: email}
 	if err := s.Orgs().Create(ctx, org); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.Users().Create(ctx, user); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Orgs().AddMember(ctx, ultra.OrgMember{OrgID: org.ID, UserID: user.ID, Role: ultra.OrgRoleOwner}); err != nil {
+	if err := s.Orgs().AddMember(ctx, uc.OrgMember{OrgID: org.ID, UserID: user.ID, Role: uc.OrgRoleOwner}); err != nil {
 		t.Fatal(err)
 	}
 	return org, user
@@ -45,10 +45,10 @@ func TestOrgMembership(t *testing.T) {
 	org, user := seedOrgUser(t, s, "acme", "alice@example.com")
 
 	role, err := s.Orgs().MemberRole(ctx, org.ID, user.ID)
-	if err != nil || role != ultra.OrgRoleOwner {
+	if err != nil || role != uc.OrgRoleOwner {
 		t.Fatalf("MemberRole = %q, %v", role, err)
 	}
-	if _, err := s.Orgs().MemberRole(ctx, org.ID, ultra.UserID(uuid.NewString())); !errors.Is(err, ultra.ErrNotFound) {
+	if _, err := s.Orgs().MemberRole(ctx, org.ID, uc.UserID(uuid.NewString())); !errors.Is(err, uc.ErrNotFound) {
 		t.Fatalf("non-member role error = %v, want ErrNotFound", err)
 	}
 	members, err := s.Orgs().ListMembers(ctx, org.ID)
@@ -67,7 +67,7 @@ func TestSessionTenantScoping(t *testing.T) {
 	orgA, _ := seedOrgUser(t, s, "org-a", "a@example.com")
 	orgB, _ := seedOrgUser(t, s, "org-b", "b@example.com")
 
-	sess := ultra.Session{ID: ultra.SessionID(uuid.NewString()), Title: "work"}
+	sess := uc.Session{ID: uc.SessionID(uuid.NewString()), Title: "work"}
 	if err := s.Org(orgA.ID).Sessions().Create(ctx, sess); err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestSessionTenantScoping(t *testing.T) {
 		t.Fatalf("same-org get: %v", err)
 	}
 	// Cross-org read is structurally not-found.
-	if _, err := s.Org(orgB.ID).Sessions().Get(ctx, sess.ID); !errors.Is(err, ultra.ErrNotFound) {
+	if _, err := s.Org(orgB.ID).Sessions().Get(ctx, sess.ID); !errors.Is(err, uc.ErrNotFound) {
 		t.Fatalf("cross-org get error = %v, want ErrNotFound", err)
 	}
 	// Cross-org list is empty.
@@ -86,9 +86,9 @@ func TestSessionTenantScoping(t *testing.T) {
 		t.Fatalf("cross-org list = %v, %v", list, err)
 	}
 	// Cross-org append denied.
-	if _, err := s.Org(orgB.ID).Events().Append(ctx, sess.ID, ultra.Event{
-		Actor: ultra.Actor{Type: ultra.ActorUser}, Kind: ultra.EventKindUserMessage,
-	}); !errors.Is(err, ultra.ErrNotFound) {
+	if _, err := s.Org(orgB.ID).Events().Append(ctx, sess.ID, uc.Event{
+		Actor: uc.Actor{Type: uc.ActorUser}, Kind: uc.EventKindUserMessage,
+	}); !errors.Is(err, uc.ErrNotFound) {
 		t.Fatalf("cross-org append error = %v, want ErrNotFound", err)
 	}
 	// Directory lookup.
@@ -102,16 +102,16 @@ func TestEventAppendGaplessSeq(t *testing.T) {
 	s := newStore(t)
 	ctx := context.Background()
 	org, _ := seedOrgUser(t, s, "acme", "alice@example.com")
-	sess := ultra.Session{ID: ultra.SessionID(uuid.NewString())}
+	sess := uc.Session{ID: uc.SessionID(uuid.NewString())}
 	if err := s.Org(org.ID).Sessions().Create(ctx, sess); err != nil {
 		t.Fatal(err)
 	}
 
 	events := s.Org(org.ID).Events()
 	for i := 1; i <= 5; i++ {
-		seq, err := events.Append(ctx, sess.ID, ultra.Event{
-			Actor:   ultra.Actor{Type: ultra.ActorUser, ID: "u1"},
-			Kind:    ultra.EventKindUserMessage,
+		seq, err := events.Append(ctx, sess.ID, uc.Event{
+			Actor:   uc.Actor{Type: uc.ActorUser, ID: "u1"},
+			Kind:    uc.EventKindUserMessage,
 			Payload: []byte(`{"text":"hi"}`),
 		})
 		if err != nil {
@@ -136,10 +136,10 @@ func TestTxRollback(t *testing.T) {
 	ctx := context.Background()
 	org, _ := seedOrgUser(t, s, "acme", "alice@example.com")
 
-	sessID := ultra.SessionID(uuid.NewString())
+	sessID := uc.SessionID(uuid.NewString())
 	sentinel := errors.New("boom")
-	err := s.Tx(ctx, func(txs ultra.Store) error {
-		if err := txs.Org(org.ID).Sessions().Create(ctx, ultra.Session{ID: sessID}); err != nil {
+	err := s.Tx(ctx, func(txs uc.Store) error {
+		if err := txs.Org(org.ID).Sessions().Create(ctx, uc.Session{ID: sessID}); err != nil {
 			return err
 		}
 		return sentinel
@@ -147,7 +147,7 @@ func TestTxRollback(t *testing.T) {
 	if !errors.Is(err, sentinel) {
 		t.Fatalf("Tx error = %v", err)
 	}
-	if _, err := s.Org(org.ID).Sessions().Get(ctx, sessID); !errors.Is(err, ultra.ErrNotFound) {
+	if _, err := s.Org(org.ID).Sessions().Get(ctx, sessID); !errors.Is(err, uc.ErrNotFound) {
 		t.Fatalf("rolled-back session visible: %v", err)
 	}
 }

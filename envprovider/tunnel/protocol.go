@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 // Control API paths.
@@ -85,34 +85,34 @@ func VerifySignature(secret, path, timestampHeader, signatureHeader string, body
 
 // ProvisionRequest asks the agent to create an environment.
 type ProvisionRequest struct {
-	EnvID ultra.EnvID   `json:"env_id"`
-	Spec  ultra.EnvSpec `json:"spec"`
+	EnvID uc.EnvID   `json:"env_id"`
+	Spec  uc.EnvSpec `json:"spec"`
 	Token string        `json:"token"`
 }
 
 // ProvisionResponse reports the agent's local handle for an environment. The
 // platform stores it opaquely: only the agent knows what runs behind it.
 type ProvisionResponse struct {
-	Handle ultra.ProviderHandle `json:"handle"`
+	Handle uc.ProviderHandle `json:"handle"`
 }
 
 // HandleRequest names an existing environment by its agent-side handle.
 type HandleRequest struct {
-	EnvID  ultra.EnvID          `json:"env_id"`
-	Handle ultra.ProviderHandle `json:"handle"`
+	EnvID  uc.EnvID          `json:"env_id"`
+	Handle uc.ProviderHandle `json:"handle"`
 }
 
 // RestartRequest replaces an environment's runtime with a rotated token.
 type RestartRequest struct {
-	EnvID  ultra.EnvID          `json:"env_id"`
-	Handle ultra.ProviderHandle `json:"handle"`
-	Spec   ultra.EnvSpec        `json:"spec"`
+	EnvID  uc.EnvID          `json:"env_id"`
+	Handle uc.ProviderHandle `json:"handle"`
+	Spec   uc.EnvSpec        `json:"spec"`
 	Token  string               `json:"token"`
 }
 
 // StatusResponse is the agent's view of one environment.
 type StatusResponse struct {
-	State   ultra.EnvState `json:"state"`
+	State   uc.EnvState `json:"state"`
 	Message string         `json:"message,omitempty"`
 }
 

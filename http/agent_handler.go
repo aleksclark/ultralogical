@@ -8,47 +8,47 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 
-	ultra "github.com/aleksclark/ultralogical"
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/jobqueue"
-	"github.com/aleksclark/ultralogical/loop"
+	uc "github.com/aleksclark/ultracore"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/jobqueue"
+	"github.com/aleksclark/ultracore/loop"
 )
 
-// agentHandler implements ultrav1connect.AgentServiceHandler.
+// agentHandler implements corev1connect.AgentServiceHandler.
 type agentHandler struct {
-	store        ultra.Store
+	store        uc.Store
 	enqueue      jobqueue.TxEnqueuer
-	defaultModel ultra.ModelConfig
+	defaultModel uc.ModelConfig
 }
 
 // resolveRunOrg maps a run id to its org and session, verifying membership.
 // Missing runs and cross-tenant access are indistinguishable.
-func (h *agentHandler) resolveRun(ctx context.Context, runID ultra.RunID) (ultra.AgentRun, error) {
+func (h *agentHandler) resolveRun(ctx context.Context, runID uc.RunID) (uc.AgentRun, error) {
 	user, ok := userFrom(ctx)
 	if !ok {
-		return ultra.AgentRun{}, errUnauthenticated()
+		return uc.AgentRun{}, errUnauthenticated()
 	}
 	// Directory lookup: find the run's org via its session. We scan the
 	// caller's orgs — a run is only visible inside an org the caller
 	// belongs to.
 	orgs, err := h.store.Orgs().ListForUser(ctx, user.ID)
 	if err != nil {
-		return ultra.AgentRun{}, mapStoreErr(err)
+		return uc.AgentRun{}, mapStoreErr(err)
 	}
 	for _, org := range orgs {
 		run, err := h.store.Org(org.ID).Runs().Get(ctx, runID)
 		if err == nil {
 			return run, nil
 		}
-		if !errors.Is(err, ultra.ErrNotFound) {
-			return ultra.AgentRun{}, mapStoreErr(err)
+		if !errors.Is(err, uc.ErrNotFound) {
+			return uc.AgentRun{}, mapStoreErr(err)
 		}
 	}
-	return ultra.AgentRun{}, errNotFound()
+	return uc.AgentRun{}, errNotFound()
 }
 
-func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[ultrav1.StartRunRequest]) (*connect.Response[ultrav1.StartRunResponse], error) {
-	sessionID := ultra.SessionID(req.Msg.GetSessionId())
+func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[corev1.StartRunRequest]) (*connect.Response[corev1.StartRunResponse], error) {
+	sessionID := uc.SessionID(req.Msg.GetSessionId())
 	org, _, err := resolveSessionOrg(ctx, h.store, sessionID)
 	if err != nil {
 		return nil, err
@@ -74,20 +74,14 @@ func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[ultrav
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	// A human-started run receives server-defined root authority. A caller may
-	// ask for *less* — launching a deliberately restricted run is useful — but
-	// never for more, so the request can only narrow what the server grants.
-	grants := ultra.RootGrants()
+	// A human-started run receives the default tool allowlist unless the
+	// caller supplies an explicit tools list.
+	grants := uc.DefaultGrants()
 	if requested := req.Msg.GetGrants(); requested != nil {
-		narrowed := grantsFromProto(requested)
-		if !narrowed.SubsetOf(grants) {
-			return nil, connect.NewError(connect.CodePermissionDenied,
-				errors.New("requested grants exceed the authority of a human-started run"))
-		}
-		grants = narrowed
+		grants = grantsFromProto(requested)
 	}
-	run := ultra.AgentRun{
-		ID:          ultra.RunID(uuid.NewString()),
+	run := uc.AgentRun{
+		ID:          uc.RunID(uuid.NewString()),
 		SessionID:   sessionID,
 		OrgID:       org,
 		LoopKind:    loop.DefaultLoopKind,
@@ -99,18 +93,18 @@ func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[ultrav
 	}
 
 	var eventSeq int64
-	err = h.store.Tx(ctx, func(txs ultra.Store) error {
+	err = h.store.Tx(ctx, func(txs uc.Store) error {
 		scope := txs.Org(org)
 		if err := scope.Runs().Create(ctx, run); err != nil {
 			return err
 		}
-		payload, err := json.Marshal(ultra.RunStartedPayload{RunID: run.ID, Prompt: run.Prompt})
+		payload, err := json.Marshal(uc.RunStartedPayload{RunID: run.ID, Prompt: run.Prompt})
 		if err != nil {
 			return err
 		}
-		eventSeq, err = scope.Events().Append(ctx, sessionID, ultra.Event{
-			Actor:   ultra.Actor{Type: ultra.ActorAgent, ID: string(run.ID)},
-			Kind:    ultra.EventKindRunStarted,
+		eventSeq, err = scope.Events().Append(ctx, sessionID, uc.Event{
+			Actor:   uc.Actor{Type: uc.ActorAgent, ID: string(run.ID)},
+			Kind:    uc.EventKindRunStarted,
 			Payload: payload,
 		})
 		if err != nil {
@@ -126,16 +120,15 @@ func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[ultrav
 		return nil, mapStoreErr(err)
 	}
 
-	_, _ = h.store.Org(org).Participants().Join(ctx, ultra.Participant{SessionID: sessionID, Kind: ultra.ParticipantAgent, ParticipantID: string(run.ID), Display: "Agent"})
 	created, err := h.store.Org(org).Runs().Get(ctx, run.ID)
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&ultrav1.StartRunResponse{Run: runToProto(created), EventSeq: eventSeq}), nil
+	return connect.NewResponse(&corev1.StartRunResponse{Run: runToProto(created), EventSeq: eventSeq}), nil
 }
 
-func (h *agentHandler) PromptRun(ctx context.Context, req *connect.Request[ultrav1.PromptRunRequest]) (*connect.Response[ultrav1.PromptRunResponse], error) {
-	run, err := h.resolveRun(ctx, ultra.RunID(req.Msg.GetRunId()))
+func (h *agentHandler) PromptRun(ctx context.Context, req *connect.Request[corev1.PromptRunRequest]) (*connect.Response[corev1.PromptRunResponse], error) {
+	run, err := h.resolveRun(ctx, uc.RunID(req.Msg.GetRunId()))
 	if err != nil {
 		return nil, err
 	}
@@ -145,13 +138,13 @@ func (h *agentHandler) PromptRun(ctx context.Context, req *connect.Request[ultra
 	user, _ := userFrom(ctx)
 
 	var eventSeq int64
-	err = h.store.Tx(ctx, func(txs ultra.Store) error {
+	err = h.store.Tx(ctx, func(txs uc.Store) error {
 		scope := txs.Org(run.OrgID)
 		locked, err := scope.Runs().GetForUpdate(ctx, run.ID)
 		if err != nil {
 			return err
 		}
-		if locked.State != ultra.RunAwaiting && locked.State != ultra.RunCompleted {
+		if locked.State != uc.RunAwaiting && locked.State != uc.RunCompleted {
 			return connect.NewError(connect.CodeFailedPrecondition,
 				errors.New("run is not awaiting input or completed"))
 		}
@@ -162,16 +155,16 @@ func (h *agentHandler) PromptRun(ctx context.Context, req *connect.Request[ultra
 		if err := scope.Runs().SetHistory(ctx, run.ID, history); err != nil {
 			return err
 		}
-		if err := scope.Runs().SetState(ctx, run.ID, ultra.RunRunning, "", ""); err != nil {
+		if err := scope.Runs().SetState(ctx, run.ID, uc.RunRunning, "", ""); err != nil {
 			return err
 		}
-		payload, err := json.Marshal(ultra.UserMessagePayload{Text: req.Msg.GetMessage()})
+		payload, err := json.Marshal(uc.UserMessagePayload{Text: req.Msg.GetMessage()})
 		if err != nil {
 			return err
 		}
-		eventSeq, err = scope.Events().Append(ctx, run.SessionID, ultra.Event{
-			Actor:   ultra.Actor{Type: ultra.ActorUser, ID: string(user.ID)},
-			Kind:    ultra.EventKindUserMessage,
+		eventSeq, err = scope.Events().Append(ctx, run.SessionID, uc.Event{
+			Actor:   uc.Actor{Type: uc.ActorUser, ID: string(user.ID)},
+			Kind:    uc.EventKindUserMessage,
 			Payload: payload,
 		})
 		if err != nil {
@@ -199,15 +192,15 @@ func (h *agentHandler) PromptRun(ctx context.Context, req *connect.Request[ultra
 		}
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&ultrav1.PromptRunResponse{EventSeq: eventSeq}), nil
+	return connect.NewResponse(&corev1.PromptRunResponse{EventSeq: eventSeq}), nil
 }
 
-func (h *agentHandler) CancelRun(ctx context.Context, req *connect.Request[ultrav1.CancelRunRequest]) (*connect.Response[ultrav1.CancelRunResponse], error) {
-	run, err := h.resolveRun(ctx, ultra.RunID(req.Msg.GetRunId()))
+func (h *agentHandler) CancelRun(ctx context.Context, req *connect.Request[corev1.CancelRunRequest]) (*connect.Response[corev1.CancelRunResponse], error) {
+	run, err := h.resolveRun(ctx, uc.RunID(req.Msg.GetRunId()))
 	if err != nil {
 		return nil, err
 	}
-	err = h.store.Tx(ctx, func(txs ultra.Store) error {
+	err = h.store.Tx(ctx, func(txs uc.Store) error {
 		scope := txs.Org(run.OrgID)
 		locked, err := scope.Runs().GetForUpdate(ctx, run.ID)
 		if err != nil {
@@ -222,8 +215,8 @@ func (h *agentHandler) CancelRun(ctx context.Context, req *connect.Request[ultra
 		// Runs not actively executing a step (pending queue-side, awaiting)
 		// are cancelled immediately; a running step's worker observes the
 		// flag and finalizes.
-		if locked.State == ultra.RunAwaiting {
-			if err := scope.Runs().SetState(ctx, run.ID, ultra.RunCancelled, "", ""); err != nil {
+		if locked.State == uc.RunAwaiting {
+			if err := scope.Runs().SetState(ctx, run.ID, uc.RunCancelled, "", ""); err != nil {
 				return err
 			}
 			// A run awaiting child agents holds an open wait. Closing it here
@@ -232,10 +225,10 @@ func (h *agentHandler) CancelRun(ctx context.Context, req *connect.Request[ultra
 			if err := loop.AbandonWaits(ctx, txs, run.OrgID, run.ID); err != nil {
 				return err
 			}
-			payload, _ := json.Marshal(ultra.RunCancelledPayload{RunID: run.ID})
-			_, err = scope.Events().Append(ctx, run.SessionID, ultra.Event{
-				Actor:   ultra.Actor{Type: ultra.ActorSystem},
-				Kind:    ultra.EventKindRunCancelled,
+			payload, _ := json.Marshal(uc.RunCancelledPayload{RunID: run.ID})
+			_, err = scope.Events().Append(ctx, run.SessionID, uc.Event{
+				Actor:   uc.Actor{Type: uc.ActorSystem},
+				Kind:    uc.EventKindRunCancelled,
 				Payload: payload,
 			})
 			return err
@@ -249,22 +242,22 @@ func (h *agentHandler) CancelRun(ctx context.Context, req *connect.Request[ultra
 		}
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&ultrav1.CancelRunResponse{}), nil
+	return connect.NewResponse(&corev1.CancelRunResponse{}), nil
 }
 
-func (h *agentHandler) GetRun(ctx context.Context, req *connect.Request[ultrav1.GetRunRequest]) (*connect.Response[ultrav1.GetRunResponse], error) {
-	run, err := h.resolveRun(ctx, ultra.RunID(req.Msg.GetRunId()))
+func (h *agentHandler) GetRun(ctx context.Context, req *connect.Request[corev1.GetRunRequest]) (*connect.Response[corev1.GetRunResponse], error) {
+	run, err := h.resolveRun(ctx, uc.RunID(req.Msg.GetRunId()))
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(&ultrav1.GetRunResponse{Run: runToProto(run)}), nil
+	return connect.NewResponse(&corev1.GetRunResponse{Run: runToProto(run)}), nil
 }
 
 // GetRunTree returns a session's runs as parent/child trees with their waits.
 // Clients need the whole shape at once to render a spawn tree or lane view;
 // walking it request by request would race the live event stream.
-func (h *agentHandler) GetRunTree(ctx context.Context, req *connect.Request[ultrav1.GetRunTreeRequest]) (*connect.Response[ultrav1.GetRunTreeResponse], error) {
-	sessionID := ultra.SessionID(req.Msg.GetSessionId())
+func (h *agentHandler) GetRunTree(ctx context.Context, req *connect.Request[corev1.GetRunTreeRequest]) (*connect.Response[corev1.GetRunTreeResponse], error) {
+	sessionID := uc.SessionID(req.Msg.GetSessionId())
 	org, _, err := resolveSessionOrg(ctx, h.store, sessionID)
 	if err != nil {
 		return nil, err
@@ -275,10 +268,10 @@ func (h *agentHandler) GetRunTree(ctx context.Context, req *connect.Request[ultr
 		return nil, mapStoreErr(err)
 	}
 
-	nodes := make(map[ultra.RunID]*ultrav1.RunTreeNode, len(runs))
-	order := make([]ultra.RunID, 0, len(runs))
+	nodes := make(map[uc.RunID]*corev1.RunTreeNode, len(runs))
+	order := make([]uc.RunID, 0, len(runs))
 	for _, run := range runs {
-		node := &ultrav1.RunTreeNode{Run: runToProto(run)}
+		node := &corev1.RunTreeNode{Run: runToProto(run)}
 		waits, err := scope.Waits().ListForParent(ctx, run.ID)
 		if err != nil {
 			return nil, mapStoreErr(err)
@@ -294,13 +287,13 @@ func (h *agentHandler) GetRunTree(ctx context.Context, req *connect.Request[ultr
 		order = append(order, run.ID)
 	}
 
-	resp := &ultrav1.GetRunTreeResponse{}
+	resp := &corev1.GetRunTreeResponse{}
 	for _, id := range order {
 		node := nodes[id]
 		parentID := node.GetRun().GetParentRunId()
 		// A child whose parent is in this session hangs off it; anything else
 		// (including a child of a run in another session) is a root here.
-		if parent, ok := nodes[ultra.RunID(parentID)]; ok && parentID != "" {
+		if parent, ok := nodes[uc.RunID(parentID)]; ok && parentID != "" {
 			parent.Children = append(parent.Children, node)
 			continue
 		}
@@ -309,8 +302,8 @@ func (h *agentHandler) GetRunTree(ctx context.Context, req *connect.Request[ultr
 	return connect.NewResponse(resp), nil
 }
 
-func (h *agentHandler) ListRuns(ctx context.Context, req *connect.Request[ultrav1.ListRunsRequest]) (*connect.Response[ultrav1.ListRunsResponse], error) {
-	sessionID := ultra.SessionID(req.Msg.GetSessionId())
+func (h *agentHandler) ListRuns(ctx context.Context, req *connect.Request[corev1.ListRunsRequest]) (*connect.Response[corev1.ListRunsResponse], error) {
+	sessionID := uc.SessionID(req.Msg.GetSessionId())
 	org, _, err := resolveSessionOrg(ctx, h.store, sessionID)
 	if err != nil {
 		return nil, err
@@ -319,7 +312,7 @@ func (h *agentHandler) ListRuns(ctx context.Context, req *connect.Request[ultrav
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	resp := &ultrav1.ListRunsResponse{}
+	resp := &corev1.ListRunsResponse{}
 	for _, r := range runs {
 		resp.Runs = append(resp.Runs, runToProto(r))
 	}

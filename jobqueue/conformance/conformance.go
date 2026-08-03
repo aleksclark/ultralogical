@@ -17,7 +17,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/aleksclark/ultralogical/jobqueue"
+	"github.com/aleksclark/ultracore/jobqueue"
 )
 
 // Factory builds a started queue for the suite and returns it along with the

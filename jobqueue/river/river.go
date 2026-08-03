@@ -20,7 +20,7 @@ import (
 	"github.com/riverqueue/river/rivermigrate"
 	"github.com/riverqueue/river/rivertype"
 
-	"github.com/aleksclark/ultralogical/jobqueue"
+	"github.com/aleksclark/ultracore/jobqueue"
 )
 
 // envelope carries our job kind and payload inside a single River job kind.
@@ -90,7 +90,7 @@ func New(ctx context.Context, pool *pgxpool.Pool, cfg Config) (*Queue, error) {
 	if err != nil {
 		return nil, fmt.Errorf("river: migrator: %w", err)
 	}
-	// Serialize schema migration across processes (ultrad and workers boot
+	// Serialize schema migration across processes (cored and workers boot
 	// concurrently against the same database).
 	lockConn, err := pool.Acquire(ctx)
 	if err != nil {

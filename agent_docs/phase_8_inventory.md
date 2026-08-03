@@ -58,7 +58,7 @@ in-memory flags.
 
 | Bounded behavior | Production entrypoint | Named test |
 |---|---|---|
-| `WithReplicas(2,2)` starts exactly two healthy ultrad and two workers | harness (**completed in Phase 8**) | `go: e2e TestA84_CrossReplicaSubscription` |
+| `WithReplicas(2,2)` starts exactly two healthy cored and two workers | harness (**completed in Phase 8**) | `go: e2e TestA84_CrossReplicaSubscription` |
 | Subscribe on replica A, append and start on replica B | `EventService.Subscribe`, `AgentService.StartRun` | `go: e2e TestA84_CrossReplicaSubscription` |
 | Restarting a replica loses no events; resume-by-seq converges | event bus catch-up | `go: e2e TestA84_CrossReplicaSubscription` |
 | Direct and load-balanced clients see identical gap-free, duplicate-free sequences | round-robin ingress (**unimplemented before Phase 8**) | `go: e2e TestA84_CrossReplicaSubscription` |
@@ -101,7 +101,7 @@ in-memory flags.
 
 | Bounded behavior | Production entrypoint | Named test |
 |---|---|---|
-| The documented workload runs on two ultrad and two workers | harness replicas | `go: e2e TestA88_ThroughputBaseline` |
+| The documented workload runs on two cored and two workers | harness replicas | `go: e2e TestA88_ThroughputBaseline` |
 | Machine-readable latency, throughput, retry, and fan-out lag are emitted | baseline reporter (**unimplemented before Phase 8**) | `go: e2e TestA88_ThroughputBaseline` |
 | Assertions are invariants plus a generous ceiling, not marketing numbers | test assertions | `go: e2e TestA88_ThroughputBaseline` |
 | The recorded artifact names workload, hardware, replicas, and queue config | `agent_docs/throughput_baseline.md` | `go: e2e TestA88_ThroughputBaseline` |

@@ -1,5 +1,5 @@
 // Package e2e is the functional API suite: it drives a fully real stack
-// (Postgres, migrations, ultrad as a child process) through the generated
+// (Postgres, migrations, cored as a child process) through the generated
 // client. Acceptance test IDs refer to plan/phase_0.md.
 package e2e
 
@@ -11,14 +11,14 @@ import (
 
 	"connectrpc.com/connect"
 
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/testkit/harness"
-	"github.com/aleksclark/ultralogical/testkit/testclient"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/testkit/harness"
+	"github.com/aleksclark/ultracore/testkit/testclient"
 )
 
-func createSession(t *testing.T, c *testclient.Client, orgID, title string) *ultrav1.Session {
+func createSession(t *testing.T, c *testclient.Client, orgID, title string) *corev1.Session {
 	t.Helper()
-	resp, err := c.Sessions.CreateSession(context.Background(), connect.NewRequest(&ultrav1.CreateSessionRequest{
+	resp, err := c.Sessions.CreateSession(context.Background(), connect.NewRequest(&corev1.CreateSessionRequest{
 		OrgId: orgID,
 		Title: title,
 	}))
@@ -40,7 +40,7 @@ func TestA01_SessionRoundtrip(t *testing.T) {
 		t.Fatalf("created session malformed: %+v", created)
 	}
 
-	got, err := alice.Sessions.GetSession(ctx, connect.NewRequest(&ultrav1.GetSessionRequest{
+	got, err := alice.Sessions.GetSession(ctx, connect.NewRequest(&corev1.GetSessionRequest{
 		SessionId: created.GetId(),
 	}))
 	if err != nil {
@@ -51,7 +51,7 @@ func TestA01_SessionRoundtrip(t *testing.T) {
 		t.Fatalf("roundtrip mismatch: created %+v, got %+v", created, s)
 	}
 
-	list, err := alice.Sessions.ListSessions(ctx, connect.NewRequest(&ultrav1.ListSessionsRequest{
+	list, err := alice.Sessions.ListSessions(ctx, connect.NewRequest(&corev1.ListSessionsRequest{
 		OrgId: string(stack.OrgA.ID),
 	}))
 	if err != nil {
@@ -100,7 +100,7 @@ func TestA02_AppendFanout(t *testing.T) {
 		if ev.GetPayload().GetUserMessage().GetText() != "hello world" {
 			t.Fatalf("subscriber %d: payload mismatch: %+v", i+1, ev.GetPayload())
 		}
-		if ev.GetActor().GetType() != ultrav1.ActorType_ACTOR_TYPE_USER {
+		if ev.GetActor().GetType() != corev1.ActorType_ACTOR_TYPE_USER {
 			t.Fatalf("subscriber %d: actor = %v", i+1, ev.GetActor())
 		}
 	}
@@ -187,9 +187,9 @@ func TestA06_TenantIsolation(t *testing.T) {
 
 	// GetSession on a real (foreign) session vs a nonexistent one must be
 	// indistinguishable.
-	_, errForeign := bob.Sessions.GetSession(ctx, connect.NewRequest(&ultrav1.GetSessionRequest{SessionId: sess.GetId()}))
+	_, errForeign := bob.Sessions.GetSession(ctx, connect.NewRequest(&corev1.GetSessionRequest{SessionId: sess.GetId()}))
 	assertNotFound("GetSession(foreign)", errForeign)
-	_, errMissing := bob.Sessions.GetSession(ctx, connect.NewRequest(&ultrav1.GetSessionRequest{SessionId: "00000000-0000-0000-0000-000000000000"}))
+	_, errMissing := bob.Sessions.GetSession(ctx, connect.NewRequest(&corev1.GetSessionRequest{SessionId: "00000000-0000-0000-0000-000000000000"}))
 	assertNotFound("GetSession(missing)", errMissing)
 	var cf, cm *connect.Error
 	errors.As(errForeign, &cf)
@@ -199,7 +199,7 @@ func TestA06_TenantIsolation(t *testing.T) {
 	}
 
 	// ListSessions across orgs.
-	_, err := bob.Sessions.ListSessions(ctx, connect.NewRequest(&ultrav1.ListSessionsRequest{OrgId: string(stack.OrgA.ID)}))
+	_, err := bob.Sessions.ListSessions(ctx, connect.NewRequest(&corev1.ListSessionsRequest{OrgId: string(stack.OrgA.ID)}))
 	assertNotFound("ListSessions(org A as bob)", err)
 
 	// Append into a foreign session.
@@ -216,7 +216,7 @@ func TestA06_TenantIsolation(t *testing.T) {
 
 	// Bob's own org list contains only org B sessions.
 	bobSess := createSession(t, bob, string(stack.OrgB.ID), "bobs")
-	list, err := bob.Sessions.ListSessions(ctx, connect.NewRequest(&ultrav1.ListSessionsRequest{OrgId: string(stack.OrgB.ID)}))
+	list, err := bob.Sessions.ListSessions(ctx, connect.NewRequest(&corev1.ListSessionsRequest{OrgId: string(stack.OrgB.ID)}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +226,7 @@ func TestA06_TenantIsolation(t *testing.T) {
 
 	// Unauthenticated requests are rejected.
 	anon := testclient.New(stack.BaseURL, "not-a-token")
-	_, err = anon.Sessions.GetSession(ctx, connect.NewRequest(&ultrav1.GetSessionRequest{SessionId: sess.GetId()}))
+	_, err = anon.Sessions.GetSession(ctx, connect.NewRequest(&corev1.GetSessionRequest{SessionId: sess.GetId()}))
 	var cerr *connect.Error
 	if !errors.As(err, &cerr) || cerr.Code() != connect.CodeUnauthenticated {
 		t.Fatalf("anonymous access error = %v, want unauthenticated", err)
@@ -240,16 +240,16 @@ func TestOrgLifecycle(t *testing.T) {
 	alice := stack.AliceClient()
 	ctx := context.Background()
 
-	created, err := alice.Orgs.CreateOrg(ctx, connect.NewRequest(&ultrav1.CreateOrgRequest{Name: "newco"}))
+	created, err := alice.Orgs.CreateOrg(ctx, connect.NewRequest(&corev1.CreateOrgRequest{Name: "newco"}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	orgID := created.Msg.GetOrg().GetId()
 
-	invited, err := alice.Orgs.InviteMember(ctx, connect.NewRequest(&ultrav1.InviteMemberRequest{
+	invited, err := alice.Orgs.InviteMember(ctx, connect.NewRequest(&corev1.InviteMemberRequest{
 		OrgId: orgID,
 		Email: harness.EmailBob,
-		Role:  ultrav1.OrgRole_ORG_ROLE_MEMBER,
+		Role:  corev1.OrgRole_ORG_ROLE_MEMBER,
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -258,7 +258,7 @@ func TestOrgLifecycle(t *testing.T) {
 		t.Fatalf("invite returned %+v", invited.Msg.GetMember())
 	}
 
-	members, err := stack.BobClient().Orgs.ListMembers(ctx, connect.NewRequest(&ultrav1.ListMembersRequest{OrgId: orgID}))
+	members, err := stack.BobClient().Orgs.ListMembers(ctx, connect.NewRequest(&corev1.ListMembersRequest{OrgId: orgID}))
 	if err != nil {
 		t.Fatal(err)
 	}

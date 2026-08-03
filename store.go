@@ -1,4 +1,4 @@
-package ultra
+package core
 
 import (
 	"context"
@@ -63,11 +63,8 @@ type OrgScope interface {
 	Credentials() CredentialStore
 	Envs() EnvStore
 	Providers() ProviderInstanceStore
-	Usage() UsageStore
-	Participants() ParticipantStore
 	Memory() SessionMemoryStore
 	Waits() RunWaitStore
-	Flows() FlowStore
 	PeriodicPrompts() PeriodicPromptStore
 }
 

@@ -1,8 +1,9 @@
 # Testing
 
-The drift defense. Full strategy: [`plan/index.md §3`](../plan/index.md).
-Non-negotiable principle: **tests exercise the real system through its real
-boundaries. No mocks of our own components, ever.**
+The drift defense. Full strategy historically lived in `plan/index.md`; the
+post-E1 client-evidence rule is iron rules 7/8 in `AGENTS.md`. Non-negotiable
+principle: **tests exercise the real system through its real boundaries. No
+mocks of our own components, ever.**
 
 This consciously replaces tenet 3 (shared mock subpackage) of
 [`package_layout.md`](package_layout.md): the domain-interface connection
@@ -18,17 +19,19 @@ not.
 | Unit | alongside code | pure logic only |
 | Store tests | `postgres/*_test.go` | real Postgres (testcontainers) |
 | Queue conformance | `jobqueue/conformance` | real Postgres, real backend |
-| Functional (first line) | `e2e/` | real Postgres + real `ultrad` + real `worker` child processes + generated clients |
+| Functional (first line) | `e2e/` | real Postgres + real `cored` + real `coreworker` child processes + generated clients |
 | TS smoke | `clients/ts/smoke.test.ts` | same real stack, driven from `e2e/ts_smoke_test.go` |
 | Provider conformance | `envprovider/conformance` | real Bezalel containers via the real provider |
-| Web golden | `ui/web/e2e/` | real shadcn SPA in Chromium + same real backend stack |
-| GPUI golden | `ui/desktop/tests/` | real GPUI window rendering + same real backend stack |
+| CLI | `cmd/core/cli/*_test.go` | real stack through the public API only |
 | Dev-stack smoke | `scripts/dev-stack.sh smoke` | the documented one-command stack end to end |
 | Gate mutation | `scripts/mutate-*.sh` | the real gates, deliberately broken then restored |
+| Extraction fences | `scripts/check-extraction-fences.sh` | banned product terms must not reappear |
 
 The only substituted component anywhere is the LLM vendor (`modelscript` —
 a real HTTP/SSE server speaking the OpenAI API at the network boundary).
-Fantasy, River, Postgres, ultrad, worker, clients, and UI are always real.
+Fantasy, River, Postgres, cored, coreworker, and clients are always real.
+There is no first-party web or desktop UI after E1; client evidence is the Go
+functional suite + SDK smoke tests.
 
 ## Running
 
@@ -36,8 +39,7 @@ Fantasy, River, Postgres, ultrad, worker, clients, and UI are always real.
 task test                       # unit + store + queue + provider conformance
 task test:functional            # e2e/ — the acceptance suite
 task test:all                   # everything
-task web:test                   # Playwright golden on the real stack
-task desktop:test               # GPUI golden on the real stack
+task cli:test                   # cmd/core against the real stack
 task dev:smoke                  # one-command stack smoke, then full teardown
 task verify:codegen             # generated output matches the protos
 task verify:codegen:mutation    # prove the codegen gates fail on drift
@@ -47,10 +49,8 @@ go test ./e2e/ -run TestA02 -v  # one acceptance test
 ```
 
 Requirements: docker running (testcontainers), `npx` + `npm ci` in
-`clients/ts` and `ui/web`, and a Rust toolchain for the GPUI suites.
-Local-only gates self-skip unless enabled: set `ULTRA_WEB_TESTS=1` for
-Playwright without CI browsers configured and `ULTRA_DEV_STACK_TESTS=1` for the
-dev-stack smoke.
+`clients/ts` once for the TS smoke. Local-only gates self-skip unless
+enabled: set `CORE_DEV_STACK_TESTS=1` for the dev-stack smoke.
 
 ## Test infrastructure
 
@@ -58,10 +58,10 @@ dev-stack smoke.
   `NewDB(t)` / `NewPool(t)` create an isolated database per test (cheap,
   parallel-safe). Ryuk reaps the container on process exit.
 - **`testkit/harness`** — `harness.Up(t)` returns a `*Stack`: migrated fresh
-  DB, seeded identities/credential, modelscript, and `ultrad` + `worker`
+  DB, seeded identities/credential, modelscript, and `cored` + `coreworker`
   running as **real child processes** (binaries built once). It exposes
   KillWorker/StartWorker for crash tests, and `Logs()` returning everything
-  ultrad and the workers wrote to stderr (used by the redaction sweep).
+  cored and the workers wrote to stderr (used by the redaction sweep).
   Cleanup is automatic.
   Seeded fixtures: OrgA/alice (`harness.TokenAlice`), OrgB/bob
   (`harness.TokenBob`) — two orgs so tenant isolation is always testable.
@@ -72,7 +72,7 @@ dev-stack smoke.
 
 ### Multi-replica harness
 
-`harness.Up(t, harness.WithReplicas(2, 2))` starts two `ultrad` processes
+`harness.Up(t, harness.WithReplicas(2, 2))` starts two `cored` processes
 behind a round-robin ingress plus two workers, so "worker 0 died and worker 1
 finished the job" is a statement about identifiable processes. It exposes:
 
@@ -108,10 +108,11 @@ jitter before believing them.
 
 ## Capability-completeness gate
 
-Backend acceptance is necessary but insufficient. Every implemented public
-capability must also be exercised through each supported first-party client.
-Follow `agent_docs/cross_client_testing.md` and keep `e2e/coverage.json`
-truthful.
+Every implemented public capability must be exercised through the real Go
+functional suite (and, from E4, Go/TS SDK smoke tests). Follow
+`agent_docs/cross_client_testing.md` where it still applies post-E1, and keep
+`e2e/coverage.json` truthful. The matrix is Go-only after E1 — no web/desktop
+columns.
 
 A test counts only if it uses the real harness stack and asserts observable
 behavior. Compile checks, control-presence checks, unasserted RPC calls,
@@ -120,23 +121,18 @@ functional evidence. For stateful capabilities, cover replay/reconnect; for
 tenant data, cover foreign-org denial; for distributed workflows, cover
 failure/restart and concurrent observers where relevant.
 
-Every PR adding/changing a proto RPC, event variant, UI control, desktop
-command, state transition, provider/tool, or billing behavior must include:
+Every PR adding/changing a proto RPC, event variant, state transition, or
+provider/tool behavior must include:
 
 - a Go real-stack functional assertion;
-- a Playwright scenario using the web application;
-- a GPUI scenario that opens the real desktop window and asserts on the frame it
-  rendered (`await_rendered`/`debug_bounds`), not on a headless state core;
-- a coverage-matrix row (or update) naming those tests *and* the specific
+- a coverage-matrix row (or update) naming that test *and* the specific
   assertion strings that prove the capability.
-
-If any client surface is not yet implemented, the capability is not complete
-and the phase exit criterion remains open.
 
 ## Conventions
 
 - Acceptance tests are named `TestA<phase><n>_...` and map 1:1 to the
-  acceptance criteria in `plan/phase_<n>.md`. Keep the mapping in comments.
+  acceptance criteria in the owning plan/inventory. Keep the mapping in
+  comments.
 - New seam implementation (queue backend, env provider, ...) ⇒ it must pass
   the existing conformance suite unmodified; never weaken a conformance
   suite to admit an implementation.
@@ -154,5 +150,6 @@ and the phase exit criterion remains open.
 
 - `buf lint`, `buf breaking` vs the PR base (schema evolution is
   additive-only), codegen diff (generated code must be committed in sync),
-  `golangci-lint`.
+  `golangci-lint`, extraction fences.
 - Unit/store/queue job and functional job run separately; both required.
+- Provider legs (k8s/nomad/tunnel/static) stay; web/desktop legs are gone.

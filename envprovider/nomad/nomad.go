@@ -17,7 +17,7 @@ import (
 
 	nomadapi "github.com/hashicorp/nomad/api"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 // toolPort is the port Bezalel serves its authenticated tool endpoint on.
@@ -47,7 +47,7 @@ type Config struct {
 	EndpointHost string `json:"endpoint_host,omitempty"`
 }
 
-// Provider implements ultra.EnvProvider on Nomad.
+// Provider implements uc.EnvProvider on Nomad.
 type Provider struct {
 	client *nomadapi.Client
 	cfg    Config
@@ -65,7 +65,7 @@ func New(cfg Config) (*Provider, error) {
 		cfg.Address = "http://127.0.0.1:4646"
 	}
 	if cfg.Image == "" {
-		cfg.Image = "ultralogical/bezalel:local"
+		cfg.Image = "ultracore/bezalel:local"
 	}
 	if cfg.CPU <= 0 {
 		cfg.CPU = 500
@@ -88,7 +88,7 @@ func New(cfg Config) (*Provider, error) {
 
 // jobID is the deterministic job name for one environment, so a redelivered
 // provisioning finds its own work again instead of registering a second job.
-func jobID(envID ultra.EnvID) string { return "ultra-env-" + sanitize(string(envID)) }
+func jobID(envID uc.EnvID) string { return "ultra-env-" + sanitize(string(envID)) }
 
 func sanitize(value string) string {
 	var b strings.Builder
@@ -107,15 +107,15 @@ func sanitize(value string) string {
 	return out
 }
 
-func encodeHandle(d handleData) (ultra.ProviderHandle, error) {
+func encodeHandle(d handleData) (uc.ProviderHandle, error) {
 	body, err := json.Marshal(d)
 	if err != nil {
-		return ultra.ProviderHandle{}, fmt.Errorf("nomad: encode handle: %w", err)
+		return uc.ProviderHandle{}, fmt.Errorf("nomad: encode handle: %w", err)
 	}
-	return ultra.ProviderHandle{Version: handleVersion, Data: body}, nil
+	return uc.ProviderHandle{Version: handleVersion, Data: body}, nil
 }
 
-func decodeHandle(h ultra.ProviderHandle) (handleData, error) {
+func decodeHandle(h uc.ProviderHandle) (handleData, error) {
 	var d handleData
 	if len(h.Data) == 0 {
 		return d, errors.New("nomad: empty provider handle")
@@ -132,7 +132,7 @@ func intPtr(v int) *int          { return &v }
 // Provision registers the environment's job. Registration is idempotent by
 // job id: a redelivered provisioning updates the same job rather than
 // creating a second one.
-func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+func (p *Provider) Provision(ctx context.Context, envID uc.EnvID, spec uc.EnvSpec, token string) (uc.ProviderHandle, error) {
 	id := jobID(envID)
 	workdir := spec.Workdir
 	if workdir == "" {
@@ -153,8 +153,8 @@ func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.
 		Type:        stringPtr("service"),
 		Datacenters: p.cfg.Datacenters,
 		Meta: map[string]string{
-			"ultralogical.env_id":     string(envID),
-			"ultralogical.managed_by": "ultralogical",
+			"ultracore.env_id":     string(envID),
+			"ultracore.managed_by": "ultracore",
 		},
 		TaskGroups: []*nomadapi.TaskGroup{{
 			Name:  stringPtr("env"),
@@ -198,7 +198,7 @@ func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.
 		}},
 	}
 	if _, _, err := p.client.Jobs().Register(job, p.write(ctx)); err != nil {
-		return ultra.ProviderHandle{}, fmt.Errorf("nomad: register job: %w", err)
+		return uc.ProviderHandle{}, fmt.Errorf("nomad: register job: %w", err)
 	}
 	return encodeHandle(handleData{JobID: id, EnvID: string(envID)})
 }
@@ -230,37 +230,37 @@ func (p *Provider) runningAllocation(ctx context.Context, id string) (*nomadapi.
 // Status maps the job's real allocation state onto the environment state
 // machine. A job whose allocation is gone is failed, not merely unready:
 // something outside the platform stopped it, and reconciliation must see it.
-func (p *Provider) Status(ctx context.Context, handle ultra.ProviderHandle) (ultra.ProviderStatus, error) {
+func (p *Provider) Status(ctx context.Context, handle uc.ProviderHandle) (uc.ProviderStatus, error) {
 	d, err := decodeHandle(handle)
 	if err != nil {
-		return ultra.ProviderStatus{}, err
+		return uc.ProviderStatus{}, err
 	}
 	job, _, err := p.client.Jobs().Info(d.JobID, p.query(ctx))
 	if err != nil {
 		if isNotFound(err) {
-			return ultra.ProviderStatus{State: ultra.EnvFailed, Message: "job not found"}, nil
+			return uc.ProviderStatus{State: uc.EnvFailed, Message: "job not found"}, nil
 		}
-		return ultra.ProviderStatus{}, fmt.Errorf("nomad: job info: %w", err)
+		return uc.ProviderStatus{}, fmt.Errorf("nomad: job info: %w", err)
 	}
 	if job.Stop != nil && *job.Stop {
-		return ultra.ProviderStatus{State: ultra.EnvFailed, Message: "job is stopped"}, nil
+		return uc.ProviderStatus{State: uc.EnvFailed, Message: "job is stopped"}, nil
 	}
 	allocations, _, err := p.client.Jobs().Allocations(d.JobID, true, p.query(ctx))
 	if err != nil {
-		return ultra.ProviderStatus{}, fmt.Errorf("nomad: job allocations: %w", err)
+		return uc.ProviderStatus{}, fmt.Errorf("nomad: job allocations: %w", err)
 	}
 	if len(allocations) == 0 {
-		return ultra.ProviderStatus{State: ultra.EnvProvisioning, Message: "no allocation yet"}, nil
+		return uc.ProviderStatus{State: uc.EnvProvisioning, Message: "no allocation yet"}, nil
 	}
 	for _, allocation := range allocations {
 		switch allocation.ClientStatus {
 		case "running":
-			return ultra.ProviderStatus{State: ultra.EnvReady}, nil
+			return uc.ProviderStatus{State: uc.EnvReady}, nil
 		case "pending":
-			return ultra.ProviderStatus{State: ultra.EnvProvisioning, Message: "allocation pending"}, nil
+			return uc.ProviderStatus{State: uc.EnvProvisioning, Message: "allocation pending"}, nil
 		}
 	}
-	return ultra.ProviderStatus{State: ultra.EnvFailed, Message: allocations[0].ClientStatus}, nil
+	return uc.ProviderStatus{State: uc.EnvFailed, Message: allocations[0].ClientStatus}, nil
 }
 
 func isNotFound(err error) bool {
@@ -270,7 +270,7 @@ func isNotFound(err error) bool {
 // Endpoint discovers the tool endpoint from the allocation's advertised
 // address. A guessed address would be wrong the moment Nomad rescheduled the
 // allocation onto another node or port.
-func (p *Provider) Endpoint(ctx context.Context, handle ultra.ProviderHandle) (string, error) {
+func (p *Provider) Endpoint(ctx context.Context, handle uc.ProviderHandle) (string, error) {
 	d, err := decodeHandle(handle)
 	if err != nil {
 		return "", err
@@ -316,12 +316,12 @@ func allocationAddress(allocation *nomadapi.Allocation) (string, int) {
 }
 
 // Restart replaces the allocation with a new one carrying the rotated token.
-func (p *Provider) Restart(ctx context.Context, envID ultra.EnvID, handle ultra.ProviderHandle, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+func (p *Provider) Restart(ctx context.Context, envID uc.EnvID, handle uc.ProviderHandle, spec uc.EnvSpec, token string) (uc.ProviderHandle, error) {
 	if err := p.Terminate(ctx, handle); err != nil {
-		return ultra.ProviderHandle{}, err
+		return uc.ProviderHandle{}, err
 	}
 	if err := p.awaitJobAbsent(ctx, jobID(envID)); err != nil {
-		return ultra.ProviderHandle{}, err
+		return uc.ProviderHandle{}, err
 	}
 	return p.Provision(ctx, envID, spec, token)
 }
@@ -344,7 +344,7 @@ func (p *Provider) awaitJobAbsent(ctx context.Context, id string) error {
 
 // Terminate deregisters and purges the job. Purging rather than stopping is
 // what makes the leak check meaningful: a stopped job is still a job.
-func (p *Provider) Terminate(ctx context.Context, handle ultra.ProviderHandle) error {
+func (p *Provider) Terminate(ctx context.Context, handle uc.ProviderHandle) error {
 	d, err := decodeHandle(handle)
 	if err != nil {
 		return nil
@@ -358,28 +358,28 @@ func (p *Provider) Terminate(ctx context.Context, handle ultra.ProviderHandle) e
 	return nil
 }
 
-// Adopt implements ultra.EnvAdopter: it finds a job this provider already
+// Adopt implements uc.EnvAdopter: it finds a job this provider already
 // registered for an environment, so an interrupted provisioning resumes
 // instead of registering a second one.
-func (p *Provider) Adopt(ctx context.Context, envID ultra.EnvID) (ultra.ProviderHandle, bool, error) {
+func (p *Provider) Adopt(ctx context.Context, envID uc.EnvID) (uc.ProviderHandle, bool, error) {
 	id := jobID(envID)
 	job, _, err := p.client.Jobs().Info(id, p.query(ctx))
 	if isNotFound(err) {
-		return ultra.ProviderHandle{}, false, nil
+		return uc.ProviderHandle{}, false, nil
 	}
 	if err != nil {
-		return ultra.ProviderHandle{}, false, fmt.Errorf("nomad: adopt lookup: %w", err)
+		return uc.ProviderHandle{}, false, fmt.Errorf("nomad: adopt lookup: %w", err)
 	}
 	if job.Stop != nil && *job.Stop {
-		return ultra.ProviderHandle{}, false, nil
+		return uc.ProviderHandle{}, false, nil
 	}
 	handle, err := encodeHandle(handleData{JobID: id, EnvID: string(envID)})
 	return handle, err == nil, err
 }
 
-// Resources implements ultra.EnvResourceLister by enumerating the live Nomad
+// Resources implements uc.EnvResourceLister by enumerating the live Nomad
 // objects this provider owns for an environment.
-func (p *Provider) Resources(ctx context.Context, envID ultra.EnvID) ([]string, error) {
+func (p *Provider) Resources(ctx context.Context, envID uc.EnvID) ([]string, error) {
 	id := jobID(envID)
 	job, _, err := p.client.Jobs().Info(id, p.query(ctx))
 	if isNotFound(err) {
@@ -404,12 +404,12 @@ func (p *Provider) Resources(ctx context.Context, envID ultra.EnvID) ([]string, 
 	return out, nil
 }
 
-// Probe implements ultra.CapabilityProber by asking the Nomad control plane
+// Probe implements uc.CapabilityProber by asking the Nomad control plane
 // what it can do, rather than inferring capability from the provider kind.
-func (p *Provider) Probe(ctx context.Context) (ultra.ProviderCapabilities, error) {
-	capabilities := ultra.ProviderCapabilities{
-		Kind:  ultra.ProviderKindBYONomad,
-		Notes: map[ultra.ProviderCapability]string{},
+func (p *Provider) Probe(ctx context.Context) (uc.ProviderCapabilities, error) {
+	capabilities := uc.ProviderCapabilities{
+		Kind:  uc.ProviderKindBYONomad,
+		Notes: map[uc.ProviderCapability]string{},
 	}
 	if _, err := p.client.Agent().Self(); err != nil {
 		return capabilities, fmt.Errorf("nomad: control plane unreachable: %w", err)
@@ -428,15 +428,13 @@ func (p *Provider) Probe(ctx context.Context) (ultra.ProviderCapabilities, error
 		return capabilities, errors.New("nomad: the cluster has no ready client nodes")
 	}
 	capabilities.Supported = append(capabilities.Supported,
-		ultra.CapabilityAdoptsOrphans,
-		ultra.CapabilityEnumeratesResources,
-		ultra.CapabilityServesToolEndpoint,
+		uc.CapabilityAdoptsOrphans,
+		uc.CapabilityEnumeratesResources,
+		uc.CapabilityServesToolEndpoint,
 	)
 	// A Nomad task's workspace lives in its allocation directory, which a
 	// replacement allocation does not inherit.
-	capabilities.Notes[ultra.CapabilityRestartPreservesWorkspace] =
+	capabilities.Notes[uc.CapabilityRestartPreservesWorkspace] =
 		"a replacement allocation receives a fresh allocation directory"
-	capabilities.Notes[ultra.CapabilityNamespaceIsolation] =
-		"Nomad namespaces are not provisioned per organization by this adapter"
 	return capabilities, nil
 }

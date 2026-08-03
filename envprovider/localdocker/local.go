@@ -1,4 +1,4 @@
-// Package localdocker implements ultra.EnvProvider with Docker containers.
+// Package localdocker implements uc.EnvProvider with Docker containers.
 // Each environment gets a label-addressable Bezalel container and named
 // workspace volume; the volume survives container restart and worker death.
 package localdocker
@@ -23,10 +23,10 @@ import (
 	"github.com/docker/go-connections/nat"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
-const labelEnvID = "ultralogical.env_id"
+const labelEnvID = "ultracore.env_id"
 
 // Config configures the local Docker provider.
 type Config struct {
@@ -37,7 +37,7 @@ type Config struct {
 	WaitTimeout time.Duration
 }
 
-// Provider implements ultra.EnvProvider.
+// Provider implements uc.EnvProvider.
 type Provider struct {
 	docker *client.Client
 	cfg    Config
@@ -52,7 +52,7 @@ type handleData struct {
 // New builds a Docker provider from environment configuration.
 func New(cfg Config) (*Provider, error) {
 	if cfg.Image == "" {
-		cfg.Image = "ultralogical/bezalel:local"
+		cfg.Image = "ultracore/bezalel:local"
 	}
 	if cfg.WaitTimeout <= 0 {
 		cfg.WaitTimeout = 30 * time.Second
@@ -71,14 +71,14 @@ func New(cfg Config) (*Provider, error) {
 // Close closes the Docker API client.
 func (p *Provider) Close() error { return p.docker.Close() }
 
-func volumeName(id ultra.EnvID) string { return "ultralogical-env-" + string(id) }
+func volumeName(id uc.EnvID) string { return "ultracore-env-" + string(id) }
 
-func encodeHandle(h handleData) (ultra.ProviderHandle, error) {
+func encodeHandle(h handleData) (uc.ProviderHandle, error) {
 	b, err := json.Marshal(h)
-	return ultra.ProviderHandle{Version: 1, Data: b}, err
+	return uc.ProviderHandle{Version: 1, Data: b}, err
 }
 
-func decodeHandle(h ultra.ProviderHandle) (handleData, error) {
+func decodeHandle(h uc.ProviderHandle) (handleData, error) {
 	if h.Version != 1 {
 		return handleData{}, fmt.Errorf("localdocker: unsupported handle version %d", h.Version)
 	}
@@ -89,8 +89,8 @@ func decodeHandle(h ultra.ProviderHandle) (handleData, error) {
 	return d, nil
 }
 
-// Provision implements ultra.EnvProvider.
-func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+// Provision implements uc.EnvProvider.
+func (p *Provider) Provision(ctx context.Context, envID uc.EnvID, spec uc.EnvSpec, token string) (uc.ProviderHandle, error) {
 	// A spec that names an image means it: silently substituting the
 	// configured default would let a declaration ask for one runtime and
 	// receive another, which no caller could detect.
@@ -101,13 +101,13 @@ func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.
 	if p.cfg.PullImage {
 		reader, err := p.docker.ImagePull(ctx, imageRef, image.PullOptions{})
 		if err != nil {
-			return ultra.ProviderHandle{}, fmt.Errorf("localdocker: pull: %w", err)
+			return uc.ProviderHandle{}, fmt.Errorf("localdocker: pull: %w", err)
 		}
 		_ = reader.Close()
 	}
 	vol := volumeName(envID)
 	if _, err := p.docker.VolumeCreate(ctx, volume.CreateOptions{Name: vol}); err != nil {
-		return ultra.ProviderHandle{}, fmt.Errorf("localdocker: volume: %w", err)
+		return uc.ProviderHandle{}, fmt.Errorf("localdocker: volume: %w", err)
 	}
 
 	workdir := spec.Workdir
@@ -131,9 +131,9 @@ func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.
 			Binds:        []string{vol + ":" + workdir},
 			PortBindings: nat.PortMap{port: []nat.PortBinding{{HostIP: "127.0.0.1", HostPort: ""}}},
 		},
-		&network.NetworkingConfig{}, (*v1.Platform)(nil), "ultralogical-env-"+string(envID))
+		&network.NetworkingConfig{}, (*v1.Platform)(nil), "ultracore-env-"+string(envID))
 	if err != nil {
-		return ultra.ProviderHandle{}, fmt.Errorf("localdocker: create: %w", err)
+		return uc.ProviderHandle{}, fmt.Errorf("localdocker: create: %w", err)
 	}
 	if err := p.docker.ContainerStart(ctx, resp.ID, containertypes.StartOptions{}); err != nil {
 		// Docker publishes on a port from the kernel's ephemeral range, the
@@ -143,14 +143,14 @@ func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.
 		// this way comes back with no port map at all, and restarting it in
 		// place yields an environment nothing can reach.
 		if !strings.Contains(err.Error(), "address already in use") {
-			return ultra.ProviderHandle{}, fmt.Errorf("localdocker: start: %w", err)
+			return uc.ProviderHandle{}, fmt.Errorf("localdocker: start: %w", err)
 		}
 		_ = p.docker.ContainerRemove(ctx, resp.ID, containertypes.RemoveOptions{Force: true})
 		return p.provisionRetry(ctx, envID, spec, token)
 	}
 	d, err := p.inspect(ctx, resp.ID, vol)
 	if err != nil {
-		return ultra.ProviderHandle{}, err
+		return uc.ProviderHandle{}, err
 	}
 	return encodeHandle(d)
 }
@@ -158,14 +158,14 @@ func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.
 // provisionRetry re-attempts provisioning after a transient host-port
 // collision. The attempt budget is carried on the context so a pathological
 // host cannot make this recurse forever.
-func (p *Provider) provisionRetry(ctx context.Context, envID ultra.EnvID, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+func (p *Provider) provisionRetry(ctx context.Context, envID uc.EnvID, spec uc.EnvSpec, token string) (uc.ProviderHandle, error) {
 	attempt, _ := ctx.Value(provisionAttemptKey{}).(int)
 	if attempt >= 5 {
-		return ultra.ProviderHandle{}, errors.New("localdocker: every published port this host offered was already in use")
+		return uc.ProviderHandle{}, errors.New("localdocker: every published port this host offered was already in use")
 	}
 	select {
 	case <-ctx.Done():
-		return ultra.ProviderHandle{}, ctx.Err()
+		return uc.ProviderHandle{}, ctx.Err()
 	case <-time.After(time.Duration(attempt+1) * 100 * time.Millisecond):
 	}
 	return p.Provision(context.WithValue(ctx, provisionAttemptKey{}, attempt+1), envID, spec, token)
@@ -212,27 +212,27 @@ func (p *Provider) inspect(ctx context.Context, containerID, vol string) (handle
 	return handleData{ContainerID: containerID, VolumeName: vol, HostPort: port}, nil
 }
 
-// Status implements ultra.EnvProvider.
-func (p *Provider) Status(ctx context.Context, handle ultra.ProviderHandle) (ultra.ProviderStatus, error) {
+// Status implements uc.EnvProvider.
+func (p *Provider) Status(ctx context.Context, handle uc.ProviderHandle) (uc.ProviderStatus, error) {
 	d, err := decodeHandle(handle)
 	if err != nil {
-		return ultra.ProviderStatus{}, err
+		return uc.ProviderStatus{}, err
 	}
 	info, err := p.docker.ContainerInspect(ctx, d.ContainerID)
 	if cerrdefs.IsNotFound(err) {
-		return ultra.ProviderStatus{State: ultra.EnvFailed, Message: "container not found"}, nil
+		return uc.ProviderStatus{State: uc.EnvFailed, Message: "container not found"}, nil
 	}
 	if err != nil {
-		return ultra.ProviderStatus{}, err
+		return uc.ProviderStatus{}, err
 	}
 	if info.State.Running {
-		return ultra.ProviderStatus{State: ultra.EnvReady}, nil
+		return uc.ProviderStatus{State: uc.EnvReady}, nil
 	}
-	return ultra.ProviderStatus{State: ultra.EnvFailed, Message: info.State.Status}, nil
+	return uc.ProviderStatus{State: uc.EnvFailed, Message: info.State.Status}, nil
 }
 
-// Endpoint implements ultra.EnvProvider.
-func (p *Provider) Endpoint(_ context.Context, handle ultra.ProviderHandle) (string, error) {
+// Endpoint implements uc.EnvProvider.
+func (p *Provider) Endpoint(_ context.Context, handle uc.ProviderHandle) (string, error) {
 	d, err := decodeHandle(handle)
 	if err != nil {
 		return "", err
@@ -242,19 +242,19 @@ func (p *Provider) Endpoint(_ context.Context, handle ultra.ProviderHandle) (str
 
 // Restart replaces the container while preserving the named workspace
 // volume and rotating its bearer token.
-func (p *Provider) Restart(ctx context.Context, envID ultra.EnvID, handle ultra.ProviderHandle, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+func (p *Provider) Restart(ctx context.Context, envID uc.EnvID, handle uc.ProviderHandle, spec uc.EnvSpec, token string) (uc.ProviderHandle, error) {
 	d, err := decodeHandle(handle)
 	if err != nil {
-		return ultra.ProviderHandle{}, err
+		return uc.ProviderHandle{}, err
 	}
 	_ = p.docker.ContainerRemove(ctx, d.ContainerID, containertypes.RemoveOptions{Force: true})
 	// Provision reuses the deterministic named volume.
 	return p.Provision(ctx, envID, spec, token)
 }
 
-// Terminate implements ultra.EnvProvider. It removes both container and
+// Terminate implements uc.EnvProvider. It removes both container and
 // workspace volume; double termination is idempotent.
-func (p *Provider) Terminate(ctx context.Context, handle ultra.ProviderHandle) error {
+func (p *Provider) Terminate(ctx context.Context, handle uc.ProviderHandle) error {
 	d, err := decodeHandle(handle)
 	if err != nil {
 		return err
@@ -269,48 +269,48 @@ func (p *Provider) Terminate(ctx context.Context, handle ultra.ProviderHandle) e
 }
 
 // ContainerID returns the provider container ID for harness verification.
-func ContainerID(handle ultra.ProviderHandle) (string, error) {
+func ContainerID(handle uc.ProviderHandle) (string, error) {
 	d, err := decodeHandle(handle)
 	return d.ContainerID, err
 }
 
-// Adopt implements ultra.EnvAdopter. Containers are labelled and named by
+// Adopt implements uc.EnvAdopter. Containers are labelled and named by
 // environment id, so a provision retry after a control-plane death finds the
 // container it already created instead of starting a second one.
-func (p *Provider) Adopt(ctx context.Context, id ultra.EnvID) (ultra.ProviderHandle, bool, error) {
+func (p *Provider) Adopt(ctx context.Context, id uc.EnvID) (uc.ProviderHandle, bool, error) {
 	list, err := p.docker.ContainerList(ctx, containertypes.ListOptions{
 		All:     true,
 		Filters: filters.NewArgs(filters.Arg("label", labelEnvID+"="+string(id))),
 	})
 	if err != nil {
-		return ultra.ProviderHandle{}, false, fmt.Errorf("localdocker: adopt list: %w", err)
+		return uc.ProviderHandle{}, false, fmt.Errorf("localdocker: adopt list: %w", err)
 	}
 	if len(list) == 0 {
-		return ultra.ProviderHandle{}, false, nil
+		return uc.ProviderHandle{}, false, nil
 	}
 	// An adopted container may have been created but never started if the
 	// worker died mid-provision; start it before publishing a handle.
 	info, err := p.docker.ContainerInspect(ctx, list[0].ID)
 	if err != nil {
-		return ultra.ProviderHandle{}, false, fmt.Errorf("localdocker: adopt inspect: %w", err)
+		return uc.ProviderHandle{}, false, fmt.Errorf("localdocker: adopt inspect: %w", err)
 	}
 	if !info.State.Running {
 		if err := p.docker.ContainerStart(ctx, list[0].ID, containertypes.StartOptions{}); err != nil {
-			return ultra.ProviderHandle{}, false, fmt.Errorf("localdocker: adopt start: %w", err)
+			return uc.ProviderHandle{}, false, fmt.Errorf("localdocker: adopt start: %w", err)
 		}
 	}
 	data, err := p.inspect(ctx, list[0].ID, volumeName(id))
 	if err != nil {
-		return ultra.ProviderHandle{}, false, err
+		return uc.ProviderHandle{}, false, err
 	}
 	handle, err := encodeHandle(data)
 	return handle, err == nil, err
 }
 
-// Resources implements ultra.EnvResourceLister: it enumerates the containers
+// Resources implements uc.EnvResourceLister: it enumerates the containers
 // and volumes still labelled for an environment so leak checks can prove
 // termination released them.
-func (p *Provider) Resources(ctx context.Context, id ultra.EnvID) ([]string, error) {
+func (p *Provider) Resources(ctx context.Context, id uc.EnvID) ([]string, error) {
 	var out []string
 	containers, err := p.docker.ContainerList(ctx, containertypes.ListOptions{
 		All:     true,
@@ -332,7 +332,7 @@ func (p *Provider) Resources(ctx context.Context, id ultra.EnvID) ([]string, err
 }
 
 // KillByEnvID kills the provider resource, used by reconciliation tests.
-func (p *Provider) KillByEnvID(ctx context.Context, id ultra.EnvID) error {
+func (p *Provider) KillByEnvID(ctx context.Context, id uc.EnvID) error {
 	list, err := p.docker.ContainerList(ctx, containertypes.ListOptions{All: true, Filters: filters.NewArgs(filters.Arg("label", labelEnvID+"="+string(id)))})
 	if err != nil {
 		return err

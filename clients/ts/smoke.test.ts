@@ -4,15 +4,15 @@
 import { describe, expect, it } from "vitest";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-node";
-import { OrgService } from "./src/gen/ultra/v1/org_pb.js";
-import { SessionService } from "./src/gen/ultra/v1/session_pb.js";
-import { EventService } from "./src/gen/ultra/v1/event_pb.js";
+import { OrgService } from "./src/gen/core/v1/org_pb.js";
+import { SessionService } from "./src/gen/core/v1/session_pb.js";
+import { EventService } from "./src/gen/core/v1/event_pb.js";
 
-const baseUrl = process.env.ULTRAD_URL;
-const token = process.env.ULTRA_TOKEN;
-const orgId = process.env.ULTRA_ORG_ID;
+const baseUrl = process.env.CORED_URL;
+const token = process.env.CORE_TOKEN;
+const orgId = process.env.CORE_ORG_ID;
 
-describe.skipIf(!baseUrl)("ultralogical TS client smoke", () => {
+describe.skipIf(!baseUrl)("ultracore TS client smoke", () => {
   const transport = createConnectTransport({
     baseUrl: baseUrl ?? "",
     httpVersion: "1.1",

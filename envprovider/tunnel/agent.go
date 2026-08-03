@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 // Agent is the user-side control API. It owns a real provider (local Docker in
@@ -21,7 +21,7 @@ import (
 // enough to drive someone's machine.
 type Agent struct {
 	// Provider is the local provider the agent drives.
-	Provider ultra.EnvProvider
+	Provider uc.EnvProvider
 	// Token is the org-scoped registration token the platform presents.
 	Token string
 	// Secret is the shared signing secret for control requests.
@@ -76,7 +76,7 @@ func (a *Agent) health(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, HealthResponse{
-		Status: "ok", Provider: ultra.ProviderKindTunnelLocal,
+		Status: "ok", Provider: uc.ProviderKindTunnelLocal,
 		ConnectedAt: a.since, Revoked: a.Revoked(),
 	})
 }
@@ -194,7 +194,7 @@ func (a *Agent) resources(w http.ResponseWriter, r *http.Request, body []byte) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
-	lister, ok := a.Provider.(ultra.EnvResourceLister)
+	lister, ok := a.Provider.(uc.EnvResourceLister)
 	if !ok {
 		writeJSON(w, ResourcesResponse{})
 		return

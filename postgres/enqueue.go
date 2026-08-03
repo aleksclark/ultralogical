@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/jobqueue"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/jobqueue"
 )
 
 // TxEnqueuer bridges a jobqueue.Enqueuer into store transactions: jobs are
@@ -17,7 +17,7 @@ type TxEnqueuer struct {
 
 // EnqueueInTx enqueues a job within the transaction bound to txStore. It
 // fails if txStore is not a transaction-bound *Store.
-func (e TxEnqueuer) EnqueueInTx(ctx context.Context, txStore ultra.Store, job jobqueue.Job, opts ...jobqueue.Opt) error {
+func (e TxEnqueuer) EnqueueInTx(ctx context.Context, txStore uc.Store, job jobqueue.Job, opts ...jobqueue.Opt) error {
 	ps, ok := txStore.(*Store)
 	if !ok || ps.PgxTx() == nil {
 		return errors.New("postgres: EnqueueInTx requires a transaction-bound store")

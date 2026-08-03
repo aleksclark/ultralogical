@@ -10,22 +10,22 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider"
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/secrets"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/secrets"
 )
 
-// orgHandler implements ultrav1connect.OrgServiceHandler.
+// orgHandler implements corev1connect.OrgServiceHandler.
 type orgHandler struct {
-	store     ultra.Store
+	store     uc.Store
 	keyring   secrets.Keyring
 	providers *envprovider.Registry
 }
 
 // requireMember returns the caller's role in the org, collapsing "no such
 // org" and "not a member" into the same not-found denial.
-func requireMember(ctx context.Context, store ultra.Store, org ultra.OrgID) (ultra.OrgRole, error) {
+func requireMember(ctx context.Context, store uc.Store, org uc.OrgID) (uc.OrgRole, error) {
 	user, ok := userFrom(ctx)
 	if !ok {
 		return "", errUnauthenticated()
@@ -37,7 +37,7 @@ func requireMember(ctx context.Context, store ultra.Store, org ultra.OrgID) (ult
 	return role, nil
 }
 
-func (h *orgHandler) CreateOrg(ctx context.Context, req *connect.Request[ultrav1.CreateOrgRequest]) (*connect.Response[ultrav1.CreateOrgResponse], error) {
+func (h *orgHandler) CreateOrg(ctx context.Context, req *connect.Request[corev1.CreateOrgRequest]) (*connect.Response[corev1.CreateOrgResponse], error) {
 	user, ok := userFrom(ctx)
 	if !ok {
 		return nil, errUnauthenticated()
@@ -45,12 +45,12 @@ func (h *orgHandler) CreateOrg(ctx context.Context, req *connect.Request[ultrav1
 	if req.Msg.GetName() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("name is required"))
 	}
-	org := ultra.Org{ID: ultra.OrgID(uuid.NewString()), Name: req.Msg.GetName()}
-	err := h.store.Tx(ctx, func(s ultra.Store) error {
+	org := uc.Org{ID: uc.OrgID(uuid.NewString()), Name: req.Msg.GetName()}
+	err := h.store.Tx(ctx, func(s uc.Store) error {
 		if err := s.Orgs().Create(ctx, org); err != nil {
 			return err
 		}
-		return s.Orgs().AddMember(ctx, ultra.OrgMember{OrgID: org.ID, UserID: user.ID, Role: ultra.OrgRoleOwner})
+		return s.Orgs().AddMember(ctx, uc.OrgMember{OrgID: org.ID, UserID: user.ID, Role: uc.OrgRoleOwner})
 	})
 	if err != nil {
 		return nil, mapStoreErr(err)
@@ -59,11 +59,11 @@ func (h *orgHandler) CreateOrg(ctx context.Context, req *connect.Request[ultrav1
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&ultrav1.CreateOrgResponse{Org: orgToProto(created)}), nil
+	return connect.NewResponse(&corev1.CreateOrgResponse{Org: orgToProto(created)}), nil
 }
 
-func (h *orgHandler) GetOrg(ctx context.Context, req *connect.Request[ultrav1.GetOrgRequest]) (*connect.Response[ultrav1.GetOrgResponse], error) {
-	orgID := ultra.OrgID(req.Msg.GetOrgId())
+func (h *orgHandler) GetOrg(ctx context.Context, req *connect.Request[corev1.GetOrgRequest]) (*connect.Response[corev1.GetOrgResponse], error) {
+	orgID := uc.OrgID(req.Msg.GetOrgId())
 	if _, err := requireMember(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
@@ -71,16 +71,16 @@ func (h *orgHandler) GetOrg(ctx context.Context, req *connect.Request[ultrav1.Ge
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&ultrav1.GetOrgResponse{Org: orgToProto(org)}), nil
+	return connect.NewResponse(&corev1.GetOrgResponse{Org: orgToProto(org)}), nil
 }
 
-func (h *orgHandler) InviteMember(ctx context.Context, req *connect.Request[ultrav1.InviteMemberRequest]) (*connect.Response[ultrav1.InviteMemberResponse], error) {
-	orgID := ultra.OrgID(req.Msg.GetOrgId())
+func (h *orgHandler) InviteMember(ctx context.Context, req *connect.Request[corev1.InviteMemberRequest]) (*connect.Response[corev1.InviteMemberResponse], error) {
+	orgID := uc.OrgID(req.Msg.GetOrgId())
 	callerRole, err := requireMember(ctx, h.store, orgID)
 	if err != nil {
 		return nil, err
 	}
-	if callerRole != ultra.OrgRoleOwner && callerRole != ultra.OrgRoleAdmin {
+	if callerRole != uc.OrgRoleOwner && callerRole != uc.OrgRoleAdmin {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("requires owner or admin role"))
 	}
 	role, ok := roleFromProto(req.Msg.GetRole())
@@ -91,11 +91,11 @@ func (h *orgHandler) InviteMember(ctx context.Context, req *connect.Request[ultr
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	m := ultra.OrgMember{OrgID: orgID, UserID: invitee.ID, Role: role}
+	m := uc.OrgMember{OrgID: orgID, UserID: invitee.ID, Role: role}
 	if err := h.store.Orgs().AddMember(ctx, m); err != nil {
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&ultrav1.InviteMemberResponse{Member: &ultrav1.OrgMember{
+	return connect.NewResponse(&corev1.InviteMemberResponse{Member: &corev1.OrgMember{
 		OrgId:  string(orgID),
 		UserId: string(invitee.ID),
 		Email:  invitee.Email,
@@ -103,8 +103,8 @@ func (h *orgHandler) InviteMember(ctx context.Context, req *connect.Request[ultr
 	}}), nil
 }
 
-func (h *orgHandler) ListMembers(ctx context.Context, req *connect.Request[ultrav1.ListMembersRequest]) (*connect.Response[ultrav1.ListMembersResponse], error) {
-	orgID := ultra.OrgID(req.Msg.GetOrgId())
+func (h *orgHandler) ListMembers(ctx context.Context, req *connect.Request[corev1.ListMembersRequest]) (*connect.Response[corev1.ListMembersResponse], error) {
+	orgID := uc.OrgID(req.Msg.GetOrgId())
 	if _, err := requireMember(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
@@ -112,13 +112,13 @@ func (h *orgHandler) ListMembers(ctx context.Context, req *connect.Request[ultra
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	resp := &ultrav1.ListMembersResponse{}
+	resp := &corev1.ListMembersResponse{}
 	for _, m := range members {
 		user, err := h.store.Users().Get(ctx, m.UserID)
 		if err != nil {
 			return nil, mapStoreErr(err)
 		}
-		resp.Members = append(resp.Members, &ultrav1.OrgMember{
+		resp.Members = append(resp.Members, &corev1.OrgMember{
 			OrgId:  string(m.OrgID),
 			UserId: string(m.UserID),
 			Email:  user.Email,
@@ -128,7 +128,7 @@ func (h *orgHandler) ListMembers(ctx context.Context, req *connect.Request[ultra
 	return connect.NewResponse(resp), nil
 }
 
-func (h *orgHandler) ListOrgs(ctx context.Context, _ *connect.Request[ultrav1.ListOrgsRequest]) (*connect.Response[ultrav1.ListOrgsResponse], error) {
+func (h *orgHandler) ListOrgs(ctx context.Context, _ *connect.Request[corev1.ListOrgsRequest]) (*connect.Response[corev1.ListOrgsResponse], error) {
 	user, ok := userFrom(ctx)
 	if !ok {
 		return nil, errUnauthenticated()
@@ -137,7 +137,7 @@ func (h *orgHandler) ListOrgs(ctx context.Context, _ *connect.Request[ultrav1.Li
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	resp := &ultrav1.ListOrgsResponse{}
+	resp := &corev1.ListOrgsResponse{}
 	for _, o := range orgs {
 		resp.Orgs = append(resp.Orgs, orgToProto(o))
 	}
@@ -145,12 +145,12 @@ func (h *orgHandler) ListOrgs(ctx context.Context, _ *connect.Request[ultrav1.Li
 }
 
 // requireAdmin ensures the caller is an owner or admin of the org.
-func requireAdmin(ctx context.Context, store ultra.Store, org ultra.OrgID) error {
+func requireAdmin(ctx context.Context, store uc.Store, org uc.OrgID) error {
 	role, err := requireMember(ctx, store, org)
 	if err != nil {
 		return err
 	}
-	if role != ultra.OrgRoleOwner && role != ultra.OrgRoleAdmin {
+	if role != uc.OrgRoleOwner && role != uc.OrgRoleAdmin {
 		return connect.NewError(connect.CodePermissionDenied, errors.New("requires owner or admin role"))
 	}
 	return nil
@@ -158,15 +158,15 @@ func requireAdmin(ctx context.Context, store ultra.Store, org ultra.OrgID) error
 
 func validCredentialKind(kind string) bool {
 	switch kind {
-	case ultra.CredentialKindOpenAI, ultra.CredentialKindAnthropic, ultra.CredentialKindBedrock:
+	case uc.CredentialKindOpenAI, uc.CredentialKindAnthropic, uc.CredentialKindBedrock:
 		return true
 	default:
 		return false
 	}
 }
 
-func (h *orgHandler) PutCredential(ctx context.Context, req *connect.Request[ultrav1.PutCredentialRequest]) (*connect.Response[ultrav1.PutCredentialResponse], error) {
-	orgID := ultra.OrgID(req.Msg.GetOrgId())
+func (h *orgHandler) PutCredential(ctx context.Context, req *connect.Request[corev1.PutCredentialRequest]) (*connect.Response[corev1.PutCredentialResponse], error) {
+	orgID := uc.OrgID(req.Msg.GetOrgId())
 	if err := requireAdmin(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (h *orgHandler) PutCredential(ctx context.Context, req *connect.Request[ult
 	for _, value := range extraHeaders {
 		secrets.DefaultRedactor.Register(value)
 	}
-	payload, err := json.Marshal(ultra.InferencePayload{
+	payload, err := json.Marshal(uc.InferencePayload{
 		APIKey: req.Msg.GetApiKey(), BaseURL: req.Msg.GetBaseUrl(), ExtraHeaders: extraHeaders,
 	})
 	if err != nil {
@@ -202,7 +202,7 @@ func (h *orgHandler) PutCredential(ctx context.Context, req *connect.Request[ult
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	if err := h.store.Org(orgID).Credentials().Put(ctx, ultra.Credential{
+	if err := h.store.Org(orgID).Credentials().Put(ctx, uc.Credential{
 		Kind: req.Msg.GetKind(), Name: name, EncPayload: enc,
 	}); err != nil {
 		return nil, mapStoreErr(err)
@@ -211,13 +211,13 @@ func (h *orgHandler) PutCredential(ctx context.Context, req *connect.Request[ult
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&ultrav1.PutCredentialResponse{Credential: credentialInfoToProto(ultra.CredentialInfo{
+	return connect.NewResponse(&corev1.PutCredentialResponse{Credential: credentialInfoToProto(uc.CredentialInfo{
 		Kind: info.Kind, Name: info.Name, CreatedAt: info.CreatedAt, RotatedAt: info.RotatedAt,
 	})}), nil
 }
 
-func (h *orgHandler) ListCredentials(ctx context.Context, req *connect.Request[ultrav1.ListCredentialsRequest]) (*connect.Response[ultrav1.ListCredentialsResponse], error) {
-	orgID := ultra.OrgID(req.Msg.GetOrgId())
+func (h *orgHandler) ListCredentials(ctx context.Context, req *connect.Request[corev1.ListCredentialsRequest]) (*connect.Response[corev1.ListCredentialsResponse], error) {
+	orgID := uc.OrgID(req.Msg.GetOrgId())
 	if _, err := requireMember(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
@@ -225,34 +225,34 @@ func (h *orgHandler) ListCredentials(ctx context.Context, req *connect.Request[u
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	resp := &ultrav1.ListCredentialsResponse{}
+	resp := &corev1.ListCredentialsResponse{}
 	for _, info := range infos {
 		resp.Credentials = append(resp.Credentials, credentialInfoToProto(info))
 	}
 	return connect.NewResponse(resp), nil
 }
 
-func (h *orgHandler) DeleteCredential(ctx context.Context, req *connect.Request[ultrav1.DeleteCredentialRequest]) (*connect.Response[ultrav1.DeleteCredentialResponse], error) {
-	orgID := ultra.OrgID(req.Msg.GetOrgId())
+func (h *orgHandler) DeleteCredential(ctx context.Context, req *connect.Request[corev1.DeleteCredentialRequest]) (*connect.Response[corev1.DeleteCredentialResponse], error) {
+	orgID := uc.OrgID(req.Msg.GetOrgId())
 	if err := requireAdmin(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
 	if err := h.store.Org(orgID).Credentials().Delete(ctx, req.Msg.GetKind(), req.Msg.GetName()); err != nil {
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&ultrav1.DeleteCredentialResponse{}), nil
+	return connect.NewResponse(&corev1.DeleteCredentialResponse{}), nil
 }
 
-func providerToProto(p ultra.ProviderInstance) *ultrav1.ProviderInstance {
-	out := &ultrav1.ProviderInstance{Id: string(p.ID), OrgId: string(p.OrgID), Kind: p.Kind, Name: p.Name, RateClass: p.RateClass, State: p.State, CreatedAt: timestamppb.New(p.CreatedAt)}
+func providerToProto(p uc.ProviderInstance) *corev1.ProviderInstance {
+	out := &corev1.ProviderInstance{Id: string(p.ID), OrgId: string(p.OrgID), Kind: p.Kind, Name: p.Name, State: p.State, CreatedAt: timestamppb.New(p.CreatedAt)}
 	if p.LastHealthyAt != nil {
 		out.LastHealthyAt = timestamppb.New(*p.LastHealthyAt)
 	}
 	// Every optional capability is reported, supported or not, with the reason
 	// when it is not. A client showing only what works cannot tell an operator
 	// why a flow was refused against this provider.
-	for _, capability := range ultra.OptionalProviderCapabilities() {
-		out.Capabilities = append(out.Capabilities, &ultrav1.ProviderCapability{
+	for _, capability := range uc.OptionalProviderCapabilities() {
+		out.Capabilities = append(out.Capabilities, &corev1.ProviderCapability{
 			Name:      string(capability),
 			Supported: p.Capabilities.Has(capability),
 			Reason:    p.Capabilities.Reason(capability),
@@ -261,8 +261,8 @@ func providerToProto(p ultra.ProviderInstance) *ultrav1.ProviderInstance {
 	return out
 }
 
-func (h *orgHandler) RegisterProvider(ctx context.Context, req *connect.Request[ultrav1.RegisterProviderRequest]) (*connect.Response[ultrav1.RegisterProviderResponse], error) {
-	orgID := ultra.OrgID(req.Msg.GetOrgId())
+func (h *orgHandler) RegisterProvider(ctx context.Context, req *connect.Request[corev1.RegisterProviderRequest]) (*connect.Response[corev1.RegisterProviderResponse], error) {
+	orgID := uc.OrgID(req.Msg.GetOrgId())
 	if err := requireAdmin(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
@@ -287,11 +287,7 @@ func (h *orgHandler) RegisterProvider(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(secrets.DefaultRedactor.Redact(err.Error())))
 	}
-	rateClass := ultra.RateClassBYO
-	if req.Msg.GetKind() == ultra.ProviderKindHostedEKS {
-		rateClass = ultra.RateClassHosted
-	}
-	p := ultra.ProviderInstance{ID: ultra.ProviderInstanceID(uuid.NewString()), OrgID: orgID, Kind: req.Msg.GetKind(), Name: name, Config: config, RateClass: rateClass, State: "ready", Capabilities: capabilities}
+	p := uc.ProviderInstance{ID: uc.ProviderInstanceID(uuid.NewString()), OrgID: orgID, Kind: req.Msg.GetKind(), Name: name, Config: config, State: "ready", Capabilities: capabilities}
 	if err := h.store.Org(orgID).Providers().Create(ctx, p); err != nil {
 		return nil, mapStoreErr(err)
 	}
@@ -299,10 +295,10 @@ func (h *orgHandler) RegisterProvider(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&ultrav1.RegisterProviderResponse{Provider: providerToProto(created)}), nil
+	return connect.NewResponse(&corev1.RegisterProviderResponse{Provider: providerToProto(created)}), nil
 }
-func (h *orgHandler) ListProviders(ctx context.Context, req *connect.Request[ultrav1.ListProvidersRequest]) (*connect.Response[ultrav1.ListProvidersResponse], error) {
-	orgID := ultra.OrgID(req.Msg.GetOrgId())
+func (h *orgHandler) ListProviders(ctx context.Context, req *connect.Request[corev1.ListProvidersRequest]) (*connect.Response[corev1.ListProvidersResponse], error) {
+	orgID := uc.OrgID(req.Msg.GetOrgId())
 	if _, err := requireMember(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
@@ -310,14 +306,14 @@ func (h *orgHandler) ListProviders(ctx context.Context, req *connect.Request[ult
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	resp := &ultrav1.ListProvidersResponse{}
+	resp := &corev1.ListProvidersResponse{}
 	for _, p := range items {
 		resp.Providers = append(resp.Providers, providerToProto(p))
 	}
 	return connect.NewResponse(resp), nil
 }
-func (h *orgHandler) DeleteProvider(ctx context.Context, req *connect.Request[ultrav1.DeleteProviderRequest]) (*connect.Response[ultrav1.DeleteProviderResponse], error) {
-	orgID := ultra.OrgID(req.Msg.GetOrgId())
+func (h *orgHandler) DeleteProvider(ctx context.Context, req *connect.Request[corev1.DeleteProviderRequest]) (*connect.Response[corev1.DeleteProviderResponse], error) {
+	orgID := uc.OrgID(req.Msg.GetOrgId())
 	if err := requireAdmin(ctx, h.store, orgID); err != nil {
 		return nil, err
 	}
@@ -325,7 +321,7 @@ func (h *orgHandler) DeleteProvider(ctx context.Context, req *connect.Request[ul
 	// so would orphan them: the records would survive with no adapter able to
 	// reach, reconcile, or terminate the resources they represent, and the
 	// user would be left paying for containers nothing can find.
-	providerID := ultra.ProviderInstanceID(req.Msg.GetProviderId())
+	providerID := uc.ProviderInstanceID(req.Msg.GetProviderId())
 	active, err := h.store.Org(orgID).Envs().ListActive(ctx)
 	if err != nil {
 		return nil, mapStoreErr(err)
@@ -343,5 +339,5 @@ func (h *orgHandler) DeleteProvider(ctx context.Context, req *connect.Request[ul
 	if err := h.store.Org(orgID).Providers().Delete(ctx, providerID); err != nil {
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&ultrav1.DeleteProviderResponse{}), nil
+	return connect.NewResponse(&corev1.DeleteProviderResponse{}), nil
 }

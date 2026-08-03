@@ -12,7 +12,7 @@ import (
 
 	"charm.land/fantasy"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 // DefaultLoopKind and version identify the v1 loop. Runs are stamped at
@@ -23,7 +23,7 @@ const (
 )
 
 // DefaultSystemPrompt is the v1 system prompt.
-const DefaultSystemPrompt = `You are an agent working inside an Ultralogical session.
+const DefaultSystemPrompt = `You are an agent working inside an ultracore session.
 Be concise. Use the ask_user tool when you need human input; use the
 post_event tool to leave notes in the session log.`
 
@@ -118,12 +118,12 @@ func (r *Registry) Resolve(kind string, version int) (Definition, error) {
 
 // stepRecorder captures per-step tool activity the outcome classifier needs.
 type stepRecorder struct {
-	question *ultra.Question
+	question *uc.Question
 	// A pending wait recorded by wait_for_agents or run_agent_cohort. The
 	// tool-call id is the model's own id for that call: when the wait
 	// resolves, the injected result must be correlated to it, or the model
 	// sees an answer to a question it never asked.
-	waitRunIDs     []ultra.RunID
+	waitRunIDs     []uc.RunID
 	waitToolCallID string
 	waitTimeout    time.Duration
 	waitKind       string
@@ -141,7 +141,7 @@ func newAskUserTool(rec *stepRecorder) fantasy.AgentTool {
 	return fantasy.NewAgentTool("ask_user",
 		"Ask the human a question and pause until they answer. The answer arrives as the next user message.",
 		func(_ context.Context, in input, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			rec.question = &ultra.Question{Text: in.Question, Choices: in.Choices}
+			rec.question = &uc.Question{Text: in.Question, Choices: in.Choices}
 			resp := fantasy.NewTextResponse("Question posed to the user; their answer will arrive as the next user message.")
 			resp.StopTurn = true
 			return resp, nil
@@ -150,20 +150,20 @@ func newAskUserTool(rec *stepRecorder) fantasy.AgentTool {
 
 // newPostEventTool returns the post_event native tool: an agent-authored
 // annotation in the session log.
-func newPostEventTool(events ultra.EventStore, session ultra.SessionID, runID ultra.RunID) fantasy.AgentTool {
+func newPostEventTool(events uc.EventStore, session uc.SessionID, runID uc.RunID) fantasy.AgentTool {
 	type input struct {
 		Text string `json:"text" description:"The note to post to the session log"`
 	}
 	return fantasy.NewAgentTool("post_event",
 		"Post a note to the session event log, visible to everyone in the session.",
 		func(ctx context.Context, in input, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			payload, err := json.Marshal(ultra.AnnotationPayload{Text: in.Text})
+			payload, err := json.Marshal(uc.AnnotationPayload{Text: in.Text})
 			if err != nil {
 				return fantasy.NewTextErrorResponse("failed to encode note"), nil
 			}
-			if _, err := events.Append(ctx, session, ultra.Event{
-				Actor:   ultra.Actor{Type: ultra.ActorAgent, ID: string(runID)},
-				Kind:    ultra.EventKindAnnotation,
+			if _, err := events.Append(ctx, session, uc.Event{
+				Actor:   uc.Actor{Type: uc.ActorAgent, ID: string(runID)},
+				Kind:    uc.EventKindAnnotation,
 				Payload: payload,
 			}); err != nil {
 				return fantasy.NewTextErrorResponse("failed to post note"), nil

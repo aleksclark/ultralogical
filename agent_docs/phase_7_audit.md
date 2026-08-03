@@ -49,7 +49,7 @@ passing or failing drift verdict.
 
 | Behavior | Evidence | Verdict |
 |---|---|---|
-| Workspace survives control-plane death, and the file is readable after restart | `e2e TestA74_EnvDurabilityAndRotation` (kills ultrad and the worker, and asserts ultrad really stopped answering) | closed |
+| Workspace survives control-plane death, and the file is readable after restart | `e2e TestA74_EnvDurabilityAndRotation` (kills cored and the worker, and asserts cored really stopped answering) | closed |
 | `RestartEnv` rotates the token and increments epoch | same test (asserts a different decrypted token and a higher epoch) | closed |
 | Rotated token works; prior token is rejected | same test | closed |
 | A client cached before rotation cannot keep working | same test (Initialize and Call both fail) plus `mcp TestCacheEpochInvalidation` | closed |
@@ -96,7 +96,7 @@ check, and concurrent provisioning with distinct endpoints — all in
 | Session, run, environment, and usage behavior driven through shipped web controls | web session/environment specs | closed |
 | A real GPUI window renders session list, timeline, connection state, environments, and usage | `gpui: renders_dark_application_shell`, `renders_session_list_and_timeline` | closed |
 | GPUI tests invoke the same actions as the native entrypoint | `DesktopWindow::start_up` is the startup sequence `main.rs` runs; `gpui: drives_same_actions_as_entrypoint` drives it directly | closed |
-| `task dev` starts the documented usable stack in one command | `scripts/dev-stack.sh` (Postgres, local model, seeded org/user/provider/credential, ultrad, worker, web) | closed |
+| `task dev` starts the documented usable stack in one command | `scripts/dev-stack.sh` (Postgres, local model, seeded org/user/provider/credential, cored, worker, web) | closed |
 | Noninteractive smoke creates a session, streams a run, provisions an environment, and shuts down clean | `e2e TestA78_DevStackSmoke` + the `dev-stack` CI job | closed |
 | No owned process or container survives the smoke | same test (container and process leak checks) plus the CI leak assertion | closed |
 
@@ -141,7 +141,7 @@ audit missed rather than quietly overwriting it.
 |---|---|
 | The matrix was a whitelist, so deleting a capability hid it. Phase 7 deleted `session_memory` and `periodic_prompt_configuration` without recording either. | The matrix is anchored to the proto surface: every RPC is covered or explicitly deferred to a declared acceptance ID. `session_memory` is restored with real web and GPUI evidence; periodic prompts are deferred to A11.7. |
 | The inventory named `gpui: drives_same_actions_as_entrypoint`, which was never written. | The startup sequence moved into `DesktopWindow::start_up`, `main.rs` calls it, and the named test drives it. |
-| A7.4 claimed to kill ultrad and the worker but only killed the worker. | The harness gained `KillUltrad`/`StartUltrad`; the test kills both and asserts ultrad stopped answering before restarting it. |
+| A7.4 claimed to kill cored and the worker but only killed the worker. | The harness gained `KillUltrad`/`StartUltrad`; the test kills both and asserts cored stopped answering before restarting it. |
 | A7.5 accepted any terminal run state and never asserted a typed tool failure. | The test now requires an error-flagged tool result naming the lost environment. Adding the assertion exposed a real product gap: a dead environment's tools silently disappeared from the model's toolset instead of failing, so the run could finish without ever reporting the loss. The resolver now re-offers the last known toolset as typed failures. |
 | Skips could hide missing evidence: the provisioning race skipped, and the Rust runner's `"0 passed"` substring check misread `"10 passed"`. | The provisioning race retries instead of skipping, gate-owning CI jobs are asserted to exist, and the cargo summary is parsed for exact counts against declared tests. |
 

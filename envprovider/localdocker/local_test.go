@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider/conformance"
-	"github.com/aleksclark/ultralogical/envprovider/localdocker"
-	"github.com/aleksclark/ultralogical/testkit/harness"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider/conformance"
+	"github.com/aleksclark/ultracore/envprovider/localdocker"
+	"github.com/aleksclark/ultracore/testkit/harness"
 )
 
 // TestConformance runs the shared provider contract against real Docker.
@@ -19,7 +19,7 @@ import (
 func TestConformance(t *testing.T) {
 	image := harness.EnsureBezalelImage(t)
 	var provider *localdocker.Provider
-	conformance.RunWith(t, func(t *testing.T) ultra.EnvProvider {
+	conformance.RunWith(t, func(t *testing.T) uc.EnvProvider {
 		created, err := localdocker.New(localdocker.Config{Image: image})
 		if err != nil {
 			t.Fatal(err)
@@ -28,16 +28,16 @@ func TestConformance(t *testing.T) {
 		t.Cleanup(func() { _ = created.Close() })
 		return created
 	}, conformance.Options{
-		Capabilities: ultra.ProviderCapabilities{
-			Kind: ultra.ProviderKindLocalDocker,
-			Supported: []ultra.ProviderCapability{
-				ultra.CapabilityRestartPreservesWorkspace,
-				ultra.CapabilityAdoptsOrphans,
-				ultra.CapabilityEnumeratesResources,
-				ultra.CapabilityServesToolEndpoint,
+		Capabilities: uc.ProviderCapabilities{
+			Kind: uc.ProviderKindLocalDocker,
+			Supported: []uc.ProviderCapability{
+				uc.CapabilityRestartPreservesWorkspace,
+				uc.CapabilityAdoptsOrphans,
+				uc.CapabilityEnumeratesResources,
+				uc.CapabilityServesToolEndpoint,
 			},
 		},
-		Inspect: func(t *testing.T, ctx context.Context, envID ultra.EnvID) []string {
+		Inspect: func(t *testing.T, ctx context.Context, envID uc.EnvID) []string {
 			t.Helper()
 			resources, err := provider.Resources(ctx, envID)
 			if err != nil {

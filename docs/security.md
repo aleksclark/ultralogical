@@ -1,40 +1,39 @@
 # Security model
 
-This document describes the authority and secrecy guarantees Ultralogical
+This document describes the authority and secrecy guarantees ultracore
 currently enforces. Every claim below is backed by an executable example in
 `e2e/phase8_security_test.go` (`TestA89_SecurityDocumentation`). The test is
 the source of truth: if a claim here is not proven there, it does not belong
 here.
 
-Scope note: this covers agent authority, tenancy, and credential handling.
-Transport hardening, rate limiting, audit retention, and production key
-management are Phase 12 concerns and are deliberately not claimed here.
+Scope note: this covers agent tool allowlists, tenancy, and credential
+handling. Transport hardening, rate limiting, audit retention, production key
+management, and consumer policy hooks are out of scope for this substrate
+document (E3 adds the policy hook).
 
-## 1. The grant lattice
+## 1. The tool allowlist
 
-Every agent run carries a `Grants` record (`multiplayer.go`):
+Every agent run carries a `Grants` record (root package, historically
+`multiplayer.go`) with a single field:
 
 | Field | Meaning |
 |---|---|
 | `tools` | canonical tool names the run may call; `*` means all |
-| `env_all` | whether the run may touch every environment in its session |
-| `envs` | when `env_all` is false, the specific environments it may touch |
-| `may_spawn` | whether the run may create child agents |
-| `max_children` | how many children it may create in total |
 
-Authority is **monotonically decreasing**. A run can only create a child whose
-grants are a subset of its own, checked by `Grants.SubsetOf`. There is no
-mechanism anywhere in the system for a run to widen its own authority or its
-child's, and no escalation path through a grandchild: the lattice is rechecked
-at every level.
+This is a **flat allowlist**, not a privilege lattice. There is no
+`env_all` / `envs` env authority, no `may_spawn` / `max_children` monotone
+narrowing, and no `SubsetOf` / `RootGrants` check. Children inherit the
+parent's allowlist verbatim when `tools` is omitted on spawn; an explicit
+empty list means no tools. E3 adds a consumer policy hook on top of this
+interim safety net.
 
-A human-started run receives server-defined root grants
-(`ultra.RootGrants()`). A caller may pass `grants` to `StartRun` to launch a
-*deliberately restricted* run — that is useful — but a request for more than
-root authority is rejected with `PermissionDenied` rather than silently
-clamped, so a client can never believe it got authority it did not.
+A human-started run receives server-defined default grants
+(`core.DefaultGrants()`, tools=`*`). A caller may pass `grants` to
+`StartRun` to launch a deliberately restricted run. An explicit full
+allowlist (`*`) is accepted.
 
-**Proven by:** `narrowing_only_at_start_run`, `grandchild_cannot_escalate`.
+**Proven by:** `narrowing_only_at_start_run`,
+`empty_allowlist_denies_at_dispatch`.
 
 ## 2. Enforcement points
 
@@ -42,41 +41,42 @@ Authority is checked in two distinct places, and the second one is the one
 that matters.
 
 **Discovery** decides what the model is *offered*. Native tools are omitted
-when not granted; environment tools are only discovered on granted
+when not granted; environment tools are only discovered on ready session
 environments (`loop/envtools.go`, `loop/spawn.go`).
 
-Every capability is subject to the lattice, including the built-in session
+Every capability is subject to the allowlist, including the built-in session
 tools. `ask_user`, `post_event`, and the four session-memory tools are gated
 exactly like environment tools: a child restricted to one narrow job cannot
 interrogate the human or read what everyone else in the session stored merely
 because those tools are built in. A run created with an empty tool list may do
-nothing at all; there is no fallback that upgrades an ungranted run to root.
+nothing at all; there is no fallback that upgrades an ungranted run to full
+authority.
 
 **Dispatch** decides what actually happens. Every native tool, every spawn,
-every wait, and every environment MCP tool rechecks the run's grants when the
-call arrives. This matters because a tool call can reach dispatch without ever
-having been offered: replayed from an older step whose grants were wider, or
-simply invented by the model. Discovery filtering is a convenience; dispatch
-is the boundary.
+every wait, and every environment MCP tool rechecks the run's allowlist when
+the call arrives. This matters because a tool call can reach dispatch without
+ever having been offered: replayed from an older step whose grants were wider,
+or simply invented by the model. Discovery filtering is a convenience;
+dispatch is the boundary.
 
 Environment tool dispatch additionally rechecks that the environment is still
 `ready`. A terminated environment reads as unavailable rather than silently
 succeeding against a stale endpoint.
 
-**Proven by:** `forged_tool_call_is_refused_at_dispatch`,
+**Proven by:** `empty_allowlist_denies_at_dispatch`,
 `denied_side_effect_never_happens`.
 
 ## 3. Denial visibility
 
 Denials are uniform and non-disclosing. Every refusal — unknown tool,
-ungranted tool, ungranted environment, wait on a run you did not parent —
-returns exactly the string `permission denied`, with no resource name, no
-identifier, and no distinction between "you may not" and "it does not exist".
+ungranted tool, wait on a run you did not parent — returns exactly the string
+`permission denied`, with no resource name, no identifier, and no distinction
+between "you may not" and "it does not exist".
 
 This required an explicit countermeasure. The agent framework answers a call
 to an unregistered tool by listing every tool that *does* exist, which is an
-existence oracle. Ultralogical therefore registers an explicit denial stub for
-every entry in `ultra.CanonicalTools()` the run lacks, so a denied tool is
+existence oracle. ultracore therefore registers an explicit denial stub for
+every entry in `core.CanonicalTools()` the run lacks, so a denied tool is
 indistinguishable from a granted one that refused
 (`StepWorker.denialStubs`).
 
@@ -128,10 +128,10 @@ by epoch, so a rotated token cannot be reused by a cached client.
 
 **Credentials are not inherited as authority.** A child agent runs against the
 same org credential store as its parent — that is how it can call a model at
-all — but a credential grants no tool authority, no environment authority, and
-no spawn authority. Narrowing a child's grants narrows what it can do
-regardless of which credentials exist in the org. There is no path by which
-possessing a credential expands the grant lattice.
+all — but a credential grants no tool authority. Narrowing a child's tool
+allowlist narrows what it can do regardless of which credentials exist in the
+org. There is no path by which possessing a credential expands the tool
+allowlist.
 
 **Proven by:** `credentials_never_leave_the_worker`,
 `narrowed_child_gains_nothing_from_org_credentials`, and — for environment
@@ -144,10 +144,12 @@ client cached with it, both stop working.
 - No claim about resistance to a malicious *worker* process. A worker holds
   decryption keys by design.
 - No claim about denial-of-service resistance, rate limiting, or quota
-  enforcement beyond `max_children` and cohort size bounds.
-- No claim about production key management. `ULTRA_MASTER_KEY` is a static
+  enforcement beyond cohort size bounds.
+- No claim about production key management. `CORE_MASTER_KEY` is a static
   environment key behind the `Keyring` seam; a KMS-backed implementation is
   future work.
-- The dev-token authenticator (`ultra.DevTokenAuthenticator`) is for
+- The dev-token authenticator (`core.DevTokenAuthenticator`) is for
   development and tests only. It maps static strings to user emails and has no
   expiry, rotation, or revocation.
+- No claim about monotone grant narrowing or env-scoped authority. Those left
+  with the product lattice in E1; consumers supply policy in E3.

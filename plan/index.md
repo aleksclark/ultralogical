@@ -347,7 +347,7 @@ layout's mock tenet is replaced by conformance suites + real-backend tests
 ```
 /proto/ultra/v1/            *.proto, buf.yaml, buf.gen.yaml
 /gen/go/                    committed Go codegen (server handlers + client stubs)
-/                           root Go module github.com/aleksclark/ultralogical
+/                           root Go module github.com/aleksclark/ultracore
   ultra.go, store.go, event.go, auth.go, ...
                             domain types + interfaces (Store, EventBus,
                             Authenticator, ...); no app dependencies

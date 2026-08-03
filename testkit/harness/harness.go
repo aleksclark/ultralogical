@@ -1,5 +1,5 @@
 // Package harness boots the real stack for functional tests: real Postgres
-// (shared container, fresh database per test), migrations, ultrad and worker
+// (shared container, fresh database per test), migrations, cored and worker
 // as real child processes on random ports, plus a modelscript server (the
 // only substituted component — it replaces the LLM vendor at the network
 // boundary). Tests interact only through the public API via testclient.
@@ -26,12 +26,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/postgres"
-	"github.com/aleksclark/ultralogical/secrets"
-	"github.com/aleksclark/ultralogical/testkit/modelscript"
-	"github.com/aleksclark/ultralogical/testkit/pgtest"
-	"github.com/aleksclark/ultralogical/testkit/testclient"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/postgres"
+	"github.com/aleksclark/ultracore/secrets"
+	"github.com/aleksclark/ultracore/testkit/modelscript"
+	"github.com/aleksclark/ultracore/testkit/pgtest"
+	"github.com/aleksclark/ultracore/testkit/testclient"
 )
 
 // Seeded identities. The harness provisions two orgs with one user each so
@@ -65,24 +65,24 @@ type Opt func(*Options)
 func WithoutSeedCredential() Opt { return func(o *Options) { o.SeedCredential = false } }
 
 // WithWorkerEnv adds env vars to the worker process.
-func WithReplicas(ultrad, workers int) Opt {
-	return func(o *Options) { o.UltradReplicas = ultrad; o.WorkerReplicas = workers }
+func WithReplicas(cored, workers int) Opt {
+	return func(o *Options) { o.UltradReplicas = cored; o.WorkerReplicas = workers }
 }
 
 func WithWorkerEnv(kv ...string) Opt {
 	return func(o *Options) { o.WorkerEnv = append(o.WorkerEnv, kv...) }
 }
 
-// Stack is a running ultrad + worker + database + modelscript with seeded
+// Stack is a running cored + worker + database + modelscript with seeded
 // identities.
 type Stack struct {
 	BaseURL     string
 	DatabaseURL string
 	MasterKey   string
-	OrgA        ultra.Org
-	OrgB        ultra.Org
-	Alice       ultra.User
-	Bob         ultra.User
+	OrgA        uc.Org
+	OrgB        uc.Org
+	Alice       uc.User
+	Bob         uc.User
 	Store       *postgres.Store
 	Model       *modelscript.Server
 
@@ -93,7 +93,7 @@ type Stack struct {
 	workers    []*exec.Cmd
 	ultradMu   sync.Mutex
 	ultradCmds []*exec.Cmd
-	// ReplicaBaseURLs addresses each ultrad replica directly. BaseURL is the
+	// ReplicaBaseURLs addresses each cored replica directly. BaseURL is the
 	// round-robin ingress in front of all of them.
 	ReplicaBaseURLs []string
 	ingress         *httptest.Server
@@ -105,7 +105,7 @@ type Stack struct {
 }
 
 // logCapture tees a child process's stderr into memory so leak sweeps can
-// assert on everything ultrad and the workers logged, while still forwarding
+// assert on everything cored and the workers logged, while still forwarding
 // output for debugging.
 type logCapture struct {
 	mu  sync.Mutex
@@ -125,11 +125,11 @@ func (c *logCapture) String() string {
 	return c.buf.String()
 }
 
-// Logs returns everything ultrad and worker processes have written to stderr
+// Logs returns everything cored and worker processes have written to stderr
 // so far. Used by the redaction sweep.
 func (s *Stack) Logs() string { return s.logs.String() }
 
-const BezalelImage = "ultralogical/bezalel:phase2-test"
+const BezalelImage = "ultracore/bezalel:phase2-test"
 
 var (
 	buildOnce   sync.Once
@@ -139,7 +139,7 @@ var (
 	bezalelErr  error
 )
 
-// binaries builds ultrad and worker once per test process.
+// binaries builds cored and worker once per test process.
 func binaries(t *testing.T) (string, string) {
 	t.Helper()
 	buildOnce.Do(func() {
@@ -149,9 +149,9 @@ func binaries(t *testing.T) (string, string) {
 			return
 		}
 		binDir = dir
-		for _, target := range []string{"ultrad", "worker"} {
+		for _, target := range []string{"cored", "coreworker"} {
 			cmd := exec.Command("go", "build", "-o", filepath.Join(dir, target),
-				"github.com/aleksclark/ultralogical/cmd/"+target)
+				"github.com/aleksclark/ultracore/cmd/"+target)
 			cmd.Env = os.Environ()
 			if out, err := cmd.CombinedOutput(); err != nil {
 				buildErr = fmt.Errorf("build %s: %w\n%s", target, err, out)
@@ -162,7 +162,7 @@ func binaries(t *testing.T) (string, string) {
 	if buildErr != nil {
 		t.Fatal(buildErr)
 	}
-	return filepath.Join(binDir, "ultrad"), filepath.Join(binDir, "worker")
+	return filepath.Join(binDir, "cored"), filepath.Join(binDir, "coreworker")
 }
 
 // EnsureBezalelImage builds the pinned real Bezalel image once per test process.
@@ -259,13 +259,13 @@ func Up(t *testing.T, opts ...Opt) *Stack {
 	return stack
 }
 
-// StartUltrad launches the primary ultrad on its original port and waits for
+// StartUltrad launches the primary cored on its original port and waits for
 // it to serve. Restarting in place keeps BaseURL valid, so a client cannot
 // tell the difference between a restart and a stall except by observing the
 // process.
 func (s *Stack) StartUltrad() { s.startUltradAt(0) }
 
-// KillUltrad SIGKILLs the primary ultrad process (control-plane crash).
+// KillUltrad SIGKILLs the primary cored process (control-plane crash).
 func (s *Stack) KillUltrad() {
 	s.ultradMu.Lock()
 	defer s.ultradMu.Unlock()
@@ -281,7 +281,7 @@ func (s *Stack) KillUltrad() {
 // restart is invisible to clients holding that URL.
 func (s *Stack) startUltradAt(index int) {
 	if index < 0 || index >= len(s.ReplicaBaseURLs) {
-		s.t.Fatalf("harness: no ultrad replica at index %d", index)
+		s.t.Fatalf("harness: no cored replica at index %d", index)
 	}
 	base := s.ReplicaBaseURLs[index]
 	parsed, err := url.Parse(base)
@@ -291,11 +291,11 @@ func (s *Stack) startUltradAt(index int) {
 	cmd := exec.Command(s.ultradBin)
 	cmd.Env = append(os.Environ(),
 		"DATABASE_URL="+s.DatabaseURL,
-		"ULTRA_ADDR="+parsed.Host,
-		fmt.Sprintf("ULTRA_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob),
-		"ULTRA_MASTER_KEY="+s.MasterKey,
-		"ULTRA_DEFAULT_MODEL=mock-model",
-		"ULTRA_MIGRATE=false",
+		"CORE_ADDR="+parsed.Host,
+		fmt.Sprintf("CORE_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob),
+		"CORE_MASTER_KEY="+s.MasterKey,
+		"CORE_DEFAULT_MODEL=mock-model",
+		"CORE_MIGRATE=false",
 	)
 	cmd.Stdout = s.logs
 	cmd.Stderr = s.logs
@@ -317,16 +317,12 @@ func (s *Stack) newWorkerCmd() *exec.Cmd {
 	cmd := exec.Command(s.workerBin)
 	cmd.Env = append(os.Environ(),
 		"DATABASE_URL="+s.DatabaseURL,
-		"ULTRA_MASTER_KEY="+s.MasterKey,
-		"ULTRA_JOB_TIMEOUT=20s",
-		"ULTRA_RESCUE_AFTER=21s",
-		"ULTRA_BEZALEL_IMAGE="+BezalelImage,
-		"ULTRA_RECONCILE_INTERVAL=1s",
-		"ULTRA_PROVISION_TIMEOUT=45s",
-		// Presence expiry is deliberately fast in tests so idle transitions
-		// are observable without long sleeps.
-		"ULTRA_PRESENCE_AFTER=2s",
-		"ULTRA_PRESENCE_INTERVAL=1s",
+		"CORE_MASTER_KEY="+s.MasterKey,
+		"CORE_JOB_TIMEOUT=20s",
+		"CORE_RESCUE_AFTER=21s",
+		"CORE_BEZALEL_IMAGE="+BezalelImage,
+		"CORE_RECONCILE_INTERVAL=1s",
+		"CORE_PROVISION_TIMEOUT=45s",
 	)
 	cmd.Env = append(cmd.Env, s.workerEnv...)
 	cmd.Stdout = s.logs
@@ -460,7 +456,7 @@ func (s *Stack) DebugRunnableJobs(t *testing.T, ctx context.Context) []string {
 // QueueDepthForRun counts runnable step jobs belonging to one run, which is
 // how a test proves a specific parked parent holds no worker slot while other
 // runs legitimately keep working.
-func (s *Stack) QueueDepthForRun(ctx context.Context, run ultra.RunID) (int, error) {
+func (s *Stack) QueueDepthForRun(ctx context.Context, run uc.RunID) (int, error) {
 	pool, err := pgxpool.New(ctx, s.DatabaseURL)
 	if err != nil {
 		return 0, err
@@ -479,24 +475,24 @@ func (s *Stack) seed(t *testing.T, store *postgres.Store, options Options) {
 	t.Helper()
 	ctx := context.Background()
 
-	s.OrgA = ultra.Org{ID: ultra.OrgID(uuid.NewString()), Name: "org-a"}
-	s.OrgB = ultra.Org{ID: ultra.OrgID(uuid.NewString()), Name: "org-b"}
-	s.Alice = ultra.User{ID: ultra.UserID(uuid.NewString()), Email: EmailAlice, Display: "Alice"}
-	s.Bob = ultra.User{ID: ultra.UserID(uuid.NewString()), Email: EmailBob, Display: "Bob"}
+	s.OrgA = uc.Org{ID: uc.OrgID(uuid.NewString()), Name: "org-a"}
+	s.OrgB = uc.Org{ID: uc.OrgID(uuid.NewString()), Name: "org-b"}
+	s.Alice = uc.User{ID: uc.UserID(uuid.NewString()), Email: EmailAlice, Display: "Alice"}
+	s.Bob = uc.User{ID: uc.UserID(uuid.NewString()), Email: EmailBob, Display: "Bob"}
 
-	for _, org := range []ultra.Org{s.OrgA, s.OrgB} {
+	for _, org := range []uc.Org{s.OrgA, s.OrgB} {
 		if err := store.Orgs().Create(ctx, org); err != nil {
 			t.Fatal(err)
 		}
 	}
-	for _, user := range []ultra.User{s.Alice, s.Bob} {
+	for _, user := range []uc.User{s.Alice, s.Bob} {
 		if err := store.Users().Create(ctx, user); err != nil {
 			t.Fatal(err)
 		}
 	}
-	memberships := []ultra.OrgMember{
-		{OrgID: s.OrgA.ID, UserID: s.Alice.ID, Role: ultra.OrgRoleOwner},
-		{OrgID: s.OrgB.ID, UserID: s.Bob.ID, Role: ultra.OrgRoleOwner},
+	memberships := []uc.OrgMember{
+		{OrgID: s.OrgA.ID, UserID: s.Alice.ID, Role: uc.OrgRoleOwner},
+		{OrgID: s.OrgB.ID, UserID: s.Bob.ID, Role: uc.OrgRoleOwner},
 	}
 	for _, m := range memberships {
 		if err := store.Orgs().AddMember(ctx, m); err != nil {
@@ -505,20 +501,20 @@ func (s *Stack) seed(t *testing.T, store *postgres.Store, options Options) {
 	}
 
 	// Every test org has a default local provider instance.
-	for _, org := range []ultra.Org{s.OrgA, s.OrgB} {
-		if err := store.Org(org.ID).Providers().Create(ctx, ultra.ProviderInstance{
-			ID: ultra.ProviderInstanceID(uuid.NewString()), OrgID: org.ID,
-			Kind: ultra.ProviderKindLocalDocker, Name: "default", RateClass: ultra.RateClassBYO, State: "ready",
+	for _, org := range []uc.Org{s.OrgA, s.OrgB} {
+		if err := store.Org(org.ID).Providers().Create(ctx, uc.ProviderInstance{
+			ID: uc.ProviderInstanceID(uuid.NewString()), OrgID: org.ID,
+			Kind: uc.ProviderKindLocalDocker, Name: "default", State: "ready",
 			// The seeded registration carries the capabilities local Docker
 			// really has. Seeding it blank would make every flow that declares
 			// health readiness fail for the wrong reason.
-			Capabilities: ultra.ProviderCapabilities{
-				Kind: ultra.ProviderKindLocalDocker,
-				Supported: []ultra.ProviderCapability{
-					ultra.CapabilityServesToolEndpoint,
-					ultra.CapabilityRestartPreservesWorkspace,
-					ultra.CapabilityAdoptsOrphans,
-					ultra.CapabilityEnumeratesResources,
+			Capabilities: uc.ProviderCapabilities{
+				Kind: uc.ProviderKindLocalDocker,
+				Supported: []uc.ProviderCapability{
+					uc.CapabilityServesToolEndpoint,
+					uc.CapabilityRestartPreservesWorkspace,
+					uc.CapabilityAdoptsOrphans,
+					uc.CapabilityEnumeratesResources,
 				},
 			},
 		}); err != nil {
@@ -531,13 +527,13 @@ func (s *Stack) seed(t *testing.T, store *postgres.Store, options Options) {
 }
 
 // SeedCredential stores an encrypted openai inference credential for an org.
-func (s *Stack) SeedCredential(t *testing.T, org ultra.OrgID, name, apiKey, baseURL string) {
+func (s *Stack) SeedCredential(t *testing.T, org uc.OrgID, name, apiKey, baseURL string) {
 	t.Helper()
 	keyring, err := secrets.NewAESKeyring(s.MasterKey)
 	if err != nil {
 		t.Fatal(err)
 	}
-	payload, err := json.Marshal(ultra.InferencePayload{APIKey: apiKey, BaseURL: baseURL})
+	payload, err := json.Marshal(uc.InferencePayload{APIKey: apiKey, BaseURL: baseURL})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -545,14 +541,14 @@ func (s *Stack) SeedCredential(t *testing.T, org ultra.OrgID, name, apiKey, base
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Store.Org(org).Credentials().Put(context.Background(), ultra.Credential{
-		Kind: ultra.CredentialKindOpenAI, Name: name, EncPayload: enc,
+	if err := s.Store.Org(org).Credentials().Put(context.Background(), uc.Credential{
+		Kind: uc.CredentialKindOpenAI, Name: name, EncPayload: enc,
 	}); err != nil {
 		t.Fatal(err)
 	}
 }
 
-// Health reports whether an ultrad instance answers its health endpoint. Tests
+// Health reports whether an cored instance answers its health endpoint. Tests
 // use it to assert a replica really is serving rather than assuming it is.
 func Health(baseURL string) (bool, error) {
 	resp, err := http.Get(baseURL + "/healthz")
@@ -576,10 +572,10 @@ func waitHealthy(t *testing.T, baseURL string) {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	t.Fatalf("ultrad at %s never became healthy", baseURL)
+	t.Fatalf("cored at %s never became healthy", baseURL)
 }
 
-// startIngress puts a round-robin reverse proxy in front of every ultrad
+// startIngress puts a round-robin reverse proxy in front of every cored
 // replica. A client that talks to it does not know or care which replica
 // served a request, which is the point: cross-replica correctness has to hold
 // without client affinity.
@@ -620,11 +616,11 @@ func (s *Stack) IngressURL() string {
 	return s.BaseURL
 }
 
-// ReplicaClient returns a client pinned to one ultrad replica, for tests that
+// ReplicaClient returns a client pinned to one cored replica, for tests that
 // must act on a named replica rather than wherever the ingress lands.
 func (s *Stack) ReplicaClient(index int, token string) *testclient.Client {
 	if index < 0 || index >= len(s.ReplicaBaseURLs) {
-		s.t.Fatalf("harness: no ultrad replica at index %d", index)
+		s.t.Fatalf("harness: no cored replica at index %d", index)
 	}
 	return testclient.New(s.ReplicaBaseURLs[index], token)
 }
@@ -634,11 +630,11 @@ func (s *Stack) IngressClient(token string) *testclient.Client {
 	return testclient.New(s.IngressURL(), token)
 }
 
-// RestartUltrad replaces one ultrad replica with a fresh process on the same
+// RestartUltrad replaces one cored replica with a fresh process on the same
 // address, so subscribers must reconnect and resume by seq.
 func (s *Stack) RestartUltrad(index int) {
 	if index < 0 || index >= len(s.ultradCmds) {
-		s.t.Fatalf("harness: no ultrad replica at index %d", index)
+		s.t.Fatalf("harness: no cored replica at index %d", index)
 	}
 	s.ultradMu.Lock()
 	if cmd := s.ultradCmds[index]; cmd != nil {

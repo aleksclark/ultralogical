@@ -58,7 +58,7 @@ them exhaustive):
   env lifecycle (`env.go`, `envwork/`) pending E2 generalization,
   providers `localdocker`, `byo_k8s`, `byo_nomad`, `static`, `tunnel` +
   conformance + registry/wiring/capability probing, `testkit/*`,
-  `cmd/ultrad`, `cmd/worker`, `cmd/ultra`, `cmd/devstack`.
+  `cmd/cored`, `cmd/coreworker`, `cmd/core`, `cmd/devstack`.
 - **Drop (E1):** `flow.go`, `flowdef.go`, `flowwork/`, flow protos/handlers/
   tests; presence + human-roster parts of `multiplayer.go`; grants lattice
   (replaced in E3); billing/metering (`env_usage`, `BillingService`,

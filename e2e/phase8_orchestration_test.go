@@ -9,17 +9,17 @@ import (
 
 	"connectrpc.com/connect"
 
-	ultra "github.com/aleksclark/ultralogical"
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/testkit/harness"
-	"github.com/aleksclark/ultralogical/testkit/modelscript"
+	uc "github.com/aleksclark/ultracore"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/testkit/harness"
+	"github.com/aleksclark/ultracore/testkit/modelscript"
 )
 
 // awaitRun polls a run until it reaches one of the wanted states.
-func awaitRunOneOf(t *testing.T, stack *harness.Stack, org ultra.OrgID, id ultra.RunID, timeout time.Duration, want ...ultra.RunState) ultra.AgentRun {
+func awaitRunOneOf(t *testing.T, stack *harness.Stack, org uc.OrgID, id uc.RunID, timeout time.Duration, want ...uc.RunState) uc.AgentRun {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
-	var last ultra.AgentRun
+	var last uc.AgentRun
 	for time.Now().Before(deadline) {
 		run, err := stack.Store.Org(org).Runs().Get(context.Background(), id)
 		if err == nil {
@@ -37,10 +37,10 @@ func awaitRunOneOf(t *testing.T, stack *harness.Stack, org ultra.OrgID, id ultra
 }
 
 // childrenOf returns a run's children, waiting until the expected number exist.
-func childrenOf(t *testing.T, stack *harness.Stack, org ultra.OrgID, parent ultra.RunID, want int, timeout time.Duration) []ultra.AgentRun {
+func childrenOf(t *testing.T, stack *harness.Stack, org uc.OrgID, parent uc.RunID, want int, timeout time.Duration) []uc.AgentRun {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
-	var last []ultra.AgentRun
+	var last []uc.AgentRun
 	for time.Now().Before(deadline) {
 		kids, err := stack.Store.Org(org).Runs().Children(context.Background(), parent)
 		if err == nil {
@@ -56,7 +56,7 @@ func childrenOf(t *testing.T, stack *harness.Stack, org ultra.OrgID, parent ultr
 }
 
 // waitsOf returns every wait a parent has held.
-func waitsOf(t *testing.T, stack *harness.Stack, org ultra.OrgID, parent ultra.RunID) []ultra.RunWait {
+func waitsOf(t *testing.T, stack *harness.Stack, org uc.OrgID, parent uc.RunID) []uc.RunWait {
 	t.Helper()
 	waits, err := stack.Store.Org(org).Waits().ListForParent(context.Background(), parent)
 	if err != nil {
@@ -83,19 +83,10 @@ func TestA81_SpawnDurabilityAndGrants(t *testing.T) {
 			Sticky: true,
 			ToolCalls: []modelscript.ToolCallSpec{{Name: "spawn_agent", Args: map[string]any{
 				"prompt": "child work", "tools": []string{"post_event", "spawn_agent"},
-				"may_spawn": true, "max_children": 1,
 			}}},
 		},
 		{Match: modelscript.UserContains("parent work"), Text: "parent done"},
-		// The child tries to widen authority, which must be denied, then
-		// spawns a compliant grandchild.
-		{
-			Match:  modelscript.UserContains("child work"),
-			Sticky: false,
-			ToolCalls: []modelscript.ToolCallSpec{{Name: "spawn_agent", Args: map[string]any{
-				"prompt": "escalated", "tools": []string{"post_event", "terminate_env"},
-			}}},
-		},
+		// The child spawns a grandchild with an explicit allowlist.
 		{
 			Match:  modelscript.UserContains("child work"),
 			Sticky: false,
@@ -111,21 +102,10 @@ func TestA81_SpawnDurabilityAndGrants(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parentID := ultra.RunID(parent.GetId())
+	parentID := uc.RunID(parent.GetId())
 	kids := childrenOf(t, stack, org, parentID, 1, 60*time.Second)
 	child := kids[0]
 
-	// Persisted grants are a strict subset of the parent's.
-	parentRun, err := stack.Store.Org(org).Runs().Get(ctx, parentID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !child.Grants.SubsetOf(parentRun.Grants) {
-		t.Fatalf("child grants %+v are not a subset of parent %+v", child.Grants, parentRun.Grants)
-	}
-	if child.Grants.EnvAll || child.Grants.AllowsTool("terminate_env") {
-		t.Fatalf("child kept authority it was never granted: %+v", child.Grants)
-	}
 	if child.SpawnKey == "" {
 		t.Fatal("child has no spawn key; spawning cannot be idempotent")
 	}
@@ -133,48 +113,26 @@ func TestA81_SpawnDurabilityAndGrants(t *testing.T) {
 	// The grandchild narrows further still.
 	grandkids := childrenOf(t, stack, org, child.ID, 1, 60*time.Second)
 	grandchild := grandkids[0]
-	if !grandchild.Grants.SubsetOf(child.Grants) {
-		t.Fatalf("grandchild grants %+v exceed child %+v", grandchild.Grants, child.Grants)
-	}
-	if grandchild.Grants.MaySpawn {
-		t.Fatalf("grandchild inherited spawn authority it did not request: %+v", grandchild.Grants)
-	}
-	awaitRunOneOf(t, stack, org, grandchild.ID, 90*time.Second, ultra.RunCompleted)
+	awaitRunOneOf(t, stack, org, grandchild.ID, 90*time.Second, uc.RunCompleted)
 
-	// The escalation attempt was denied, with a PermissionDenied event and a
-	// uniform message that reveals nothing about what exists.
-	denials := collectEvents(t, stack, sess.GetId(), "permission_denied", 60*time.Second, 1)
-	var denial ultra.PermissionDeniedPayload
-	if err := json.Unmarshal(denials[0].Payload, &denial); err != nil {
-		t.Fatal(err)
+	// Child allowlist is exactly what was requested.
+	if !child.Grants.AllowsTool("post_event") || !child.Grants.AllowsTool("spawn_agent") {
+		t.Fatalf("child grants = %+v", child.Grants)
 	}
-	if denial.Tool != "spawn_agent" {
-		t.Fatalf("denial names tool %q", denial.Tool)
-	}
-	if denial.RunID != child.ID {
-		t.Fatalf("denial attributed to %s, want the child %s", denial.RunID, child.ID)
-	}
-	// No run was created for the escalated prompt.
-	all, err := stack.Store.Org(org).Runs().List(ctx, ultra.SessionID(sess.GetId()))
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, r := range all {
-		if r.Prompt == "escalated" {
-			t.Fatal("a denied spawn still created a run")
-		}
+	if child.Grants.AllowsTool("terminate_env") {
+		t.Fatalf("child gained terminate_env without being granted it: %+v", child.Grants)
 	}
 }
 
 // collectEvents reads the session log until it sees n events of a kind.
-func collectEvents(t *testing.T, stack *harness.Stack, session, kind string, timeout time.Duration, n int) []ultra.Event {
+func collectEvents(t *testing.T, stack *harness.Stack, session, kind string, timeout time.Duration, n int) []uc.Event {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		var found []ultra.Event
+		var found []uc.Event
 		var from int64
 		for {
-			batch, err := stack.Store.Org(stack.OrgA.ID).Events().Range(context.Background(), ultra.SessionID(session), from, 512)
+			batch, err := stack.Store.Org(stack.OrgA.ID).Events().Range(context.Background(), uc.SessionID(session), from, 512)
 			if err != nil || len(batch) == 0 {
 				break
 			}
@@ -195,8 +153,8 @@ func collectEvents(t *testing.T, stack *harness.Stack, session, kind string, tim
 }
 
 // A8.1 — a redelivered spawn adopts the child it already created: one child,
-// one first step, no duplicate work. max_children is enforced under the same
-// lock that counts them.
+// one first step, no duplicate work. Distinct spawn keys keep concurrent
+// children from colliding under queue redelivery.
 func TestA81_SpawnIdempotentRetry(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
@@ -204,9 +162,7 @@ func TestA81_SpawnIdempotentRetry(t *testing.T) {
 	org := stack.OrgA.ID
 	sess := createSession(t, alice, string(org), "spawn idempotency")
 
-	// The parent is granted two children but asks for three: the third must be
-	// refused rather than silently exceeding the limit.
-	stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
+		stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
 		{
 			Match:  modelscript.UserContains("limit test"),
 			Sticky: true,
@@ -220,20 +176,20 @@ func TestA81_SpawnIdempotentRetry(t *testing.T) {
 		{Match: modelscript.UserContains("kid "), Sticky: true, Text: "kid done"},
 	}})
 
-	run, err := alice.Agents.StartRun(ctx, connect.NewRequest(&ultrav1.StartRunRequest{
+	run, err := alice.Agents.StartRun(ctx, connect.NewRequest(&corev1.StartRunRequest{
 		SessionId: sess.GetId(), Prompt: "limit test",
 		// Two children allowed, three requested.
-		Grants: &ultrav1.Grants{Tools: []string{"*"}, EnvAll: true, MaySpawn: true, MaxChildren: 2},
+		Grants: &corev1.Grants{Tools: []string{"*"}},
 	}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	parentID := ultra.RunID(run.Msg.GetRun().GetId())
+	parentID := uc.RunID(run.Msg.GetRun().GetId())
 
-	awaitRunOneOf(t, stack, org, parentID, 90*time.Second, ultra.RunCompleted, ultra.RunFailed)
+	awaitRunOneOf(t, stack, org, parentID, 90*time.Second, uc.RunCompleted, uc.RunFailed)
 	kids := stackChildren(t, stack, org, parentID)
-	if len(kids) != 2 {
-		t.Fatalf("parent created %d children, want exactly the granted 2", len(kids))
+	if len(kids) != 3 {
+		t.Fatalf("parent created %d children, want 3", len(kids))
 	}
 	// Every child has a distinct spawn key derived from its tool call.
 	keys := map[string]bool{}
@@ -246,8 +202,6 @@ func TestA81_SpawnIdempotentRetry(t *testing.T) {
 		}
 		keys[kid.SpawnKey] = true
 	}
-	// The refused third spawn is visible as a denial, not as a silent drop.
-	collectEvents(t, stack, sess.GetId(), "permission_denied", 30*time.Second, 1)
 
 	// Each child ran exactly one first step: redelivery would show as extra
 	// step rows for index 0, which the unique constraint forbids.
@@ -266,7 +220,7 @@ func TestA81_SpawnIdempotentRetry(t *testing.T) {
 	}
 }
 
-func stackChildren(t *testing.T, stack *harness.Stack, org ultra.OrgID, parent ultra.RunID) []ultra.AgentRun {
+func stackChildren(t *testing.T, stack *harness.Stack, org uc.OrgID, parent uc.RunID) []uc.AgentRun {
 	t.Helper()
 	kids, err := stack.Store.Org(org).Runs().Children(context.Background(), parent)
 	if err != nil {
@@ -278,14 +232,14 @@ func stackChildren(t *testing.T, stack *harness.Stack, org ultra.OrgID, parent u
 // assertSingleCorrelatedResult checks the invariant every wait case shares: the
 // wait closed once, resumed the parent at most once, and injected exactly one
 // tool result correlated to the parent's original tool call.
-func assertSingleCorrelatedResult(t *testing.T, stack *harness.Stack, org ultra.OrgID, parent ultra.RunID, wantStates ...string) ultra.RunWait {
+func assertSingleCorrelatedResult(t *testing.T, stack *harness.Stack, org uc.OrgID, parent uc.RunID, wantStates ...string) uc.RunWait {
 	t.Helper()
 	waits := waitsOf(t, stack, org, parent)
 	if len(waits) != 1 {
 		t.Fatalf("parent %s holds %d waits, want exactly 1", parent, len(waits))
 	}
 	wait := waits[0]
-	if wait.State == ultra.WaitOpen {
+	if wait.State == uc.WaitOpen {
 		t.Fatalf("wait %s is still open", wait.ID)
 	}
 	if len(wantStates) > 0 {
@@ -353,9 +307,9 @@ func assertSingleCorrelatedResult(t *testing.T, stack *harness.Stack, org ultra.
 }
 
 // waitOutcome decodes a closed wait's aggregate result.
-func waitOutcome(t *testing.T, wait ultra.RunWait) ultra.WaitOutcome {
+func waitOutcome(t *testing.T, wait uc.RunWait) uc.WaitOutcome {
 	t.Helper()
-	var outcome ultra.WaitOutcome
+	var outcome uc.WaitOutcome
 	if err := json.Unmarshal(wait.Result, &outcome); err != nil {
 		t.Fatalf("wait %s has undecodable result %q: %v", wait.ID, wait.Result, err)
 	}
@@ -394,7 +348,7 @@ func TestA83_CohortFanOutFanIn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parentID := ultra.RunID(parent.GetId())
+	parentID := uc.RunID(parent.GetId())
 
 	kids := childrenOf(t, stack, org, parentID, 3, 90*time.Second)
 	if len(kids) != 3 {
@@ -414,9 +368,9 @@ func TestA83_CohortFanOutFanIn(t *testing.T) {
 		}
 	}
 
-	awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, ultra.RunCompleted)
-	wait := assertSingleCorrelatedResult(t, stack, org, parentID, ultra.WaitResolved)
-	if wait.Kind != ultra.WaitKindCohort {
+	awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, uc.RunCompleted)
+	wait := assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitResolved)
+	if wait.Kind != uc.WaitKindCohort {
 		t.Fatalf("wait kind %q, want cohort", wait.Kind)
 	}
 	outcome := waitOutcome(t, wait)
@@ -428,7 +382,7 @@ func TestA83_CohortFanOutFanIn(t *testing.T) {
 		if member.Ordinal != i {
 			t.Fatalf("outcome member %d has ordinal %d", i, member.Ordinal)
 		}
-		if member.State != ultra.RunCompleted {
+		if member.State != uc.RunCompleted {
 			t.Fatalf("member %d state %q, want completed", i, member.State)
 		}
 		if len(member.Result) == 0 {
@@ -479,18 +433,18 @@ func TestA83_CohortFailedMember(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parentID := ultra.RunID(parent.GetId())
+	parentID := uc.RunID(parent.GetId())
 	childrenOf(t, stack, org, parentID, 2, 90*time.Second)
-	awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, ultra.RunCompleted)
+	awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, uc.RunCompleted)
 
-	wait := assertSingleCorrelatedResult(t, stack, org, parentID, ultra.WaitResolved)
+	wait := assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitResolved)
 	outcome := waitOutcome(t, wait)
 	if outcome.Completed != 1 || outcome.Failed != 1 {
 		t.Fatalf("outcome tally completed=%d failed=%d, want 1/1: %s", outcome.Completed, outcome.Failed, wait.Result)
 	}
 	var sawFailureReason bool
 	for _, member := range outcome.Members {
-		if member.State == ultra.RunFailed && member.FailureReason != "" {
+		if member.State == uc.RunFailed && member.FailureReason != "" {
 			sawFailureReason = true
 		}
 	}
@@ -527,8 +481,8 @@ func TestA83_CohortParksWithoutQueuedParentStep(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parentID := ultra.RunID(parent.GetId())
-	awaitRunOneOf(t, stack, org, parentID, 90*time.Second, ultra.RunAwaiting)
+	parentID := uc.RunID(parent.GetId())
+	awaitRunOneOf(t, stack, org, parentID, 90*time.Second, uc.RunAwaiting)
 
 	// A parked parent must hold no *pending* step job: the wait costs no
 	// worker slot. The step that installed the wait is still finishing at the
@@ -573,6 +527,6 @@ func TestA83_CohortParksWithoutQueuedParentStep(t *testing.T) {
 		t.Fatal("no child step job is runnable; the parent is not parked on anything")
 	}
 	close(release)
-	awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, ultra.RunCompleted)
-	assertSingleCorrelatedResult(t, stack, org, parentID, ultra.WaitResolved)
+	awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, uc.RunCompleted)
+	assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitResolved)
 }

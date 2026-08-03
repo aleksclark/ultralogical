@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 // EventChannel is the Postgres NOTIFY channel used to wake event
@@ -17,24 +17,24 @@ import (
 // hint; subscribers always read forward from their last delivered seq.
 const EventChannel = "session_events"
 
-// EventBus implements ultra.EventBus on Postgres: a catch-up read from the
+// EventBus implements uc.EventBus on Postgres: a catch-up read from the
 // store combined with LISTEN/NOTIFY wakeups and a periodic poll fallback, so
 // delivery stays correct even when notifications are dropped.
 type EventBus struct {
-	store    ultra.Store
+	store    uc.Store
 	pool     *pgxpool.Pool
 	log      *slog.Logger
 	pollTick time.Duration
 
 	mu   sync.Mutex
-	subs map[ultra.SessionID]map[chan struct{}]struct{}
+	subs map[uc.SessionID]map[chan struct{}]struct{}
 
 	cancel context.CancelFunc
 	done   chan struct{}
 }
 
 // NewEventBus creates an EventBus. pollTick defaults to 2s.
-func NewEventBus(store ultra.Store, pool *pgxpool.Pool, log *slog.Logger, pollTick time.Duration) *EventBus {
+func NewEventBus(store uc.Store, pool *pgxpool.Pool, log *slog.Logger, pollTick time.Duration) *EventBus {
 	if pollTick <= 0 {
 		pollTick = 2 * time.Second
 	}
@@ -43,7 +43,7 @@ func NewEventBus(store ultra.Store, pool *pgxpool.Pool, log *slog.Logger, pollTi
 		pool:     pool,
 		log:      log,
 		pollTick: pollTick,
-		subs:     map[ultra.SessionID]map[chan struct{}]struct{}{},
+		subs:     map[uc.SessionID]map[chan struct{}]struct{}{},
 	}
 }
 
@@ -65,12 +65,12 @@ func (b *EventBus) Stop() {
 	<-b.done
 }
 
-// Subscribe implements ultra.EventBus.
-func (b *EventBus) Subscribe(ctx context.Context, org ultra.OrgID, session ultra.SessionID, fromSeq int64) (<-chan ultra.Event, error) {
+// Subscribe implements uc.EventBus.
+func (b *EventBus) Subscribe(ctx context.Context, org uc.OrgID, session uc.SessionID, fromSeq int64) (<-chan uc.Event, error) {
 	wake := make(chan struct{}, 1)
 	b.addWaiter(session, wake)
 
-	out := make(chan ultra.Event, 64)
+	out := make(chan uc.Event, 64)
 	go func() {
 		defer b.removeWaiter(session, wake)
 		defer close(out)
@@ -105,7 +105,7 @@ func (b *EventBus) Subscribe(ctx context.Context, org ultra.OrgID, session ultra
 	return out, nil
 }
 
-func (b *EventBus) addWaiter(session ultra.SessionID, ch chan struct{}) {
+func (b *EventBus) addWaiter(session uc.SessionID, ch chan struct{}) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.subs[session] == nil {
@@ -114,7 +114,7 @@ func (b *EventBus) addWaiter(session ultra.SessionID, ch chan struct{}) {
 	b.subs[session][ch] = struct{}{}
 }
 
-func (b *EventBus) removeWaiter(session ultra.SessionID, ch chan struct{}) {
+func (b *EventBus) removeWaiter(session uc.SessionID, ch chan struct{}) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	delete(b.subs[session], ch)
@@ -123,7 +123,7 @@ func (b *EventBus) removeWaiter(session ultra.SessionID, ch chan struct{}) {
 	}
 }
 
-func (b *EventBus) wakeSession(session ultra.SessionID) {
+func (b *EventBus) wakeSession(session uc.SessionID) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	for ch := range b.subs[session] {
@@ -170,7 +170,7 @@ func (b *EventBus) listenOnce(ctx context.Context) error {
 		}
 		// Payload is "<session_id>:<seq>"; only the session id matters.
 		if id, _, ok := strings.Cut(n.Payload, ":"); ok {
-			b.wakeSession(ultra.SessionID(id))
+			b.wakeSession(uc.SessionID(id))
 		}
 	}
 }

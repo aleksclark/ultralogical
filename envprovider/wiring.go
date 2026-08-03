@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"time"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider/k8s"
-	"github.com/aleksclark/ultralogical/envprovider/localdocker"
-	"github.com/aleksclark/ultralogical/envprovider/nomad"
-	"github.com/aleksclark/ultralogical/envprovider/static"
-	"github.com/aleksclark/ultralogical/envprovider/tunnel"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider/k8s"
+	"github.com/aleksclark/ultracore/envprovider/localdocker"
+	"github.com/aleksclark/ultracore/envprovider/nomad"
+	"github.com/aleksclark/ultracore/envprovider/static"
+	"github.com/aleksclark/ultracore/envprovider/tunnel"
 )
 
 // Deployment configures which provider kinds a binary can host and with what
@@ -28,9 +28,6 @@ type Deployment struct {
 	// EnabledKinds restricts which kinds this deployment offers. Empty means
 	// every kind the build knows about.
 	EnabledKinds []string
-	// HostedIngressCIDRs are the ranges hosted environments accept platform
-	// traffic from.
-	HostedIngressCIDRs []string
 	// KubernetesEndpointMode and KubernetesNodePortRange configure how a
 	// worker outside the cluster reaches an environment.
 	KubernetesEndpointMode  string
@@ -58,8 +55,8 @@ func StandardRegistry(deployment Deployment) *Registry {
 		return false
 	}
 
-	if enabled(ultra.ProviderKindLocalDocker) {
-		registry.Register(ultra.ProviderKindLocalDocker, func(_ context.Context, config json.RawMessage) (ultra.EnvProvider, error) {
+	if enabled(uc.ProviderKindLocalDocker) {
+		registry.Register(uc.ProviderKindLocalDocker, func(_ context.Context, config json.RawMessage) (uc.EnvProvider, error) {
 			var cfg localdocker.Config
 			if err := decode(config, &cfg); err != nil {
 				return nil, err
@@ -71,18 +68,14 @@ func StandardRegistry(deployment Deployment) *Registry {
 		})
 	}
 
-	kubernetes := func(hosted bool) Factory {
-		return func(_ context.Context, config json.RawMessage) (ultra.EnvProvider, error) {
+	if enabled(uc.ProviderKindBYOKubernetes) {
+		registry.Register(uc.ProviderKindBYOKubernetes, func(_ context.Context, config json.RawMessage) (uc.EnvProvider, error) {
 			var cfg k8s.Config
 			if err := decode(config, &cfg); err != nil {
 				return nil, err
 			}
 			if cfg.Image == "" {
 				cfg.Image = deployment.BezalelImage
-			}
-			cfg.Hosted = hosted
-			if hosted && len(cfg.PlatformIngressCIDRs) == 0 {
-				cfg.PlatformIngressCIDRs = deployment.HostedIngressCIDRs
 			}
 			if cfg.EndpointMode == "" {
 				cfg.EndpointMode = deployment.KubernetesEndpointMode
@@ -94,16 +87,10 @@ func StandardRegistry(deployment Deployment) *Registry {
 				cfg.NodePortRange = deployment.KubernetesNodePortRange
 			}
 			return k8s.New(cfg)
-		}
+		})
 	}
-	if enabled(ultra.ProviderKindBYOKubernetes) {
-		registry.Register(ultra.ProviderKindBYOKubernetes, kubernetes(false))
-	}
-	if enabled(ultra.ProviderKindHostedEKS) {
-		registry.Register(ultra.ProviderKindHostedEKS, kubernetes(true))
-	}
-	if enabled(ultra.ProviderKindBYONomad) {
-		registry.Register(ultra.ProviderKindBYONomad, func(_ context.Context, config json.RawMessage) (ultra.EnvProvider, error) {
+	if enabled(uc.ProviderKindBYONomad) {
+		registry.Register(uc.ProviderKindBYONomad, func(_ context.Context, config json.RawMessage) (uc.EnvProvider, error) {
 			var cfg nomad.Config
 			if err := decode(config, &cfg); err != nil {
 				return nil, err
@@ -114,8 +101,8 @@ func StandardRegistry(deployment Deployment) *Registry {
 			return nomad.New(cfg)
 		})
 	}
-	if enabled(ultra.ProviderKindTunnelLocal) {
-		registry.Register(ultra.ProviderKindTunnelLocal, func(_ context.Context, config json.RawMessage) (ultra.EnvProvider, error) {
+	if enabled(uc.ProviderKindTunnelLocal) {
+		registry.Register(uc.ProviderKindTunnelLocal, func(_ context.Context, config json.RawMessage) (uc.EnvProvider, error) {
 			var cfg tunnel.Config
 			if err := decode(config, &cfg); err != nil {
 				return nil, err
@@ -124,8 +111,8 @@ func StandardRegistry(deployment Deployment) *Registry {
 			return tunnel.New(cfg)
 		})
 	}
-	if enabled(ultra.ProviderKindStatic) {
-		registry.Register(ultra.ProviderKindStatic, func(_ context.Context, config json.RawMessage) (ultra.EnvProvider, error) {
+	if enabled(uc.ProviderKindStatic) {
+		registry.Register(uc.ProviderKindStatic, func(_ context.Context, config json.RawMessage) (uc.EnvProvider, error) {
 			var cfg static.Config
 			if err := decode(config, &cfg); err != nil {
 				return nil, err

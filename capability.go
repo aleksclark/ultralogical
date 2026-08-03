@@ -1,4 +1,4 @@
-package ultra
+package core
 
 import "context"
 
@@ -28,16 +28,8 @@ const (
 	// a positive statement rather than an absence of evidence.
 	CapabilityEnumeratesResources ProviderCapability = "enumerates_resources"
 	// CapabilityServesToolEndpoint means environments expose the authenticated
-	// tool endpoint that health readiness and setup commands require. A flow
-	// declaring health readiness against a provider without it is rejected at
-	// invoke time rather than hanging on a gate that can never open.
+	// tool endpoint that health readiness and setup commands require.
 	CapabilityServesToolEndpoint ProviderCapability = "serves_tool_endpoint"
-	// CapabilityNamespaceIsolation means the provider places each org's
-	// environments in a hard boundary of its own.
-	CapabilityNamespaceIsolation ProviderCapability = "namespace_isolation"
-	// CapabilityResourceQuota means the provider enforces a ceiling on
-	// concurrent environments and their resource requests.
-	CapabilityResourceQuota ProviderCapability = "resource_quota"
 )
 
 // OptionalProviderCapabilities is every capability a provider may or may not
@@ -50,8 +42,6 @@ func OptionalProviderCapabilities() []ProviderCapability {
 		CapabilityAdoptsOrphans,
 		CapabilityEnumeratesResources,
 		CapabilityServesToolEndpoint,
-		CapabilityNamespaceIsolation,
-		CapabilityResourceQuota,
 	}
 }
 
@@ -103,8 +93,8 @@ func (c ProviderCapabilities) Reason(capability ProviderCapability) string {
 
 // CapabilityProber is the optional registration seam: a provider that can ask
 // its own control plane what it supports. Registration probes rather than
-// assumes, so a Kubernetes cluster without NetworkPolicy enforcement reports
-// that fact instead of having it inferred from its kind.
+// assumes, so a control plane missing a feature reports that fact instead of
+// having it inferred from its kind.
 type CapabilityProber interface {
 	// Probe performs read-only checks against the control plane. It returns
 	// an error only when the control plane is unreachable or refuses the

@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	nomadapi "github.com/hashicorp/nomad/api"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider/nomad"
-	"github.com/aleksclark/ultralogical/testkit/envconverge"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider/nomad"
+	"github.com/aleksclark/ultracore/testkit/envconverge"
 )
 
 // A10.4 — an allocation stopped outside the platform converges instead of
@@ -37,18 +37,18 @@ func TestA104_NomadReconcilesExternallyStoppedAllocation(t *testing.T) {
 	ctx := context.Background()
 
 	harness := envconverge.New(t, provider, envconverge.Options{
-		Kind: ultra.ProviderKindBYONomad, ReconcileInterval: 500 * time.Millisecond,
+		Kind: uc.ProviderKindBYONomad, ReconcileInterval: 500 * time.Millisecond,
 	})
 	harness.Start(t)
 
-	env := harness.Request(t, ultra.EnvSpec{Name: "reconcile", Workdir: "/work"})
+	env := harness.Request(t, uc.EnvSpec{Name: "reconcile", Workdir: "/work"})
 	t.Cleanup(func() {
 		current, err := harness.Store.Org(harness.Org).Envs().Get(context.Background(), env.ID)
 		if err == nil {
 			_ = provider.Terminate(context.Background(), current.Handle)
 		}
 	})
-	harness.Await(t, env.ID, ultra.EnvReady, 3*time.Minute)
+	harness.Await(t, env.ID, uc.EnvReady, 3*time.Minute)
 
 	// The allocation really is running before it is stopped, so what follows
 	// is a response to the stop rather than to a provisioning that never
@@ -69,7 +69,7 @@ func TestA104_NomadReconcilesExternallyStoppedAllocation(t *testing.T) {
 	}
 
 	// Convergence: the environment reaches a terminal state on its own.
-	converged := harness.Await(t, env.ID, ultra.EnvFailed, 2*time.Minute)
+	converged := harness.Await(t, env.ID, uc.EnvFailed, 2*time.Minute)
 	if converged.FailureMessage == "" {
 		t.Fatal("the environment converged with no diagnosis of why")
 	}
@@ -110,9 +110,9 @@ func TestA104_NomadReusesInterruptedRegistration(t *testing.T) {
 	ctx := context.Background()
 
 	harness := envconverge.New(t, provider, envconverge.Options{
-		Kind: ultra.ProviderKindBYONomad, ReconcileInterval: 500 * time.Millisecond,
+		Kind: uc.ProviderKindBYONomad, ReconcileInterval: 500 * time.Millisecond,
 	})
-	env := harness.Request(t, ultra.EnvSpec{Name: "adopt", Workdir: "/work"})
+	env := harness.Request(t, uc.EnvSpec{Name: "adopt", Workdir: "/work"})
 
 	orphan, err := provider.Provision(ctx, env.ID, env.Spec, harness.ClearToken(t, env))
 	if err != nil {
@@ -121,7 +121,7 @@ func TestA104_NomadReusesInterruptedRegistration(t *testing.T) {
 	t.Cleanup(func() { _ = provider.Terminate(context.Background(), orphan) })
 
 	harness.Start(t)
-	harness.Await(t, env.ID, ultra.EnvReady, 3*time.Minute)
+	harness.Await(t, env.ID, uc.EnvReady, 3*time.Minute)
 
 	// Exactly one live job carries this environment's identity.
 	if live := liveJobsFor(t, client, env.ID); live != 1 {
@@ -137,7 +137,7 @@ func TestA104_NomadReusesInterruptedRegistration(t *testing.T) {
 // cluster held. Scoping by metadata rather than by name is what lets this
 // notice a second job registered under a name the test did not predict, which
 // is the shape a real duplicate would take.
-func liveJobsFor(t *testing.T, client *nomadapi.Client, envID ultra.EnvID) int {
+func liveJobsFor(t *testing.T, client *nomadapi.Client, envID uc.EnvID) int {
 	t.Helper()
 	listed, _, err := client.Jobs().PrefixList("ultra-env-")
 	if err != nil {
@@ -154,7 +154,7 @@ func liveJobsFor(t *testing.T, client *nomadapi.Client, envID ultra.EnvID) int {
 			// duplicate, so it is skipped rather than failing the test.
 			continue
 		}
-		if job.Meta["ultralogical.env_id"] == string(envID) {
+		if job.Meta["ultracore.env_id"] == string(envID) {
 			live++
 		}
 	}
@@ -162,13 +162,13 @@ func liveJobsFor(t *testing.T, client *nomadapi.Client, envID ultra.EnvID) int {
 }
 
 // jobIDFor mirrors the deterministic job name the adapter registers.
-func jobIDFor(envID ultra.EnvID) string {
+func jobIDFor(envID uc.EnvID) string {
 	return "ultra-env-" + strings.ToLower(string(envID))
 }
 
 // runningAllocation reads the environment's live allocation from Nomad, so the
 // test stops the object the cluster actually holds.
-func runningAllocation(t *testing.T, ctx context.Context, client *nomadapi.Client, envID ultra.EnvID) *nomadapi.Allocation {
+func runningAllocation(t *testing.T, ctx context.Context, client *nomadapi.Client, envID uc.EnvID) *nomadapi.Allocation {
 	t.Helper()
 	stubs, _, err := client.Jobs().Allocations(jobIDFor(envID), true, nil)
 	if err != nil {
@@ -216,8 +216,8 @@ func TestA104_AllocationCarriesDeclaredResources(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	envID := ultra.EnvID(uuid.NewString())
-	handle, err := provider.Provision(ctx, envID, ultra.EnvSpec{Name: "resources", Workdir: "/work"}, "token")
+	envID := uc.EnvID(uuid.NewString())
+	handle, err := provider.Provision(ctx, envID, uc.EnvSpec{Name: "resources", Workdir: "/work"}, "token")
 	if err != nil {
 		t.Fatal(err)
 	}

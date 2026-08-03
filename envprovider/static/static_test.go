@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider"
-	"github.com/aleksclark/ultralogical/envprovider/conformance"
-	"github.com/aleksclark/ultralogical/envprovider/static"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider"
+	"github.com/aleksclark/ultracore/envprovider/conformance"
+	"github.com/aleksclark/ultracore/envprovider/static"
 )
 
 // maxWalkthroughCodeLines is the size the walkthrough promises, counted as
@@ -34,15 +34,15 @@ const (
 // binary under test is not a separate build.
 func bezalelBinary(t *testing.T) string {
 	t.Helper()
-	if path := os.Getenv("ULTRA_TEST_BEZALEL_BINARY"); path != "" {
+	if path := os.Getenv("CORE_TEST_BEZALEL_BINARY"); path != "" {
 		return path
 	}
 	if _, err := exec.LookPath("docker"); err != nil {
 		t.Skip("docker is needed once to extract the Bezalel binary from the pinned image")
 	}
-	image := os.Getenv("ULTRA_BEZALEL_IMAGE")
+	image := os.Getenv("CORE_BEZALEL_IMAGE")
 	if image == "" {
-		image = "ultralogical/bezalel:phase2-test"
+		image = "ultracore/bezalel:phase2-test"
 	}
 	dir := t.TempDir()
 	target := filepath.Join(dir, "bezalel")
@@ -87,7 +87,7 @@ func TestA109_StaticProviderWalkthrough(t *testing.T) {
 	root := t.TempDir()
 
 	var provider *static.Provider
-	conformance.RunWith(t, func(t *testing.T) ultra.EnvProvider {
+	conformance.RunWith(t, func(t *testing.T) uc.EnvProvider {
 		created, err := static.New(static.Config{Binary: binary, Root: root})
 		if err != nil {
 			t.Fatal(err)
@@ -95,19 +95,17 @@ func TestA109_StaticProviderWalkthrough(t *testing.T) {
 		provider = created
 		return created
 	}, conformance.Options{
-		Capabilities: ultra.ProviderCapabilities{
-			Kind: ultra.ProviderKindStatic,
-			Supported: []ultra.ProviderCapability{
-				ultra.CapabilityEnumeratesResources,
-				ultra.CapabilityRestartPreservesWorkspace,
-				ultra.CapabilityServesToolEndpoint,
+		Capabilities: uc.ProviderCapabilities{
+			Kind: uc.ProviderKindStatic,
+			Supported: []uc.ProviderCapability{
+				uc.CapabilityEnumeratesResources,
+				uc.CapabilityRestartPreservesWorkspace,
+				uc.CapabilityServesToolEndpoint,
 			},
-			Notes: map[ultra.ProviderCapability]string{
-				ultra.CapabilityNamespaceIsolation: "environments share the host kernel and network namespace",
-				ultra.CapabilityResourceQuota:      "the example provider enforces no ceiling",
+			Notes: map[uc.ProviderCapability]string{
 			},
 		},
-		Inspect: func(t *testing.T, ctx context.Context, envID ultra.EnvID) []string {
+		Inspect: func(t *testing.T, ctx context.Context, envID uc.EnvID) []string {
 			t.Helper()
 			resources, err := provider.Resources(ctx, envID)
 			if err != nil {
@@ -172,14 +170,11 @@ func TestA109_StaticProviderProbeReportsRealCapabilities(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !capabilities.Has(ultra.CapabilityServesToolEndpoint) {
+	if !capabilities.Has(uc.CapabilityServesToolEndpoint) {
 		t.Fatalf("the probe claims no tool endpoint: %+v", capabilities)
 	}
 	// An unsupported capability has to carry its reason, or an operator sees an
 	// absence with no way to act on it.
-	if reason := capabilities.Reason(ultra.CapabilityNamespaceIsolation); reason == "" {
-		t.Fatal("the probe reports no reason for missing namespace isolation")
-	}
 }
 
 // A10.9 — a configuration naming a binary that does not exist is refused at
@@ -203,16 +198,16 @@ func TestA109_WorkerSelectsStaticConfiguration(t *testing.T) {
 	binary := bezalelBinary(t)
 	root := t.TempDir()
 
-	var provider ultra.EnvProvider
-	conformance.RunWith(t, func(t *testing.T) ultra.EnvProvider {
+	var provider uc.EnvProvider
+	conformance.RunWith(t, func(t *testing.T) uc.EnvProvider {
 		registry := envprovider.StandardRegistry(envprovider.Deployment{
 			BezalelBinary: binary,
-			EnabledKinds:  []string{ultra.ProviderKindStatic},
+			EnabledKinds:  []string{uc.ProviderKindStatic},
 		})
 		// The binary comes from the deployment the worker would have read from
-		// ULTRA_BEZALEL_BINARY; root is set on the registration so concurrent
+		// CORE_BEZALEL_BINARY; root is set on the registration so concurrent
 		// environments still land under a disposable directory the test owns.
-		built, err := registry.Build(t.Context(), ultra.ProviderKindStatic,
+		built, err := registry.Build(t.Context(), uc.ProviderKindStatic,
 			fmt.Appendf(nil, `{"root":%q}`, root))
 		if err != nil {
 			t.Fatal(err)
@@ -220,21 +215,19 @@ func TestA109_WorkerSelectsStaticConfiguration(t *testing.T) {
 		provider = built
 		return built
 	}, conformance.Options{
-		Capabilities: ultra.ProviderCapabilities{
-			Kind: ultra.ProviderKindStatic,
-			Supported: []ultra.ProviderCapability{
-				ultra.CapabilityEnumeratesResources,
-				ultra.CapabilityRestartPreservesWorkspace,
-				ultra.CapabilityServesToolEndpoint,
+		Capabilities: uc.ProviderCapabilities{
+			Kind: uc.ProviderKindStatic,
+			Supported: []uc.ProviderCapability{
+				uc.CapabilityEnumeratesResources,
+				uc.CapabilityRestartPreservesWorkspace,
+				uc.CapabilityServesToolEndpoint,
 			},
-			Notes: map[ultra.ProviderCapability]string{
-				ultra.CapabilityNamespaceIsolation: "environments share the host kernel and network namespace",
-				ultra.CapabilityResourceQuota:      "the example provider enforces no ceiling",
+			Notes: map[uc.ProviderCapability]string{
 			},
 		},
-		Inspect: func(t *testing.T, ctx context.Context, envID ultra.EnvID) []string {
+		Inspect: func(t *testing.T, ctx context.Context, envID uc.EnvID) []string {
 			t.Helper()
-			lister, ok := provider.(ultra.EnvResourceLister)
+			lister, ok := provider.(uc.EnvResourceLister)
 			if !ok {
 				t.Fatal("the registry-built static provider does not enumerate resources")
 			}

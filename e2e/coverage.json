@@ -2,623 +2,333 @@
   "capabilities": {
     "auth_org_sessions": {
       "rpcs": [
-        "ultra.v1.OrgService/ListOrgs",
-        "ultra.v1.SessionService/CreateSession",
-        "ultra.v1.SessionService/ListSessions",
-        "ultra.v1.SessionService/GetSession"
+        "core.v1.OrgService/ListOrgs",
+        "core.v1.SessionService/CreateSession",
+        "core.v1.SessionService/ListSessions",
+        "core.v1.SessionService/GetSession"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "create session, stream, answer, and reload history",
+      "go": {
+        "file": "functional_test.go",
+        "test": "TestA01_SessionRoundtrip",
         "asserts": [
-          "getByRole(\"button\", { name: \"Browser golden\" })",
-          "data-status=\"completed\""
-        ]
-      },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_session_list_and_timeline",
-        "asserts": [
-          "await_rendered(cx, \"session-list\"",
-          "await_rendered(cx, \"session:GPUI session list\""
+          "created session malformed",
+          "ListSessions"
         ]
       }
     },
     "connection_state": {
       "rpcs": [
-        "ultra.v1.EventService/Subscribe"
+        "core.v1.EventService/Subscribe"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "renders shadcn primitives in dark mode",
+      "go": {
+        "file": "functional_test.go",
+        "test": "TestA02_AppendFanout",
         "asserts": [
-          "getByTestId(\"connection-state\")"
-        ]
-      },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_session_list_and_timeline",
-        "asserts": [
-          "connection:disconnected",
-          "await_rendered(cx, \"connection:live\""
+          "append seq = %d, want 1",
+          "subscriber"
         ]
       }
     },
     "incremental_streaming": {
       "rpcs": [
-        "ultra.v1.AgentService/StartRun"
+        "core.v1.AgentService/StartRun"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "renders incremental streamed frames before completion",
+      "go": {
+        "file": "agent_test.go",
+        "test": "TestA15_TrueStreaming",
         "asserts": [
-          "distinct rendered states",
-          "folded streamed delta frames"
-        ]
-      },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_incremental_stream_frames",
-        "asserts": [
-          "window painted {} assistant frames",
-          "streamed frames, want at least 2"
+          "GetTextDelta",
+          "stream it"
         ]
       }
     },
     "event_replay": {
       "rpcs": [
-        "ultra.v1.EventService/Append"
+        "core.v1.EventService/Append"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "replays identical timeline after reload",
+      "go": {
+        "file": "functional_test.go",
+        "test": "TestA03_ResumeContract",
         "asserts": [
-          "expect(after).toEqual(before)"
-        ]
-      },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "replays_identical_timeline",
-        "asserts": [
-          "replayed timeline differs from the original",
-          "replayed row {label:?} was not painted"
+          "AppendUserMessage",
+          "events[0].GetSeq() != 2"
         ]
       }
     },
     "agent_stream_and_await": {
       "rpcs": [
-        "ultra.v1.AgentService/PromptRun",
-        "ultra.v1.AgentService/GetRun"
+        "core.v1.AgentService/PromptRun",
+        "core.v1.AgentService/GetRun"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "create session, stream, answer, and reload history",
+      "go": {
+        "file": "agent_test.go",
+        "test": "TestA13_AwaitingWithoutParkedWorkers",
         "asserts": [
-          "data-kind=\"question\"",
-          "great choice of blue"
-        ]
-      },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_question_and_answers",
-        "asserts": [
-          "row:question: Which color? [red/blue]",
-          "resumed turn was not rendered"
+          "GetRunAwaiting",
+          "Which color?"
         ]
       }
     },
     "credential_gateway_fields": {
       "rpcs": [
-        "ultra.v1.OrgService/PutCredential",
-        "ultra.v1.OrgService/ListCredentials"
+        "core.v1.OrgService/PutCredential",
+        "core.v1.OrgService/ListCredentials"
       ],
-      "web": {
-        "file": "settings.spec.ts",
-        "test": "settings supports API key, base URL, and extra headers",
+      "go": {
+        "file": "agent_test.go",
+        "test": "TestCredentialRPCs",
         "asserts": [
-          "getByLabel(\"OpenAI API key\")",
-          "getByLabel(\"Extra headers JSON\")"
-        ]
-      },
-      "rust": {
-        "file": "provider_e2e.rs",
-        "test": "stores_credential_with_gateway_fields",
-        "asserts": [
-          "await_rendered(cx, \"credential:inference:openai:desktop-gateway\", FRAME_ATTEMPTS)",
-          "the credential surface exposed secret material"
+          "GetCredential().GetName()",
+          "json.Unmarshal(plaintext"
         ]
       }
     },
     "credential_redaction": {
       "rpcs": [
-        "ultra.v1.OrgService/DeleteCredential"
+        "core.v1.OrgService/DeleteCredential"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "never exposes credential material",
+      "go": {
+        "file": "agent_test.go",
+        "test": "TestA17_ByoCredentials",
         "asserts": [
-          "expect(dom).not.toContain(canary)",
-          "encodeURIComponent(canary)"
-        ]
-      },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "never_exposes_credential_material",
-        "asserts": [
-          "rendered desktop state contains the credential canary",
-          "encoded credential canary"
+          "credential_missing",
+          "failure reason"
         ]
       }
     },
     "dev_env_exec_usage": {
       "rpcs": [
-        "ultra.v1.EnvService/ProvisionEnv",
-        "ultra.v1.EnvService/ListEnvs",
-        "ultra.v1.EnvService/ExecPreview"
+        "core.v1.EnvService/ProvisionEnv",
+        "core.v1.EnvService/ListEnvs",
+        "core.v1.EnvService/ExecPreview"
       ],
-      "web": {
-        "file": "environment.spec.ts",
-        "test": "provisions a real environment and runs ExecPreview",
+      "go": {
+        "file": "env_test.go",
+        "test": "TestA22_A23_AgentEnvPersistence",
         "asserts": [
-          "expect([...phases]).toContain(\"ready\")",
-          "getByTestId(\"env-output\")"
-        ]
-      },
-      "rust": {
-        "file": "environment_e2e.rs",
-        "test": "shows_environment_lifecycle_and_exec",
-        "asserts": [
-          "window never painted a pre-ready lifecycle phase",
-          "await_rendered(cx, \"exec-output:gpui-environment\""
+          "provisionEnv",
+          "create README"
         ]
       }
     },
     "dev_env_restart_rotation": {
       "rpcs": [
-        "ultra.v1.EnvService/RestartEnv",
-        "ultra.v1.EnvService/GetEnv"
+        "core.v1.EnvService/RestartEnv",
+        "core.v1.EnvService/GetEnv"
       ],
-      "web": {
-        "file": "environment.spec.ts",
-        "test": "restarts an environment and shows a new epoch",
+      "go": {
+        "file": "phase7_test.go",
+        "test": "TestA74_EnvDurabilityAndRotation",
         "asserts": [
-          ".toBeGreaterThan(before)",
-          "after-restart"
-        ]
-      },
-      "rust": {
-        "file": "environment_e2e.rs",
-        "test": "shows_environment_restart_epoch",
-        "asserts": [
-          "await_rendered(cx, \"env:gpui-restart:ready:2\"",
-          "await_rendered(cx, \"exec-output:after-gpui-restart\""
-        ]
-      }
-    },
-    "env_usage_metering": {
-      "rpcs": [
-        "ultra.v1.BillingService/GetUsage",
-        "ultra.v1.EnvService/TerminateEnv"
-      ],
-      "web": {
-        "file": "environment.spec.ts",
-        "test": "shows org usage totals",
-        "asserts": [
-          "toHaveAttribute(\"data-open\", \"true\")",
-          ".toBe(\"false\")"
-        ]
-      },
-      "rust": {
-        "file": "environment_e2e.rs",
-        "test": "shows_org_usage_totals",
-        "asserts": [
-          "interval should be open while the env is ready",
-          "usage interval never closed after termination"
-        ]
-      }
-    },
-    "presence": {
-      "rpcs": [
-        "ultra.v1.SessionService/Join",
-        "ultra.v1.SessionService/ListParticipants",
-        "ultra.v1.SessionService/Heartbeat"
-      ],
-      "web": {
-        "file": "multiplayer.spec.ts",
-        "test": "shows presence and session memory",
-        "asserts": [
-          "getByTestId(\"presence\")"
-        ]
-      },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_presence",
-        "asserts": [
-          "presence never reached rendered state",
-          "await_rendered(cx, \"row:you: presence check\""
+          "ExecPreview",
+          "cached client"
         ]
       }
     },
     "prompt_input": {
       "rpcs": [
-        "ultra.v1.AgentService/ListRuns"
+        "core.v1.AgentService/ListRuns"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "create session, stream, answer, and reload history",
+      "go": {
+        "file": "agent_test.go",
+        "test": "TestA11_HappyPathSequence",
         "asserts": [
-          "getByLabel(\"Prompt\").fill",
-          "getByRole(\"button\", { name: \"Send\" })"
-        ]
-      },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "accepts_prompt_keystrokes",
-        "asserts": [
-          "cx.simulate_keystrokes(\"h i\")",
-          "await_rendered(cx, \"prompt:hi\""
+          "event_seq",
+          "RunStarted"
         ]
       }
     },
     "provider_registration_kinds": {
       "rpcs": [
-        "ultra.v1.OrgService/RegisterProvider",
-        "ultra.v1.OrgService/ListProviders"
+        "core.v1.OrgService/RegisterProvider",
+        "core.v1.OrgService/ListProviders"
       ],
-      "web": {
-        "file": "providers.spec.ts",
-        "test": "registers a real cluster and shows its capabilities",
+      "go": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
         "asserts": [
-          "toHaveAttribute(\"data-supported\", \"yes\")",
-          "toHaveAttribute(\"data-rate-class\", \"byo\")"
-        ]
-      },
-      "rust": {
-        "file": "provider_e2e.rs",
-        "test": "registers_provider_and_shows_capabilities",
-        "asserts": [
-          "await_rendered(cx, \"provider:desktop-cluster:byo_k8s:byo\", FRAME_ATTEMPTS)",
-          "the window hides the capabilities this cluster lacks"
+          "ProviderKindBYOKubernetes",
+          "reachable cluster"
         ]
       }
     },
     "provider_failure_validation": {
       "rpcs": [
-        "ultra.v1.EnvService/GetEnv"
+        "core.v1.EnvService/GetEnv"
       ],
-      "web": {
-        "file": "providers.spec.ts",
-        "test": "shows why an unreachable cluster was refused",
+      "go": {
+        "file": "provider_test.go",
+        "test": "TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing",
         "asserts": [
-          "toContainText(/unreachable/i)",
-          "toHaveCount(0)"
-        ]
-      },
-      "rust": {
-        "file": "provider_e2e.rs",
-        "test": "shows_why_a_registration_was_refused",
-        "asserts": [
-          "the refusal does not say the control plane was unreachable",
-          "a refused registration was stored"
-        ]
-      }
-    },
-    "shadcn_dark_surface": {
-      "rpcs": [
-        "ultra.v1.OrgService/GetOrg"
-      ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "renders shadcn primitives in dark mode",
-        "asserts": [
-          "toHaveClass(/dark/)",
-          "toHaveClass(/inline-flex/)"
-        ]
-      },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_dark_application_shell",
-        "asserts": [
-          "await_rendered(cx, \"window:dark\"",
-          "await_rendered(cx, \"usage-panel\""
+          "unusable registration was accepted",
+          "invalid_argument"
         ]
       }
     },
     "session_memory": {
       "rpcs": [
-        "ultra.v1.SessionService/SetMemory",
-        "ultra.v1.SessionService/ListMemory"
+        "core.v1.SessionService/SetMemory",
+        "core.v1.SessionService/ListMemory"
       ],
-      "web": {
-        "file": "multiplayer.spec.ts",
-        "test": "shows presence and session memory",
+      "go": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
         "asserts": [
-          "getByTestId(\"session-memory\")",
-          "data-testid=\"memory-entry\"][data-key=\"web.note\""
-        ]
-      },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_session_memory",
-        "asserts": [
-          "await_rendered(cx, \"memory:desktop.note",
-          "memory entry was never painted"
+          "concurrent_writes_are_atomic",
+          "caps_are_enforced"
         ]
       }
     },
     "run_tree_linkage": {
-      "web": {
-        "file": "run-tree.spec.ts",
-        "test": "renders a spawned run tree with child lanes",
-        "asserts": [
-          "toHaveAttribute(\"data-parent-run-id\", parentId!)",
-          "getByTestId(\"cohort-marker\")"
-        ]
-      },
-      "rust": {
-        "file": "run_tree_e2e.rs",
-        "test": "renders_run_tree_and_lanes",
-        "asserts": [
-          "await_rendered(cx, \"run-tree\", FRAME_ATTEMPTS)",
-          "does not point at the parent"
-        ]
-      },
       "rpcs": [
-        "ultra.v1.AgentService/GetRunTree"
-      ]
+        "core.v1.AgentService/GetRunTree"
+      ],
+      "go": {
+        "file": "phase8_orchestration_test.go",
+        "test": "TestA81_SpawnDurabilityAndGrants",
+        "asserts": [
+          "spawn key",
+          "grandchild"
+        ]
+      }
     },
     "run_lane_filter": {
-      "web": {
-        "file": "run-tree.spec.ts",
-        "test": "filters the timeline to one run lane",
-        "asserts": [
-          "toHaveAttribute(\"data-lane\", childId!)",
-          "Show all runs"
-        ]
-      },
-      "rust": {
-        "file": "run_tree_e2e.rs",
-        "test": "filters_timeline_to_one_lane",
-        "asserts": [
-          "await_rendered(cx, selector(format!(\"lane-rows:all:{all_rows}\")), FRAME_ATTEMPTS)",
-          "did not narrow the timeline"
-        ]
-      },
       "rpcs": [
-        "ultra.v1.AgentService/ListRuns"
-      ]
+        "core.v1.AgentService/ListRuns"
+      ],
+      "go": {
+        "file": "phase8_orchestration_test.go",
+        "test": "TestA83_CohortFanOutFanIn",
+        "asserts": [
+          "cohort created",
+          "cohort id"
+        ]
+      }
     },
     "wait_transitions": {
-      "web": {
-        "file": "run-tree.spec.ts",
-        "test": "shows wait and failure transitions",
-        "asserts": [
-          ".toBe(\"timed_out\")",
-          "data-run-state=\"completed\""
-        ]
-      },
-      "rust": {
-        "file": "run_tree_e2e.rs",
-        "test": "renders_wait_transitions",
-        "asserts": [
-          "rendered(cx, \"wait:cohort:timed_out:1\")",
-          "await_rendered(cx, \"row:run completed\", FRAME_ATTEMPTS)"
-        ]
-      },
       "rpcs": [
-        "ultra.v1.AgentService/GetRun"
-      ]
+        "core.v1.AgentService/GetRun",
+        "core.v1.AgentService/CancelRun"
+      ],
+      "go": {
+        "file": "phase8_waits_test.go",
+        "test": "TestA82_WaitRaceMatrix",
+        "asserts": [
+          "awaitRunOneOf",
+          "outcome.Completed"
+        ]
+      }
     },
     "agent_memory_inspection": {
-      "web": {
-        "file": "run-tree.spec.ts",
-        "test": "inspects agent-written session memory",
-        "asserts": [
-          "data-testid=\"memory-entry\"][data-key=\"browser.note\"",
-          "toContainText(\"written by an agent\")"
-        ]
-      },
-      "rust": {
-        "file": "run_tree_e2e.rs",
-        "test": "inspects_memory_and_reconnects",
-        "asserts": [
-          "await_rendered(cx, \"memory:desktop.note\", FRAME_ATTEMPTS)",
-          "await_rendered(cx, \"memory-count:1\", FRAME_ATTEMPTS)"
-        ]
-      },
       "rpcs": [
-        "ultra.v1.SessionService/ListMemory"
-      ]
+        "core.v1.SessionService/ListMemory"
+      ],
+      "go": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
+        "asserts": [
+          "agent_written_memory_survives_run_boundaries",
+          "key_namespace_is_enforced"
+        ]
+      }
     },
     "replica_reconnect": {
-      "web": {
-        "file": "run-tree.spec.ts",
-        "test": "reconnects through a second replica",
-        "asserts": [
-          "getByTestId(\"replica-switch\")",
-          ".toBe(normalize(before))"
-        ]
-      },
-      "rust": {
-        "file": "run_tree_e2e.rs",
-        "test": "inspects_memory_and_reconnects",
-        "asserts": [
-          "open_app_at(cx, &alt)",
-          "the second replica rendered a different timeline"
-        ]
-      },
       "rpcs": [
-        "ultra.v1.EventService/Subscribe"
-      ]
-    },
-    "flow_catalog_versions": {
-      "rpcs": [
-        "ultra.v1.FlowService/ListFlows",
-        "ultra.v1.FlowService/GetFlow",
-        "ultra.v1.FlowService/ListFlowVersions"
+        "core.v1.EventService/Subscribe"
       ],
-      "web": {
-        "file": "flows.spec.ts",
-        "test": "lists the flow catalog and selects a version",
+      "go": {
+        "file": "phase8_replicas_test.go",
+        "test": "TestA84_CrossReplicaSubscription",
         "asserts": [
-          "toHaveAttribute(\"data-type\", \"string\")",
-          "not.toContainText(\"reviewer v2\")"
-        ]
-      },
-      "rust": {
-        "file": "flow_e2e.rs",
-        "test": "renders_flow_catalog_and_version_selection",
-        "asserts": [
-          "await_rendered(cx, \"flow-version:1\", FRAME_ATTEMPTS)",
-          "selecting version 1 did not change the shown definition"
-        ]
-      }
-    },
-    "flow_authoring_validation": {
-      "rpcs": [
-        "ultra.v1.FlowService/PutFlow",
-        "ultra.v1.FlowService/ValidateFlow"
-      ],
-      "web": {
-        "file": "flows.spec.ts",
-        "test": "rejects an invalid flow with typed field paths",
-        "asserts": [
-          "toHaveAttribute(\"data-code\", \"invalid_template\")",
-          "toHaveAttribute(\"data-code\", \"unknown_tool\")"
-        ]
-      },
-      "rust": {
-        "file": "flow_e2e.rs",
-        "test": "renders_flow_validation_errors",
-        "asserts": [
-          "await_rendered(cx, \"flow-error:agents.reviewer.prompt:invalid_template\", FRAME_ATTEMPTS)",
-          "await_rendered(cx, \"flow-errors:0\", FRAME_ATTEMPTS)"
-        ]
-      }
-    },
-    "flow_invocation_progress": {
-      "rpcs": [
-        "ultra.v1.FlowService/InvokeFlow",
-        "ultra.v1.FlowService/ListFlowInvocations"
-      ],
-      "web": {
-        "file": "flows.spec.ts",
-        "test": "invokes a flow and shows provenance and progress",
-        "asserts": [
-          "toHaveAttribute(\"data-terminal-reason\", \"completed\")",
-          "expect(keys[keys.length - 1]).toBe(\"terminal\")"
-        ]
-      },
-      "rust": {
-        "file": "flow_e2e.rs",
-        "test": "renders_flow_invocation_progress",
-        "asserts": [
-          "await_rendered(cx, \"progress:stage_started:0\", FRAME_ATTEMPTS)",
-          "await_rendered(cx, \"flow-run:reviewer:completed\", FRAME_ATTEMPTS)"
-        ]
-      }
-    },
-    "flow_cancellation_recovery": {
-      "rpcs": [
-        "ultra.v1.FlowService/CancelFlowInvocation",
-        "ultra.v1.AgentService/CancelRun"
-      ],
-      "web": {
-        "file": "flows.spec.ts",
-        "test": "cancels an invocation and recovers state after reload",
-        "asserts": [
-          "toBe(\"cancelled\")",
-          "expect(after).toEqual(before)"
-        ]
-      },
-      "rust": {
-        "file": "flow_e2e.rs",
-        "test": "cancels_and_recovers_flow_invocation",
-        "asserts": [
-          "await_rendered(cx, \"invocation-reason:cancelled\", FRAME_ATTEMPTS)",
-          "the reconnected window rebuilt different progress"
-        ]
-      }
-    },
-    "flow_direct_invocation": {
-      "rpcs": [
-        "ultra.v1.FlowService/GetFlowInvocation"
-      ],
-      "web": {
-        "file": "flows.spec.ts",
-        "test": "opens an invocation directly by id",
-        "asserts": [
-          "expect(directProgress).toEqual(listedProgress)",
-          "toHaveAttribute(\"data-terminal-reason\", \"completed\")"
-        ]
-      },
-      "rust": {
-        "file": "flow_e2e.rs",
-        "test": "opens_invocation_by_id",
-        "asserts": [
-          "the two routes rendered different progress",
-          "await_rendered(direct_cx, \"flow-run:reviewer:completed\", FRAME_ATTEMPTS)"
+          "ReplicaBaseURLs",
+          "WorkerCount"
         ]
       }
     },
     "provider_ownership_and_hosting": {
       "rpcs": [
-        "ultra.v1.OrgService/DeleteProvider"
+        "core.v1.OrgService/DeleteProvider"
       ],
-      "web": {
-        "file": "providers.spec.ts",
-        "test": "names the hosting provider and refuses to orphan environments",
+      "go": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
         "asserts": [
-          "toHaveAttribute(\"data-provider-name\", \"default\")",
-          "toContainText(/still hosts/i)"
+          "RegisterProvider",
+          "ListProviders"
         ]
-      },
-      "rust": {
-        "file": "provider_e2e.rs",
-        "test": "names_the_hosting_provider_and_refuses_to_orphan",
+      }
+    },
+    "flat_allowlist_denial": {
+      "rpcs": [
+        "core.v1.AgentService/StartRun"
+      ],
+      "go": {
+        "file": "agent_test.go",
+        "test": "TestE1_FlatAllowlistDenialVisibility",
         "asserts": [
-          "the environment does not name the registration hosting it",
-          "a refused removal deleted the provider anyway"
+          "expected a tool result for the denied call",
+          "PermissionDenied"
+        ]
+      }
+    },
+    "periodic_prompts": {
+      "rpcs": [
+        "core.v1.AutomationService/PutPeriodicPrompt",
+        "core.v1.AutomationService/ListPeriodicPrompts",
+        "core.v1.AutomationService/SetPeriodicPromptEnabled"
+      ],
+      "go": {
+        "file": "automation_test.go",
+        "test": "TestA66_PeriodicPromptAPI",
+        "asserts": [
+          "GetPeriodicPrompts",
+          "list="
+        ]
+      }
+    },
+    "tenant_isolation": {
+      "rpcs": [
+        "core.v1.OrgService/GetOrg",
+        "core.v1.OrgService/CreateOrg",
+        "core.v1.OrgService/InviteMember",
+        "core.v1.OrgService/ListMembers"
+      ],
+      "go": {
+        "file": "functional_test.go",
+        "test": "TestA06_TenantIsolation",
+        "asserts": [
+          "cross-tenant access succeeded",
+          "not_found"
+        ]
+      }
+    },
+    "env_terminate": {
+      "rpcs": [
+        "core.v1.EnvService/TerminateEnv"
+      ],
+      "go": {
+        "file": "env_test.go",
+        "test": "TestA24_A25_A27_AuthReconcileMetering",
+        "asserts": [
+          "EnvFailed",
+          "provisionEnv"
+        ]
+      }
+    },
+    "session_memory_get_delete": {
+      "rpcs": [
+        "core.v1.SessionService/GetMemory",
+        "core.v1.SessionService/DeleteMemory"
+      ],
+      "go": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
+        "asserts": [
+          "caps_are_enforced",
+          "concurrent_writes_are_atomic"
         ]
       }
     }
   },
-  "deferred": {
-    "ultra.v1.SessionService/Leave": {
-      "owner": "A12.11",
-      "reason": "Phase 8 proved leave and stale-presence expiry through the Go functional suite, but no first-party client exposes an explicit leave control yet; that ships with the complete client applications."
-    },
-    "ultra.v1.SessionService/GetMemory": {
-      "owner": "A12.11",
-      "reason": "Phase 8 proved single-key reads, caps, and namespace rules through the Go functional suite; the shipped clients list memory rather than reading one key, so client evidence waits for the complete applications."
-    },
-    "ultra.v1.SessionService/DeleteMemory": {
-      "owner": "A12.11",
-      "reason": "Phase 8 proved deletion and replay after deletion through the Go functional suite; no client offers a delete control yet."
-    },
-    "ultra.v1.OrgService/CreateOrg": {
-      "owner": "A12.11",
-      "reason": "Org creation is an admin surface delivered with production auth in Phase 12."
-    },
-    "ultra.v1.OrgService/InviteMember": {
-      "owner": "A12.11",
-      "reason": "Membership management ships with the Phase 12 admin applications."
-    },
-    "ultra.v1.OrgService/ListMembers": {
-      "owner": "A12.11",
-      "reason": "Membership management ships with the Phase 12 admin applications."
-    },
-    "ultra.v1.AutomationService/PutPeriodicPrompt": {
-      "owner": "A11.7",
-      "reason": "Periodic schedules become user-facing once the real firing scheduler lands in Phase 11."
-    },
-    "ultra.v1.AutomationService/ListPeriodicPrompts": {
-      "owner": "A11.7",
-      "reason": "Periodic schedules become user-facing once the real firing scheduler lands in Phase 11."
-    },
-    "ultra.v1.AutomationService/SetPeriodicPromptEnabled": {
-      "owner": "A11.7",
-      "reason": "Enable/disable is proven with observed firings in Phase 11, not as a configuration record."
-    }
-  }
+  "deferred": {}
 }

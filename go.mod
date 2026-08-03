@@ -1,4 +1,4 @@
-module github.com/aleksclark/ultralogical
+module github.com/aleksclark/ultracore
 
 go 1.26.5
 

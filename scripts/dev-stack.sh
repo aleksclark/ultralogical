@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-command local development stack: Postgres, a local model endpoint,
-# ultrad, the worker, and the web application, plus seeded org, user, provider,
+# cored and the worker, plus seeded org, user, provider,
 # and credential records so the stack is usable rather than merely running.
 #
 # Usage:
@@ -14,9 +14,9 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 mode="${1:-up}"
 
-: "${ULTRA_BEZALEL_IMAGE:=ultralogical/bezalel:phase2-test}"
-: "${ULTRA_DEV_TOKEN:=dev-token}"
-: "${ULTRA_DEV_EMAIL:=dev@example.com}"
+: "${CORE_BEZALEL_IMAGE:=ultracore/bezalel:phase2-test}"
+: "${CORE_DEV_TOKEN:=dev-token}"
+: "${CORE_DEV_EMAIL:=dev@example.com}"
 
 if [ "$mode" = "smoke" ]; then
   # The smoke run must not collide with a developer's long-lived stack.
@@ -24,13 +24,11 @@ if [ "$mode" = "smoke" ]; then
   pg_port=$((15400 + RANDOM % 300))
   api_port=$((18100 + RANDOM % 300))
   model_port=$((18500 + RANDOM % 300))
-  web_port=$((18900 + RANDOM % 300))
 else
   suffix="dev"
-  pg_port="${ULTRA_DEV_PG_PORT:-5499}"
-  api_port="${ULTRA_DEV_API_PORT:-8080}"
-  model_port="${ULTRA_DEV_MODEL_PORT:-8091}"
-  web_port="${ULTRA_DEV_WEB_PORT:-5173}"
+  pg_port="${CORE_DEV_PG_PORT:-5499}"
+  api_port="${CORE_DEV_API_PORT:-8080}"
+  model_port="${CORE_DEV_MODEL_PORT:-8091}"
 fi
 
 pg_container="ultra-${suffix}-pg"
@@ -59,7 +57,7 @@ cleanup() {
   # provisioned; a developer stack keeps its database between runs.
   if [ "$mode" = "smoke" ]; then
     local envs
-    envs=$(docker ps -aq --filter "label=ultralogical.env_id" 2>/dev/null)
+    envs=$(docker ps -aq --filter "label=ultracore.env_id" 2>/dev/null)
     if [ -n "$envs" ]; then
       docker rm -f $envs >/dev/null 2>&1
     fi
@@ -70,10 +68,10 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-master_key="${ULTRA_MASTER_KEY:-}"
+master_key="${CORE_MASTER_KEY:-}"
 if [ -z "$master_key" ]; then
   master_key=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
-  log "generated an ephemeral ULTRA_MASTER_KEY for this run"
+  log "generated an ephemeral CORE_MASTER_KEY for this run"
 fi
 
 log "starting Postgres on port ${pg_port}"
@@ -97,45 +95,45 @@ done
 [ "${ready:-0}" = 1 ] || fail "Postgres never became ready"
 
 log "building binaries"
-go build -o "$state_dir/ultrad" ./cmd/ultrad || fail "build ultrad"
-go build -o "$state_dir/worker" ./cmd/worker || fail "build worker"
+go build -o "$state_dir/cored" ./cmd/cored || fail "build cored"
+go build -o "$state_dir/worker" ./cmd/coreworker || fail "build worker"
 go build -o "$state_dir/devstack" ./cmd/devstack || fail "build devstack"
 
 model_url="http://127.0.0.1:${model_port}/v1"
 log "starting the local model endpoint on port ${model_port}"
-ULTRA_MODEL_ADDR="127.0.0.1:${model_port}" "$state_dir/devstack" model \
+CORE_MODEL_ADDR="127.0.0.1:${model_port}" "$state_dir/devstack" model \
   >"$state_dir/model.log" 2>&1 &
 pids+=($!)
 
 log "seeding org, user, provider, and credential"
 DATABASE_URL="$database_url" \
-ULTRA_MASTER_KEY="$master_key" \
-ULTRA_DEV_EMAIL="$ULTRA_DEV_EMAIL" \
-ULTRA_MODEL_URL="$model_url" \
+CORE_MASTER_KEY="$master_key" \
+CORE_DEV_EMAIL="$CORE_DEV_EMAIL" \
+CORE_MODEL_URL="$model_url" \
   "$state_dir/devstack" seed >"$state_dir/seed.json" 2>"$state_dir/seed.err" \
   || { cat "$state_dir/seed.err" >&2; fail "seed"; }
 org_id=$(python3 -c "import json;print(json.load(open('$state_dir/seed.json'))['org_id'])")
 log "seeded org $org_id"
 
-log "starting ultrad on port ${api_port}"
+log "starting cored on port ${api_port}"
 DATABASE_URL="$database_url" \
-ULTRA_ADDR="127.0.0.1:${api_port}" \
-ULTRA_DEV_TOKENS="${ULTRA_DEV_TOKEN}=${ULTRA_DEV_EMAIL}" \
-ULTRA_MASTER_KEY="$master_key" \
-ULTRA_DEFAULT_MODEL=devstack \
-  "$state_dir/ultrad" >"$state_dir/ultrad.log" 2>&1 &
+CORE_ADDR="127.0.0.1:${api_port}" \
+CORE_DEV_TOKENS="${CORE_DEV_TOKEN}=${CORE_DEV_EMAIL}" \
+CORE_MASTER_KEY="$master_key" \
+CORE_DEFAULT_MODEL=devstack \
+  "$state_dir/cored" >"$state_dir/cored.log" 2>&1 &
 pids+=($!)
 
 log "starting worker"
 DATABASE_URL="$database_url" \
-ULTRA_MASTER_KEY="$master_key" \
-ULTRA_BEZALEL_IMAGE="$ULTRA_BEZALEL_IMAGE" \
-ULTRA_RECONCILE_INTERVAL=2s \
+CORE_MASTER_KEY="$master_key" \
+CORE_BEZALEL_IMAGE="$CORE_BEZALEL_IMAGE" \
+CORE_RECONCILE_INTERVAL=2s \
   "$state_dir/worker" >"$state_dir/worker.log" 2>&1 &
 pids+=($!)
 
 api="http://127.0.0.1:${api_port}"
-log "waiting for ultrad at $api"
+log "waiting for cored at $api"
 for _ in $(seq 1 240); do
   if python3 - "$api" <<'PY' >/dev/null 2>&1
 import sys, urllib.request
@@ -148,18 +146,18 @@ PY
   sleep 0.5
 done
 if [ "${healthy:-0}" != 1 ]; then
-  tail -50 "$state_dir/ultrad.log" >&2
-  fail "ultrad never became healthy"
+  tail -50 "$state_dir/cored.log" >&2
+  fail "cored never became healthy"
 fi
 
 if [ "$mode" = "smoke" ]; then
   log "running the noninteractive smoke"
-  if ! ULTRA_SMOKE_API="$api" \
-       ULTRA_SMOKE_TOKEN="$ULTRA_DEV_TOKEN" \
-       ULTRA_SMOKE_ORG="$org_id" \
+  if ! CORE_SMOKE_API="$api" \
+       CORE_SMOKE_TOKEN="$CORE_DEV_TOKEN" \
+       CORE_SMOKE_ORG="$org_id" \
        "$state_dir/devstack" smoke; then
-    echo "--- ultrad log ---" >&2
-    tail -50 "$state_dir/ultrad.log" >&2
+    echo "--- cored log ---" >&2
+    tail -50 "$state_dir/cored.log" >&2
     echo "--- worker log ---" >&2
     tail -50 "$state_dir/worker.log" >&2
     fail "smoke failed"
@@ -168,20 +166,10 @@ if [ "$mode" = "smoke" ]; then
   exit 0
 fi
 
-log "starting the web application on port ${web_port}"
-if [ -d ui/web/node_modules ]; then
-  (cd ui/web && VITE_ULTRAD_URL="$api" exec npm run dev -- --host 127.0.0.1 --port "$web_port" \
-    >"$state_dir/web.log" 2>&1) &
-  pids+=($!)
-  log "web application: http://127.0.0.1:${web_port}"
-else
-  log "ui/web/node_modules missing; run 'npm ci' in ui/web to include the web app"
-fi
-
 cat <<EOF
 [dev-stack] stack is up
   API:      $api
-  token:    $ULTRA_DEV_TOKEN
+  token:    $CORE_DEV_TOKEN
   org:      $org_id
   model:    $model_url
   Postgres: $database_url

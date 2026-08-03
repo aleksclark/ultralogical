@@ -12,7 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 // Job is a queueable unit of work. Implementations must be plain structs with
@@ -51,7 +51,7 @@ type Enqueuer interface {
 // It lives in the queue seam (not loop) because agent and environment jobs
 // share the atomic entity+job pattern.
 type TxEnqueuer interface {
-	EnqueueInTx(ctx context.Context, txStore ultra.Store, job Job, opts ...Opt) error
+	EnqueueInTx(ctx context.Context, txStore uc.Store, job Job, opts ...Opt) error
 }
 
 // Worker processes jobs of one kind. Delivery is at-least-once: Work must be

@@ -1,13 +1,13 @@
-// Package ultra defines the core domain types and storage interfaces for
-// Ultralogical. It contains no I/O; implementations live in subpackages
+// Package core defines the core domain types and storage interfaces for
+// ultracore. It contains no I/O; implementations live in subpackages
 // (postgres, jobqueue/river, ...).
-package ultra
+package core
 
 import (
 	"time"
 )
 
-// OrgID identifies an organization, the tenancy and billing boundary.
+// OrgID identifies an organization, the tenancy boundary.
 type OrgID string
 
 // UserID identifies a human user.
@@ -25,12 +25,11 @@ const (
 	OrgRoleMember OrgRole = "member"
 )
 
-// Org is the tenancy boundary. Every session, credential, provider instance,
-// and flow belongs to exactly one org.
+// Org is the tenancy boundary. Every session, credential, and provider
+// instance belongs to exactly one org.
 type Org struct {
 	ID        OrgID
 	Name      string
-	Plan      string
 	CreatedAt time.Time
 }
 

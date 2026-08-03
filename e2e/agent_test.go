@@ -11,15 +11,15 @@ import (
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	ultra "github.com/aleksclark/ultralogical"
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/secrets"
-	"github.com/aleksclark/ultralogical/testkit/harness"
-	"github.com/aleksclark/ultralogical/testkit/modelscript"
-	"github.com/aleksclark/ultralogical/testkit/testclient"
+	uc "github.com/aleksclark/ultracore"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/secrets"
+	"github.com/aleksclark/ultracore/testkit/harness"
+	"github.com/aleksclark/ultracore/testkit/modelscript"
+	"github.com/aleksclark/ultracore/testkit/testclient"
 )
 
-func kinds(events []*ultrav1.SessionEvent) []string {
+func kinds(events []*corev1.SessionEvent) []string {
 	out := make([]string, len(events))
 	for i, ev := range events {
 		out[i] = testclient.Kind(ev)
@@ -49,7 +49,7 @@ func assertSequence(t *testing.T, got []string, want []string) {
 	}
 }
 
-func isTerminalRunEvent(ev *ultrav1.SessionEvent) bool {
+func isTerminalRunEvent(ev *corev1.SessionEvent) bool {
 	switch testclient.Kind(ev) {
 	case "run_completed", "run_failed", "run_cancelled":
 		return true
@@ -97,13 +97,13 @@ func TestA11_HappyPathSequence(t *testing.T) {
 		t.Fatalf("event_seq = %d, RunStarted seq = %d", eventSeq, events[0].GetSeq())
 	}
 
-	final := alice.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 5*time.Second)
+	final := alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 5*time.Second)
 	if final.GetFailureReason() != "" {
 		t.Fatalf("unexpected failure: %v", final)
 	}
 
 	// Step audit rows: indices 0..1, nonzero tokens.
-	steps, err := stack.Store.Org(stack.OrgA.ID).Runs().Steps(ctx, ultra.RunID(run.GetId()))
+	steps, err := stack.Store.Org(stack.OrgA.ID).Runs().Steps(ctx, uc.RunID(run.GetId()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestA12_DurabilityUnderSIGKILL(t *testing.T) {
 	stack.StartWorker()
 
 	// The rescued job re-executes step 0 (attempt 2) and the run completes.
-	alice.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 120*time.Second)
+	alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 120*time.Second)
 
 	// Replay the log: seq gapless, attempt=2 marker present.
 	sub, err := alice.Subscribe(ctx, sess.GetId(), 0)
@@ -176,7 +176,7 @@ func TestA12_DurabilityUnderSIGKILL(t *testing.T) {
 	}
 
 	// Step rows unique 0..1.
-	steps, err := stack.Store.Org(stack.OrgA.ID).Runs().Steps(ctx, ultra.RunID(run.GetId()))
+	steps, err := stack.Store.Org(stack.OrgA.ID).Runs().Steps(ctx, uc.RunID(run.GetId()))
 	if err != nil || len(steps) != 2 {
 		t.Fatalf("steps = %v, err %v", steps, err)
 	}
@@ -210,7 +210,7 @@ func TestA13_AwaitingWithoutParkedWorkers(t *testing.T) {
 	}
 
 	// RunAwaiting event carries the structured question.
-	events := sub.CollectUntil(t, 30*time.Second, func(ev *ultrav1.SessionEvent) bool {
+	events := sub.CollectUntil(t, 30*time.Second, func(ev *corev1.SessionEvent) bool {
 		return testclient.Kind(ev) == "run_awaiting"
 	})
 	awaiting := events[len(events)-1].GetPayload().GetRunAwaiting()
@@ -219,7 +219,7 @@ func TestA13_AwaitingWithoutParkedWorkers(t *testing.T) {
 		t.Fatalf("question malformed: %v", awaiting)
 	}
 
-	alice.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_AWAITING, 10*time.Second)
+	alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_AWAITING, 10*time.Second)
 
 	// No job parked while awaiting. (River's completer acks finished jobs
 	// asynchronously, so allow it a moment to settle.)
@@ -239,15 +239,15 @@ func TestA13_AwaitingWithoutParkedWorkers(t *testing.T) {
 	}
 
 	// Answer resumes the run.
-	if _, err := alice.Agents.PromptRun(ctx, connect.NewRequest(&ultrav1.PromptRunRequest{
+	if _, err := alice.Agents.PromptRun(ctx, connect.NewRequest(&corev1.PromptRunRequest{
 		RunId: run.GetId(), Message: "blue",
 	})); err != nil {
 		t.Fatal(err)
 	}
-	alice.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 30*time.Second)
+	alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 30*time.Second)
 
 	// The answer is in the persisted history as a user message.
-	stored, err := stack.Store.Org(stack.OrgA.ID).Runs().Get(ctx, ultra.RunID(run.GetId()))
+	stored, err := stack.Store.Org(stack.OrgA.ID).Runs().Get(ctx, uc.RunID(run.GetId()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -281,11 +281,11 @@ func TestA14_Cancellation(t *testing.T) {
 	}
 
 	time.Sleep(1 * time.Second)
-	if _, err := alice.Agents.CancelRun(ctx, connect.NewRequest(&ultrav1.CancelRunRequest{RunId: run.GetId()})); err != nil {
+	if _, err := alice.Agents.CancelRun(ctx, connect.NewRequest(&corev1.CancelRunRequest{RunId: run.GetId()})); err != nil {
 		t.Fatal(err)
 	}
 
-	alice.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_CANCELLED, 30*time.Second)
+	alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_CANCELLED, 30*time.Second)
 
 	// Terminal event present, nothing after it.
 	sub, err := alice.Subscribe(ctx, sess.GetId(), 0)
@@ -321,7 +321,7 @@ func TestA14_Cancellation(t *testing.T) {
 	}
 
 	// PromptRun on a cancelled run is rejected with a typed error.
-	_, err = alice.Agents.PromptRun(ctx, connect.NewRequest(&ultrav1.PromptRunRequest{
+	_, err = alice.Agents.PromptRun(ctx, connect.NewRequest(&corev1.PromptRunRequest{
 		RunId: run.GetId(), Message: "hello?",
 	}))
 	var cerr *connect.Error
@@ -422,12 +422,12 @@ func TestA17_ByoCredentials(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		final := alice.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_FAILED, 30*time.Second)
+		final := alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_FAILED, 30*time.Second)
 		if final.GetFailureReason() != "credential_missing" {
 			t.Fatalf("failure reason = %q", final.GetFailureReason())
 		}
 		// No step row exists.
-		steps, err := stack.Store.Org(stack.OrgA.ID).Runs().Steps(ctx, ultra.RunID(run.GetId()))
+		steps, err := stack.Store.Org(stack.OrgA.ID).Runs().Steps(ctx, uc.RunID(run.GetId()))
 		if err != nil || len(steps) != 0 {
 			t.Fatalf("steps = %v, err = %v", steps, err)
 		}
@@ -446,7 +446,7 @@ func TestA17_ByoCredentials(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		final := alice.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_FAILED, 30*time.Second)
+		final := alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_FAILED, 30*time.Second)
 		if final.GetFailureReason() != "credential_invalid" {
 			t.Fatalf("failure reason = %q", final.GetFailureReason())
 		}
@@ -465,7 +465,7 @@ func TestA17_ByoCredentials(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		alice.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 30*time.Second)
+		alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 30*time.Second)
 
 		// (c) The org's API key reached the vendor.
 		reqs := stack.Model.Requests()
@@ -509,7 +509,7 @@ func TestA17_ByoCredentials(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		final := bob.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_FAILED, 30*time.Second)
+		final := bob.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_FAILED, 30*time.Second)
 		if final.GetFailureReason() != "credential_missing" {
 			t.Fatalf("org B used org A's credential? reason = %q", final.GetFailureReason())
 		}
@@ -523,7 +523,7 @@ func TestCredentialRPCs(t *testing.T) {
 	alice := stack.AliceClient()
 	ctx := context.Background()
 
-	put, err := alice.Orgs.PutCredential(ctx, connect.NewRequest(&ultrav1.PutCredentialRequest{
+	put, err := alice.Orgs.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
 		OrgId: string(stack.OrgA.ID), Kind: "inference:anthropic",
 		ApiKey: "sk-ant-secret-value-12345", BaseUrl: "https://gateway.example.test/anthropic",
 		ExtraHeadersJson: `{"cf-aig-collect-log-payload":"false","cf-aig-metadata":"{\"tier\":\"fast\"}"}`,
@@ -534,7 +534,7 @@ func TestCredentialRPCs(t *testing.T) {
 	if put.Msg.GetCredential().GetName() != "default" {
 		t.Fatalf("put returned %v", put.Msg.GetCredential())
 	}
-	stored, err := stack.Store.Org(stack.OrgA.ID).Credentials().Get(ctx, ultra.CredentialKindAnthropic, "default")
+	stored, err := stack.Store.Org(stack.OrgA.ID).Credentials().Get(ctx, uc.CredentialKindAnthropic, "default")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -546,7 +546,7 @@ func TestCredentialRPCs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var configured ultra.InferencePayload
+	var configured uc.InferencePayload
 	if err := json.Unmarshal(plaintext, &configured); err != nil {
 		t.Fatal(err)
 	}
@@ -557,7 +557,7 @@ func TestCredentialRPCs(t *testing.T) {
 		t.Fatal("credential value echoed in response")
 	}
 
-	list, err := alice.Orgs.ListCredentials(ctx, connect.NewRequest(&ultrav1.ListCredentialsRequest{
+	list, err := alice.Orgs.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
 		OrgId: string(stack.OrgA.ID),
 	}))
 	if err != nil {
@@ -570,14 +570,14 @@ func TestCredentialRPCs(t *testing.T) {
 		t.Fatal("list leaked secret material")
 	}
 
-	if _, err := alice.Orgs.DeleteCredential(ctx, connect.NewRequest(&ultrav1.DeleteCredentialRequest{
+	if _, err := alice.Orgs.DeleteCredential(ctx, connect.NewRequest(&corev1.DeleteCredentialRequest{
 		OrgId: string(stack.OrgA.ID), Kind: "inference:anthropic", Name: "default",
 	})); err != nil {
 		t.Fatal(err)
 	}
 
 	// Bob (not a member of org A) is denied indistinguishably.
-	_, err = stack.BobClient().Orgs.ListCredentials(ctx, connect.NewRequest(&ultrav1.ListCredentialsRequest{
+	_, err = stack.BobClient().Orgs.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
 		OrgId: string(stack.OrgA.ID),
 	}))
 	var cerr *connect.Error
@@ -599,4 +599,106 @@ func queryOne(t *testing.T, dbURL, sql string) int {
 		t.Fatal(err)
 	}
 	return n
+}
+
+type toolResult struct {
+	Name    string
+	Content string
+	IsError bool
+}
+
+func toolResultsFor(t *testing.T, stack *harness.Stack, session string, run uc.RunID) []toolResult {
+	t.Helper()
+	var out []toolResult
+	var from int64
+	for {
+		batch, err := stack.Store.Org(stack.OrgA.ID).Events().Range(context.Background(), uc.SessionID(session), from, 512)
+		if err != nil || len(batch) == 0 {
+			break
+		}
+		for _, e := range batch {
+			from = e.Seq
+			if e.Kind != uc.EventKindToolResult {
+				continue
+			}
+			var payload uc.ToolResultPayload
+			if json.Unmarshal(e.Payload, &payload) != nil || payload.RunID != run {
+				continue
+			}
+			out = append(out, toolResult{Name: payload.Name, Content: payload.Content, IsError: payload.IsError})
+		}
+	}
+	return out
+}
+
+// Flat allowlist denial: a child granted no tools that calls one receives the
+// uniform refusal and a PermissionDenied event, with no existence leak.
+func TestE1_FlatAllowlistDenialVisibility(t *testing.T) {
+	stack := harness.Up(t)
+	alice := stack.AliceClient()
+	ctx := context.Background()
+	sess := createSession(t, alice, string(stack.OrgA.ID), "denial")
+	org := stack.OrgA.ID
+	prompt := "deny parent " + t.Name()
+	childPrompt := "deny child " + t.Name()
+
+	stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
+		{
+			Match: modelscript.UserContains(prompt),
+			ToolCalls: []modelscript.ToolCallSpec{{Name: "spawn_agent", Args: map[string]any{
+				"prompt": childPrompt, "tools": []string{},
+			}}},
+		},
+		{Match: modelscript.UserContains(prompt), Sticky: true, Text: "parent done"},
+		{
+			Match: modelscript.UserContains(childPrompt),
+			ToolCalls: []modelscript.ToolCallSpec{{Name: "post_event", Args: map[string]any{
+				"text": "should be denied",
+			}}},
+		},
+		{Match: modelscript.UserContains(childPrompt), Sticky: true, Text: "child done"},
+	}})
+
+	parent, _, err := alice.StartRun(ctx, sess.GetId(), prompt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	kids := childrenOf(t, stack, org, uc.RunID(parent.GetId()), 1, 90*time.Second)
+	child := awaitRunOneOf(t, stack, org, kids[0].ID, 3*time.Minute, uc.RunCompleted, uc.RunFailed)
+	results := toolResultsFor(t, stack, sess.GetId(), child.ID)
+	if len(results) == 0 {
+		t.Fatal("expected a tool result for the denied call")
+	}
+	found := false
+	for _, r := range results {
+		if r.Name != "post_event" {
+			continue
+		}
+		found = true
+		if !r.IsError {
+			t.Fatalf("denied tool result is not an error: %+v", r)
+		}
+		if !strings.Contains(strings.ToLower(r.Content), "permission") && !strings.Contains(strings.ToLower(r.Content), "denied") && !strings.Contains(strings.ToLower(r.Content), "not granted") {
+			t.Fatalf("denial message %q is not a uniform denial", r.Content)
+		}
+		for _, leak := range []string{"canonical", "available tools", "bash", "spawn_agent"} {
+			if strings.Contains(strings.ToLower(r.Content), leak) {
+				t.Fatalf("denial leaked %q: %s", leak, r.Content)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("no post_event tool result among %+v", results)
+	}
+	denials := collectEvents(t, stack, sess.GetId(), uc.EventKindPermissionDenied, 60*time.Second, 1)
+	var denial uc.PermissionDeniedPayload
+	if err := json.Unmarshal(denials[len(denials)-1].Payload, &denial); err != nil {
+		t.Fatal(err)
+	}
+	if denial.RunID != child.ID {
+		t.Fatalf("denial attributed to %s, want child %s", denial.RunID, child.ID)
+	}
+	if denial.Tool != "post_event" {
+		t.Fatalf("denial tool = %q", denial.Tool)
+	}
 }

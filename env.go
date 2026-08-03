@@ -1,4 +1,4 @@
-package ultra
+package core
 
 import (
 	"context"
@@ -90,29 +90,22 @@ type DevEnv struct {
 	TokenHash          []byte
 	TokenEnc           []byte
 	Epoch              int
-	FailureMessage     string
-	CreatedByRunID     *RunID
-	// FlowInvocationID and FlowEnvName are the environment's flow provenance:
-	// which invocation created it and which declaration in that flow it
-	// satisfies. They are written with the row and never change, which is what
-	// makes an invocation's cleanup scope exact.
-	FlowInvocationID *FlowInvocationID
-	FlowEnvName      string
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	ReadyAt          *time.Time
-	TerminatedAt     *time.Time
+	FailureMessage string
+	CreatedByRunID *RunID
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	ReadyAt        *time.Time
+	TerminatedAt   *time.Time
 }
 
 // ProviderInstance is an org-scoped registration of where environments run.
 type ProviderInstance struct {
-	ID        ProviderInstanceID
-	OrgID     OrgID
-	Kind      string
-	Name      string
-	Config    json.RawMessage
-	RateClass string
-	State     string
+	ID     ProviderInstanceID
+	OrgID  OrgID
+	Kind   string
+	Name   string
+	Config json.RawMessage
+	State  string
 	// Capabilities is what this registration's control plane answered when it
 	// was probed. It is stored rather than recomputed so a decision about what
 	// a provider can do never depends on the control plane being reachable at
@@ -125,31 +118,13 @@ type ProviderInstance struct {
 const (
 	ProviderKindLocalDocker   = "local_docker"
 	ProviderKindBYOKubernetes = "byo_k8s"
-	ProviderKindHostedEKS     = "hosted_eks"
 	ProviderKindBYONomad      = "byo_nomad"
 	ProviderKindTunnelLocal   = "tunnel_local"
 	// ProviderKindStatic is the worked example from docs/providers.md. It is a
 	// real adapter, not a deployment default: a worker offers it only when a
 	// Bezalel binary is configured.
 	ProviderKindStatic = "static"
-	RateClassBYO       = "byo"
-	RateClassHosted    = "hosted"
 )
-
-// EnvUsage is one append-only metering interval. Ready opens it; a
-// terminal/suspended state closes it. LastMeteredAt is the crash-safe
-// watermark.
-type EnvUsage struct {
-	ID                 string
-	OrgID              OrgID
-	EnvID              EnvID
-	ProviderInstanceID ProviderInstanceID
-	StartedAt          time.Time
-	LastMeteredAt      time.Time
-	EndedAt            *time.Time
-	Seconds            int64
-	RateClass          string
-}
 
 // EnvStore manages dev envs within one org.
 type EnvStore interface {
@@ -183,21 +158,4 @@ type ProviderInstanceStore interface {
 	List(ctx context.Context) ([]ProviderInstance, error)
 	Delete(ctx context.Context, id ProviderInstanceID) error
 	MarkHealthy(ctx context.Context, id ProviderInstanceID) error
-}
-
-// UsageStore manages the environment metering ledger within one org. The
-// ledger is append-only: corrections are compensating rows, never edits.
-type UsageStore interface {
-	Open(ctx context.Context, usage EnvUsage) error
-	Tick(ctx context.Context, envID EnvID, at time.Time) error
-	Close(ctx context.Context, envID EnvID, at time.Time) error
-	// CloseAtWatermark closes any open interval at its persisted heartbeat
-	// rather than at wall time. It is the crash-recovery path: a control
-	// plane that died between an environment's terminal transition and its
-	// interval close must under-count by at most one heartbeat, never
-	// over-count for the time it was dead.
-	CloseAtWatermark(ctx context.Context, envID EnvID) error
-	// ListOpen returns intervals with no end, for reconciliation.
-	ListOpen(ctx context.Context) ([]EnvUsage, error)
-	List(ctx context.Context, from, to time.Time) ([]EnvUsage, error)
 }

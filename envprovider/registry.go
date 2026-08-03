@@ -14,13 +14,13 @@ import (
 	"sort"
 	"sync"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 // Factory builds a provider for one org registration. Config is the
 // registration's stored configuration; secrets are already decrypted by the
 // caller, so a factory never reaches the credential store itself.
-type Factory func(ctx context.Context, config json.RawMessage) (ultra.EnvProvider, error)
+type Factory func(ctx context.Context, config json.RawMessage) (uc.EnvProvider, error)
 
 // Registry maps provider kinds to factories.
 type Registry struct {
@@ -64,7 +64,7 @@ func (r *Registry) Enabled(kind string) bool {
 }
 
 // Build constructs the adapter for one registration.
-func (r *Registry) Build(ctx context.Context, kind string, config json.RawMessage) (ultra.EnvProvider, error) {
+func (r *Registry) Build(ctx context.Context, kind string, config json.RawMessage) (uc.EnvProvider, error) {
 	r.mu.RLock()
 	factory, ok := r.factories[kind]
 	r.mu.RUnlock()
@@ -81,20 +81,20 @@ func (r *Registry) Build(ctx context.Context, kind string, config json.RawMessag
 // canary resources because a registration attempt failed halfway, and a
 // registration that cannot be probed must not be stored: a provider that has
 // never answered is not a provider, it is a guess.
-func (r *Registry) DryRun(ctx context.Context, kind string, config json.RawMessage) (ultra.ProviderCapabilities, error) {
+func (r *Registry) DryRun(ctx context.Context, kind string, config json.RawMessage) (uc.ProviderCapabilities, error) {
 	provider, err := r.Build(ctx, kind, config)
 	if err != nil {
-		return ultra.ProviderCapabilities{}, err
+		return uc.ProviderCapabilities{}, err
 	}
 	if closer, ok := provider.(interface{ Close() error }); ok {
 		defer func() { _ = closer.Close() }()
 	}
-	prober, ok := provider.(ultra.CapabilityProber)
+	prober, ok := provider.(uc.CapabilityProber)
 	if !ok {
 		// A provider that cannot describe itself is accepted with no claimed
 		// capabilities rather than rejected: the conformance suite then holds
 		// it to the strictest contract.
-		return ultra.ProviderCapabilities{Kind: kind}, nil
+		return uc.ProviderCapabilities{Kind: kind}, nil
 	}
 	capabilities, err := prober.Probe(ctx)
 	if err != nil {

@@ -62,6 +62,7 @@ matches=$(git grep -inE "$banned" -- \
   ':!docs' \
   ':!plan' \
   ':!gen' \
+  ':!postgres/migrations' \
   ':!**/node_modules/**' \
   2>/dev/null)
 rc=$?

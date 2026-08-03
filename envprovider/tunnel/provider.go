@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 // Config configures the platform side of the tunnel provider.
@@ -33,7 +33,7 @@ type Config struct {
 	Transport http.RoundTripper `json:"-"`
 }
 
-// Provider implements ultra.EnvProvider by driving a remote agent.
+// Provider implements uc.EnvProvider by driving a remote agent.
 type Provider struct {
 	cfg    Config
 	client *http.Client
@@ -130,10 +130,10 @@ func (p *Provider) Health(ctx context.Context) (HealthResponse, error) {
 }
 
 // Provision asks the agent to create the environment on the user's machine.
-func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+func (p *Provider) Provision(ctx context.Context, envID uc.EnvID, spec uc.EnvSpec, token string) (uc.ProviderHandle, error) {
 	var out ProvisionResponse
 	if err := p.call(ctx, PathProvision, ProvisionRequest{EnvID: envID, Spec: spec, Token: token}, &out); err != nil {
-		return ultra.ProviderHandle{}, err
+		return uc.ProviderHandle{}, err
 	}
 	return out.Handle, nil
 }
@@ -141,22 +141,22 @@ func (p *Provider) Provision(ctx context.Context, envID ultra.EnvID, spec ultra.
 // Status maps the agent's answer onto the environment state machine. An
 // unreachable agent yields suspended rather than failed: the work is intact on
 // a machine that is merely offline, and destroying it would be wrong.
-func (p *Provider) Status(ctx context.Context, handle ultra.ProviderHandle) (ultra.ProviderStatus, error) {
+func (p *Provider) Status(ctx context.Context, handle uc.ProviderHandle) (uc.ProviderStatus, error) {
 	var out StatusResponse
 	err := p.call(ctx, PathStatus, HandleRequest{Handle: handle}, &out)
 	switch {
 	case errors.Is(err, ErrUnreachable):
-		return ultra.ProviderStatus{State: ultra.EnvSuspended, Message: "the environment agent is unreachable"}, nil
+		return uc.ProviderStatus{State: uc.EnvSuspended, Message: "the environment agent is unreachable"}, nil
 	case errors.Is(err, ErrRevoked):
-		return ultra.ProviderStatus{State: ultra.EnvTerminated, Message: "the environment agent's lease was revoked"}, nil
+		return uc.ProviderStatus{State: uc.EnvTerminated, Message: "the environment agent's lease was revoked"}, nil
 	case err != nil:
-		return ultra.ProviderStatus{}, err
+		return uc.ProviderStatus{}, err
 	}
-	return ultra.ProviderStatus{State: out.State, Message: out.Message}, nil
+	return uc.ProviderStatus{State: out.State, Message: out.Message}, nil
 }
 
 // Endpoint returns the tool endpoint the agent publishes through the tunnel.
-func (p *Provider) Endpoint(ctx context.Context, handle ultra.ProviderHandle) (string, error) {
+func (p *Provider) Endpoint(ctx context.Context, handle uc.ProviderHandle) (string, error) {
 	var out EndpointResponse
 	if err := p.call(ctx, PathEndpoint, HandleRequest{Handle: handle}, &out); err != nil {
 		return "", err
@@ -168,17 +168,17 @@ func (p *Provider) Endpoint(ctx context.Context, handle ultra.ProviderHandle) (s
 }
 
 // Restart replaces the environment's runtime with a rotated token.
-func (p *Provider) Restart(ctx context.Context, envID ultra.EnvID, handle ultra.ProviderHandle, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+func (p *Provider) Restart(ctx context.Context, envID uc.EnvID, handle uc.ProviderHandle, spec uc.EnvSpec, token string) (uc.ProviderHandle, error) {
 	var out ProvisionResponse
 	err := p.call(ctx, PathRestart, RestartRequest{EnvID: envID, Handle: handle, Spec: spec, Token: token}, &out)
 	if err != nil {
-		return ultra.ProviderHandle{}, err
+		return uc.ProviderHandle{}, err
 	}
 	return out.Handle, nil
 }
 
 // Terminate releases the environment on the user's machine.
-func (p *Provider) Terminate(ctx context.Context, handle ultra.ProviderHandle) error {
+func (p *Provider) Terminate(ctx context.Context, handle uc.ProviderHandle) error {
 	err := p.call(ctx, PathTerminate, HandleRequest{Handle: handle}, nil)
 	if errors.Is(err, ErrRevoked) {
 		// A revoked agent already released everything it held.
@@ -187,9 +187,9 @@ func (p *Provider) Terminate(ctx context.Context, handle ultra.ProviderHandle) e
 	return err
 }
 
-// Resources implements ultra.EnvResourceLister through the agent, so a leak
+// Resources implements uc.EnvResourceLister through the agent, so a leak
 // check asks the machine that actually holds the resources.
-func (p *Provider) Resources(ctx context.Context, envID ultra.EnvID) ([]string, error) {
+func (p *Provider) Resources(ctx context.Context, envID uc.EnvID) ([]string, error) {
 	var out ResourcesResponse
 	if err := p.call(ctx, PathResources, HandleRequest{EnvID: envID}, &out); err != nil {
 		if errors.Is(err, ErrRevoked) {
@@ -201,7 +201,7 @@ func (p *Provider) Resources(ctx context.Context, envID ultra.EnvID) ([]string, 
 }
 
 // RevokeLease withdraws the agent's lease and releases what it holds.
-func (p *Provider) RevokeLease(ctx context.Context, handle ultra.ProviderHandle) error {
+func (p *Provider) RevokeLease(ctx context.Context, handle uc.ProviderHandle) error {
 	err := p.call(ctx, PathRevoke, HandleRequest{Handle: handle}, nil)
 	if errors.Is(err, ErrRevoked) {
 		return nil
@@ -209,11 +209,11 @@ func (p *Provider) RevokeLease(ctx context.Context, handle ultra.ProviderHandle)
 	return err
 }
 
-// Probe implements ultra.CapabilityProber by asking the agent what it is.
-func (p *Provider) Probe(ctx context.Context) (ultra.ProviderCapabilities, error) {
-	capabilities := ultra.ProviderCapabilities{
-		Kind:  ultra.ProviderKindTunnelLocal,
-		Notes: map[ultra.ProviderCapability]string{},
+// Probe implements uc.CapabilityProber by asking the agent what it is.
+func (p *Provider) Probe(ctx context.Context) (uc.ProviderCapabilities, error) {
+	capabilities := uc.ProviderCapabilities{
+		Kind:  uc.ProviderKindTunnelLocal,
+		Notes: map[uc.ProviderCapability]string{},
 	}
 	health, err := p.Health(ctx)
 	if err != nil {
@@ -223,16 +223,12 @@ func (p *Provider) Probe(ctx context.Context) (ultra.ProviderCapabilities, error
 		return capabilities, ErrRevoked
 	}
 	capabilities.Supported = append(capabilities.Supported,
-		ultra.CapabilityServesToolEndpoint,
-		ultra.CapabilityEnumeratesResources,
+		uc.CapabilityServesToolEndpoint,
+		uc.CapabilityEnumeratesResources,
 		// A user's machine goes offline and comes back; that is a suspension
 		// the platform recovers from rather than a failure.
-		ultra.CapabilityToleratesDisconnect,
-		ultra.CapabilityRestartPreservesWorkspace,
+		uc.CapabilityToleratesDisconnect,
+		uc.CapabilityRestartPreservesWorkspace,
 	)
-	capabilities.Notes[ultra.CapabilityNamespaceIsolation] =
-		"a tunnel agent hosts one organization's environments on one machine"
-	capabilities.Notes[ultra.CapabilityResourceQuota] =
-		"the user's machine bounds its own capacity"
 	return capabilities, nil
 }

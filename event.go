@@ -1,4 +1,4 @@
-package ultra
+package core
 
 import (
 	"context"
@@ -45,9 +45,6 @@ const (
 	EventKindEnvTerminating      = "env_terminating"
 	EventKindEnvTerminated       = "env_terminated"
 	EventKindExecPreviewRan      = "exec_preview_ran"
-	EventKindParticipantJoined   = "participant_joined"
-	EventKindParticipantLeft     = "participant_left"
-	EventKindParticipantIdle     = "participant_idle"
 	EventKindRunSpawned          = "run_spawned"
 	EventKindMemorySet           = "memory_set"
 	EventKindMemoryDeleted       = "memory_deleted"
@@ -56,9 +53,6 @@ const (
 	EventKindModelFallback       = "model_fallback"
 	EventKindHookFired           = "hook_fired"
 	EventKindPeriodicPromptFired = "periodic_prompt_fired"
-	EventKindFlowInvoked         = "flow_invoked"
-	EventKindFlowProgressed      = "flow_invocation_progressed"
-	EventKindFlowTerminal        = "flow_invocation_terminal"
 )
 
 // Event is one entry in a session's append-only event log. Payload is the
@@ -203,11 +197,6 @@ type ExecPreviewRanPayload struct {
 	IsError bool   `json:"is_error"`
 }
 
-type ParticipantEventPayload struct {
-	Kind          ParticipantKind `json:"kind"`
-	ParticipantID string          `json:"participant_id"`
-	Display       string          `json:"display,omitempty"`
-}
 type RunSpawnedPayload struct {
 	ParentRunID RunID `json:"parent_run_id"`
 	ChildRunID  RunID `json:"child_run_id"`
@@ -261,35 +250,6 @@ type PermissionDeniedPayload struct {
 	Tool   string `json:"tool"`
 	EnvID  *EnvID `json:"env_id,omitempty"`
 	Reason string `json:"reason"`
-}
-
-// FlowInvokedPayload records a flow invocation's full provenance triple, so a
-// subscriber can attribute every later run and environment in the session
-// without a second request.
-type FlowInvokedPayload struct {
-	InvocationID FlowInvocationID `json:"invocation_id"`
-	FlowID       FlowID           `json:"flow_id"`
-	FlowName     string           `json:"flow_name"`
-	FlowVersion  int              `json:"flow_version"`
-	ParamsJSON   string           `json:"params_json,omitempty"`
-}
-
-// FlowProgressedPayload is one ordered lifecycle step of an invocation. Key is
-// the same idempotency key the persisted progress row uses, so the log and the
-// row set say exactly the same thing.
-type FlowProgressedPayload struct {
-	InvocationID FlowInvocationID `json:"invocation_id"`
-	Stage        string           `json:"stage"`
-	Key          string           `json:"key"`
-	Detail       string           `json:"detail,omitempty"`
-}
-
-// FlowTerminalPayload closes an invocation with its documented reason.
-type FlowTerminalPayload struct {
-	InvocationID   FlowInvocationID `json:"invocation_id"`
-	State          string           `json:"state"`
-	TerminalReason string           `json:"terminal_reason"`
-	Message        string           `json:"message,omitempty"`
 }
 
 // EventBus delivers ordered, gapless per-session event streams: a catch-up

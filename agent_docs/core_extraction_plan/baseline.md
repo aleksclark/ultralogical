@@ -10,7 +10,7 @@ Frozen pre-extraction evidence at the Phase 10 merge commit. Every later
 | Commit | `16629b5` (`16629b5832b9daf40791fd2c0c09b170c9202b18`) |
 | Subject | `Merge pull request #21 from aleksclark/aleks/phase-10-static` |
 | Branch | `core-extraction` |
-| Module | `github.com/aleksclark/ultralogical` |
+| Module | `github.com/aleksclark/ultracore` |
 | Go version (baseline host) | `go1.26.5 linux/amd64` |
 | Recorded at | 2026-08-03T16:02:38-05:00 (E0) |
 | Host notes | Docker available; `golangci-lint` 2.11.3; `task` 3.52.0; `buf` 1.72.0 |
@@ -25,43 +25,43 @@ All commands run from the worktree root against tree content at `16629b5`
 | `task build` | **0** | **4s** | `go build ./...` |
 | `task lint` | **0** | **10s** (pre-fence) / **1s** cached (with fence) | `buf lint` + `go vet` + `golangci-lint run` (0 issues). Post-E0 also runs `scripts/check-extraction-fences.sh` → `extraction fences: no active terms (E0 baseline); ok`. |
 | `task test` | **0** | **51s** | Unit + store + queue + provider conformance (excludes `e2e/`). All packages green. |
-| `task test:functional` | **0** | **504s** | `go test ./e2e/ -count=1 -timeout 40m` → `ok github.com/aleksclark/ultralogical/e2e 503.358s` |
+| `task test:functional` | **0** | **504s** | `go test ./e2e/ -count=1 -timeout 40m` → `ok github.com/aleksclark/ultracore/e2e 503.358s` |
 | `task verify:codegen` | **0** | **~1s** | Go codegen match + rust coverage (7 protos, 151 messages, 8 services). TS typecheck skipped: `clients/ts` deps not installed (`npm ci` would enable it). |
 | `task verify:coverage` | **0** | **1s** | `27 capabilities have validated, CI-executed web and GPUI evidence; 40/49 RPCs covered, 9 explicitly deferred` |
 
 ### `task test` package results
 
 ```
-ok  github.com/aleksclark/ultralogical                          0.005s
-ok  github.com/aleksclark/ultralogical/cmd/ultra/cli            17.521s
-ok  github.com/aleksclark/ultralogical/envprovider               0.008s
-ok  github.com/aleksclark/ultralogical/envprovider/k8s          49.243s
-ok  github.com/aleksclark/ultralogical/envprovider/localdocker   5.197s
-ok  github.com/aleksclark/ultralogical/envprovider/nomad         8.447s
-ok  github.com/aleksclark/ultralogical/envprovider/static        4.963s
-ok  github.com/aleksclark/ultralogical/envprovider/tunnel       18.439s
-ok  github.com/aleksclark/ultralogical/http                      0.012s
-ok  github.com/aleksclark/ultralogical/jobqueue/inproc           7.349s
-ok  github.com/aleksclark/ultralogical/jobqueue/river           13.424s
-ok  github.com/aleksclark/ultralogical/mcp                       0.003s
-ok  github.com/aleksclark/ultralogical/postgres                  1.686s
-ok  github.com/aleksclark/ultralogical/secrets                   0.002s
-ok  github.com/aleksclark/ultralogical/testkit/testclient        0.004s
+ok  github.com/aleksclark/ultracore                          0.005s
+ok  github.com/aleksclark/ultracore/cmd/core/cli            17.521s
+ok  github.com/aleksclark/ultracore/envprovider               0.008s
+ok  github.com/aleksclark/ultracore/envprovider/k8s          49.243s
+ok  github.com/aleksclark/ultracore/envprovider/localdocker   5.197s
+ok  github.com/aleksclark/ultracore/envprovider/nomad         8.447s
+ok  github.com/aleksclark/ultracore/envprovider/static        4.963s
+ok  github.com/aleksclark/ultracore/envprovider/tunnel       18.439s
+ok  github.com/aleksclark/ultracore/http                      0.012s
+ok  github.com/aleksclark/ultracore/jobqueue/inproc           7.349s
+ok  github.com/aleksclark/ultracore/jobqueue/river           13.424s
+ok  github.com/aleksclark/ultracore/mcp                       0.003s
+ok  github.com/aleksclark/ultracore/postgres                  1.686s
+ok  github.com/aleksclark/ultracore/secrets                   0.002s
+ok  github.com/aleksclark/ultracore/testkit/testclient        0.004s
 ```
 
-No-test packages (compile-only): `cmd/devstack`, `cmd/ultra`,
-`cmd/ultra-env-agent`, `cmd/ultrad`, `cmd/worker`, `envprovider/conformance`,
+No-test packages (compile-only): `cmd/devstack`, `cmd/core`,
+`cmd/core-env-agent`, `cmd/cored`, `cmd/coreworker`, `envprovider/conformance`,
 `envwork`, `flowwork`, `gen/...`, `jobqueue`, `jobqueue/conformance`, `loop`,
 `testkit/{envconverge,harness,modelscript,pgtest}`.
 
 ### `task test:functional`
 
 ```
-ok  github.com/aleksclark/ultralogical/e2e  503.358s
+ok  github.com/aleksclark/ultracore/e2e  503.358s
 ```
 
 Full acceptance suite green on the real stack (harness boots Postgres,
-modelscript, ultrad, worker as required per test).
+modelscript, cored, worker as required per test).
 
 ### `task verify:codegen`
 

@@ -8,11 +8,11 @@ import (
 
 	"connectrpc.com/connect"
 
-	ultra "github.com/aleksclark/ultralogical"
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/secrets"
-	"github.com/aleksclark/ultralogical/testkit/harness"
-	"github.com/aleksclark/ultralogical/testkit/modelscript"
+	uc "github.com/aleksclark/ultracore"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/secrets"
+	"github.com/aleksclark/ultracore/testkit/harness"
+	"github.com/aleksclark/ultracore/testkit/modelscript"
 )
 
 // rotatedAPIKey is the value the credential is rotated to. Like the harness
@@ -44,15 +44,15 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	alice.AwaitRunState(t, before.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
+	alice.AwaitRunState(t, before.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
 	if !authorizedWith(stack, harness.CanaryAPIKey) {
 		t.Fatal("the first run did not authenticate with the seeded credential; rotation would prove nothing")
 	}
 
 	// Rotate through the public API, to the same kind and name, which is what
 	// makes this a rotation rather than a second credential.
-	rotated, err := alice.Orgs.PutCredential(ctx, connect.NewRequest(&ultrav1.PutCredentialRequest{
-		OrgId: org, Kind: ultra.CredentialKindOpenAI, Name: "default",
+	rotated, err := alice.Orgs.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
+		OrgId: org, Kind: uc.CredentialKindOpenAI, Name: "default",
 		ApiKey: rotatedAPIKey, BaseUrl: stack.Model.URL(),
 	}))
 	if err != nil {
@@ -69,7 +69,7 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	alice.AwaitRunState(t, after.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
+	alice.AwaitRunState(t, after.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
 	if !authorizedWith(stack, rotatedAPIKey) {
 		t.Fatal("no vendor call carried the rotated credential, so the rotation did not take effect")
 	}
@@ -84,7 +84,7 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 	// because retiring a secret does not make disclosing it acceptable.
 	for _, secret := range []string{harness.CanaryAPIKey, rotatedAPIKey} {
 		events, err := stack.Store.Org(stack.OrgA.ID).Events().Range(ctx,
-			ultra.SessionID(session.GetId()), 0, 4096)
+			uc.SessionID(session.GetId()), 0, 4096)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -94,10 +94,10 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 		for _, event := range events {
 			assertNoSecret(t, secret, "event payload "+event.Kind, string(event.Payload))
 		}
-		assertNoSecret(t, secret, "ultrad and worker logs", stack.Logs())
+		assertNoSecret(t, secret, "cored and worker logs", stack.Logs())
 
 		// The credential surface never echoes secret material back.
-		listed, err := alice.Orgs.ListCredentials(ctx, connect.NewRequest(&ultrav1.ListCredentialsRequest{
+		listed, err := alice.Orgs.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
 			OrgId: org,
 		}))
 		if err != nil {
@@ -109,7 +109,7 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 
 		// Nor does the stored row hold it in the clear.
 		stored, err := stack.Store.Org(stack.OrgA.ID).Credentials().Get(ctx,
-			ultra.CredentialKindOpenAI, "default")
+			uc.CredentialKindOpenAI, "default")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -141,10 +141,10 @@ func TestA106_RotationAppliesToAlreadyRunningSessions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	alice.AwaitRunState(t, first.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
+	alice.AwaitRunState(t, first.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
 
-	if _, err := alice.Orgs.PutCredential(ctx, connect.NewRequest(&ultrav1.PutCredentialRequest{
-		OrgId: org, Kind: ultra.CredentialKindOpenAI, Name: "default",
+	if _, err := alice.Orgs.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
+		OrgId: org, Kind: uc.CredentialKindOpenAI, Name: "default",
 		ApiKey: rotatedAPIKey, BaseUrl: stack.Model.URL(),
 	})); err != nil {
 		t.Fatal(err)
@@ -158,14 +158,14 @@ func TestA106_RotationAppliesToAlreadyRunningSessions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	alice.AwaitRunState(t, second.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
+	alice.AwaitRunState(t, second.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
 
 	if got := lastAuthorization(stack); got != "Bearer "+rotatedAPIKey {
 		t.Fatalf("a run in a live session kept using the pre-rotation credential: %q",
 			redactedAuthorization(stack))
 	}
 	for _, secret := range []string{harness.CanaryAPIKey, rotatedAPIKey} {
-		assertNoSecret(t, secret, "ultrad and worker logs", stack.Logs())
+		assertNoSecret(t, secret, "cored and worker logs", stack.Logs())
 	}
 }
 

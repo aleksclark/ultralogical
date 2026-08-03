@@ -1,9 +1,9 @@
 {
-  "name": "@ultralogical/client",
+  "name": "@ultracore/client",
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "TypeScript client for the Ultralogical API, generated from proto/ultra/v1",
+  "description": "TypeScript client for the ultracore API, generated from proto/core/v1",
   "dependencies": {
     "@bufbuild/protobuf": "^2.2.0",
     "@connectrpc/connect": "^2.0.0",

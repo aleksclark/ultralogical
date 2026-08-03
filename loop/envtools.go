@@ -7,25 +7,25 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envwork"
-	"github.com/aleksclark/ultralogical/mcp"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envwork"
+	"github.com/aleksclark/ultracore/mcp"
 )
 
 type ToolResolver interface {
-	Tools(context.Context, ultra.AgentRun) ([]fantasy.AgentTool, error)
+	Tools(context.Context, uc.AgentRun) ([]fantasy.AgentTool, error)
 }
 type EnvTools struct {
-	Store ultra.Store
+	Store uc.Store
 	Envs  *envwork.Service
 }
 
-func (r *EnvTools) deny(ctx context.Context, run ultra.AgentRun, tool string, envID *ultra.EnvID, reason string) fantasy.ToolResponse {
-	payload, _ := json.Marshal(ultra.PermissionDeniedPayload{RunID: run.ID, Tool: tool, EnvID: envID, Reason: reason})
-	_, _ = r.Store.Org(run.OrgID).Events().Append(ctx, run.SessionID, ultra.Event{Actor: ultra.Actor{Type: ultra.ActorSystem}, Kind: ultra.EventKindPermissionDenied, Payload: payload})
+func (r *EnvTools) deny(ctx context.Context, run uc.AgentRun, tool string, envID *uc.EnvID, reason string) fantasy.ToolResponse {
+	payload, _ := json.Marshal(uc.PermissionDeniedPayload{RunID: run.ID, Tool: tool, EnvID: envID, Reason: reason})
+	_, _ = r.Store.Org(run.OrgID).Events().Append(ctx, run.SessionID, uc.Event{Actor: uc.Actor{Type: uc.ActorSystem}, Kind: uc.EventKindPermissionDenied, Payload: payload})
 	return fantasy.NewTextErrorResponse("permission denied")
 }
-func (r *EnvTools) Tools(ctx context.Context, run ultra.AgentRun) ([]fantasy.AgentTool, error) {
+func (r *EnvTools) Tools(ctx context.Context, run uc.AgentRun) ([]fantasy.AgentTool, error) {
 	envs, err := r.Store.Org(run.OrgID).Envs().List(ctx, run.SessionID)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (r *EnvTools) Tools(ctx context.Context, run ultra.AgentRun) ([]fantasy.Age
 				return r.deny(ctx, run, "provision_env", nil, "tool not granted"), nil
 			}
 			id := run.ID
-			env, _, err := r.Envs.Request(ctx, run.OrgID, run.SessionID, ultra.EnvSpec{Name: in.Name, Image: in.Image, Workdir: "/work"}, in.ProviderInstance, &id)
+			env, _, err := r.Envs.Request(ctx, run.OrgID, run.SessionID, uc.EnvSpec{Name: in.Name, Image: in.Image, Workdir: "/work"}, in.ProviderInstance, &id)
 			if err != nil {
 				return fantasy.NewTextErrorResponse("provision failed"), nil
 			}
@@ -53,11 +53,11 @@ func (r *EnvTools) Tools(ctx context.Context, run ultra.AgentRun) ([]fantasy.Age
 				if e != nil {
 					return fantasy.NewTextErrorResponse("lookup failed"), nil
 				}
-				if current.State == ultra.EnvReady {
+				if current.State == uc.EnvReady {
 					b, _ := json.Marshal(map[string]string{"env_id": string(env.ID)})
 					return fantasy.NewTextResponse(string(b)), nil
 				}
-				if current.State == ultra.EnvFailed {
+				if current.State == uc.EnvFailed {
 					return fantasy.NewTextErrorResponse(current.FailureMessage), nil
 				}
 				select {
@@ -69,17 +69,11 @@ func (r *EnvTools) Tools(ctx context.Context, run ultra.AgentRun) ([]fantasy.Age
 		}))
 	}
 	if run.Grants.AllowsTool("list_envs") {
-		tools = append(tools, fantasy.NewAgentTool("list_envs", "List granted environments.", func(ctx context.Context, _ struct{}, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+		tools = append(tools, fantasy.NewAgentTool("list_envs", "List session environments.", func(ctx context.Context, _ struct{}, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
 			if !run.Grants.AllowsTool("list_envs") {
 				return r.deny(ctx, run, "list_envs", nil, "tool not granted"), nil
 			}
-			var allowed []ultra.DevEnv
-			for _, e := range envs {
-				if run.Grants.AllowsEnv(e.ID) {
-					allowed = append(allowed, e)
-				}
-			}
-			b, _ := json.Marshal(allowed)
+			b, _ := json.Marshal(envs)
 			return fantasy.NewTextResponse(string(b)), nil
 		}))
 	}
@@ -87,9 +81,9 @@ func (r *EnvTools) Tools(ctx context.Context, run ultra.AgentRun) ([]fantasy.Age
 		type input struct {
 			EnvID string `json:"env_id"`
 		}
-		tools = append(tools, fantasy.NewAgentTool("terminate_env", "Terminate a granted environment.", func(ctx context.Context, in input, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			id := ultra.EnvID(in.EnvID)
-			if !run.Grants.AllowsTool("terminate_env") || !run.Grants.AllowsEnv(id) {
+		tools = append(tools, fantasy.NewAgentTool("terminate_env", "Terminate a session environment.", func(ctx context.Context, in input, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			id := uc.EnvID(in.EnvID)
+			if !run.Grants.AllowsTool("terminate_env") {
 				return r.deny(ctx, run, "terminate_env", &id, "environment or tool not granted"), nil
 			}
 			if err := r.Envs.RequestTerminate(ctx, run.OrgID, id); err != nil {
@@ -98,9 +92,9 @@ func (r *EnvTools) Tools(ctx context.Context, run ultra.AgentRun) ([]fantasy.Age
 			return fantasy.NewTextResponse("termination requested"), nil
 		}))
 	}
-	var ready []ultra.DevEnv
+	var ready []uc.DevEnv
 	for _, e := range envs {
-		if e.State == ultra.EnvReady && run.Grants.AllowsEnv(e.ID) {
+		if e.State == uc.EnvReady {
 			ready = append(ready, e)
 		}
 	}
@@ -144,7 +138,7 @@ func (r *EnvTools) Tools(ctx context.Context, run ultra.AgentRun) ([]fantasy.Age
 
 // unreachableEnvTools rebuilds the last known toolset for an environment that
 // can no longer be reached, with every call failing in a typed way.
-func (r *EnvTools) unreachableEnvTools(prefix string, env ultra.DevEnv, grants ultra.Grants, cause error) []fantasy.AgentTool {
+func (r *EnvTools) unreachableEnvTools(prefix string, env uc.DevEnv, grants uc.Grants, cause error) []fantasy.AgentTool {
 	var tools []fantasy.AgentTool
 	for _, name := range r.Envs.LastTools(env.ID) {
 		if !grants.AllowsTool(name) {
@@ -169,11 +163,11 @@ type mcpTool struct {
 	// call that arrives anyway (replayed from history, or invented) must still
 	// be refused here.
 	tools *EnvTools
-	run   ultra.AgentRun
-	envID ultra.EnvID
+	run   uc.AgentRun
+	envID uc.EnvID
 }
 
-func newMCPTool(name string, t mcp.Tool, c *mcp.Client, owner *EnvTools, run ultra.AgentRun, envID ultra.EnvID) fantasy.AgentTool {
+func newMCPTool(name string, t mcp.Tool, c *mcp.Client, owner *EnvTools, run uc.AgentRun, envID uc.EnvID) fantasy.AgentTool {
 	var schema map[string]any
 	_ = json.Unmarshal(t.InputSchema, &schema)
 	params, _ := schema["properties"].(map[string]any)
@@ -208,15 +202,11 @@ func (t *mcpTool) Run(ctx context.Context, call fantasy.ToolCall) (fantasy.ToolR
 		if !t.run.Grants.AllowsTool(t.remote) {
 			return t.tools.deny(ctx, t.run, t.remote, nil, "tool not granted"), nil
 		}
-		if !t.run.Grants.AllowsEnv(t.envID) {
-			envID := t.envID
-			return t.tools.deny(ctx, t.run, t.remote, &envID, "environment not granted"), nil
-		}
 		// The environment must still be reachable *and* still ready: a
 		// terminated environment must read as unavailable, never as a
 		// silently-succeeding call against a stale endpoint.
 		env, err := t.tools.Store.Org(t.run.OrgID).Envs().Get(ctx, t.envID)
-		if err != nil || env.State != ultra.EnvReady {
+		if err != nil || env.State != uc.EnvReady {
 			return fantasy.NewTextErrorResponse("environment unavailable"), nil
 		}
 	}

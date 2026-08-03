@@ -10,10 +10,10 @@ import (
 
 	nomadapi "github.com/hashicorp/nomad/api"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider/conformance"
-	"github.com/aleksclark/ultralogical/envprovider/nomad"
-	"github.com/aleksclark/ultralogical/testkit/harness"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/envprovider/conformance"
+	"github.com/aleksclark/ultracore/envprovider/nomad"
+	"github.com/aleksclark/ultracore/testkit/harness"
 )
 
 // nomadAddress returns the dev agent's address, skipping when none is running.
@@ -34,7 +34,7 @@ func nomadAddress(t *testing.T) string {
 
 func clusterImage(t *testing.T) string {
 	t.Helper()
-	if image := os.Getenv("ULTRA_BEZALEL_IMAGE"); image != "" {
+	if image := os.Getenv("CORE_BEZALEL_IMAGE"); image != "" {
 		return image
 	}
 	return harness.BezalelImage
@@ -47,7 +47,7 @@ func clusterImage(t *testing.T) string {
 func TestNomadConformance(t *testing.T) {
 	address := nomadAddress(t)
 	var provider *nomad.Provider
-	conformance.RunWith(t, func(t *testing.T) ultra.EnvProvider {
+	conformance.RunWith(t, func(t *testing.T) uc.EnvProvider {
 		created, err := nomad.New(nomad.Config{
 			Address: address, Image: clusterImage(t), EndpointHost: "127.0.0.1",
 		})
@@ -57,18 +57,18 @@ func TestNomadConformance(t *testing.T) {
 		provider = created
 		return created
 	}, conformance.Options{
-		Capabilities: ultra.ProviderCapabilities{
-			Kind: ultra.ProviderKindBYONomad,
-			Supported: []ultra.ProviderCapability{
-				ultra.CapabilityAdoptsOrphans,
-				ultra.CapabilityEnumeratesResources,
-				ultra.CapabilityServesToolEndpoint,
+		Capabilities: uc.ProviderCapabilities{
+			Kind: uc.ProviderKindBYONomad,
+			Supported: []uc.ProviderCapability{
+				uc.CapabilityAdoptsOrphans,
+				uc.CapabilityEnumeratesResources,
+				uc.CapabilityServesToolEndpoint,
 			},
-			Notes: map[ultra.ProviderCapability]string{
-				ultra.CapabilityRestartPreservesWorkspace: "a replacement allocation receives a fresh allocation directory",
+			Notes: map[uc.ProviderCapability]string{
+				uc.CapabilityRestartPreservesWorkspace: "a replacement allocation receives a fresh allocation directory",
 			},
 		},
-		Inspect: func(t *testing.T, ctx context.Context, envID ultra.EnvID) []string {
+		Inspect: func(t *testing.T, ctx context.Context, envID uc.EnvID) []string {
 			t.Helper()
 			resources, err := provider.Resources(ctx, envID)
 			if err != nil {
@@ -89,7 +89,7 @@ func TestNomadConformance(t *testing.T) {
 				if err != nil {
 					t.Fatalf("reported job %q is not registered in Nomad: %v", item, err)
 				}
-				if job.Meta["ultralogical.managed_by"] != "ultralogical" {
+				if job.Meta["ultracore.managed_by"] != "ultracore" {
 					t.Fatalf("job %q is not marked as ours", item)
 				}
 			}

@@ -20,7 +20,7 @@ import (
 	"syscall"
 	"time"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 // Config configures the provider. Root holds one directory per environment.
@@ -29,7 +29,7 @@ type Config struct {
 	Root   string `json:"root,omitempty"`
 }
 
-// Provider implements ultra.EnvProvider on local processes.
+// Provider implements uc.EnvProvider on local processes.
 type Provider struct{ cfg Config }
 
 type handleData struct {
@@ -52,28 +52,28 @@ func New(cfg Config) (*Provider, error) {
 	return &Provider{cfg: cfg}, nil
 }
 
-func (p *Provider) dir(id ultra.EnvID) string { return filepath.Join(p.cfg.Root, string(id)) }
+func (p *Provider) dir(id uc.EnvID) string { return filepath.Join(p.cfg.Root, string(id)) }
 
 // Provision starts one sandboxed Bezalel. Workspace is created first so restart reuses it.
-func (p *Provider) Provision(_ context.Context, envID ultra.EnvID, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+func (p *Provider) Provision(_ context.Context, envID uc.EnvID, spec uc.EnvSpec, token string) (uc.ProviderHandle, error) {
 	workdir := spec.Workdir
 	if workdir == "" {
 		workdir = "/work"
 	}
 	workspace := filepath.Join(p.dir(envID), "workspace")
 	if err := os.MkdirAll(workspace, 0o755); err != nil {
-		return ultra.ProviderHandle{}, fmt.Errorf("static: create workspace: %w", err)
+		return uc.ProviderHandle{}, fmt.Errorf("static: create workspace: %w", err)
 	}
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		return ultra.ProviderHandle{}, fmt.Errorf("static: reserve port: %w", err)
+		return uc.ProviderHandle{}, fmt.Errorf("static: reserve port: %w", err)
 	}
 	port := ln.Addr().(*net.TCPAddr).Port
 	_ = ln.Close()
 	logPath := filepath.Join(p.dir(envID), "sandbox.log")
 	logFile, err := os.Create(logPath)
 	if err != nil {
-		return ultra.ProviderHandle{}, fmt.Errorf("static: create sandbox log: %w", err)
+		return uc.ProviderHandle{}, fmt.Errorf("static: create sandbox log: %w", err)
 	}
 	// --pid is required for a private /proc; without it mount -t proc is denied.
 	// Device nodes are bind-mounted individually: --rbind /dev hangs on hardened runners.
@@ -87,17 +87,17 @@ func (p *Provider) Provision(_ context.Context, envID ultra.EnvID, spec ultra.En
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := cmd.Start(); err != nil {
 		_ = logFile.Close()
-		return ultra.ProviderHandle{}, fmt.Errorf("static: start sandbox: %w", err)
+		return uc.ProviderHandle{}, fmt.Errorf("static: start sandbox: %w", err)
 	}
 	go func() { _ = cmd.Wait(); _ = logFile.Close() }()
 	handle, err := encode(handleData{EnvID: string(envID), PID: cmd.Process.Pid, Port: port})
 	if err != nil {
 		stop(handle)
-		return ultra.ProviderHandle{}, err
+		return uc.ProviderHandle{}, err
 	}
 	if err := awaitReady(port, logPath, cmd.Process.Pid); err != nil {
 		stop(handle)
-		return ultra.ProviderHandle{}, err
+		return uc.ProviderHandle{}, err
 	}
 	return handle, nil
 }
@@ -148,19 +148,19 @@ func tailLog(path string) string {
 }
 
 // Status reports the sandbox's real condition. A gone process is failed.
-func (p *Provider) Status(_ context.Context, h ultra.ProviderHandle) (ultra.ProviderStatus, error) {
+func (p *Provider) Status(_ context.Context, h uc.ProviderHandle) (uc.ProviderStatus, error) {
 	d, err := decode(h)
 	if err != nil {
-		return ultra.ProviderStatus{}, err
+		return uc.ProviderStatus{}, err
 	}
 	if syscall.Kill(d.PID, 0) != nil {
-		return ultra.ProviderStatus{State: ultra.EnvFailed, Message: "gone: " + tailLog(filepath.Join(p.dir(ultra.EnvID(d.EnvID)), "sandbox.log"))}, nil
+		return uc.ProviderStatus{State: uc.EnvFailed, Message: "gone: " + tailLog(filepath.Join(p.dir(uc.EnvID(d.EnvID)), "sandbox.log"))}, nil
 	}
-	return ultra.ProviderStatus{State: ultra.EnvReady}, nil
+	return uc.ProviderStatus{State: uc.EnvReady}, nil
 }
 
 // Endpoint returns the tool endpoint the sandbox publishes.
-func (p *Provider) Endpoint(_ context.Context, h ultra.ProviderHandle) (string, error) {
+func (p *Provider) Endpoint(_ context.Context, h uc.ProviderHandle) (string, error) {
 	d, err := decode(h)
 	if err != nil {
 		return "", err
@@ -169,33 +169,33 @@ func (p *Provider) Endpoint(_ context.Context, h ultra.ProviderHandle) (string, 
 }
 
 // Restart replaces the process with one carrying the rotated token.
-func (p *Provider) Restart(ctx context.Context, id ultra.EnvID, h ultra.ProviderHandle, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+func (p *Provider) Restart(ctx context.Context, id uc.EnvID, h uc.ProviderHandle, spec uc.EnvSpec, token string) (uc.ProviderHandle, error) {
 	stop(h)
 	return p.Provision(ctx, id, spec, token)
 }
 
 // Terminate stops the sandbox and removes its state, idempotently.
-func (p *Provider) Terminate(_ context.Context, h ultra.ProviderHandle) error {
+func (p *Provider) Terminate(_ context.Context, h uc.ProviderHandle) error {
 	d, err := decode(h)
 	if err != nil {
 		return nil
 	}
 	stop(h)
-	if err := os.RemoveAll(p.dir(ultra.EnvID(d.EnvID))); err != nil && !os.IsNotExist(err) {
+	if err := os.RemoveAll(p.dir(uc.EnvID(d.EnvID))); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("static: remove environment state: %w", err)
 	}
 	return nil
 }
 
-func stop(h ultra.ProviderHandle) {
+func stop(h uc.ProviderHandle) {
 	if d, err := decode(h); err == nil {
 		_ = syscall.Kill(-d.PID, syscall.SIGKILL)
 		_ = syscall.Kill(d.PID, syscall.SIGKILL)
 	}
 }
 
-// Resources implements ultra.EnvResourceLister.
-func (p *Provider) Resources(_ context.Context, id ultra.EnvID) ([]string, error) {
+// Resources implements uc.EnvResourceLister.
+func (p *Provider) Resources(_ context.Context, id uc.EnvID) ([]string, error) {
 	if _, err := os.Stat(p.dir(id)); err != nil {
 		return nil, nil
 	}
@@ -203,32 +203,30 @@ func (p *Provider) Resources(_ context.Context, id ultra.EnvID) ([]string, error
 }
 
 // Probe refuses a host without unprivileged user namespaces.
-func (p *Provider) Probe(context.Context) (ultra.ProviderCapabilities, error) {
-	caps := ultra.ProviderCapabilities{
-		Kind: ultra.ProviderKindStatic,
-		Notes: map[ultra.ProviderCapability]string{
-			ultra.CapabilityNamespaceIsolation: "environments share the host kernel and network namespace",
-			ultra.CapabilityResourceQuota:      "the example provider enforces no ceiling",
+func (p *Provider) Probe(context.Context) (uc.ProviderCapabilities, error) {
+	caps := uc.ProviderCapabilities{
+		Kind: uc.ProviderKindStatic,
+		Notes: map[uc.ProviderCapability]string{
 		},
 	}
 	if err := exec.Command("unshare", "--map-root-user", "--mount", "true").Run(); err != nil {
 		return caps, fmt.Errorf("static: this host has no unprivileged user namespaces: %w", err)
 	}
-	caps.Supported = []ultra.ProviderCapability{
-		ultra.CapabilityEnumeratesResources, ultra.CapabilityRestartPreservesWorkspace, ultra.CapabilityServesToolEndpoint,
+	caps.Supported = []uc.ProviderCapability{
+		uc.CapabilityEnumeratesResources, uc.CapabilityRestartPreservesWorkspace, uc.CapabilityServesToolEndpoint,
 	}
 	return caps, nil
 }
 
-func encode(d handleData) (ultra.ProviderHandle, error) {
+func encode(d handleData) (uc.ProviderHandle, error) {
 	b, err := json.Marshal(d)
 	if err != nil {
-		return ultra.ProviderHandle{}, err
+		return uc.ProviderHandle{}, err
 	}
-	return ultra.ProviderHandle{Version: 1, Data: b}, nil
+	return uc.ProviderHandle{Version: 1, Data: b}, nil
 }
 
-func decode(h ultra.ProviderHandle) (handleData, error) {
+func decode(h uc.ProviderHandle) (handleData, error) {
 	var d handleData
 	if len(h.Data) == 0 {
 		return d, errors.New("static: empty provider handle")

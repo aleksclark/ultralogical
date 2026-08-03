@@ -102,15 +102,15 @@ docs → fence term added.
 
 - `automation.go` (periodic prompts) **stays** — primer's task automation
   needs it and it is 26 lines of generic substrate.
-- `cmd/ultra` CLI: remove verbs for deleted surfaces; `task cli:test`
+- `cmd/core` CLI: remove verbs for deleted surfaces; `task cli:test`
   updated.
-- `cmd/devstack`: stack = pg + modelscript + ultrad + worker (web leg gone).
+- `cmd/devstack`: stack = pg + modelscript + cored + worker (web leg gone).
 
 ### T1.8 — Rename the module
 
-- `github.com/aleksclark/ultralogical` → `github.com/aleksclark/ultracore`
+- `github.com/aleksclark/ultracore` → `github.com/aleksclark/ultracore`
   (or final name — decide at execution, one commit).
-- Binaries: `ultrad` → `cored`, `worker` → `coreworker`, `ultra` →
+- Binaries: `cored` → `cored`, `worker` → `coreworker`, `ultra` →
   `core`, env prefix `ULTRA_` → `CORE_`. Root package `ultra` → `core`.
 - Proto package becomes `core.v1` **as a stub rename only** — the real
   surface reshape happens in E4; this item is mechanical `sed` + regen.

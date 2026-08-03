@@ -1,4 +1,4 @@
-package ultra
+package core
 
 import (
 	"context"
@@ -61,15 +61,8 @@ type AgentRun struct {
 	SpawnKey string
 	// CohortID and CohortOrdinal link children launched by one
 	// run_agent_cohort call and preserve their declaration order.
-	CohortID      string
-	CohortOrdinal int
-	// FlowInvocationID and FlowAgentName are the run's flow provenance: which
-	// invocation created it and which agent declaration in that flow version it
-	// executes. A run spawned at runtime from a flow's catalog inherits the
-	// invocation id but carries no declaration name, because it is not one of
-	// the invocation's declared launches.
-	FlowInvocationID  *FlowInvocationID
-	FlowAgentName     string
+	CohortID          string
+	CohortOrdinal     int
 	Grants            Grants
 	Result            json.RawMessage
 	State             RunState

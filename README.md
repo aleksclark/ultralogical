@@ -1,29 +1,29 @@
-# Ultralogical
+# ultracore
 
-A durable-session platform for agentic work. Sessions span applications and
-environments, provide relevant context by default, expose structured data and
-actions, preserve history, and can be driven by software while remaining
-visible and controllable by people.
-
-Multi-tenant from day 1: orgs bring their own inference credentials
-(OpenAI/Anthropic/Bedrock) and choose where dev environments run — hosted
-EKS, their own k8s/nomad clusters, or their own machines via a tunneled local
-provider.
+A durable-session substrate for agentic work — multi-tenant, event-sourced
+sessions with an owned agent loop and pluggable per-tenant resource providers.
+Go backend, ConnectRPC API, Postgres. Consumers bring their own UI, identity,
+triggers, and policy.
 
 ## Status
 
-**Phase 6.7 remediation in progress**: the platform includes durable sessions,
-agent loops, development environments, multiplayer, flows, and advanced-loop
-groundwork, but the independent Phase 0–6 audit found material completion gaps.
-`agent_docs/phases_0_6_audit.md` assigns those gaps to completion-scoped
-Phases 7–11; production hardening and release proof follow in Phases 12–13.
+**Core extraction in progress** (`agent_docs/core_extraction_plan/`). Phase E1
+shed the product surface (flows, billing, hosted isolation, presence, first-
+party UIs, grants lattice) and renamed the module to
+`github.com/aleksclark/ultracore`. Later phases generalize resources, reshape
+tenancy/identity/policy, and freeze API v1.
 
-See [`plan/index.md`](plan/index.md) for the architecture and roadmap, and
-[`AGENTS.md`](AGENTS.md) for the contributor/agent cheatsheet.
+See [`AGENTS.md`](AGENTS.md) for the contributor/agent cheatsheet and
+[`agent_docs/core_extraction_plan/index.md`](agent_docs/core_extraction_plan/index.md)
+for the extraction roadmap.
 
 ## Quick start
 
 ```sh
-task dev               # local postgres (docker) + ultrad on :8080
+task dev               # local postgres (docker) + cored + coreworker
 task test:all          # full test suite (requires docker)
 ```
+
+Binaries: `cored` (API), `coreworker` (queue), `core` (CLI). Configuration uses
+the `CORE_*` env prefix (for example `CORE_MASTER_KEY`, `CORE_DEV_TOKENS`,
+`CORE_BEZALEL_IMAGE`).

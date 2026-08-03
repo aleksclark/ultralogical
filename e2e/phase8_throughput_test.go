@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	ultra "github.com/aleksclark/ultralogical"
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/testkit/harness"
-	"github.com/aleksclark/ultralogical/testkit/modelscript"
+	uc "github.com/aleksclark/ultracore"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/testkit/harness"
+	"github.com/aleksclark/ultracore/testkit/modelscript"
 )
 
 // The baseline workload. These constants are the workload definition: a
@@ -121,13 +121,13 @@ func summarize(samples []time.Duration) baselineQuantiles {
 	}
 }
 
-// A8.8 — run the documented workload on two ultrad and two workers, emit a
+// A8.8 — run the documented workload on two cored and two workers, emit a
 // machine-readable measurement artifact, and assert the invariants that must
 // hold at any speed plus a generous regression ceiling.
 func TestA88_ThroughputBaseline(t *testing.T) {
 	stack := harness.Up(t, harness.WithReplicas(baselineUltrad, baselineWorkers))
 	if got := len(stack.ReplicaBaseURLs); got != baselineUltrad {
-		t.Fatalf("harness started %d ultrad replicas, want %d", got, baselineUltrad)
+		t.Fatalf("harness started %d cored replicas, want %d", got, baselineUltrad)
 	}
 	if got := stack.WorkerCount(); got != baselineWorkers {
 		t.Fatalf("harness started %d workers, want %d", got, baselineWorkers)
@@ -218,7 +218,7 @@ func TestA88_ThroughputBaseline(t *testing.T) {
 					return
 				}
 				runIDs[idx] = run.GetId()
-				ingress.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, baselineRunLatencyCeiling)
+				ingress.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, baselineRunLatencyCeiling)
 				latencies[idx] = time.Since(began)
 			}()
 		}
@@ -243,7 +243,7 @@ func TestA88_ThroughputBaseline(t *testing.T) {
 	// twice, and the scripted step count was actually reached.
 	stepsRecorded, retries := 0, 0
 	for _, id := range runIDs {
-		steps, err := stack.Store.Org(org).Runs().Steps(ctx, ultra.RunID(id))
+		steps, err := stack.Store.Org(org).Runs().Steps(ctx, uc.RunID(id))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -293,7 +293,7 @@ func TestA88_ThroughputBaseline(t *testing.T) {
 	eventLag := summarize(lagSamples)
 
 	report := baselineReport{
-		Schema:     "ultralogical.throughput_baseline.v1",
+		Schema:     "ultracore.throughput_baseline.v1",
 		RecordedAt: time.Now().UTC().Format(time.RFC3339),
 		Workload: baselineWorkload{
 			Sessions:       baselineSessions,
@@ -330,8 +330,8 @@ func TestA88_ThroughputBaseline(t *testing.T) {
 	}
 	// Emit on stdout so CI can scrape it, and to a file when asked, so a
 	// developer can diff two runs on the same machine.
-	t.Logf("ULTRA_THROUGHPUT_BASELINE %s", blob)
-	if path := os.Getenv("ULTRA_BASELINE_OUT"); path != "" {
+	t.Logf("CORE_THROUGHPUT_BASELINE %s", blob)
+	if path := os.Getenv("CORE_BASELINE_OUT"); path != "" {
 		if err := os.WriteFile(path, blob, 0o644); err != nil {
 			t.Fatal(err)
 		}

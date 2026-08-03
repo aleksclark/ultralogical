@@ -9,8 +9,8 @@ import (
 	"charm.land/fantasy"
 	"github.com/google/uuid"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/jobqueue"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/jobqueue"
 )
 
 // waitNamespace derives stable wait ids from spawn keys.
@@ -19,7 +19,7 @@ var waitNamespace = uuid.MustParse("2c4d6e80-9a3b-4c5d-8e7f-1a2b3c4d5e6f")
 // waitToolName maps a wait's kind back to the tool the model called, so the
 // injected result names the same tool the model believes it invoked.
 func waitToolName(kind string) string {
-	if kind == ultra.WaitKindCohort {
+	if kind == uc.WaitKindCohort {
 		return "run_agent_cohort"
 	}
 	return "wait_for_agents"
@@ -27,7 +27,7 @@ func waitToolName(kind string) string {
 
 // deterministicWaitID derives a wait's id from its originating tool call, so a
 // redelivered step recreates the same row rather than a duplicate wait.
-func deterministicWaitID(parent ultra.RunID, stepIndex int, toolCallID string) string {
+func deterministicWaitID(parent uc.RunID, stepIndex int, toolCallID string) string {
 	return uuid.NewSHA1(waitNamespace, []byte(spawnKey(parent, stepIndex, toolCallID))).String()
 }
 
@@ -44,16 +44,16 @@ func deterministicWaitID(parent ultra.RunID, stepIndex int, toolCallID string) s
 // It reports whether the parent should park. A wait that closed immediately
 // has already resumed the parent, so the parent must not also be marked
 // awaiting.
-func (w *StepWorker) createWait(ctx context.Context, txs ultra.Store, run ultra.AgentRun, job StepJob, rec *stepRecorder) (park bool, err error) {
+func (w *StepWorker) createWait(ctx context.Context, txs uc.Store, run uc.AgentRun, job StepJob, rec *stepRecorder) (park bool, err error) {
 	scope := txs.Org(run.OrgID)
 	waitID := deterministicWaitID(run.ID, job.StepIndex, rec.waitToolCallID)
-	members := make([]ultra.RunWaitMember, 0, len(rec.waitRunIDs))
+	members := make([]uc.RunWaitMember, 0, len(rec.waitRunIDs))
 	for i, id := range rec.waitRunIDs {
-		members = append(members, ultra.RunWaitMember{WaitID: waitID, RunID: id, Ordinal: i})
+		members = append(members, uc.RunWaitMember{WaitID: waitID, RunID: id, Ordinal: i})
 	}
-	wait := ultra.RunWait{
+	wait := uc.RunWait{
 		ID: waitID, ParentRunID: run.ID, StepIndex: job.StepIndex,
-		ToolCallID: rec.waitToolCallID, Kind: rec.waitKind, State: ultra.WaitOpen,
+		ToolCallID: rec.waitToolCallID, Kind: rec.waitKind, State: uc.WaitOpen,
 		TimeoutPolicy: rec.waitPolicy, Deadline: time.Now().Add(rec.waitTimeout),
 	}
 	if err := scope.Waits().Create(ctx, wait, members); err != nil {
@@ -98,10 +98,10 @@ const (
 // state: Close only affects a row still `open`, and MarkResumed only affects a
 // row whose resumption is unrecorded. Two concurrent terminal children, or a
 // child racing the timeout sweeper, therefore produce exactly one resumption.
-func (w *StepWorker) tryCloseWait(ctx context.Context, txs ultra.Store, org ultra.OrgID, waitID string, reason closeReason) (bool, error) {
+func (w *StepWorker) tryCloseWait(ctx context.Context, txs uc.Store, org uc.OrgID, waitID string, reason closeReason) (bool, error) {
 	scope := txs.Org(org)
 	wait, err := scope.Waits().GetForUpdate(ctx, waitID)
-	if errors.Is(err, ultra.ErrNotFound) {
+	if errors.Is(err, uc.ErrNotFound) {
 		return false, nil
 	}
 	if err != nil {
@@ -112,7 +112,7 @@ func (w *StepWorker) tryCloseWait(ctx context.Context, txs ultra.Store, org ultr
 	if err != nil {
 		return false, err
 	}
-	outcome := ultra.WaitOutcome{WaitID: waitID, Kind: wait.Kind, Members: make([]ultra.WaitMemberResult, 0, len(members))}
+	outcome := uc.WaitOutcome{WaitID: waitID, Kind: wait.Kind, Members: make([]uc.WaitMemberResult, 0, len(members))}
 	pending := 0
 	for _, member := range members {
 		child, err := scope.Runs().Get(ctx, member.RunID)
@@ -123,16 +123,16 @@ func (w *StepWorker) tryCloseWait(ctx context.Context, txs ultra.Store, org ultr
 			pending++
 			continue
 		}
-		outcome.Members = append(outcome.Members, ultra.WaitMemberResult{
+		outcome.Members = append(outcome.Members, uc.WaitMemberResult{
 			Ordinal: member.Ordinal, RunID: child.ID, State: child.State, Result: child.Result,
 			FailureReason: child.FailureReason, FailureMessage: child.FailureMessage,
 		})
 		switch child.State {
-		case ultra.RunCompleted:
+		case uc.RunCompleted:
 			outcome.Completed++
-		case ultra.RunFailed:
+		case uc.RunFailed:
 			outcome.Failed++
-		case ultra.RunCancelled:
+		case uc.RunCancelled:
 			outcome.Cancelled++
 		}
 	}
@@ -143,9 +143,9 @@ func (w *StepWorker) tryCloseWait(ctx context.Context, txs ultra.Store, org ultr
 		return false, nil
 	}
 
-	state := ultra.WaitResolved
+	state := uc.WaitResolved
 	if reason == closeReasonTimeout && pending > 0 {
-		state = ultra.WaitTimedOut
+		state = uc.WaitTimedOut
 		outcome.TimedOut = true
 	}
 	outcome.State = state
@@ -154,7 +154,7 @@ func (w *StepWorker) tryCloseWait(ctx context.Context, txs ultra.Store, org ultr
 	if err != nil {
 		return false, err
 	}
-	if wait.State == ultra.WaitOpen {
+	if wait.State == uc.WaitOpen {
 		closed, err := scope.Waits().Close(ctx, waitID, state, raw)
 		if err != nil {
 			return false, err
@@ -176,7 +176,7 @@ func (w *StepWorker) tryCloseWait(ctx context.Context, txs ultra.Store, org ultr
 
 // resumeParent injects the wait's outcome as the result of the parent's
 // original tool call and enqueues its next step, at most once.
-func (w *StepWorker) resumeParent(ctx context.Context, txs ultra.Store, org ultra.OrgID, wait ultra.RunWait, outcome ultra.WaitOutcome, raw json.RawMessage) (bool, error) {
+func (w *StepWorker) resumeParent(ctx context.Context, txs uc.Store, org uc.OrgID, wait uc.RunWait, outcome uc.WaitOutcome, raw json.RawMessage) (bool, error) {
 	scope := txs.Org(org)
 	// MarkResumed is the at-most-once gate: whoever wins it resumes.
 	first, err := scope.Waits().MarkResumed(ctx, wait.ID)
@@ -201,19 +201,19 @@ func (w *StepWorker) resumeParent(ctx context.Context, txs ultra.Store, org ultr
 	if err := scope.Runs().SetHistory(ctx, parent.ID, history); err != nil {
 		return false, err
 	}
-	if err := scope.Runs().SetState(ctx, parent.ID, ultra.RunRunning, "", ""); err != nil {
+	if err := scope.Runs().SetState(ctx, parent.ID, uc.RunRunning, "", ""); err != nil {
 		return false, err
 	}
-	payload, err := json.Marshal(ultra.ToolResultPayload{
+	payload, err := json.Marshal(uc.ToolResultPayload{
 		RunID: parent.ID, StepIndex: wait.StepIndex, ToolCallID: wait.ToolCallID,
 		Name: waitToolName(wait.Kind), Content: string(raw),
-		IsError: outcome.TimedOut && wait.TimeoutPolicy == ultra.TimeoutPolicyFail,
+		IsError: outcome.TimedOut && wait.TimeoutPolicy == uc.TimeoutPolicyFail,
 	})
 	if err != nil {
 		return false, err
 	}
-	if _, err := scope.Events().Append(ctx, parent.SessionID, ultra.Event{
-		Actor: ultra.Actor{Type: ultra.ActorSystem}, Kind: ultra.EventKindToolResult, Payload: payload,
+	if _, err := scope.Events().Append(ctx, parent.SessionID, uc.Event{
+		Actor: uc.Actor{Type: uc.ActorSystem}, Kind: uc.EventKindToolResult, Payload: payload,
 	}); err != nil {
 		return false, err
 	}
@@ -241,13 +241,13 @@ func (w *StepWorker) resumeParent(ctx context.Context, txs ultra.Store, org ultr
 // parent's original tool call. Correlation matters: a model that called
 // wait_for_agents with a given call id must receive the answer to that call,
 // not a loose user message it has no way to attribute.
-func appendWaitResult(raw json.RawMessage, wait ultra.RunWait, outcome ultra.WaitOutcome, encoded json.RawMessage) (json.RawMessage, error) {
+func appendWaitResult(raw json.RawMessage, wait uc.RunWait, outcome uc.WaitOutcome, encoded json.RawMessage) (json.RawMessage, error) {
 	env, err := DecodeEnvelope(raw)
 	if err != nil {
 		return nil, err
 	}
 	var output fantasy.ToolResultOutputContent = fantasy.ToolResultOutputContentText{Text: string(encoded)}
-	if outcome.TimedOut && wait.TimeoutPolicy == ultra.TimeoutPolicyFail {
+	if outcome.TimedOut && wait.TimeoutPolicy == uc.TimeoutPolicyFail {
 		output = fantasy.ToolResultOutputContentError{Error: errors.New(string(encoded))}
 	}
 	env.Messages = append(env.Messages, fantasy.Message{
@@ -263,7 +263,7 @@ func appendWaitResult(raw json.RawMessage, wait ultra.RunWait, outcome ultra.Wai
 // resolveChildWaits runs in the same transaction that marks a child terminal.
 // Every terminal path — completed, failed, cancelled — funnels through it, so
 // no child can quietly leave its parent parked forever.
-func (w *StepWorker) resolveChildWaits(ctx context.Context, txs ultra.Store, child ultra.AgentRun) error {
+func (w *StepWorker) resolveChildWaits(ctx context.Context, txs uc.Store, child uc.AgentRun) error {
 	scope := txs.Org(child.OrgID)
 	waits, err := scope.Waits().ListOpenForChild(ctx, child.ID)
 	if err != nil {
@@ -280,26 +280,26 @@ func (w *StepWorker) resolveChildWaits(ctx context.Context, txs ultra.Store, chi
 // AbandonWaits closes a terminal run's open waits from outside the loop
 // package. The API's cancel path needs it: a cancelled parent must not be
 // resumable by a child that finishes afterwards.
-func AbandonWaits(ctx context.Context, txs ultra.Store, org ultra.OrgID, parent ultra.RunID) error {
+func AbandonWaits(ctx context.Context, txs uc.Store, org uc.OrgID, parent uc.RunID) error {
 	return (&StepWorker{}).abandonParentWaits(ctx, txs, org, parent)
 }
 
 // abandonParentWaits closes a terminal parent's open waits. Without it a
 // cancelled parent would leave an open wait the timeout sweeper keeps
 // visiting, whose children would try to resume a run that is already finished.
-func (w *StepWorker) abandonParentWaits(ctx context.Context, txs ultra.Store, org ultra.OrgID, parent ultra.RunID) error {
+func (w *StepWorker) abandonParentWaits(ctx context.Context, txs uc.Store, org uc.OrgID, parent uc.RunID) error {
 	scope := txs.Org(org)
 	waits, err := scope.Waits().ListOpenForParent(ctx, parent)
 	if err != nil {
 		return err
 	}
 	for _, wait := range waits {
-		outcome := ultra.WaitOutcome{WaitID: wait.ID, Kind: wait.Kind, State: ultra.WaitAbandoned, Members: []ultra.WaitMemberResult{}}
+		outcome := uc.WaitOutcome{WaitID: wait.ID, Kind: wait.Kind, State: uc.WaitAbandoned, Members: []uc.WaitMemberResult{}}
 		raw, err := json.Marshal(outcome)
 		if err != nil {
 			return err
 		}
-		if _, err := scope.Waits().Close(ctx, wait.ID, ultra.WaitAbandoned, raw); err != nil {
+		if _, err := scope.Waits().Close(ctx, wait.ID, uc.WaitAbandoned, raw); err != nil {
 			return err
 		}
 		// Consume the resumption slot so a late child cannot resume a parent

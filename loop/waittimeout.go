@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/jobqueue"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/jobqueue"
 )
 
 // WaitTimeoutJob sweeps waits whose deadline has passed.
@@ -26,7 +26,7 @@ func (WaitTimeoutJob) Kind() string { return "wait.timeout" }
 // wait creation itself, in the same transaction, so a wait can never exist
 // without something scheduled to time it out.
 type WaitSweeper struct {
-	Store   ultra.Store
+	Store   uc.Store
 	Enqueue jobqueue.TxEnqueuer
 	Worker  *StepWorker
 	Log     *slog.Logger
@@ -57,14 +57,14 @@ func (s *WaitSweeper) retry() time.Duration {
 // even if two workers sweep simultaneously, and a child completing at the same
 // instant either wins the row lock or finds the wait already closed.
 func (s *WaitSweeper) Sweep(ctx context.Context, job WaitTimeoutJob) error {
-	org := ultra.OrgID(job.OrgID)
+	org := uc.OrgID(job.OrgID)
 	due, err := s.Store.Org(org).Waits().ClaimDue(ctx, time.Now(), s.batch())
 	if err != nil {
 		return err
 	}
 	for _, wait := range due {
 		waitID := wait.ID
-		if err := s.Store.Tx(ctx, func(txs ultra.Store) error {
+		if err := s.Store.Tx(ctx, func(txs uc.Store) error {
 			_, err := s.Worker.tryCloseWait(ctx, txs, org, waitID, closeReasonTimeout)
 			return err
 		}); err != nil {
@@ -89,8 +89,8 @@ func (s *WaitSweeper) Sweep(ctx context.Context, job WaitTimeoutJob) error {
 
 // rearm schedules another sweep shortly, used when a batch was truncated or a
 // resolution needs retrying.
-func (s *WaitSweeper) rearm(ctx context.Context, org ultra.OrgID) error {
-	return s.Store.Tx(ctx, func(txs ultra.Store) error {
+func (s *WaitSweeper) rearm(ctx context.Context, org uc.OrgID) error {
+	return s.Store.Tx(ctx, func(txs uc.Store) error {
 		return s.Enqueue.EnqueueInTx(ctx, txs, WaitTimeoutJob{OrgID: string(org)},
 			jobqueue.WithScheduledAt(time.Now().Add(s.retry())))
 	})
