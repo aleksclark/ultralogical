@@ -3,10 +3,8 @@
 //
 // One environment is one Bezalel process in an unprivileged mount namespace
 // and a private root, with the workspace bind-mounted at the declared
-// workdir. That private /work is what lets concurrent environments each own
-// the same absolute path without colliding on the host. A worker offers the
-// kind when a Bezalel binary is configured; it drives no remote control plane
-// of its own.
+// workdir so concurrent environments each own that absolute path. A worker
+// offers the kind when a Bezalel binary is configured.
 package static
 
 import (
@@ -20,31 +18,27 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	ultra "github.com/aleksclark/ultralogical"
 )
 
-// Config configures the provider. Root holds one directory per environment,
-// which is what makes a resource findable again after a restart.
+// Config configures the provider. Root holds one directory per environment.
 type Config struct {
-	Binary string `json:"binary,omitempty"` // the Bezalel executable environments run
-	Root   string `json:"root,omitempty"`   // where per-environment state lives
+	Binary string `json:"binary,omitempty"`
+	Root   string `json:"root,omitempty"`
 }
 
 // Provider implements ultra.EnvProvider on local processes.
 type Provider struct{ cfg Config }
 
-// handleData is the persisted identity of one environment: enough to find the
-// process again from another worker, which is what makes status and terminate
-// meaningful after a crash.
 type handleData struct {
 	EnvID string `json:"env_id"`
 	PID   int    `json:"pid"`
 	Port  int    `json:"port"`
 }
 
-// New builds a provider. A missing Bezalel binary is refused here rather than
-// discovered at provision time, so a misconfiguration surfaces at registration.
+// New refuses a missing binary at construction so registration fails early.
 func New(cfg Config) (*Provider, error) {
 	if cfg.Binary == "" {
 		return nil, errors.New("static: a Bezalel binary path is required")
@@ -58,11 +52,9 @@ func New(cfg Config) (*Provider, error) {
 	return &Provider{cfg: cfg}, nil
 }
 
-func (p *Provider) dir(envID ultra.EnvID) string { return filepath.Join(p.cfg.Root, string(envID)) }
+func (p *Provider) dir(id ultra.EnvID) string { return filepath.Join(p.cfg.Root, string(id)) }
 
-// Provision starts one sandboxed Bezalel. The workspace directory is created
-// before the sandbox so a restart can reuse it, which is why this provider can
-// honestly claim to preserve workspaces.
+// Provision starts one sandboxed Bezalel. Workspace is created first so restart reuses it.
 func (p *Provider) Provision(_ context.Context, envID ultra.EnvID, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
 	workdir := spec.Workdir
 	if workdir == "" {
@@ -72,189 +64,166 @@ func (p *Provider) Provision(_ context.Context, envID ultra.EnvID, spec ultra.En
 	if err := os.MkdirAll(workspace, 0o755); err != nil {
 		return ultra.ProviderHandle{}, fmt.Errorf("static: create workspace: %w", err)
 	}
-	port, err := freePort()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		return ultra.ProviderHandle{}, err
+		return ultra.ProviderHandle{}, fmt.Errorf("static: reserve port: %w", err)
 	}
+	port := ln.Addr().(*net.TCPAddr).Port
+	_ = ln.Close()
 	logPath := filepath.Join(p.dir(envID), "sandbox.log")
 	logFile, err := os.Create(logPath)
 	if err != nil {
 		return ultra.ProviderHandle{}, fmt.Errorf("static: create sandbox log: %w", err)
 	}
+	// --pid is required for a private /proc; without it mount -t proc is denied.
+	// Device nodes are bind-mounted individually: --rbind /dev hangs on hardened runners.
 	cmd := exec.Command("unshare", "--map-root-user", "--mount", "--pid", "--fork",
 		"/bin/sh", "-c", sandboxScript(p.cfg.Binary, p.dir(envID), workspace, workdir, port))
 	cmd.Env = append(os.Environ(), "BEZALEL_AUTH_TOKEN="+token)
-	for key, value := range spec.Env {
-		cmd.Env = append(cmd.Env, key+"="+value)
+	for k, v := range spec.Env {
+		cmd.Env = append(cmd.Env, k+"="+v)
 	}
-	// Stderr lands in the environment directory so a failed sandbox explains
-	// itself instead of vanishing into the worker's own logs.
-	cmd.Stdout = logFile
-	cmd.Stderr = logFile
-	// The sandbox is its own process group, so terminate can reap the whole
-	// tree rather than orphaning the namespace's children.
+	cmd.Stdout, cmd.Stderr = logFile, logFile
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := cmd.Start(); err != nil {
 		_ = logFile.Close()
 		return ultra.ProviderHandle{}, fmt.Errorf("static: start sandbox: %w", err)
 	}
-	// The process is released rather than waited on: this provider hands the
-	// environment's lifetime to the platform, which terminates it explicitly.
-	go func() {
-		_ = cmd.Wait()
-		_ = logFile.Close()
-	}()
-	return encode(handleData{EnvID: string(envID), PID: cmd.Process.Pid, Port: port})
+	go func() { _ = cmd.Wait(); _ = logFile.Close() }()
+	handle, err := encode(handleData{EnvID: string(envID), PID: cmd.Process.Pid, Port: port})
+	if err != nil {
+		stop(handle)
+		return ultra.ProviderHandle{}, err
+	}
+	if err := awaitReady(port, logPath, cmd.Process.Pid); err != nil {
+		stop(handle)
+		return ultra.ProviderHandle{}, err
+	}
+	return handle, nil
 }
 
-// sandboxScript builds a private root on a tmpfs and chroots into it. The
-// workspace is bind-mounted at the declared workdir so every tool call that
-// names that absolute path lands in this environment alone.
-//
-// Device nodes are bind-mounted individually rather than via --rbind of /dev:
-// rbind of the host's /dev hangs on some hardened runners (the failure that
-// forced an earlier withdrawal), and userns root cannot mknod either.
 func sandboxScript(binary, dir, workspace, workdir string, port int) string {
-	root := filepath.Join(dir, "root")
+	r := filepath.Join(dir, "root")
 	return fmt.Sprintf(`set -e
-mkdir -p %[1]s
-mount -t tmpfs -o size=64m tmpfs %[1]s
+mkdir -p %[1]s && mount -t tmpfs -o size=64m tmpfs %[1]s
 mkdir -p %[1]s/usr %[1]s/proc %[1]s/dev %[1]s/tmp %[1]s/etc %[1]s/opt %[1]s%[3]s
-mount --bind /usr %[1]s/usr
-mount -t proc proc %[1]s/proc
-touch %[1]s/dev/null %[1]s/dev/zero %[1]s/dev/urandom %[1]s/dev/tty
-mount --bind /dev/null %[1]s/dev/null
-mount --bind /dev/zero %[1]s/dev/zero
-mount --bind /dev/urandom %[1]s/dev/urandom
-mount --bind /dev/tty %[1]s/dev/tty 2>/dev/null || true
-mount --bind %[2]s %[1]s%[3]s
-cp %[4]s %[1]s/opt/bezalel
-# /bin and /lib must resolve into the bound /usr: Bezalel shells out to bash
-# and coreutils by those absolute paths, and a missing /bin/bash is the
-# "no output / exit 1" every tool call would otherwise produce.
-ln -s usr/bin %[1]s/bin
-ln -s usr/lib %[1]s/lib
-ln -s usr/lib64 %[1]s/lib64 2>/dev/null || true
+mount --bind /usr %[1]s/usr && mount -t proc proc %[1]s/proc
+touch %[1]s/dev/null %[1]s/dev/zero %[1]s/dev/urandom
+mount --bind /dev/null %[1]s/dev/null && mount --bind /dev/zero %[1]s/dev/zero && mount --bind /dev/urandom %[1]s/dev/urandom
+mount --bind %[2]s %[1]s%[3]s && cp %[4]s %[1]s/opt/bezalel
+ln -s usr/bin %[1]s/bin && ln -s usr/lib %[1]s/lib && ln -s usr/lib64 %[1]s/lib64 2>/dev/null || true
 ln -s usr/sbin %[1]s/sbin 2>/dev/null || true
-exec env -i PATH=/usr/bin:/bin HOME=%[3]s BEZALEL_AUTH_TOKEN="$BEZALEL_AUTH_TOKEN" \
-	chroot %[1]s /opt/bezalel --workdir %[3]s --port %[5]d --host 127.0.0.1
-`, root, workspace, workdir, binary, port)
+exec env -i PATH=/usr/bin:/bin HOME=%[3]s BEZALEL_AUTH_TOKEN="$BEZALEL_AUTH_TOKEN" chroot %[1]s /opt/bezalel --workdir %[3]s --port %[5]d --host 127.0.0.1
+`, r, workspace, workdir, binary, port)
 }
 
-// Status reports the sandbox's real condition. A process that is gone is
-// failed, not merely unready: something outside the platform killed it, and
-// reconciliation has to see that.
-func (p *Provider) Status(_ context.Context, handle ultra.ProviderHandle) (ultra.ProviderStatus, error) {
-	d, err := decode(handle)
+func awaitReady(port int, logPath string, pid int) error {
+	deadline := time.Now().Add(15 * time.Second)
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	for time.Now().Before(deadline) {
+		if syscall.Kill(pid, 0) != nil {
+			return fmt.Errorf("static: sandbox exited: %s", tailLog(logPath))
+		}
+		if c, err := net.DialTimeout("tcp", addr, 100*time.Millisecond); err == nil {
+			_ = c.Close()
+			return nil
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return fmt.Errorf("static: sandbox never ready: %s", tailLog(logPath))
+}
+
+func tailLog(path string) string {
+	body, err := os.ReadFile(path)
+	if err != nil || len(body) == 0 {
+		return "(no sandbox log)"
+	}
+	s := strings.TrimSpace(string(body))
+	if len(s) > 512 {
+		return s[len(s)-512:]
+	}
+	return s
+}
+
+// Status reports the sandbox's real condition. A gone process is failed.
+func (p *Provider) Status(_ context.Context, h ultra.ProviderHandle) (ultra.ProviderStatus, error) {
+	d, err := decode(h)
 	if err != nil {
 		return ultra.ProviderStatus{}, err
 	}
-	// Signal zero asks the kernel whether the process still exists.
-	if err := syscall.Kill(d.PID, 0); err != nil {
-		message := "sandbox process is gone"
-		if body, readErr := os.ReadFile(filepath.Join(p.dir(ultra.EnvID(d.EnvID)), "sandbox.log")); readErr == nil && len(body) > 0 {
-			// Cap the log so a noisy failure cannot flood the status channel.
-			trimmed := strings.TrimSpace(string(body))
-			if len(trimmed) > 512 {
-				trimmed = trimmed[len(trimmed)-512:]
-			}
-			message = "sandbox process is gone: " + trimmed
-		}
-		return ultra.ProviderStatus{State: ultra.EnvFailed, Message: message}, nil
+	if syscall.Kill(d.PID, 0) != nil {
+		return ultra.ProviderStatus{State: ultra.EnvFailed, Message: "gone: " + tailLog(filepath.Join(p.dir(ultra.EnvID(d.EnvID)), "sandbox.log"))}, nil
 	}
 	return ultra.ProviderStatus{State: ultra.EnvReady}, nil
 }
 
 // Endpoint returns the tool endpoint the sandbox publishes.
-func (p *Provider) Endpoint(_ context.Context, handle ultra.ProviderHandle) (string, error) {
-	d, err := decode(handle)
+func (p *Provider) Endpoint(_ context.Context, h ultra.ProviderHandle) (string, error) {
+	d, err := decode(h)
 	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("http://127.0.0.1:%d/mcp", d.Port), nil
 }
 
-// Restart replaces the process with one carrying the rotated token. Only the
-// process is stopped, never the environment's directory: the workspace lives
-// there, and removing it would break the preservation this provider claims.
-func (p *Provider) Restart(ctx context.Context, envID ultra.EnvID, handle ultra.ProviderHandle, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
-	stop(handle)
-	return p.Provision(ctx, envID, spec, token)
+// Restart replaces the process with one carrying the rotated token.
+func (p *Provider) Restart(ctx context.Context, id ultra.EnvID, h ultra.ProviderHandle, spec ultra.EnvSpec, token string) (ultra.ProviderHandle, error) {
+	stop(h)
+	return p.Provision(ctx, id, spec, token)
 }
 
-// Terminate stops the sandbox and removes its state. It is idempotent:
-// releasing what is already gone is success, or a retry would turn a completed
-// cleanup into a failure.
-func (p *Provider) Terminate(_ context.Context, handle ultra.ProviderHandle) error {
-	d, err := decode(handle)
+// Terminate stops the sandbox and removes its state, idempotently.
+func (p *Provider) Terminate(_ context.Context, h ultra.ProviderHandle) error {
+	d, err := decode(h)
 	if err != nil {
-		// A handle that was never written means nothing was created.
 		return nil
 	}
-	stop(handle)
+	stop(h)
 	if err := os.RemoveAll(p.dir(ultra.EnvID(d.EnvID))); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("static: remove environment state: %w", err)
 	}
 	return nil
 }
 
-// stop kills the sandbox's process group. The negative pid is what reaps the
-// namespace's children along with the shell that created them; a lone process
-// kill would leave the agent running inside an orphaned namespace.
-func stop(handle ultra.ProviderHandle) {
-	d, err := decode(handle)
-	if err != nil {
-		return
+func stop(h ultra.ProviderHandle) {
+	if d, err := decode(h); err == nil {
+		_ = syscall.Kill(-d.PID, syscall.SIGKILL)
+		_ = syscall.Kill(d.PID, syscall.SIGKILL)
 	}
-	_ = syscall.Kill(-d.PID, syscall.SIGKILL)
-	_ = syscall.Kill(d.PID, syscall.SIGKILL)
 }
 
-// Resources implements ultra.EnvResourceLister, which is what turns
-// "terminated" into a checkable claim rather than an absence of evidence.
-func (p *Provider) Resources(_ context.Context, envID ultra.EnvID) ([]string, error) {
-	if _, err := os.Stat(p.dir(envID)); err != nil {
+// Resources implements ultra.EnvResourceLister.
+func (p *Provider) Resources(_ context.Context, id ultra.EnvID) ([]string, error) {
+	if _, err := os.Stat(p.dir(id)); err != nil {
 		return nil, nil
 	}
-	return []string{"sandbox/" + string(envID)}, nil
+	return []string{"sandbox/" + string(id)}, nil
 }
 
-// Probe implements ultra.CapabilityProber. The sandbox needs unprivileged user
-// namespaces, so the probe checks for them rather than assuming: a host without
-// them must report the fact at registration instead of failing every provision.
+// Probe refuses a host without unprivileged user namespaces.
 func (p *Provider) Probe(context.Context) (ultra.ProviderCapabilities, error) {
-	capabilities := ultra.ProviderCapabilities{Kind: ultra.ProviderKindStatic, Notes: map[ultra.ProviderCapability]string{
-		ultra.CapabilityNamespaceIsolation: "environments share the host kernel and network namespace",
-		ultra.CapabilityResourceQuota:      "the example provider enforces no ceiling",
-	}}
+	caps := ultra.ProviderCapabilities{
+		Kind: ultra.ProviderKindStatic,
+		Notes: map[ultra.ProviderCapability]string{
+			ultra.CapabilityNamespaceIsolation: "environments share the host kernel and network namespace",
+			ultra.CapabilityResourceQuota:      "the example provider enforces no ceiling",
+		},
+	}
 	if err := exec.Command("unshare", "--map-root-user", "--mount", "true").Run(); err != nil {
-		return capabilities, fmt.Errorf("static: this host has no unprivileged user namespaces: %w", err)
+		return caps, fmt.Errorf("static: this host has no unprivileged user namespaces: %w", err)
 	}
-	capabilities.Supported = append(capabilities.Supported,
-		ultra.CapabilityEnumeratesResources,
-		ultra.CapabilityRestartPreservesWorkspace,
-		ultra.CapabilityServesToolEndpoint,
-	)
-	return capabilities, nil
-}
-
-// freePort reserves a port the sandbox will bind. A reserved-then-released port
-// can race, which is why Provision hands it straight to the process.
-func freePort() (int, error) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return 0, fmt.Errorf("static: reserve port: %w", err)
+	caps.Supported = []ultra.ProviderCapability{
+		ultra.CapabilityEnumeratesResources, ultra.CapabilityRestartPreservesWorkspace, ultra.CapabilityServesToolEndpoint,
 	}
-	defer func() { _ = listener.Close() }()
-	return listener.Addr().(*net.TCPAddr).Port, nil
+	return caps, nil
 }
 
 func encode(d handleData) (ultra.ProviderHandle, error) {
-	body, err := json.Marshal(d)
+	b, err := json.Marshal(d)
 	if err != nil {
-		return ultra.ProviderHandle{}, fmt.Errorf("static: encode handle: %w", err)
+		return ultra.ProviderHandle{}, err
 	}
-	return ultra.ProviderHandle{Version: 1, Data: body}, nil
+	return ultra.ProviderHandle{Version: 1, Data: b}, nil
 }
 
 func decode(h ultra.ProviderHandle) (handleData, error) {
@@ -262,8 +231,5 @@ func decode(h ultra.ProviderHandle) (handleData, error) {
 	if len(h.Data) == 0 {
 		return d, errors.New("static: empty provider handle")
 	}
-	if err := json.Unmarshal(h.Data, &d); err != nil {
-		return d, fmt.Errorf("static: decode handle: %w", err)
-	}
-	return d, nil
+	return d, json.Unmarshal(h.Data, &d)
 }
