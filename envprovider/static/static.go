@@ -113,7 +113,9 @@ mount --bind /dev/null %[1]s/dev/null && mount --bind /dev/zero %[1]s/dev/zero &
 mount --bind %[2]s %[1]s%[3]s && cp %[4]s %[1]s/opt/bezalel
 ln -s usr/bin %[1]s/bin && ln -s usr/lib %[1]s/lib && ln -s usr/lib64 %[1]s/lib64 2>/dev/null || true
 ln -s usr/sbin %[1]s/sbin 2>/dev/null || true
-exec env -i PATH=/usr/bin:/bin HOME=%[3]s BEZALEL_AUTH_TOKEN="$BEZALEL_AUTH_TOKEN" chroot %[1]s /opt/bezalel --workdir %[3]s --port %[5]d --host 127.0.0.1
+# chroot lives in /usr/sbin on Ubuntu runners; PATH after env -i would miss it.
+exec env -i PATH=/usr/bin:/bin:/usr/sbin HOME=%[3]s BEZALEL_AUTH_TOKEN="$BEZALEL_AUTH_TOKEN" \
+  /usr/sbin/chroot %[1]s /opt/bezalel --workdir %[3]s --port %[5]d --host 127.0.0.1
 `, r, workspace, workdir, binary, port)
 }
 
