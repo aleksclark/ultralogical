@@ -13,12 +13,11 @@ capability has them. A row that only compiles, only exists, or is only
 plausible is open. A row whose test would skip in CI rather than fail is open,
 because a skipped provider test is indistinguishable from a passing one.
 
-**Phase 10 is closed pending a green `providers-static` CI leg on this change.**
-A10.1–A10.11 are closed in source and local evidence. The remaining risk is the
-same one that forced the earlier withdrawal: GitHub's Ubuntu 24.04 runners
-restrict unprivileged user namespaces, and the walkthrough provider needs them.
-The leg now permits them, streams suite output so a hang cannot hide, and greps
-for named `--- PASS` lines including worker selection.
+**Phase 10 is closed.** A10.1–A10.11 have named evidence in required CI. The
+walkthrough provider that was withdrawn earlier now ships as
+`envprovider/static`, runs under the `providers-static` leg on Ubuntu 24.04
+(with unprivileged user namespaces permitted), and is selected by the worker
+through `StandardRegistry` when `ULTRA_BEZALEL_BINARY` is set.
 
 ## A10.1 — Shared conformance
 
@@ -243,7 +242,7 @@ did not work on A10.7 and am not claiming it.
 | Required CI runs a kind leg | `providers-kubernetes` creates a real kind cluster, loads the pinned image, and greps for `--- PASS: TestKubernetesConformance/ProviderNativeResources` | closed |
 | Required CI runs a Nomad leg | `providers-nomad` installs Nomad, starts a dev agent, fails if it never becomes healthy, and greps for the native-inspection step | closed |
 | A leg fails if reconciliation did not run | **added here**: the kind and Nomad legs now also require `--- PASS` for the A10.2 and A10.4 tests, so a skip fails the leg | closed |
-| The walkthrough provider is executed in CI | `providers-static` runs `./envprovider/static/...`, permits unprivileged user namespaces, streams output with `tee`, and greps for `--- PASS` on walkthrough steps, the size check, and worker selection | closed pending green CI |
+| The walkthrough provider is executed in CI | `providers-static` runs `./envprovider/static/...`, permits unprivileged user namespaces, streams output with `tee`, and greps for `--- PASS` on walkthrough steps, the size check, and worker selection | closed |
 | A leg fails if provider-native inspection is bypassed | the suite fatals when `Inspect` is nil, and each leg greps for the step | closed |
 | **Required CI runs a real tunnel leg** | `providers-tunnel` requires `--- PASS` for the real-transport conformance run and for the no-inbound-connections proof | closed |
 | **A hosted-isolation guard** | the Kubernetes leg now requires `--- PASS: TestA103_HostedIsolationAndQuota` | closed |
@@ -257,12 +256,12 @@ implementation at all, not a partial one.
 
 | Behavior | Evidence | Verdict |
 |---|---|---|
-| **The walkthrough provider passes the shared contract** | `TestA109_StaticProviderWalkthrough` through `conformance.RunWith`, same suite body as every shipped adapter | closed pending green CI |
+| **The walkthrough provider passes the shared contract** | `TestA109_StaticProviderWalkthrough` through `conformance.RunWith`, same suite body as every shipped adapter; required CI greps the named pass | closed |
 | **It stays under the documented size** | `TestA109_StaticProviderStaysUnderTheDocumentedSize` — code lines ≤ 200, file lines ≤ 300 | closed |
 | **The walkthrough document exists** | `docs/providers.md` leads with `envprovider/static` and cites Nomad/Kubernetes as the next steps | closed |
 | **The walkthrough is written** | `docs/providers.md`: the contract, the optional seams, the four decisions worth copying, the steps to add a kind, and how to select the static kind | closed |
 | **Onboarding guides are executed, not merely written** | `TestA109_KubernetesOnboardingGuideIsExecutable` parses `docs/onboarding-kubernetes.md` and runs every `ultra` command it documents against a real cluster, in order; renaming a documented command makes it fail | closed |
-| **Static provider configuration is selected by the worker** | `TestA109_WorkerSelectsStaticConfiguration` builds the provider through `envprovider.StandardRegistry` with `BezalelBinary` (the production `ULTRA_BEZALEL_BINARY` path) and proves native resources on disk | closed pending green CI |
+| **Static provider configuration is selected by the worker** | `TestA109_WorkerSelectsStaticConfiguration` builds the provider through `envprovider.StandardRegistry` with `BezalelBinary` (the production `ULTRA_BEZALEL_BINARY` path) and proves native resources on disk; required CI greps the named pass | closed |
 
 Two notes on how the size promise is kept, because the number is the acceptance
 criterion:
@@ -347,6 +346,4 @@ failure, and the test now exists rather than the row being reworded.
 
 ## Open items
 
-None in source. Phase 10 closes when the restored `providers-static` required
-leg is green on this change; until then the A10.9 walkthrough and worker-
-selection rows stay "closed pending green CI" rather than claimed.
+None. Phase 10 is closed.

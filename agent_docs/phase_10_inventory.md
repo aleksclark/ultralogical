@@ -13,10 +13,9 @@ Legend: `go:` real-stack Go test, `conf:` shared provider conformance run,
 
 ## Progress
 
-Phase 10 is **closeable pending required CI on the static walkthrough leg**.
-The independent completion audit is in [phase_10_audit.md](phase_10_audit.md);
-it is the authoritative statement of what is closed, and this table is a
-summary of it rather than a separate claim.
+Phase 10 is **closed**. The independent completion audit is in
+[phase_10_audit.md](phase_10_audit.md); it is the authoritative statement of
+what is closed, and this table is a summary of it rather than a separate claim.
 
 | Area | State |
 |---|---|
@@ -41,7 +40,7 @@ summary of it rather than a separate claim.
 | Environment names its host, provider fault recovery, removal ownership, quota/health rendering | done (A10.7) |
 | kind, Nomad, tunnel, and static CI legs with native-inspection guards | done (A10.8); static leg restored |
 | Scheduled pinned-version and real-cluster matrices | done (A10.8) |
-| Static walkthrough provider passing the unmodified contract, under the documented size | done (A10.9); pending green `providers-static` CI |
+| Static walkthrough provider passing the unmodified contract, under the documented size | done (A10.9) |
 | `docs/providers.md` walkthrough | done (A10.9) |
 | Executed onboarding guides; static configuration selected by the worker | done (A10.9); worker selection via `StandardRegistry` + `ULTRA_BEZALEL_BINARY` |
 | Capability decided behaviorally rather than by kind | done (A10.10) |
