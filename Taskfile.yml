@@ -28,6 +28,9 @@ tasks:
           exit 1
         fi
       - golangci-lint run
+      # Extraction term fences: after each E-phase closes, its banned terms may
+      # not reappear in live code. E0 ships with no active terms (no-op).
+      - bash scripts/check-extraction-fences.sh
 
   test:
     desc: Unit + store + queue + provider tests (real Postgres via testcontainers)
