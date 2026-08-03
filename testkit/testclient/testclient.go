@@ -23,7 +23,7 @@ type Client struct {
 	Sessions   corev1connect.SessionServiceClient
 	Events     corev1connect.EventServiceClient
 	Agents     corev1connect.AgentServiceClient
-	Envs       corev1connect.EnvServiceClient
+	Resources  corev1connect.ResourceServiceClient
 	Automation corev1connect.AutomationServiceClient
 }
 
@@ -49,7 +49,7 @@ func New(baseURL, token string) *Client {
 		Sessions:   corev1connect.NewSessionServiceClient(httpClient, baseURL),
 		Events:     corev1connect.NewEventServiceClient(httpClient, baseURL),
 		Agents:     corev1connect.NewAgentServiceClient(httpClient, baseURL),
-		Envs:       corev1connect.NewEnvServiceClient(httpClient, baseURL),
+		Resources:       corev1connect.NewResourceServiceClient(httpClient, baseURL),
 				Automation: corev1connect.NewAutomationServiceClient(httpClient, baseURL),
 	}
 }
@@ -193,20 +193,20 @@ func Kind(ev *corev1.SessionEvent) string {
 		return "run_failed"
 	case *corev1.EventPayload_RunCancelled:
 		return "run_cancelled"
-	case *corev1.EventPayload_EnvRequested:
-		return "env_requested"
-	case *corev1.EventPayload_EnvProvisioning:
-		return "env_provisioning"
-	case *corev1.EventPayload_EnvReady:
-		return "env_ready"
-	case *corev1.EventPayload_EnvFailed:
-		return "env_failed"
-	case *corev1.EventPayload_EnvSuspended:
-		return "env_suspended"
-	case *corev1.EventPayload_EnvTerminating:
-		return "env_terminating"
-	case *corev1.EventPayload_EnvTerminated:
-		return "env_terminated"
+	case *corev1.EventPayload_ResourceRequested:
+		return "resource_requested"
+	case *corev1.EventPayload_ResourceProvisioning:
+		return "resource_provisioning"
+	case *corev1.EventPayload_ResourceReady:
+		return "resource_ready"
+	case *corev1.EventPayload_ResourceFailed:
+		return "resource_failed"
+	case *corev1.EventPayload_ResourceSuspended:
+		return "resource_suspended"
+	case *corev1.EventPayload_ResourceTerminating:
+		return "resource_terminating"
+	case *corev1.EventPayload_ResourceTerminated:
+		return "resource_terminated"
 	case *corev1.EventPayload_ExecPreviewRan:
 		return "exec_preview_ran"
 	case *corev1.EventPayload_RunSpawned:

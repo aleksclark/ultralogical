@@ -43,7 +43,7 @@ plane being reachable at that moment.
 | Capability | Meaning |
 |---|---|
 | `serves_tool_endpoint` | environments publish the authenticated tool endpoint health readiness needs |
-| `restart_preserves_workspace` | a restart keeps the workspace |
+| `restart_preserves_state` | a restart keeps the workspace |
 | `tolerates_disconnect` | losing transport suspends rather than fails an environment |
 | `adopts_orphans` | an interrupted provisioning finds its own resource instead of creating a second |
 | `enumerates_resources` | the provider can list what it owns, which is what makes a leak check positive evidence |

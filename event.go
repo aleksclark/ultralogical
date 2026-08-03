@@ -37,13 +37,13 @@ const (
 	EventKindRunCompleted        = "run_completed"
 	EventKindRunFailed           = "run_failed"
 	EventKindRunCancelled        = "run_cancelled"
-	EventKindEnvRequested        = "env_requested"
-	EventKindEnvProvisioning     = "env_provisioning"
-	EventKindEnvReady            = "env_ready"
-	EventKindEnvFailed           = "env_failed"
-	EventKindEnvSuspended        = "env_suspended"
-	EventKindEnvTerminating      = "env_terminating"
-	EventKindEnvTerminated       = "env_terminated"
+	EventKindResourceRequested    = "resource_requested"
+	EventKindResourceProvisioning = "resource_provisioning"
+	EventKindResourceReady        = "resource_ready"
+	EventKindResourceFailed       = "resource_failed"
+	EventKindResourceSuspended    = "resource_suspended"
+	EventKindResourceTerminating  = "resource_terminating"
+	EventKindResourceTerminated   = "resource_terminated"
 	EventKindExecPreviewRan      = "exec_preview_ran"
 	EventKindRunSpawned          = "run_spawned"
 	EventKindMemorySet           = "memory_set"
@@ -177,11 +177,12 @@ type RunCancelledPayload struct {
 	RunID RunID `json:"run_id"`
 }
 
-// EnvEventPayload is shared by environment lifecycle events. Epoch is the
-// environment's token generation: it increments on restart so subscribers and
-// tool caches can distinguish a restarted environment from its predecessor.
-type EnvEventPayload struct {
-	EnvID              EnvID              `json:"env_id"`
+// ResourceEventPayload is shared by resource lifecycle events. Epoch is the
+// resource's token generation: it increments on restart so subscribers and
+// tool caches can distinguish a restarted resource from its predecessor.
+type ResourceEventPayload struct {
+	ResourceID         ResourceID         `json:"resource_id"`
+	Kind               ResourceKind       `json:"kind,omitempty"`
 	Name               string             `json:"name,omitempty"`
 	ProviderInstanceID ProviderInstanceID `json:"provider_instance_id,omitempty"`
 	Endpoint           string             `json:"endpoint,omitempty"`
@@ -191,10 +192,10 @@ type EnvEventPayload struct {
 
 // ExecPreviewRanPayload records a human command and its real output.
 type ExecPreviewRanPayload struct {
-	EnvID   EnvID  `json:"env_id"`
-	Command string `json:"command"`
-	Output  string `json:"output"`
-	IsError bool   `json:"is_error"`
+	ResourceID ResourceID `json:"resource_id"`
+	Command    string     `json:"command"`
+	Output     string     `json:"output"`
+	IsError    bool       `json:"is_error"`
 }
 
 type RunSpawnedPayload struct {
@@ -246,10 +247,10 @@ type PeriodicPromptFiredPayload struct {
 }
 
 type PermissionDeniedPayload struct {
-	RunID  RunID  `json:"run_id"`
-	Tool   string `json:"tool"`
-	EnvID  *EnvID `json:"env_id,omitempty"`
-	Reason string `json:"reason"`
+	RunID      RunID       `json:"run_id"`
+	Tool       string      `json:"tool"`
+	ResourceID *ResourceID `json:"resource_id,omitempty"`
+	Reason     string      `json:"reason"`
 }
 
 // EventBus delivers ordered, gapless per-session event streams: a catch-up

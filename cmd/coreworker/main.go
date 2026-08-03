@@ -20,8 +20,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aleksclark/ultracore/envprovider"
-	"github.com/aleksclark/ultracore/envwork"
+	"github.com/aleksclark/ultracore/provider"
+	"github.com/aleksclark/ultracore/resourcework"
 	"github.com/aleksclark/ultracore/jobqueue"
 	riverqueue "github.com/aleksclark/ultracore/jobqueue/river"
 	"github.com/aleksclark/ultracore/loop"
@@ -72,14 +72,14 @@ func run(log *slog.Logger) error {
 
 	// Adapters are built per registration from its own configuration, so a
 	// worker never holds one provider standing in for another.
-	registry := envprovider.StandardRegistry(providerDeployment())
-	envs := &envwork.Service{Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Keyring: keyring,
+	registry := provider.StandardRegistry(providerDeployment())
+	resources := &resourcework.Service{Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Keyring: keyring,
 		Providers: registry, Log: log,
 		ReconcileInterval: envDuration("CORE_RECONCILE_INTERVAL", 5*time.Second),
 		ProvisionTimeout:  envDuration("CORE_PROVISION_TIMEOUT", time.Minute)}
 	stepWorker := &loop.StepWorker{
 		Store: store, Keyring: keyring, Enqueue: postgres.TxEnqueuer{Queue: queue},
-		Registry: loop.NewRegistry(), Log: log, ToolResolver: &loop.EnvTools{Store: store, Envs: envs},
+		Registry: loop.NewRegistry(), Log: log, ToolResolver: &loop.ResourceTools{Store: store, Resources: resources},
 	}
 	// Wait deadlines are enforced by any worker, not by the process that
 	// created the wait, so a parked parent is released even after a crash.
@@ -88,10 +88,10 @@ func run(log *slog.Logger) error {
 	}
 	jobqueue.Register(queue, jobqueue.Worker[loop.StepJob](stepWorker))
 	jobqueue.Register(queue, jobqueue.WorkerFunc[loop.WaitTimeoutJob](waitSweeper.Sweep))
-	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.ProvisionJob](envs.Provision))
-	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.TerminateJob](envs.Terminate))
-	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.ReconcileJob](envs.Reconcile))
-	jobqueue.Register(queue, jobqueue.WorkerFunc[envwork.RestartJob](envs.Restart))
+	jobqueue.Register(queue, jobqueue.WorkerFunc[resourcework.ProvisionJob](resources.Provision))
+	jobqueue.Register(queue, jobqueue.WorkerFunc[resourcework.TerminateJob](resources.Terminate))
+	jobqueue.Register(queue, jobqueue.WorkerFunc[resourcework.ReconcileJob](resources.Reconcile))
+	jobqueue.Register(queue, jobqueue.WorkerFunc[resourcework.RestartJob](resources.Restart))
 
 	if err := queue.Start(ctx); err != nil {
 		return err
@@ -145,8 +145,8 @@ func envDuration(name string, def time.Duration) time.Duration {
 
 // providerDeployment reads which provider kinds this worker can host and how
 // environments are reached.
-func providerDeployment() envprovider.Deployment {
-	deployment := envprovider.Deployment{
+func providerDeployment() provider.Deployment {
+	deployment := provider.Deployment{
 		BezalelImage:           envOr("CORE_BEZALEL_IMAGE", "ultracore/bezalel:local"),
 		BezalelBinary:          os.Getenv("CORE_BEZALEL_BINARY"),
 		KubernetesEndpointMode: envOr("CORE_K8S_ENDPOINT_MODE", ""),

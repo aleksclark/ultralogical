@@ -992,34 +992,35 @@ func (x *RunCancelled) GetRunId() string {
 	return ""
 }
 
-type EnvLifecycle struct {
+type ResourceLifecycle struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	EnvId              string                 `protobuf:"bytes,1,opt,name=env_id,json=envId,proto3" json:"env_id,omitempty"`
-	Name               string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	ProviderInstanceId string                 `protobuf:"bytes,3,opt,name=provider_instance_id,json=providerInstanceId,proto3" json:"provider_instance_id,omitempty"`
-	Endpoint           string                 `protobuf:"bytes,4,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	Message            string                 `protobuf:"bytes,5,opt,name=message,proto3" json:"message,omitempty"`
-	// epoch increments on every environment token rotation, so clients and
-	// tool caches can tell a restarted environment from its earlier identity.
-	Epoch         int32 `protobuf:"varint,6,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	ResourceId         string                 `protobuf:"bytes,1,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	Kind               string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	Name               string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	ProviderInstanceId string                 `protobuf:"bytes,4,opt,name=provider_instance_id,json=providerInstanceId,proto3" json:"provider_instance_id,omitempty"`
+	Endpoint           string                 `protobuf:"bytes,5,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	Message            string                 `protobuf:"bytes,6,opt,name=message,proto3" json:"message,omitempty"`
+	// epoch increments on every resource token rotation, so clients and
+	// tool caches can tell a restarted resource from its earlier identity.
+	Epoch         int32 `protobuf:"varint,7,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *EnvLifecycle) Reset() {
-	*x = EnvLifecycle{}
+func (x *ResourceLifecycle) Reset() {
+	*x = ResourceLifecycle{}
 	mi := &file_core_v1_event_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EnvLifecycle) String() string {
+func (x *ResourceLifecycle) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EnvLifecycle) ProtoMessage() {}
+func (*ResourceLifecycle) ProtoMessage() {}
 
-func (x *EnvLifecycle) ProtoReflect() protoreflect.Message {
+func (x *ResourceLifecycle) ProtoReflect() protoreflect.Message {
 	mi := &file_core_v1_event_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1031,47 +1032,54 @@ func (x *EnvLifecycle) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EnvLifecycle.ProtoReflect.Descriptor instead.
-func (*EnvLifecycle) Descriptor() ([]byte, []int) {
+// Deprecated: Use ResourceLifecycle.ProtoReflect.Descriptor instead.
+func (*ResourceLifecycle) Descriptor() ([]byte, []int) {
 	return file_core_v1_event_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *EnvLifecycle) GetEnvId() string {
+func (x *ResourceLifecycle) GetResourceId() string {
 	if x != nil {
-		return x.EnvId
+		return x.ResourceId
 	}
 	return ""
 }
 
-func (x *EnvLifecycle) GetName() string {
+func (x *ResourceLifecycle) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *ResourceLifecycle) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *EnvLifecycle) GetProviderInstanceId() string {
+func (x *ResourceLifecycle) GetProviderInstanceId() string {
 	if x != nil {
 		return x.ProviderInstanceId
 	}
 	return ""
 }
 
-func (x *EnvLifecycle) GetEndpoint() string {
+func (x *ResourceLifecycle) GetEndpoint() string {
 	if x != nil {
 		return x.Endpoint
 	}
 	return ""
 }
 
-func (x *EnvLifecycle) GetMessage() string {
+func (x *ResourceLifecycle) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
 	return ""
 }
 
-func (x *EnvLifecycle) GetEpoch() int32 {
+func (x *ResourceLifecycle) GetEpoch() int32 {
 	if x != nil {
 		return x.Epoch
 	}
@@ -1080,7 +1088,7 @@ func (x *EnvLifecycle) GetEpoch() int32 {
 
 type ExecPreviewRan struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	EnvId         string                 `protobuf:"bytes,1,opt,name=env_id,json=envId,proto3" json:"env_id,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,1,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
 	Command       string                 `protobuf:"bytes,2,opt,name=command,proto3" json:"command,omitempty"`
 	Output        string                 `protobuf:"bytes,3,opt,name=output,proto3" json:"output,omitempty"`
 	IsError       bool                   `protobuf:"varint,4,opt,name=is_error,json=isError,proto3" json:"is_error,omitempty"`
@@ -1118,9 +1126,9 @@ func (*ExecPreviewRan) Descriptor() ([]byte, []int) {
 	return file_core_v1_event_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *ExecPreviewRan) GetEnvId() string {
+func (x *ExecPreviewRan) GetResourceId() string {
 	if x != nil {
-		return x.EnvId
+		return x.ResourceId
 	}
 	return ""
 }
@@ -1502,7 +1510,7 @@ type PermissionDenied struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	Tool          string                 `protobuf:"bytes,2,opt,name=tool,proto3" json:"tool,omitempty"`
-	EnvId         string                 `protobuf:"bytes,3,opt,name=env_id,json=envId,proto3" json:"env_id,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,3,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
 	Reason        string                 `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1552,9 +1560,9 @@ func (x *PermissionDenied) GetTool() string {
 	return ""
 }
 
-func (x *PermissionDenied) GetEnvId() string {
+func (x *PermissionDenied) GetResourceId() string {
 	if x != nil {
-		return x.EnvId
+		return x.ResourceId
 	}
 	return ""
 }
@@ -1586,12 +1594,12 @@ type EventPayload struct {
 	//	*EventPayload_RunCompleted
 	//	*EventPayload_RunFailed
 	//	*EventPayload_RunCancelled
-	//	*EventPayload_EnvRequested
-	//	*EventPayload_EnvProvisioning
-	//	*EventPayload_EnvReady
-	//	*EventPayload_EnvFailed
-	//	*EventPayload_EnvTerminating
-	//	*EventPayload_EnvTerminated
+	//	*EventPayload_ResourceRequested
+	//	*EventPayload_ResourceProvisioning
+	//	*EventPayload_ResourceReady
+	//	*EventPayload_ResourceFailed
+	//	*EventPayload_ResourceTerminating
+	//	*EventPayload_ResourceTerminated
 	//	*EventPayload_ExecPreviewRan
 	//	*EventPayload_RunSpawned
 	//	*EventPayload_MemorySet
@@ -1601,7 +1609,7 @@ type EventPayload struct {
 	//	*EventPayload_ModelFallback
 	//	*EventPayload_HookFired
 	//	*EventPayload_PeriodicPromptFired
-	//	*EventPayload_EnvSuspended
+	//	*EventPayload_ResourceSuspended
 	Payload       isEventPayload_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1761,55 +1769,55 @@ func (x *EventPayload) GetRunCancelled() *RunCancelled {
 	return nil
 }
 
-func (x *EventPayload) GetEnvRequested() *EnvLifecycle {
+func (x *EventPayload) GetResourceRequested() *ResourceLifecycle {
 	if x != nil {
-		if x, ok := x.Payload.(*EventPayload_EnvRequested); ok {
-			return x.EnvRequested
+		if x, ok := x.Payload.(*EventPayload_ResourceRequested); ok {
+			return x.ResourceRequested
 		}
 	}
 	return nil
 }
 
-func (x *EventPayload) GetEnvProvisioning() *EnvLifecycle {
+func (x *EventPayload) GetResourceProvisioning() *ResourceLifecycle {
 	if x != nil {
-		if x, ok := x.Payload.(*EventPayload_EnvProvisioning); ok {
-			return x.EnvProvisioning
+		if x, ok := x.Payload.(*EventPayload_ResourceProvisioning); ok {
+			return x.ResourceProvisioning
 		}
 	}
 	return nil
 }
 
-func (x *EventPayload) GetEnvReady() *EnvLifecycle {
+func (x *EventPayload) GetResourceReady() *ResourceLifecycle {
 	if x != nil {
-		if x, ok := x.Payload.(*EventPayload_EnvReady); ok {
-			return x.EnvReady
+		if x, ok := x.Payload.(*EventPayload_ResourceReady); ok {
+			return x.ResourceReady
 		}
 	}
 	return nil
 }
 
-func (x *EventPayload) GetEnvFailed() *EnvLifecycle {
+func (x *EventPayload) GetResourceFailed() *ResourceLifecycle {
 	if x != nil {
-		if x, ok := x.Payload.(*EventPayload_EnvFailed); ok {
-			return x.EnvFailed
+		if x, ok := x.Payload.(*EventPayload_ResourceFailed); ok {
+			return x.ResourceFailed
 		}
 	}
 	return nil
 }
 
-func (x *EventPayload) GetEnvTerminating() *EnvLifecycle {
+func (x *EventPayload) GetResourceTerminating() *ResourceLifecycle {
 	if x != nil {
-		if x, ok := x.Payload.(*EventPayload_EnvTerminating); ok {
-			return x.EnvTerminating
+		if x, ok := x.Payload.(*EventPayload_ResourceTerminating); ok {
+			return x.ResourceTerminating
 		}
 	}
 	return nil
 }
 
-func (x *EventPayload) GetEnvTerminated() *EnvLifecycle {
+func (x *EventPayload) GetResourceTerminated() *ResourceLifecycle {
 	if x != nil {
-		if x, ok := x.Payload.(*EventPayload_EnvTerminated); ok {
-			return x.EnvTerminated
+		if x, ok := x.Payload.(*EventPayload_ResourceTerminated); ok {
+			return x.ResourceTerminated
 		}
 	}
 	return nil
@@ -1896,10 +1904,10 @@ func (x *EventPayload) GetPeriodicPromptFired() *PeriodicPromptFired {
 	return nil
 }
 
-func (x *EventPayload) GetEnvSuspended() *EnvLifecycle {
+func (x *EventPayload) GetResourceSuspended() *ResourceLifecycle {
 	if x != nil {
-		if x, ok := x.Payload.(*EventPayload_EnvSuspended); ok {
-			return x.EnvSuspended
+		if x, ok := x.Payload.(*EventPayload_ResourceSuspended); ok {
+			return x.ResourceSuspended
 		}
 	}
 	return nil
@@ -1961,28 +1969,28 @@ type EventPayload_RunCancelled struct {
 	RunCancelled *RunCancelled `protobuf:"bytes,22,opt,name=run_cancelled,json=runCancelled,proto3,oneof"`
 }
 
-type EventPayload_EnvRequested struct {
-	EnvRequested *EnvLifecycle `protobuf:"bytes,23,opt,name=env_requested,json=envRequested,proto3,oneof"`
+type EventPayload_ResourceRequested struct {
+	ResourceRequested *ResourceLifecycle `protobuf:"bytes,23,opt,name=resource_requested,json=resourceRequested,proto3,oneof"`
 }
 
-type EventPayload_EnvProvisioning struct {
-	EnvProvisioning *EnvLifecycle `protobuf:"bytes,24,opt,name=env_provisioning,json=envProvisioning,proto3,oneof"`
+type EventPayload_ResourceProvisioning struct {
+	ResourceProvisioning *ResourceLifecycle `protobuf:"bytes,24,opt,name=resource_provisioning,json=resourceProvisioning,proto3,oneof"`
 }
 
-type EventPayload_EnvReady struct {
-	EnvReady *EnvLifecycle `protobuf:"bytes,25,opt,name=env_ready,json=envReady,proto3,oneof"`
+type EventPayload_ResourceReady struct {
+	ResourceReady *ResourceLifecycle `protobuf:"bytes,25,opt,name=resource_ready,json=resourceReady,proto3,oneof"`
 }
 
-type EventPayload_EnvFailed struct {
-	EnvFailed *EnvLifecycle `protobuf:"bytes,26,opt,name=env_failed,json=envFailed,proto3,oneof"`
+type EventPayload_ResourceFailed struct {
+	ResourceFailed *ResourceLifecycle `protobuf:"bytes,26,opt,name=resource_failed,json=resourceFailed,proto3,oneof"`
 }
 
-type EventPayload_EnvTerminating struct {
-	EnvTerminating *EnvLifecycle `protobuf:"bytes,27,opt,name=env_terminating,json=envTerminating,proto3,oneof"`
+type EventPayload_ResourceTerminating struct {
+	ResourceTerminating *ResourceLifecycle `protobuf:"bytes,27,opt,name=resource_terminating,json=resourceTerminating,proto3,oneof"`
 }
 
-type EventPayload_EnvTerminated struct {
-	EnvTerminated *EnvLifecycle `protobuf:"bytes,28,opt,name=env_terminated,json=envTerminated,proto3,oneof"`
+type EventPayload_ResourceTerminated struct {
+	ResourceTerminated *ResourceLifecycle `protobuf:"bytes,28,opt,name=resource_terminated,json=resourceTerminated,proto3,oneof"`
 }
 
 type EventPayload_ExecPreviewRan struct {
@@ -2021,10 +2029,10 @@ type EventPayload_PeriodicPromptFired struct {
 	PeriodicPromptFired *PeriodicPromptFired `protobuf:"bytes,40,opt,name=periodic_prompt_fired,json=periodicPromptFired,proto3,oneof"`
 }
 
-type EventPayload_EnvSuspended struct {
-	// A suspended environment's host is temporarily unreachable. It is
-	// deliberately distinct from env_failed: the workspace still exists.
-	EnvSuspended *EnvLifecycle `protobuf:"bytes,44,opt,name=env_suspended,json=envSuspended,proto3,oneof"`
+type EventPayload_ResourceSuspended struct {
+	// A suspended resource's host is temporarily unreachable. It is
+	// deliberately distinct from resource_failed: durable state still exists.
+	ResourceSuspended *ResourceLifecycle `protobuf:"bytes,44,opt,name=resource_suspended,json=resourceSuspended,proto3,oneof"`
 }
 
 func (*EventPayload_UserMessage) isEventPayload_Payload() {}
@@ -2053,17 +2061,17 @@ func (*EventPayload_RunFailed) isEventPayload_Payload() {}
 
 func (*EventPayload_RunCancelled) isEventPayload_Payload() {}
 
-func (*EventPayload_EnvRequested) isEventPayload_Payload() {}
+func (*EventPayload_ResourceRequested) isEventPayload_Payload() {}
 
-func (*EventPayload_EnvProvisioning) isEventPayload_Payload() {}
+func (*EventPayload_ResourceProvisioning) isEventPayload_Payload() {}
 
-func (*EventPayload_EnvReady) isEventPayload_Payload() {}
+func (*EventPayload_ResourceReady) isEventPayload_Payload() {}
 
-func (*EventPayload_EnvFailed) isEventPayload_Payload() {}
+func (*EventPayload_ResourceFailed) isEventPayload_Payload() {}
 
-func (*EventPayload_EnvTerminating) isEventPayload_Payload() {}
+func (*EventPayload_ResourceTerminating) isEventPayload_Payload() {}
 
-func (*EventPayload_EnvTerminated) isEventPayload_Payload() {}
+func (*EventPayload_ResourceTerminated) isEventPayload_Payload() {}
 
 func (*EventPayload_ExecPreviewRan) isEventPayload_Payload() {}
 
@@ -2083,7 +2091,7 @@ func (*EventPayload_HookFired) isEventPayload_Payload() {}
 
 func (*EventPayload_PeriodicPromptFired) isEventPayload_Payload() {}
 
-func (*EventPayload_EnvSuspended) isEventPayload_Payload() {}
+func (*EventPayload_ResourceSuspended) isEventPayload_Payload() {}
 
 // SessionEvent is one entry in a session's append-only event log. Seq is
 // per-session, gapless, and monotonic; clients resume by seq.
@@ -2440,16 +2448,19 @@ const file_core_v1_event_proto_rawDesc = "" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x18\n" +
 	"\amessage\x18\x03 \x01(\tR\amessage\"%\n" +
 	"\fRunCancelled\x12\x15\n" +
-	"\x06run_id\x18\x01 \x01(\tR\x05runId\"\xb7\x01\n" +
-	"\fEnvLifecycle\x12\x15\n" +
-	"\x06env_id\x18\x01 \x01(\tR\x05envId\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x120\n" +
-	"\x14provider_instance_id\x18\x03 \x01(\tR\x12providerInstanceId\x12\x1a\n" +
-	"\bendpoint\x18\x04 \x01(\tR\bendpoint\x12\x18\n" +
-	"\amessage\x18\x05 \x01(\tR\amessage\x12\x14\n" +
-	"\x05epoch\x18\x06 \x01(\x05R\x05epoch\"t\n" +
-	"\x0eExecPreviewRan\x12\x15\n" +
-	"\x06env_id\x18\x01 \x01(\tR\x05envId\x12\x18\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\"\xda\x01\n" +
+	"\x11ResourceLifecycle\x12\x1f\n" +
+	"\vresource_id\x18\x01 \x01(\tR\n" +
+	"resourceId\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x120\n" +
+	"\x14provider_instance_id\x18\x04 \x01(\tR\x12providerInstanceId\x12\x1a\n" +
+	"\bendpoint\x18\x05 \x01(\tR\bendpoint\x12\x18\n" +
+	"\amessage\x18\x06 \x01(\tR\amessage\x12\x14\n" +
+	"\x05epoch\x18\a \x01(\x05R\x05epoch\"~\n" +
+	"\x0eExecPreviewRan\x12\x1f\n" +
+	"\vresource_id\x18\x01 \x01(\tR\n" +
+	"resourceId\x12\x18\n" +
 	"\acommand\x18\x02 \x01(\tR\acommand\x12\x16\n" +
 	"\x06output\x18\x03 \x01(\tR\x06output\x12\x19\n" +
 	"\bis_error\x18\x04 \x01(\bR\aisError\"R\n" +
@@ -2478,12 +2489,13 @@ const file_core_v1_event_proto_rawDesc = "" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\"D\n" +
 	"\x13PeriodicPromptFired\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x16\n" +
-	"\x06prompt\x18\x02 \x01(\tR\x06prompt\"l\n" +
+	"\x06prompt\x18\x02 \x01(\tR\x06prompt\"v\n" +
 	"\x10PermissionDenied\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x12\n" +
-	"\x04tool\x18\x02 \x01(\tR\x04tool\x12\x15\n" +
-	"\x06env_id\x18\x03 \x01(\tR\x05envId\x12\x16\n" +
-	"\x06reason\x18\x04 \x01(\tR\x06reason\"\xa6\x0e\n" +
+	"\x04tool\x18\x02 \x01(\tR\x04tool\x12\x1f\n" +
+	"\vresource_id\x18\x03 \x01(\tR\n" +
+	"resourceId\x12\x16\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\"\x8f\x0f\n" +
 	"\fEventPayload\x129\n" +
 	"\fuser_message\x18\n" +
 	" \x01(\v2\x14.core.v1.UserMessageH\x00R\vuserMessage\x125\n" +
@@ -2504,14 +2516,13 @@ const file_core_v1_event_proto_rawDesc = "" +
 	"\rrun_completed\x18\x14 \x01(\v2\x15.core.v1.RunCompletedH\x00R\frunCompleted\x123\n" +
 	"\n" +
 	"run_failed\x18\x15 \x01(\v2\x12.core.v1.RunFailedH\x00R\trunFailed\x12<\n" +
-	"\rrun_cancelled\x18\x16 \x01(\v2\x15.core.v1.RunCancelledH\x00R\frunCancelled\x12<\n" +
-	"\renv_requested\x18\x17 \x01(\v2\x15.core.v1.EnvLifecycleH\x00R\fenvRequested\x12B\n" +
-	"\x10env_provisioning\x18\x18 \x01(\v2\x15.core.v1.EnvLifecycleH\x00R\x0fenvProvisioning\x124\n" +
-	"\tenv_ready\x18\x19 \x01(\v2\x15.core.v1.EnvLifecycleH\x00R\benvReady\x126\n" +
-	"\n" +
-	"env_failed\x18\x1a \x01(\v2\x15.core.v1.EnvLifecycleH\x00R\tenvFailed\x12@\n" +
-	"\x0fenv_terminating\x18\x1b \x01(\v2\x15.core.v1.EnvLifecycleH\x00R\x0eenvTerminating\x12>\n" +
-	"\x0eenv_terminated\x18\x1c \x01(\v2\x15.core.v1.EnvLifecycleH\x00R\renvTerminated\x12C\n" +
+	"\rrun_cancelled\x18\x16 \x01(\v2\x15.core.v1.RunCancelledH\x00R\frunCancelled\x12K\n" +
+	"\x12resource_requested\x18\x17 \x01(\v2\x1a.core.v1.ResourceLifecycleH\x00R\x11resourceRequested\x12Q\n" +
+	"\x15resource_provisioning\x18\x18 \x01(\v2\x1a.core.v1.ResourceLifecycleH\x00R\x14resourceProvisioning\x12C\n" +
+	"\x0eresource_ready\x18\x19 \x01(\v2\x1a.core.v1.ResourceLifecycleH\x00R\rresourceReady\x12E\n" +
+	"\x0fresource_failed\x18\x1a \x01(\v2\x1a.core.v1.ResourceLifecycleH\x00R\x0eresourceFailed\x12O\n" +
+	"\x14resource_terminating\x18\x1b \x01(\v2\x1a.core.v1.ResourceLifecycleH\x00R\x13resourceTerminating\x12M\n" +
+	"\x13resource_terminated\x18\x1c \x01(\v2\x1a.core.v1.ResourceLifecycleH\x00R\x12resourceTerminated\x12C\n" +
 	"\x10exec_preview_ran\x18\x1d \x01(\v2\x17.core.v1.ExecPreviewRanH\x00R\x0eexecPreviewRan\x126\n" +
 	"\vrun_spawned\x18! \x01(\v2\x13.core.v1.RunSpawnedH\x00R\n" +
 	"runSpawned\x127\n" +
@@ -2523,8 +2534,8 @@ const file_core_v1_event_proto_rawDesc = "" +
 	"\x0emodel_fallback\x18& \x01(\v2\x16.core.v1.ModelFallbackH\x00R\rmodelFallback\x123\n" +
 	"\n" +
 	"hook_fired\x18' \x01(\v2\x12.core.v1.HookFiredH\x00R\thookFired\x12R\n" +
-	"\x15periodic_prompt_fired\x18( \x01(\v2\x1c.core.v1.PeriodicPromptFiredH\x00R\x13periodicPromptFired\x12<\n" +
-	"\renv_suspended\x18, \x01(\v2\x15.core.v1.EnvLifecycleH\x00R\fenvSuspendedB\t\n" +
+	"\x15periodic_prompt_fired\x18( \x01(\v2\x1c.core.v1.PeriodicPromptFiredH\x00R\x13periodicPromptFired\x12K\n" +
+	"\x12resource_suspended\x18, \x01(\v2\x1a.core.v1.ResourceLifecycleH\x00R\x11resourceSuspendedB\t\n" +
 	"\apayload\"\xc2\x01\n" +
 	"\fSessionEvent\x12\x1d\n" +
 	"\n" +
@@ -2585,7 +2596,7 @@ var file_core_v1_event_proto_goTypes = []any{
 	(*RunCompleted)(nil),          // 13: core.v1.RunCompleted
 	(*RunFailed)(nil),             // 14: core.v1.RunFailed
 	(*RunCancelled)(nil),          // 15: core.v1.RunCancelled
-	(*EnvLifecycle)(nil),          // 16: core.v1.EnvLifecycle
+	(*ResourceLifecycle)(nil),     // 16: core.v1.ResourceLifecycle
 	(*ExecPreviewRan)(nil),        // 17: core.v1.ExecPreviewRan
 	(*RunSpawned)(nil),            // 18: core.v1.RunSpawned
 	(*MemoryChanged)(nil),         // 19: core.v1.MemoryChanged
@@ -2618,12 +2629,12 @@ var file_core_v1_event_proto_depIdxs = []int32{
 	13, // 12: core.v1.EventPayload.run_completed:type_name -> core.v1.RunCompleted
 	14, // 13: core.v1.EventPayload.run_failed:type_name -> core.v1.RunFailed
 	15, // 14: core.v1.EventPayload.run_cancelled:type_name -> core.v1.RunCancelled
-	16, // 15: core.v1.EventPayload.env_requested:type_name -> core.v1.EnvLifecycle
-	16, // 16: core.v1.EventPayload.env_provisioning:type_name -> core.v1.EnvLifecycle
-	16, // 17: core.v1.EventPayload.env_ready:type_name -> core.v1.EnvLifecycle
-	16, // 18: core.v1.EventPayload.env_failed:type_name -> core.v1.EnvLifecycle
-	16, // 19: core.v1.EventPayload.env_terminating:type_name -> core.v1.EnvLifecycle
-	16, // 20: core.v1.EventPayload.env_terminated:type_name -> core.v1.EnvLifecycle
+	16, // 15: core.v1.EventPayload.resource_requested:type_name -> core.v1.ResourceLifecycle
+	16, // 16: core.v1.EventPayload.resource_provisioning:type_name -> core.v1.ResourceLifecycle
+	16, // 17: core.v1.EventPayload.resource_ready:type_name -> core.v1.ResourceLifecycle
+	16, // 18: core.v1.EventPayload.resource_failed:type_name -> core.v1.ResourceLifecycle
+	16, // 19: core.v1.EventPayload.resource_terminating:type_name -> core.v1.ResourceLifecycle
+	16, // 20: core.v1.EventPayload.resource_terminated:type_name -> core.v1.ResourceLifecycle
 	17, // 21: core.v1.EventPayload.exec_preview_ran:type_name -> core.v1.ExecPreviewRan
 	18, // 22: core.v1.EventPayload.run_spawned:type_name -> core.v1.RunSpawned
 	19, // 23: core.v1.EventPayload.memory_set:type_name -> core.v1.MemoryChanged
@@ -2633,7 +2644,7 @@ var file_core_v1_event_proto_depIdxs = []int32{
 	21, // 27: core.v1.EventPayload.model_fallback:type_name -> core.v1.ModelFallback
 	22, // 28: core.v1.EventPayload.hook_fired:type_name -> core.v1.HookFired
 	23, // 29: core.v1.EventPayload.periodic_prompt_fired:type_name -> core.v1.PeriodicPromptFired
-	16, // 30: core.v1.EventPayload.env_suspended:type_name -> core.v1.EnvLifecycle
+	16, // 30: core.v1.EventPayload.resource_suspended:type_name -> core.v1.ResourceLifecycle
 	31, // 31: core.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
 	1,  // 32: core.v1.SessionEvent.actor:type_name -> core.v1.Actor
 	25, // 33: core.v1.SessionEvent.payload:type_name -> core.v1.EventPayload
@@ -2669,12 +2680,12 @@ func file_core_v1_event_proto_init() {
 		(*EventPayload_RunCompleted)(nil),
 		(*EventPayload_RunFailed)(nil),
 		(*EventPayload_RunCancelled)(nil),
-		(*EventPayload_EnvRequested)(nil),
-		(*EventPayload_EnvProvisioning)(nil),
-		(*EventPayload_EnvReady)(nil),
-		(*EventPayload_EnvFailed)(nil),
-		(*EventPayload_EnvTerminating)(nil),
-		(*EventPayload_EnvTerminated)(nil),
+		(*EventPayload_ResourceRequested)(nil),
+		(*EventPayload_ResourceProvisioning)(nil),
+		(*EventPayload_ResourceReady)(nil),
+		(*EventPayload_ResourceFailed)(nil),
+		(*EventPayload_ResourceTerminating)(nil),
+		(*EventPayload_ResourceTerminated)(nil),
 		(*EventPayload_ExecPreviewRan)(nil),
 		(*EventPayload_RunSpawned)(nil),
 		(*EventPayload_MemorySet)(nil),
@@ -2684,7 +2695,7 @@ func file_core_v1_event_proto_init() {
 		(*EventPayload_ModelFallback)(nil),
 		(*EventPayload_HookFired)(nil),
 		(*EventPayload_PeriodicPromptFired)(nil),
-		(*EventPayload_EnvSuspended)(nil),
+		(*EventPayload_ResourceSuspended)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

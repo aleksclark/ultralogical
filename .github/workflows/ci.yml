@@ -77,7 +77,7 @@ jobs:
         run: bash scripts/dev-stack.sh smoke
       - name: Assert no leaked containers
         run: |
-          leaked=$(docker ps -aq --filter "label=ultracore.env_id")
+          leaked=$(docker ps -aq --filter "label=ultracore.resource_id")
           if [ -n "$leaked" ]; then
             echo "leaked environment containers: $leaked" >&2
             exit 1

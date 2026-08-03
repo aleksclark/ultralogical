@@ -1,25 +1,25 @@
-# Adding an environment provider
+# Adding a resource provider
 
-A provider is where an org's environments run. This is the walkthrough for
-adding a new kind. Start with `envprovider/static`: it is the smallest
+A provider is where an org's resources run. This is the walkthrough for
+adding a new kind. Start with `provider/static`: it is the smallest
 adapter that still passes the shared conformance contract unmodified (under
 200 lines of code), and its CI leg is what proves the seam stays
-implementable. `envprovider/nomad` is the next step up when you need a real
-control plane, and `envprovider/k8s` is the BYO Kubernetes adapter.
+implementable. `provider/nomad` is the next step up when you need a real
+control plane, and `provider/k8s` is the BYO Kubernetes adapter.
 
 For what the shipped kinds do and how registration behaves, see
 [agent_docs/providers.md](../agent_docs/providers.md).
 
 ## The worked example
 
-`envprovider/static` is intentionally small. One environment is one Bezalel
+`provider/static` is intentionally small. One resource is one Bezalel
 process in an unprivileged mount namespace, with the workspace bind-mounted
-at the declared workdir so concurrent environments each own that absolute
+at the declared workdir so concurrent resources each own that absolute
 path. Read `static.go` end to end, then:
 
 ```sh
 # Needs unprivileged user namespaces (the CI leg permits them on Ubuntu 24.04).
-go test ./envprovider/static/... -count=1 -v -timeout 15m
+go test ./provider/static/... -count=1 -v -timeout 15m
 ```
 
 A worker offers the kind when a Bezalel binary is configured:
@@ -30,7 +30,7 @@ export CORE_BEZALEL_BINARY=/path/to/bezalel
 export CORE_PROVIDER_KINDS=static
 ```
 
-Registration then names a root directory for per-environment state:
+Registration then names a root directory for per-resource state:
 
 ```sh
 core provider register walkthrough --kind static \
@@ -39,7 +39,7 @@ core provider register walkthrough --kind static \
 
 ## The contract
 
-A provider implements `core.EnvProvider`: five methods over an opaque,
+A provider implements `core.ResourceProvider`: five methods over an opaque,
 versioned handle you define.
 
 | Method | Obligation |
@@ -54,8 +54,8 @@ Three optional seams change how the suite verifies you, never whether it does:
 
 | Seam | Why you would implement it |
 |---|---|
-| `core.EnvAdopter` | provisioning is create-then-persist, so a crash between the two would otherwise create a second resource |
-| `core.EnvResourceLister` | makes the leak check a positive statement instead of an absence of evidence |
+| `core.ResourceAdopter` | provisioning is create-then-persist, so a crash between the two would otherwise create a second resource |
+| `core.ResourceLister` | makes the leak check a positive statement instead of an absence of evidence |
 | `core.CapabilityProber` | reports what your control plane can actually do, rather than having it inferred from your kind |
 
 Everything in `core.CoreProviderContract()` is unconditional. A capability
@@ -64,8 +64,8 @@ suite before it runs a step.
 
 ## Four decisions worth copying
 
-1. **A deterministic identity per environment.** Kubernetes derives object
-   names from the environment id, and Nomad derives a job id. That identity is
+1. **A deterministic identity per resource.** Kubernetes derives object
+   names from the resource id, and Nomad derives a job id. That identity is
    what makes adoption, reconciliation, and leak detection exact instead of
    heuristic.
 2. **Configuration is validated when the provider is built, not when it is
@@ -73,7 +73,7 @@ suite before it runs a step.
    registration rather than at every later provision.
 3. **A vanished resource is `EnvFailed`, not merely unready.** Something
    outside the platform removed it, and reconciliation has to be able to see
-   the difference. Reporting "still starting" forever is how an environment
+   the difference. Reporting "still starting" forever is how an resource
    sits stale.
 4. **An unreachable *host* is `EnvSuspended`, not failed.** The resource still
    exists on a machine that will come back, so the platform pauses and resumes
@@ -81,10 +81,10 @@ suite before it runs a step.
 
 ## Adding your kind
 
-1. **Write the adapter** in `envprovider/<kind>/`, with a `Config` whose JSON
+1. **Write the adapter** in `provider/<kind>/`, with a `Config` whose JSON
    fields are the registration's stored configuration. Registration decoding is
    strict: an unknown field is rejected rather than ignored, so a misspelled
-   namespace cannot silently send environments somewhere unexpected.
+   namespace cannot silently send resources somewhere unexpected.
 2. **Implement `Probe`** if the control plane can be asked what it supports.
    Return an error only when it is unreachable or refuses you; a reachable
    control plane missing a feature reports that feature unsupported *with a
@@ -111,15 +111,15 @@ suite before it runs a step.
    work to some other runtime, so proving the resources exist in your own
    control plane is the step that separates an implementation from an alias.
 
-4. **Register the kind** in `envprovider/wiring.go` so every binary that can
-   host environments offers it, rather than each `main` wiring it by hand.
+4. **Register the kind** in `provider/wiring.go` so every binary that can
+   host resources offers it, rather than each `main` wiring it by hand.
 
 5. **Prove convergence.** A resource destroyed out of band must move the
-   environment to a terminal state without leaving a duplicate behind.
+   resource to a terminal state without leaving a duplicate behind.
    `TestA102_KubernetesReconcilesExternallyDeletedPod` and
    `TestA104_NomadReconcilesExternallyStoppedAllocation` are the pattern: drive
    the real durable lifecycle, delete the resource with the control plane's own
-   client, then assert on the persisted environment and on what the control
+   client, then assert on the persisted resource and on what the control
    plane still holds.
 
 ## What the suite will not let you skip

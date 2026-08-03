@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	uc "github.com/aleksclark/ultracore"
-	"github.com/aleksclark/ultracore/envprovider"
+	"github.com/aleksclark/ultracore/provider"
 	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
 	"github.com/aleksclark/ultracore/secrets"
 )
@@ -20,7 +20,7 @@ import (
 type orgHandler struct {
 	store     uc.Store
 	keyring   secrets.Keyring
-	providers *envprovider.Registry
+	providers *provider.Registry
 }
 
 // requireMember returns the caller's role in the org, collapsing "no such
@@ -322,7 +322,7 @@ func (h *orgHandler) DeleteProvider(ctx context.Context, req *connect.Request[co
 	// reach, reconcile, or terminate the resources they represent, and the
 	// user would be left paying for containers nothing can find.
 	providerID := uc.ProviderInstanceID(req.Msg.GetProviderId())
-	active, err := h.store.Org(orgID).Envs().ListActive(ctx)
+	active, err := h.store.Org(orgID).Resources().ListActive(ctx)
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}

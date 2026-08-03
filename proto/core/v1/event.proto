@@ -121,19 +121,20 @@ message RunCancelled {
   string run_id = 1;
 }
 
-message EnvLifecycle {
-  string env_id = 1;
-  string name = 2;
-  string provider_instance_id = 3;
-  string endpoint = 4;
-  string message = 5;
-  // epoch increments on every environment token rotation, so clients and
-  // tool caches can tell a restarted environment from its earlier identity.
-  int32 epoch = 6;
+message ResourceLifecycle {
+  string resource_id = 1;
+  string kind = 2;
+  string name = 3;
+  string provider_instance_id = 4;
+  string endpoint = 5;
+  string message = 6;
+  // epoch increments on every resource token rotation, so clients and
+  // tool caches can tell a restarted resource from its earlier identity.
+  int32 epoch = 7;
 }
 
 message ExecPreviewRan {
-  string env_id = 1;
+  string resource_id = 1;
   string command = 2;
   string output = 3;
   bool is_error = 4;
@@ -144,7 +145,7 @@ message HistoryCompacted { string run_id=1; int32 covered_messages=2; int64 summ
 message ModelFallback { string run_id=1; string from=2; string to=3; string reason=4; }
 message HookFired { string hook=1; string run_id=2; }
 message PeriodicPromptFired { string run_id=1; string prompt=2; }
-message PermissionDenied { string run_id=1; string tool=2; string env_id=3; string reason=4; }
+message PermissionDenied { string run_id=1; string tool=2; string resource_id=3; string reason=4; }
 
 
 
@@ -167,12 +168,12 @@ message EventPayload {
     RunCompleted run_completed = 20;
     RunFailed run_failed = 21;
     RunCancelled run_cancelled = 22;
-    EnvLifecycle env_requested = 23;
-    EnvLifecycle env_provisioning = 24;
-    EnvLifecycle env_ready = 25;
-    EnvLifecycle env_failed = 26;
-    EnvLifecycle env_terminating = 27;
-    EnvLifecycle env_terminated = 28;
+    ResourceLifecycle resource_requested = 23;
+    ResourceLifecycle resource_provisioning = 24;
+    ResourceLifecycle resource_ready = 25;
+    ResourceLifecycle resource_failed = 26;
+    ResourceLifecycle resource_terminating = 27;
+    ResourceLifecycle resource_terminated = 28;
     ExecPreviewRan exec_preview_ran = 29;
     RunSpawned run_spawned = 33;
     MemoryChanged memory_set = 34;
@@ -182,9 +183,9 @@ message EventPayload {
     ModelFallback model_fallback = 38;
     HookFired hook_fired = 39;
     PeriodicPromptFired periodic_prompt_fired = 40;
-    // A suspended environment's host is temporarily unreachable. It is
-    // deliberately distinct from env_failed: the workspace still exists.
-    EnvLifecycle env_suspended = 44;
+    // A suspended resource's host is temporarily unreachable. It is
+    // deliberately distinct from resource_failed: durable state still exists.
+    ResourceLifecycle resource_suspended = 44;
   }
 }
 

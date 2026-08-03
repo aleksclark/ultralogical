@@ -21,8 +21,8 @@ import (
 	"time"
 
 	uc "github.com/aleksclark/ultracore"
-	"github.com/aleksclark/ultracore/envprovider"
-	"github.com/aleksclark/ultracore/envwork"
+	"github.com/aleksclark/ultracore/provider"
+	"github.com/aleksclark/ultracore/resourcework"
 	ultrahttp "github.com/aleksclark/ultracore/http"
 	riverqueue "github.com/aleksclark/ultracore/jobqueue/river"
 	"github.com/aleksclark/ultracore/postgres"
@@ -81,7 +81,7 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
-	envs := &envwork.Service{Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Keyring: keyring, Log: log}
+	resources := &resourcework.Service{Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Keyring: keyring, Log: log}
 
 	defaultModel := uc.ModelConfig{
 		Provider:   envOr("CORE_DEFAULT_PROVIDER", "openai"),
@@ -91,7 +91,8 @@ func run(log *slog.Logger) error {
 
 	// Registration probes the real control plane through this registry, so a
 	// stored provider is one that answered rather than one that parsed.
-	providers := envprovider.StandardRegistry(providerDeployment())
+	providers := provider.StandardRegistry(providerDeployment())
+	resources.Providers = providers
 	handler := ultrahttp.NewHandler(ultrahttp.Config{
 		Store:        store,
 		Providers:    providers,
@@ -101,7 +102,7 @@ func run(log *slog.Logger) error {
 		Keyring:      keyring,
 		Enqueue:      postgres.TxEnqueuer{Queue: queue},
 		DefaultModel: defaultModel,
-		Envs:         envs,
+		Resources:    resources,
 	})
 
 	protocols := new(http.Protocols)
@@ -140,8 +141,8 @@ func envOr(name, def string) string {
 // providerDeployment reads which provider kinds this deployment offers and how
 // environments are reached. Defaults keep a single-machine deployment working
 // with no configuration.
-func providerDeployment() envprovider.Deployment {
-	deployment := envprovider.Deployment{
+func providerDeployment() provider.Deployment {
+	deployment := provider.Deployment{
 		BezalelImage:           envOr("CORE_BEZALEL_IMAGE", "ultracore/bezalel:local"),
 		BezalelBinary:          os.Getenv("CORE_BEZALEL_BINARY"),
 		KubernetesEndpointMode: envOr("CORE_K8S_ENDPOINT_MODE", ""),

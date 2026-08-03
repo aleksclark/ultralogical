@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file core/v1/event.proto.
  */
 export const file_core_v1_event: GenFile = /*@__PURE__*/
-  fileDesc("ChNjb3JlL3YxL2V2ZW50LnByb3RvEgdjb3JlLnYxIjUKBUFjdG9yEiAKBHR5cGUYASABKA4yEi5jb3JlLnYxLkFjdG9yVHlwZRIKCgJpZBgCIAEoCSIbCgtVc2VyTWVzc2FnZRIMCgR0ZXh0GAEgASgJIhoKCkFubm90YXRpb24SDAoEdGV4dBgBIAEoCSIsCgpSdW5TdGFydGVkEg4KBnJ1bl9pZBgBIAEoCRIOCgZwcm9tcHQYAiABKAkiQgoLU3RlcFN0YXJ0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSDwoHYXR0ZW1wdBgDIAEoBSJjCglUZXh0RGVsdGESDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSDwoHYXR0ZW1wdBgDIAEoBRITCgtkZWx0YV9pbmRleBgEIAEoBRIMCgR0ZXh0GAUgASgJImgKDlJlYXNvbmluZ0RlbHRhEg4KBnJ1bl9pZBgBIAEoCRISCgpzdGVwX2luZGV4GAIgASgFEg8KB2F0dGVtcHQYAyABKAUSEwoLZGVsdGFfaW5kZXgYBCABKAUSDAoEdGV4dBgFIAEoCSJoCg9Ub29sQ2FsbFN0YXJ0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSFAoMdG9vbF9jYWxsX2lkGAMgASgJEgwKBG5hbWUYBCABKAkSDQoFaW5wdXQYBSABKAkidwoKVG9vbFJlc3VsdBIOCgZydW5faWQYASABKAkSEgoKc3RlcF9pbmRleBgCIAEoBRIUCgx0b29sX2NhbGxfaWQYAyABKAkSDAoEbmFtZRgEIAEoCRIPCgdjb250ZW50GAUgASgJEhAKCGlzX2Vycm9yGAYgASgIInAKDFN0ZXBGaW5pc2hlZBIOCgZydW5faWQYASABKAkSEgoKc3RlcF9pbmRleBgCIAEoBRIRCgl0b2tlbnNfaW4YAyABKAMSEgoKdG9rZW5zX291dBgEIAEoAxIVCg1maW5pc2hfcmVhc29uGAUgASgJIikKCFF1ZXN0aW9uEgwKBHRleHQYASABKAkSDwoHY2hvaWNlcxgCIAMoCSJCCgtSdW5Bd2FpdGluZxIOCgZydW5faWQYASABKAkSIwoIcXVlc3Rpb24YAiABKAsyES5jb3JlLnYxLlF1ZXN0aW9uIjIKDFJ1bkNvbXBsZXRlZBIOCgZydW5faWQYASABKAkSEgoKZmluYWxfdGV4dBgCIAEoCSI8CglSdW5GYWlsZWQSDgoGcnVuX2lkGAEgASgJEg4KBnJlYXNvbhgCIAEoCRIPCgdtZXNzYWdlGAMgASgJIh4KDFJ1bkNhbmNlbGxlZBIOCgZydW5faWQYASABKAkifAoMRW52TGlmZWN5Y2xlEg4KBmVudl9pZBgBIAEoCRIMCgRuYW1lGAIgASgJEhwKFHByb3ZpZGVyX2luc3RhbmNlX2lkGAMgASgJEhAKCGVuZHBvaW50GAQgASgJEg8KB21lc3NhZ2UYBSABKAkSDQoFZXBvY2gYBiABKAUiUwoORXhlY1ByZXZpZXdSYW4SDgoGZW52X2lkGAEgASgJEg8KB2NvbW1hbmQYAiABKAkSDgoGb3V0cHV0GAMgASgJEhAKCGlzX2Vycm9yGAQgASgIIjkKClJ1blNwYXduZWQSFQoNcGFyZW50X3J1bl9pZBgBIAEoCRIUCgxjaGlsZF9ydW5faWQYAiABKAkiYAoNTWVtb3J5Q2hhbmdlZBILCgNrZXkYASABKAkSFwoPdXBkYXRlZF9ieV90eXBlGAIgASgJEhUKDXVwZGF0ZWRfYnlfaWQYAyABKAkSEgoKdmFsdWVfanNvbhgEIAEoCSJUChBIaXN0b3J5Q29tcGFjdGVkEg4KBnJ1bl9pZBgBIAEoCRIYChBjb3ZlcmVkX21lc3NhZ2VzGAIgASgFEhYKDnN1bW1hcnlfdG9rZW5zGAMgASgDIkkKDU1vZGVsRmFsbGJhY2sSDgoGcnVuX2lkGAEgASgJEgwKBGZyb20YAiABKAkSCgoCdG8YAyABKAkSDgoGcmVhc29uGAQgASgJIikKCUhvb2tGaXJlZBIMCgRob29rGAEgASgJEg4KBnJ1bl9pZBgCIAEoCSI1ChNQZXJpb2RpY1Byb21wdEZpcmVkEg4KBnJ1bl9pZBgBIAEoCRIOCgZwcm9tcHQYAiABKAkiUAoQUGVybWlzc2lvbkRlbmllZBIOCgZydW5faWQYASABKAkSDAoEdG9vbBgCIAEoCRIOCgZlbnZfaWQYAyABKAkSDgoGcmVhc29uGAQgASgJIpALCgxFdmVudFBheWxvYWQSLAoMdXNlcl9tZXNzYWdlGAogASgLMhQuY29yZS52MS5Vc2VyTWVzc2FnZUgAEikKCmFubm90YXRpb24YCyABKAsyEy5jb3JlLnYxLkFubm90YXRpb25IABIqCgtydW5fc3RhcnRlZBgMIAEoCzITLmNvcmUudjEuUnVuU3RhcnRlZEgAEiwKDHN0ZXBfc3RhcnRlZBgNIAEoCzIULmNvcmUudjEuU3RlcFN0YXJ0ZWRIABIoCgp0ZXh0X2RlbHRhGA4gASgLMhIuY29yZS52MS5UZXh0RGVsdGFIABIyCg9yZWFzb25pbmdfZGVsdGEYDyABKAsyFy5jb3JlLnYxLlJlYXNvbmluZ0RlbHRhSAASNQoRdG9vbF9jYWxsX3N0YXJ0ZWQYECABKAsyGC5jb3JlLnYxLlRvb2xDYWxsU3RhcnRlZEgAEioKC3Rvb2xfcmVzdWx0GBEgASgLMhMuY29yZS52MS5Ub29sUmVzdWx0SAASLgoNc3RlcF9maW5pc2hlZBgSIAEoCzIVLmNvcmUudjEuU3RlcEZpbmlzaGVkSAASLAoMcnVuX2F3YWl0aW5nGBMgASgLMhQuY29yZS52MS5SdW5Bd2FpdGluZ0gAEi4KDXJ1bl9jb21wbGV0ZWQYFCABKAsyFS5jb3JlLnYxLlJ1bkNvbXBsZXRlZEgAEigKCnJ1bl9mYWlsZWQYFSABKAsyEi5jb3JlLnYxLlJ1bkZhaWxlZEgAEi4KDXJ1bl9jYW5jZWxsZWQYFiABKAsyFS5jb3JlLnYxLlJ1bkNhbmNlbGxlZEgAEi4KDWVudl9yZXF1ZXN0ZWQYFyABKAsyFS5jb3JlLnYxLkVudkxpZmVjeWNsZUgAEjEKEGVudl9wcm92aXNpb25pbmcYGCABKAsyFS5jb3JlLnYxLkVudkxpZmVjeWNsZUgAEioKCWVudl9yZWFkeRgZIAEoCzIVLmNvcmUudjEuRW52TGlmZWN5Y2xlSAASKwoKZW52X2ZhaWxlZBgaIAEoCzIVLmNvcmUudjEuRW52TGlmZWN5Y2xlSAASMAoPZW52X3Rlcm1pbmF0aW5nGBsgASgLMhUuY29yZS52MS5FbnZMaWZlY3ljbGVIABIvCg5lbnZfdGVybWluYXRlZBgcIAEoCzIVLmNvcmUudjEuRW52TGlmZWN5Y2xlSAASMwoQZXhlY19wcmV2aWV3X3JhbhgdIAEoCzIXLmNvcmUudjEuRXhlY1ByZXZpZXdSYW5IABIqCgtydW5fc3Bhd25lZBghIAEoCzITLmNvcmUudjEuUnVuU3Bhd25lZEgAEiwKCm1lbW9yeV9zZXQYIiABKAsyFi5jb3JlLnYxLk1lbW9yeUNoYW5nZWRIABIwCg5tZW1vcnlfZGVsZXRlZBgjIAEoCzIWLmNvcmUudjEuTWVtb3J5Q2hhbmdlZEgAEjYKEXBlcm1pc3Npb25fZGVuaWVkGCQgASgLMhkuY29yZS52MS5QZXJtaXNzaW9uRGVuaWVkSAASNgoRaGlzdG9yeV9jb21wYWN0ZWQYJSABKAsyGS5jb3JlLnYxLkhpc3RvcnlDb21wYWN0ZWRIABIwCg5tb2RlbF9mYWxsYmFjaxgmIAEoCzIWLmNvcmUudjEuTW9kZWxGYWxsYmFja0gAEigKCmhvb2tfZmlyZWQYJyABKAsyEi5jb3JlLnYxLkhvb2tGaXJlZEgAEj0KFXBlcmlvZGljX3Byb21wdF9maXJlZBgoIAEoCzIcLmNvcmUudjEuUGVyaW9kaWNQcm9tcHRGaXJlZEgAEi4KDWVudl9zdXNwZW5kZWQYLCABKAsyFS5jb3JlLnYxLkVudkxpZmVjeWNsZUgAQgkKB3BheWxvYWQingEKDFNlc3Npb25FdmVudBISCgpzZXNzaW9uX2lkGAEgASgJEgsKA3NlcRgCIAEoAxImCgJ0cxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHQoFYWN0b3IYBCABKAsyDi5jb3JlLnYxLkFjdG9yEiYKB3BheWxvYWQYBSABKAsyFS5jb3JlLnYxLkV2ZW50UGF5bG9hZCJLCg1BcHBlbmRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSJgoHcGF5bG9hZBgCIAEoCzIVLmNvcmUudjEuRXZlbnRQYXlsb2FkIh0KDkFwcGVuZFJlc3BvbnNlEgsKA3NlcRgBIAEoAyI4ChBTdWJzY3JpYmVSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSEAoIZnJvbV9zZXEYAiABKAMiOQoRU3Vic2NyaWJlUmVzcG9uc2USJAoFZXZlbnQYASABKAsyFS5jb3JlLnYxLlNlc3Npb25FdmVudCppCglBY3RvclR5cGUSGgoWQUNUT1JfVFlQRV9VTlNQRUNJRklFRBAAEhMKD0FDVE9SX1RZUEVfVVNFUhABEhQKEEFDVE9SX1RZUEVfQUdFTlQQAhIVChFBQ1RPUl9UWVBFX1NZU1RFTRADMo8BCgxFdmVudFNlcnZpY2USOQoGQXBwZW5kEhYuY29yZS52MS5BcHBlbmRSZXF1ZXN0GhcuY29yZS52MS5BcHBlbmRSZXNwb25zZRJECglTdWJzY3JpYmUSGS5jb3JlLnYxLlN1YnNjcmliZVJlcXVlc3QaGi5jb3JlLnYxLlN1YnNjcmliZVJlc3BvbnNlMAFCN1o1Z2l0aHViLmNvbS9hbGVrc2NsYXJrL3VsdHJhY29yZS9nZW4vZ28vY29yZS92MTtjb3JldjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
+  fileDesc("ChNjb3JlL3YxL2V2ZW50LnByb3RvEgdjb3JlLnYxIjUKBUFjdG9yEiAKBHR5cGUYASABKA4yEi5jb3JlLnYxLkFjdG9yVHlwZRIKCgJpZBgCIAEoCSIbCgtVc2VyTWVzc2FnZRIMCgR0ZXh0GAEgASgJIhoKCkFubm90YXRpb24SDAoEdGV4dBgBIAEoCSIsCgpSdW5TdGFydGVkEg4KBnJ1bl9pZBgBIAEoCRIOCgZwcm9tcHQYAiABKAkiQgoLU3RlcFN0YXJ0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSDwoHYXR0ZW1wdBgDIAEoBSJjCglUZXh0RGVsdGESDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSDwoHYXR0ZW1wdBgDIAEoBRITCgtkZWx0YV9pbmRleBgEIAEoBRIMCgR0ZXh0GAUgASgJImgKDlJlYXNvbmluZ0RlbHRhEg4KBnJ1bl9pZBgBIAEoCRISCgpzdGVwX2luZGV4GAIgASgFEg8KB2F0dGVtcHQYAyABKAUSEwoLZGVsdGFfaW5kZXgYBCABKAUSDAoEdGV4dBgFIAEoCSJoCg9Ub29sQ2FsbFN0YXJ0ZWQSDgoGcnVuX2lkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSFAoMdG9vbF9jYWxsX2lkGAMgASgJEgwKBG5hbWUYBCABKAkSDQoFaW5wdXQYBSABKAkidwoKVG9vbFJlc3VsdBIOCgZydW5faWQYASABKAkSEgoKc3RlcF9pbmRleBgCIAEoBRIUCgx0b29sX2NhbGxfaWQYAyABKAkSDAoEbmFtZRgEIAEoCRIPCgdjb250ZW50GAUgASgJEhAKCGlzX2Vycm9yGAYgASgIInAKDFN0ZXBGaW5pc2hlZBIOCgZydW5faWQYASABKAkSEgoKc3RlcF9pbmRleBgCIAEoBRIRCgl0b2tlbnNfaW4YAyABKAMSEgoKdG9rZW5zX291dBgEIAEoAxIVCg1maW5pc2hfcmVhc29uGAUgASgJIikKCFF1ZXN0aW9uEgwKBHRleHQYASABKAkSDwoHY2hvaWNlcxgCIAMoCSJCCgtSdW5Bd2FpdGluZxIOCgZydW5faWQYASABKAkSIwoIcXVlc3Rpb24YAiABKAsyES5jb3JlLnYxLlF1ZXN0aW9uIjIKDFJ1bkNvbXBsZXRlZBIOCgZydW5faWQYASABKAkSEgoKZmluYWxfdGV4dBgCIAEoCSI8CglSdW5GYWlsZWQSDgoGcnVuX2lkGAEgASgJEg4KBnJlYXNvbhgCIAEoCRIPCgdtZXNzYWdlGAMgASgJIh4KDFJ1bkNhbmNlbGxlZBIOCgZydW5faWQYASABKAkilAEKEVJlc291cmNlTGlmZWN5Y2xlEhMKC3Jlc291cmNlX2lkGAEgASgJEgwKBGtpbmQYAiABKAkSDAoEbmFtZRgDIAEoCRIcChRwcm92aWRlcl9pbnN0YW5jZV9pZBgEIAEoCRIQCghlbmRwb2ludBgFIAEoCRIPCgdtZXNzYWdlGAYgASgJEg0KBWVwb2NoGAcgASgFIlgKDkV4ZWNQcmV2aWV3UmFuEhMKC3Jlc291cmNlX2lkGAEgASgJEg8KB2NvbW1hbmQYAiABKAkSDgoGb3V0cHV0GAMgASgJEhAKCGlzX2Vycm9yGAQgASgIIjkKClJ1blNwYXduZWQSFQoNcGFyZW50X3J1bl9pZBgBIAEoCRIUCgxjaGlsZF9ydW5faWQYAiABKAkiYAoNTWVtb3J5Q2hhbmdlZBILCgNrZXkYASABKAkSFwoPdXBkYXRlZF9ieV90eXBlGAIgASgJEhUKDXVwZGF0ZWRfYnlfaWQYAyABKAkSEgoKdmFsdWVfanNvbhgEIAEoCSJUChBIaXN0b3J5Q29tcGFjdGVkEg4KBnJ1bl9pZBgBIAEoCRIYChBjb3ZlcmVkX21lc3NhZ2VzGAIgASgFEhYKDnN1bW1hcnlfdG9rZW5zGAMgASgDIkkKDU1vZGVsRmFsbGJhY2sSDgoGcnVuX2lkGAEgASgJEgwKBGZyb20YAiABKAkSCgoCdG8YAyABKAkSDgoGcmVhc29uGAQgASgJIikKCUhvb2tGaXJlZBIMCgRob29rGAEgASgJEg4KBnJ1bl9pZBgCIAEoCSI1ChNQZXJpb2RpY1Byb21wdEZpcmVkEg4KBnJ1bl9pZBgBIAEoCRIOCgZwcm9tcHQYAiABKAkiVQoQUGVybWlzc2lvbkRlbmllZBIOCgZydW5faWQYASABKAkSDAoEdG9vbBgCIAEoCRITCgtyZXNvdXJjZV9pZBgDIAEoCRIOCgZyZWFzb24YBCABKAki1gsKDEV2ZW50UGF5bG9hZBIsCgx1c2VyX21lc3NhZ2UYCiABKAsyFC5jb3JlLnYxLlVzZXJNZXNzYWdlSAASKQoKYW5ub3RhdGlvbhgLIAEoCzITLmNvcmUudjEuQW5ub3RhdGlvbkgAEioKC3J1bl9zdGFydGVkGAwgASgLMhMuY29yZS52MS5SdW5TdGFydGVkSAASLAoMc3RlcF9zdGFydGVkGA0gASgLMhQuY29yZS52MS5TdGVwU3RhcnRlZEgAEigKCnRleHRfZGVsdGEYDiABKAsyEi5jb3JlLnYxLlRleHREZWx0YUgAEjIKD3JlYXNvbmluZ19kZWx0YRgPIAEoCzIXLmNvcmUudjEuUmVhc29uaW5nRGVsdGFIABI1ChF0b29sX2NhbGxfc3RhcnRlZBgQIAEoCzIYLmNvcmUudjEuVG9vbENhbGxTdGFydGVkSAASKgoLdG9vbF9yZXN1bHQYESABKAsyEy5jb3JlLnYxLlRvb2xSZXN1bHRIABIuCg1zdGVwX2ZpbmlzaGVkGBIgASgLMhUuY29yZS52MS5TdGVwRmluaXNoZWRIABIsCgxydW5fYXdhaXRpbmcYEyABKAsyFC5jb3JlLnYxLlJ1bkF3YWl0aW5nSAASLgoNcnVuX2NvbXBsZXRlZBgUIAEoCzIVLmNvcmUudjEuUnVuQ29tcGxldGVkSAASKAoKcnVuX2ZhaWxlZBgVIAEoCzISLmNvcmUudjEuUnVuRmFpbGVkSAASLgoNcnVuX2NhbmNlbGxlZBgWIAEoCzIVLmNvcmUudjEuUnVuQ2FuY2VsbGVkSAASOAoScmVzb3VyY2VfcmVxdWVzdGVkGBcgASgLMhouY29yZS52MS5SZXNvdXJjZUxpZmVjeWNsZUgAEjsKFXJlc291cmNlX3Byb3Zpc2lvbmluZxgYIAEoCzIaLmNvcmUudjEuUmVzb3VyY2VMaWZlY3ljbGVIABI0Cg5yZXNvdXJjZV9yZWFkeRgZIAEoCzIaLmNvcmUudjEuUmVzb3VyY2VMaWZlY3ljbGVIABI1Cg9yZXNvdXJjZV9mYWlsZWQYGiABKAsyGi5jb3JlLnYxLlJlc291cmNlTGlmZWN5Y2xlSAASOgoUcmVzb3VyY2VfdGVybWluYXRpbmcYGyABKAsyGi5jb3JlLnYxLlJlc291cmNlTGlmZWN5Y2xlSAASOQoTcmVzb3VyY2VfdGVybWluYXRlZBgcIAEoCzIaLmNvcmUudjEuUmVzb3VyY2VMaWZlY3ljbGVIABIzChBleGVjX3ByZXZpZXdfcmFuGB0gASgLMhcuY29yZS52MS5FeGVjUHJldmlld1JhbkgAEioKC3J1bl9zcGF3bmVkGCEgASgLMhMuY29yZS52MS5SdW5TcGF3bmVkSAASLAoKbWVtb3J5X3NldBgiIAEoCzIWLmNvcmUudjEuTWVtb3J5Q2hhbmdlZEgAEjAKDm1lbW9yeV9kZWxldGVkGCMgASgLMhYuY29yZS52MS5NZW1vcnlDaGFuZ2VkSAASNgoRcGVybWlzc2lvbl9kZW5pZWQYJCABKAsyGS5jb3JlLnYxLlBlcm1pc3Npb25EZW5pZWRIABI2ChFoaXN0b3J5X2NvbXBhY3RlZBglIAEoCzIZLmNvcmUudjEuSGlzdG9yeUNvbXBhY3RlZEgAEjAKDm1vZGVsX2ZhbGxiYWNrGCYgASgLMhYuY29yZS52MS5Nb2RlbEZhbGxiYWNrSAASKAoKaG9va19maXJlZBgnIAEoCzISLmNvcmUudjEuSG9va0ZpcmVkSAASPQoVcGVyaW9kaWNfcHJvbXB0X2ZpcmVkGCggASgLMhwuY29yZS52MS5QZXJpb2RpY1Byb21wdEZpcmVkSAASOAoScmVzb3VyY2Vfc3VzcGVuZGVkGCwgASgLMhouY29yZS52MS5SZXNvdXJjZUxpZmVjeWNsZUgAQgkKB3BheWxvYWQingEKDFNlc3Npb25FdmVudBISCgpzZXNzaW9uX2lkGAEgASgJEgsKA3NlcRgCIAEoAxImCgJ0cxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHQoFYWN0b3IYBCABKAsyDi5jb3JlLnYxLkFjdG9yEiYKB3BheWxvYWQYBSABKAsyFS5jb3JlLnYxLkV2ZW50UGF5bG9hZCJLCg1BcHBlbmRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSJgoHcGF5bG9hZBgCIAEoCzIVLmNvcmUudjEuRXZlbnRQYXlsb2FkIh0KDkFwcGVuZFJlc3BvbnNlEgsKA3NlcRgBIAEoAyI4ChBTdWJzY3JpYmVSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSEAoIZnJvbV9zZXEYAiABKAMiOQoRU3Vic2NyaWJlUmVzcG9uc2USJAoFZXZlbnQYASABKAsyFS5jb3JlLnYxLlNlc3Npb25FdmVudCppCglBY3RvclR5cGUSGgoWQUNUT1JfVFlQRV9VTlNQRUNJRklFRBAAEhMKD0FDVE9SX1RZUEVfVVNFUhABEhQKEEFDVE9SX1RZUEVfQUdFTlQQAhIVChFBQ1RPUl9UWVBFX1NZU1RFTRADMo8BCgxFdmVudFNlcnZpY2USOQoGQXBwZW5kEhYuY29yZS52MS5BcHBlbmRSZXF1ZXN0GhcuY29yZS52MS5BcHBlbmRSZXNwb25zZRJECglTdWJzY3JpYmUSGS5jb3JlLnYxLlN1YnNjcmliZVJlcXVlc3QaGi5jb3JlLnYxLlN1YnNjcmliZVJlc3BvbnNlMAFCN1o1Z2l0aHViLmNvbS9hbGVrc2NsYXJrL3VsdHJhY29yZS9nZW4vZ28vY29yZS92MTtjb3JldjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * Actor identifies the producer of an event.
@@ -454,48 +454,53 @@ export const RunCancelledSchema: GenMessage<RunCancelled> = /*@__PURE__*/
   messageDesc(file_core_v1_event, 14);
 
 /**
- * @generated from message core.v1.EnvLifecycle
+ * @generated from message core.v1.ResourceLifecycle
  */
-export type EnvLifecycle = Message<"core.v1.EnvLifecycle"> & {
+export type ResourceLifecycle = Message<"core.v1.ResourceLifecycle"> & {
   /**
-   * @generated from field: string env_id = 1;
+   * @generated from field: string resource_id = 1;
    */
-  envId: string;
+  resourceId: string;
 
   /**
-   * @generated from field: string name = 2;
+   * @generated from field: string kind = 2;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: string name = 3;
    */
   name: string;
 
   /**
-   * @generated from field: string provider_instance_id = 3;
+   * @generated from field: string provider_instance_id = 4;
    */
   providerInstanceId: string;
 
   /**
-   * @generated from field: string endpoint = 4;
+   * @generated from field: string endpoint = 5;
    */
   endpoint: string;
 
   /**
-   * @generated from field: string message = 5;
+   * @generated from field: string message = 6;
    */
   message: string;
 
   /**
-   * epoch increments on every environment token rotation, so clients and
-   * tool caches can tell a restarted environment from its earlier identity.
+   * epoch increments on every resource token rotation, so clients and
+   * tool caches can tell a restarted resource from its earlier identity.
    *
-   * @generated from field: int32 epoch = 6;
+   * @generated from field: int32 epoch = 7;
    */
   epoch: number;
 };
 
 /**
- * Describes the message core.v1.EnvLifecycle.
- * Use `create(EnvLifecycleSchema)` to create a new message.
+ * Describes the message core.v1.ResourceLifecycle.
+ * Use `create(ResourceLifecycleSchema)` to create a new message.
  */
-export const EnvLifecycleSchema: GenMessage<EnvLifecycle> = /*@__PURE__*/
+export const ResourceLifecycleSchema: GenMessage<ResourceLifecycle> = /*@__PURE__*/
   messageDesc(file_core_v1_event, 15);
 
 /**
@@ -503,9 +508,9 @@ export const EnvLifecycleSchema: GenMessage<EnvLifecycle> = /*@__PURE__*/
  */
 export type ExecPreviewRan = Message<"core.v1.ExecPreviewRan"> & {
   /**
-   * @generated from field: string env_id = 1;
+   * @generated from field: string resource_id = 1;
    */
-  envId: string;
+  resourceId: string;
 
   /**
    * @generated from field: string command = 2;
@@ -702,9 +707,9 @@ export type PermissionDenied = Message<"core.v1.PermissionDenied"> & {
   tool: string;
 
   /**
-   * @generated from field: string env_id = 3;
+   * @generated from field: string resource_id = 3;
    */
-  envId: string;
+  resourceId: string;
 
   /**
    * @generated from field: string reason = 4;
@@ -810,40 +815,40 @@ export type EventPayload = Message<"core.v1.EventPayload"> & {
     case: "runCancelled";
   } | {
     /**
-     * @generated from field: core.v1.EnvLifecycle env_requested = 23;
+     * @generated from field: core.v1.ResourceLifecycle resource_requested = 23;
      */
-    value: EnvLifecycle;
-    case: "envRequested";
+    value: ResourceLifecycle;
+    case: "resourceRequested";
   } | {
     /**
-     * @generated from field: core.v1.EnvLifecycle env_provisioning = 24;
+     * @generated from field: core.v1.ResourceLifecycle resource_provisioning = 24;
      */
-    value: EnvLifecycle;
-    case: "envProvisioning";
+    value: ResourceLifecycle;
+    case: "resourceProvisioning";
   } | {
     /**
-     * @generated from field: core.v1.EnvLifecycle env_ready = 25;
+     * @generated from field: core.v1.ResourceLifecycle resource_ready = 25;
      */
-    value: EnvLifecycle;
-    case: "envReady";
+    value: ResourceLifecycle;
+    case: "resourceReady";
   } | {
     /**
-     * @generated from field: core.v1.EnvLifecycle env_failed = 26;
+     * @generated from field: core.v1.ResourceLifecycle resource_failed = 26;
      */
-    value: EnvLifecycle;
-    case: "envFailed";
+    value: ResourceLifecycle;
+    case: "resourceFailed";
   } | {
     /**
-     * @generated from field: core.v1.EnvLifecycle env_terminating = 27;
+     * @generated from field: core.v1.ResourceLifecycle resource_terminating = 27;
      */
-    value: EnvLifecycle;
-    case: "envTerminating";
+    value: ResourceLifecycle;
+    case: "resourceTerminating";
   } | {
     /**
-     * @generated from field: core.v1.EnvLifecycle env_terminated = 28;
+     * @generated from field: core.v1.ResourceLifecycle resource_terminated = 28;
      */
-    value: EnvLifecycle;
-    case: "envTerminated";
+    value: ResourceLifecycle;
+    case: "resourceTerminated";
   } | {
     /**
      * @generated from field: core.v1.ExecPreviewRan exec_preview_ran = 29;
@@ -900,13 +905,13 @@ export type EventPayload = Message<"core.v1.EventPayload"> & {
     case: "periodicPromptFired";
   } | {
     /**
-     * A suspended environment's host is temporarily unreachable. It is
-     * deliberately distinct from env_failed: the workspace still exists.
+     * A suspended resource's host is temporarily unreachable. It is
+     * deliberately distinct from resource_failed: durable state still exists.
      *
-     * @generated from field: core.v1.EnvLifecycle env_suspended = 44;
+     * @generated from field: core.v1.ResourceLifecycle resource_suspended = 44;
      */
-    value: EnvLifecycle;
-    case: "envSuspended";
+    value: ResourceLifecycle;
+    case: "resourceSuspended";
   } | { case: undefined; value?: undefined };
 };
 

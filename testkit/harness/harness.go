@@ -512,7 +512,7 @@ func (s *Stack) seed(t *testing.T, store *postgres.Store, options Options) {
 				Kind: uc.ProviderKindLocalDocker,
 				Supported: []uc.ProviderCapability{
 					uc.CapabilityServesToolEndpoint,
-					uc.CapabilityRestartPreservesWorkspace,
+					uc.CapabilityRestartPreservesState,
 					uc.CapabilityAdoptsOrphans,
 					uc.CapabilityEnumeratesResources,
 				},

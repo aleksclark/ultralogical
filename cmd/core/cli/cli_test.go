@@ -16,7 +16,7 @@ func TestCLIUsesOnlyPublicAPIs(t *testing.T) {
 		"github.com/aleksclark/ultracore/postgres",
 		"github.com/aleksclark/ultracore/jobqueue",
 		"github.com/aleksclark/ultracore/loop",
-		"github.com/aleksclark/ultracore/envwork",
+		"github.com/aleksclark/ultracore/resourcework",
 		"github.com/jackc/pgx/v5",
 	}
 	root := filepath.Join("..", "..", "..", "cmd", "core")

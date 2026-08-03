@@ -25,10 +25,19 @@ func TestCapabilityManifestCannotNameCoreContract(t *testing.T) {
 		}
 	}
 	for _, required := range []string{
-		"Provision", "Health", "Discovery", "Bash", "TokenRejection", "Terminate", "LeakCheck",
+		"Provision", "Health", "TokenRejection", "Terminate", "LeakCheck",
 	} {
 		if !core[strings.ToLower(required)] {
 			t.Fatalf("%s is not in the core contract; a provider could skip it", required)
+		}
+	}
+	tool := map[string]bool{}
+	for _, name := range uc.ToolSurfaceProviderContract() {
+		tool[strings.ToLower(name)] = true
+	}
+	for _, required := range []string{"Discovery", "Bash"} {
+		if !tool[strings.ToLower(required)] {
+			t.Fatalf("%s is not in the tool-surface contract; a tool provider could skip it", required)
 		}
 	}
 }
@@ -53,7 +62,7 @@ func TestProviderCapabilitiesExplainWhatIsMissing(t *testing.T) {
 	if got := capabilities.Reason(uc.CapabilityAdoptsOrphans); got != "the cluster cannot list pods by label" {
 		t.Fatalf("probe reason = %q", got)
 	}
-	if got := capabilities.Reason(uc.CapabilityRestartPreservesWorkspace); got == "" {
+	if got := capabilities.Reason(uc.CapabilityRestartPreservesState); got == "" {
 		t.Fatal("an unsupported capability with no note explained nothing")
 	}
 }

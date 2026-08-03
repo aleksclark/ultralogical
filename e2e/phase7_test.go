@@ -15,7 +15,7 @@ import (
 	"connectrpc.com/connect"
 
 	uc "github.com/aleksclark/ultracore"
-	"github.com/aleksclark/ultracore/envprovider/localdocker"
+	"github.com/aleksclark/ultracore/provider/localdocker"
 	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
 	"github.com/aleksclark/ultracore/mcp"
 	"github.com/aleksclark/ultracore/secrets"
@@ -204,8 +204,8 @@ func TestA73_RedactionSweep(t *testing.T) {
 
 	// Force an error path that a naive implementation would decorate with
 	// credential material.
-	if _, err := alice.Envs.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
-		EnvId: "00000000-0000-0000-0000-000000000000", Command: "true",
+	if _, err := alice.Resources.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
+		ResourceId: "00000000-0000-0000-0000-000000000000", Command: "true",
 	})); err == nil {
 		t.Fatal("ExecPreview against a missing environment should fail")
 	} else {
@@ -263,12 +263,12 @@ func TestA73_RedactionSweep(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertNoCanary(t, "credential ciphertext at rest", string(dbCred.EncPayload))
-	storedEnvs, err := stack.Store.Org(stack.OrgA.ID).Envs().List(ctx, uc.SessionID(sess.GetId()))
+	storedResources, err := stack.Store.Org(stack.OrgA.ID).Resources().List(ctx, uc.SessionID(sess.GetId()))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, env := range storedEnvs {
-		assertNoCanary(t, "env diagnostic fields", env.FailureMessage+env.Endpoint+string(env.TokenEnc))
+	for _, env := range storedResources {
+		assertNoCanary(t, "env diagnostic fields", env.FailureMessage+string(env.Endpoint)+string(env.TokenEnc))
 	}
 
 	assertNoCanary(t, "cored and worker logs", stack.Logs())
@@ -287,25 +287,26 @@ func assertNoCanary(t *testing.T, where, text string) {
 	}
 }
 
-// awaitEnvState polls until an environment reaches a state or the deadline.
-func awaitEnvState(t *testing.T, client *testclient.Client, envID string, want corev1.EnvState, timeout time.Duration) *corev1.DevEnv {
+// awaitEnvState polls until a resource reaches a state or the deadline.
+// Name retained for call-site stability in phase7 durability tests.
+func awaitEnvState(t *testing.T, client *testclient.Client, resourceID string, want corev1.ResourceState, timeout time.Duration) *corev1.Resource {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
-	var last *corev1.DevEnv
+	var last *corev1.Resource
 	for time.Now().Before(deadline) {
-		got, err := client.Envs.GetEnv(context.Background(), connect.NewRequest(&corev1.GetEnvRequest{EnvId: envID}))
+		got, err := client.Resources.GetResource(context.Background(), connect.NewRequest(&corev1.GetResourceRequest{ResourceId: resourceID}))
 		if err == nil {
-			last = got.Msg.GetEnv()
+			last = got.Msg.GetResource()
 			if last.GetState() == want {
 				return last
 			}
-			if want != corev1.EnvState_ENV_STATE_FAILED && last.GetState() == corev1.EnvState_ENV_STATE_FAILED {
-				t.Fatalf("env failed while waiting for %v: %s", want, last.GetFailureMessage())
+			if want != corev1.ResourceState_RESOURCE_STATE_FAILED && last.GetState() == corev1.ResourceState_RESOURCE_STATE_FAILED {
+				t.Fatalf("resource failed while waiting for %v: %s", want, last.GetFailureMessage())
 			}
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
-	t.Fatalf("env %s never reached %v within %s (last %v)", envID, want, timeout, last.GetState())
+	t.Fatalf("resource %s never reached %v within %s (last %v)", resourceID, want, timeout, last.GetState())
 	return nil
 }
 
@@ -322,13 +323,13 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 	envID := envProto.GetId()
 
 	// Write a file through the shipped API.
-	if _, err := alice.Envs.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
-		EnvId: envID, Command: "echo durable-content > /work/state.txt",
+	if _, err := alice.Resources.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
+		ResourceId: envID, Command: "echo durable-content > /work/state.txt",
 	})); err != nil {
 		t.Fatal(err)
 	}
 
-	before, err := stack.Store.Org(stack.OrgA.ID).Envs().Get(ctx, uc.EnvID(envID))
+	before, err := stack.Store.Org(stack.OrgA.ID).Resources().Get(ctx, uc.ResourceID(envID))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -343,7 +344,7 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 	oldToken := string(oldTokenBytes)
 	// A client created before the restart, held across it: the "cached MCP
 	// client" a long-running worker would hold.
-	cached := mcp.NewClient(before.Endpoint, oldToken)
+	cached := mcp.NewClient(string(before.Endpoint), oldToken)
 	if err := cached.Initialize(ctx); err != nil {
 		t.Fatalf("cached client could not initialize before rotation: %v", err)
 	}
@@ -353,15 +354,15 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 	// survival must not depend on either.
 	stack.KillWorker()
 	stack.KillUltrad()
-	if _, err := alice.Envs.GetEnv(ctx, connect.NewRequest(&corev1.GetEnvRequest{EnvId: envID})); err == nil {
+	if _, err := alice.Resources.GetResource(ctx, connect.NewRequest(&corev1.GetResourceRequest{ResourceId: envID})); err == nil {
 		t.Fatal("cored still answered after being killed; the restart proves nothing")
 	}
 	stack.StartUltrad()
 	stack.StartWorker()
 
 	// The environment is still reachable and still holds its file.
-	read, err := alice.Envs.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
-		EnvId: envID, Command: "cat /work/state.txt",
+	read, err := alice.Resources.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
+		ResourceId: envID, Command: "cat /work/state.txt",
 	}))
 	if err != nil {
 		t.Fatalf("environment unreachable after control-plane restart: %v", err)
@@ -371,19 +372,19 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 	}
 
 	// Restart rotates the token and bumps the epoch.
-	restarted, err := alice.Envs.RestartEnv(ctx, connect.NewRequest(&corev1.RestartEnvRequest{EnvId: envID}))
+	restarted, err := alice.Resources.RestartResource(ctx, connect.NewRequest(&corev1.RestartResourceRequest{ResourceId: envID}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if restarted.Msg.GetEventSeq() == 0 {
-		t.Fatal("RestartEnv returned no event seq")
+		t.Fatal("RestartResource returned no event seq")
 	}
-	ready := awaitEnvState(t, alice, envID, corev1.EnvState_ENV_STATE_READY, 3*time.Minute)
+	ready := awaitEnvState(t, alice, envID, corev1.ResourceState_RESOURCE_STATE_READY, 3*time.Minute)
 	if int(ready.GetEpoch()) <= before.Epoch {
 		t.Fatalf("epoch did not advance: %d → %d", before.Epoch, ready.GetEpoch())
 	}
 
-	after, err := stack.Store.Org(stack.OrgA.ID).Envs().Get(ctx, uc.EnvID(envID))
+	after, err := stack.Store.Org(stack.OrgA.ID).Resources().Get(ctx, uc.ResourceID(envID))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -397,18 +398,18 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 	}
 
 	// The rotated token works and the workspace is intact.
-	if err := mcp.NewClient(after.Endpoint, newToken).Initialize(ctx); err != nil {
+	if err := mcp.NewClient(string(after.Endpoint), newToken).Initialize(ctx); err != nil {
 		t.Fatalf("rotated token rejected: %v", err)
 	}
-	survived, err := alice.Envs.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
-		EnvId: envID, Command: "cat /work/state.txt",
+	survived, err := alice.Resources.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
+		ResourceId: envID, Command: "cat /work/state.txt",
 	}))
 	if err != nil || !strings.Contains(survived.Msg.GetOutput(), "durable-content") {
 		t.Fatalf("workspace lost across restart: %q %v", survived.Msg.GetOutput(), err)
 	}
 
 	// The prior token is rejected.
-	if err := mcp.NewClient(after.Endpoint, oldToken).Initialize(ctx); err == nil {
+	if err := mcp.NewClient(string(after.Endpoint), oldToken).Initialize(ctx); err == nil {
 		t.Fatal("pre-rotation token still authenticates")
 	}
 	// And the pre-rotation cached client cannot keep working either, whether
@@ -430,7 +431,7 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 	ctx := context.Background()
 	sess := createSession(t, alice, string(stack.OrgA.ID), "env failure")
 	envProto := provisionEnv(t, stack, sess.GetId())
-	envID := uc.EnvID(envProto.GetId())
+	envID := uc.ResourceID(envProto.GetId())
 
 	provider, err := localdocker.New(localdocker.Config{Image: harness.BezalelImage})
 	if err != nil {
@@ -461,7 +462,7 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 		result, ok := ev.GetPayload().GetPayload().(*corev1.EventPayload_ToolResult)
 		return ok && strings.Contains(result.ToolResult.GetContent(), "first-step")
 	})
-	if err := provider.KillByEnvID(ctx, envID); err != nil {
+	if err := provider.KillByResourceID(ctx, envID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -484,7 +485,7 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 		if !ok || !result.ToolResult.GetIsError() {
 			continue
 		}
-		if strings.Contains(strings.ToLower(result.ToolResult.GetContent()), "environment unavailable") {
+		if strings.Contains(strings.ToLower(result.ToolResult.GetContent()), "unavailable") {
 			typedFailure = true
 		}
 	}
@@ -492,11 +493,11 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 		t.Fatalf("no typed tool failure was recorded after the environment died: %v", kinds(events))
 	}
 
-	// The environment is failed, with a structured reason, and EnvFailed
+	// The environment is failed, with a structured reason, and ResourceFailed
 	// precedes the run's terminal event.
-	failed := awaitEnvState(t, alice, string(envID), corev1.EnvState_ENV_STATE_FAILED, 60*time.Second)
+	failed := awaitEnvState(t, alice, string(envID), corev1.ResourceState_RESOURCE_STATE_FAILED, 60*time.Second)
 	if failed.GetFailureMessage() == "" {
-		t.Fatal("EnvFailed carried no structured reason")
+		t.Fatal("ResourceFailed carried no structured reason")
 	}
 	all, err := alice.Subscribe(ctx, sess.GetId(), 0)
 	if err != nil {
@@ -504,17 +505,17 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 	}
 	defer all.Close()
 	ordered := all.CollectUntil(t, 60*time.Second, func(ev *corev1.SessionEvent) bool {
-		return testclient.Kind(ev) == "env_failed"
+		return testclient.Kind(ev) == "resource_failed"
 	})
-	if len(ordered) == 0 || testclient.Kind(ordered[len(ordered)-1]) != "env_failed" {
-		t.Fatal("no env_failed event was recorded")
+	if len(ordered) == 0 || testclient.Kind(ordered[len(ordered)-1]) != "resource_failed" {
+		t.Fatal("no resource_failed event was recorded")
 	}
 	for _, ev := range ordered[:len(ordered)-1] {
 		if isTerminalRunEvent(ev) && testclient.Kind(ev) != "run_completed" {
 			// A run may legitimately complete before the reconciler notices,
 			// but a failure must not precede the environment failure it is
 			// attributed to.
-			t.Fatalf("run terminated with %q before env_failed", testclient.Kind(ev))
+			t.Fatalf("run terminated with %q before resource_failed", testclient.Kind(ev))
 		}
 	}
 	alice.AwaitRunState(t, run.GetId(), stateOf(terminal), 30*time.Second)
@@ -540,7 +541,7 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 
 	// Repeated termination is idempotent and leaves no resources behind.
 	for range 3 {
-		if _, err := alice.Envs.TerminateEnv(ctx, connect.NewRequest(&corev1.TerminateEnvRequest{EnvId: string(envID)})); err != nil {
+		if _, err := alice.Resources.TerminateResource(ctx, connect.NewRequest(&corev1.TerminateResourceRequest{ResourceId: string(envID)})); err != nil {
 			t.Fatalf("repeated terminate failed: %v", err)
 		}
 	}
@@ -587,34 +588,34 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 	// The interruption window is a race against provisioning, so a missed
 	// window is retried with a fresh environment rather than skipped: a
 	// skipped test is silently absent evidence.
-	var envID uc.EnvID
+	var envID uc.ResourceID
 	killed := false
 	for attempt := 1; attempt <= 5 && !killed; attempt++ {
-		requested, err := alice.Envs.ProvisionEnv(ctx, connect.NewRequest(&corev1.ProvisionEnvRequest{
+		requested, err := alice.Resources.ProvisionResource(ctx, connect.NewRequest(&corev1.ProvisionResourceRequest{
 			SessionId:        sess.GetId(),
-			Spec:             &corev1.EnvSpec{Name: fmt.Sprintf("interrupted-%d", attempt), Workdir: "/work"},
+			Spec:             &corev1.DevEnvSpec{Name: fmt.Sprintf("interrupted-%d", attempt), Workdir: "/work"},
 			ProviderInstance: "default",
 		}))
 		if err != nil {
 			t.Fatal(err)
 		}
-		envID = uc.EnvID(requested.Msg.GetEnv().GetId())
+		envID = uc.ResourceID(requested.Msg.GetResource().GetId())
 
 		// Kill the worker while it is provisioning, before readiness is
 		// durable.
 		killDeadline := time.Now().Add(60 * time.Second)
 		missed := false
 		for time.Now().Before(killDeadline) {
-			current, err := stack.Store.Org(stack.OrgA.ID).Envs().Get(ctx, envID)
+			current, err := stack.Store.Org(stack.OrgA.ID).Resources().Get(ctx, envID)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if current.State == uc.EnvProvisioning {
+			if current.State == uc.ResourceProvisioning {
 				stack.KillWorker()
 				killed = true
 				break
 			}
-			if current.State == uc.EnvReady || current.State == uc.EnvFailed {
+			if current.State == uc.ResourceReady || current.State == uc.ResourceFailed {
 				missed = true
 				break
 			}
@@ -627,8 +628,8 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 			t.Fatal("environment never entered provisioning")
 		}
 		// Clean up the environment that won the race and try again.
-		if _, err := alice.Envs.TerminateEnv(ctx, connect.NewRequest(&corev1.TerminateEnvRequest{
-			EnvId: string(envID),
+		if _, err := alice.Resources.TerminateResource(ctx, connect.NewRequest(&corev1.TerminateResourceRequest{
+			ResourceId: string(envID),
 		})); err != nil {
 			t.Fatal(err)
 		}
@@ -641,7 +642,7 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 	// A fresh worker must converge the environment, adopting whatever resource
 	// the dead worker created rather than starting a second one.
 	stack.StartWorker()
-	ready := awaitEnvState(t, alice, string(envID), corev1.EnvState_ENV_STATE_READY, 4*time.Minute)
+	ready := awaitEnvState(t, alice, string(envID), corev1.ResourceState_RESOURCE_STATE_READY, 4*time.Minute)
 	if ready.GetEndpoint() == "" {
 		t.Fatal("recovered environment has no endpoint")
 	}
@@ -661,8 +662,8 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 	}
 
 	// The recovered environment is usable.
-	out, err := alice.Envs.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
-		EnvId: string(envID), Command: "echo recovered",
+	out, err := alice.Resources.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
+		ResourceId: string(envID), Command: "echo recovered",
 	}))
 	if err != nil || !strings.Contains(out.Msg.GetOutput(), "recovered") {
 		t.Fatalf("recovered environment unusable: %q %v", out.Msg.GetOutput(), err)
@@ -737,7 +738,7 @@ func TestA78_DevStackSmoke(t *testing.T) {
 
 func ownedContainers(t *testing.T) map[string]bool {
 	t.Helper()
-	out, err := exec.Command("docker", "ps", "-aq", "--filter", "label=ultracore.env_id").Output()
+	out, err := exec.Command("docker", "ps", "-aq", "--filter", "label=ultracore.resource_id").Output()
 	if err != nil {
 		t.Fatal(err)
 	}

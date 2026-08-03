@@ -21,7 +21,7 @@ func (o *orgScope) Sessions() uc.SessionStore               { return &sessionSto
 func (o *orgScope) Events() uc.EventStore                   { return &eventStore{o} }
 func (o *orgScope) Runs() uc.RunStore                       { return &runStore{o} }
 func (o *orgScope) Credentials() uc.CredentialStore         { return &credentialStore{o} }
-func (o *orgScope) Envs() uc.EnvStore                       { return &envStore{o} }
+func (o *orgScope) Resources() uc.ResourceStore                       { return &resourceStore{o} }
 func (o *orgScope) Providers() uc.ProviderInstanceStore     { return &providerStore{o} }
 func (o *orgScope) Memory() uc.SessionMemoryStore           { return &memoryStore{o} }
 func (o *orgScope) Waits() uc.RunWaitStore                  { return &waitStore{o} }

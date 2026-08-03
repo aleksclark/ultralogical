@@ -61,7 +61,7 @@ type OrgScope interface {
 	Events() EventStore
 	Runs() RunStore
 	Credentials() CredentialStore
-	Envs() EnvStore
+	Resources() ResourceStore
 	Providers() ProviderInstanceStore
 	Memory() SessionMemoryStore
 	Waits() RunWaitStore

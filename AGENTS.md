@@ -65,7 +65,7 @@ task dev:smoke         # boot, smoke, tear down with leak checks
 |---|---|
 | [agent_docs/architecture.md](agent_docs/architecture.md) | touching http, store, eventbus, tenancy, queue |
 | [agent_docs/agent_loop.md](agent_docs/agent_loop.md) | touching fantasy, step jobs, credentials, modelscript |
-| [agent_docs/dev_environments.md](agent_docs/dev_environments.md) | touching env lifecycle, MCP |
+| [agent_docs/resources.md](agent_docs/resources.md) | touching resource lifecycle, MCP |
 | [agent_docs/providers.md](agent_docs/providers.md) | touching provider registration and transport |
 | [agent_docs/core_extraction_plan/index.md](agent_docs/core_extraction_plan/index.md) | extraction roadmap and iron rules |
 | [docs/security.md](docs/security.md) | tool allowlists, denial visibility, tenancy, credential scope |

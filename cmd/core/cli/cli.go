@@ -39,7 +39,7 @@ const (
 type Clients struct {
 	Orgs     corev1connect.OrgServiceClient
 	Sessions corev1connect.SessionServiceClient
-	Envs     corev1connect.EnvServiceClient
+	Resources corev1connect.ResourceServiceClient
 	HTTP     *http.Client
 }
 
@@ -60,7 +60,7 @@ func NewClients(baseURL, token string) *Clients {
 	return &Clients{
 		Orgs:     corev1connect.NewOrgServiceClient(httpClient, baseURL),
 		Sessions: corev1connect.NewSessionServiceClient(httpClient, baseURL),
-		Envs:     corev1connect.NewEnvServiceClient(httpClient, baseURL),
+		Resources:     corev1connect.NewResourceServiceClient(httpClient, baseURL),
 		HTTP:     httpClient,
 	}
 }

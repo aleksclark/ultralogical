@@ -32,8 +32,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aleksclark/ultracore/envprovider/localdocker"
-	"github.com/aleksclark/ultracore/envprovider/tunnel"
+	"github.com/aleksclark/ultracore/provider/localdocker"
+	"github.com/aleksclark/ultracore/provider/tunnel"
 	"github.com/aleksclark/ultracore/secrets"
 )
 

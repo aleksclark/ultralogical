@@ -176,33 +176,33 @@ func payloadFromDomain(kind string, payload []byte) (*corev1.EventPayload, error
 		return decodeAs(payload, &corev1.RunCancelled{}, func(m *corev1.RunCancelled) *corev1.EventPayload {
 			return &corev1.EventPayload{Payload: &corev1.EventPayload_RunCancelled{RunCancelled: m}}
 		})
-	case uc.EventKindEnvRequested:
-		return decodeAs(payload, &corev1.EnvLifecycle{}, func(m *corev1.EnvLifecycle) *corev1.EventPayload {
-			return &corev1.EventPayload{Payload: &corev1.EventPayload_EnvRequested{EnvRequested: m}}
+	case uc.EventKindResourceRequested:
+		return decodeAs(payload, &corev1.ResourceLifecycle{}, func(m *corev1.ResourceLifecycle) *corev1.EventPayload {
+			return &corev1.EventPayload{Payload: &corev1.EventPayload_ResourceRequested{ResourceRequested: m}}
 		})
-	case uc.EventKindEnvProvisioning:
-		return decodeAs(payload, &corev1.EnvLifecycle{}, func(m *corev1.EnvLifecycle) *corev1.EventPayload {
-			return &corev1.EventPayload{Payload: &corev1.EventPayload_EnvProvisioning{EnvProvisioning: m}}
+	case uc.EventKindResourceProvisioning:
+		return decodeAs(payload, &corev1.ResourceLifecycle{}, func(m *corev1.ResourceLifecycle) *corev1.EventPayload {
+			return &corev1.EventPayload{Payload: &corev1.EventPayload_ResourceProvisioning{ResourceProvisioning: m}}
 		})
-	case uc.EventKindEnvReady:
-		return decodeAs(payload, &corev1.EnvLifecycle{}, func(m *corev1.EnvLifecycle) *corev1.EventPayload {
-			return &corev1.EventPayload{Payload: &corev1.EventPayload_EnvReady{EnvReady: m}}
+	case uc.EventKindResourceReady:
+		return decodeAs(payload, &corev1.ResourceLifecycle{}, func(m *corev1.ResourceLifecycle) *corev1.EventPayload {
+			return &corev1.EventPayload{Payload: &corev1.EventPayload_ResourceReady{ResourceReady: m}}
 		})
-	case uc.EventKindEnvSuspended:
-		return decodeAs(payload, &corev1.EnvLifecycle{}, func(m *corev1.EnvLifecycle) *corev1.EventPayload {
-			return &corev1.EventPayload{Payload: &corev1.EventPayload_EnvSuspended{EnvSuspended: m}}
+	case uc.EventKindResourceSuspended:
+		return decodeAs(payload, &corev1.ResourceLifecycle{}, func(m *corev1.ResourceLifecycle) *corev1.EventPayload {
+			return &corev1.EventPayload{Payload: &corev1.EventPayload_ResourceSuspended{ResourceSuspended: m}}
 		})
-	case uc.EventKindEnvFailed:
-		return decodeAs(payload, &corev1.EnvLifecycle{}, func(m *corev1.EnvLifecycle) *corev1.EventPayload {
-			return &corev1.EventPayload{Payload: &corev1.EventPayload_EnvFailed{EnvFailed: m}}
+	case uc.EventKindResourceFailed:
+		return decodeAs(payload, &corev1.ResourceLifecycle{}, func(m *corev1.ResourceLifecycle) *corev1.EventPayload {
+			return &corev1.EventPayload{Payload: &corev1.EventPayload_ResourceFailed{ResourceFailed: m}}
 		})
-	case uc.EventKindEnvTerminating:
-		return decodeAs(payload, &corev1.EnvLifecycle{}, func(m *corev1.EnvLifecycle) *corev1.EventPayload {
-			return &corev1.EventPayload{Payload: &corev1.EventPayload_EnvTerminating{EnvTerminating: m}}
+	case uc.EventKindResourceTerminating:
+		return decodeAs(payload, &corev1.ResourceLifecycle{}, func(m *corev1.ResourceLifecycle) *corev1.EventPayload {
+			return &corev1.EventPayload{Payload: &corev1.EventPayload_ResourceTerminating{ResourceTerminating: m}}
 		})
-	case uc.EventKindEnvTerminated:
-		return decodeAs(payload, &corev1.EnvLifecycle{}, func(m *corev1.EnvLifecycle) *corev1.EventPayload {
-			return &corev1.EventPayload{Payload: &corev1.EventPayload_EnvTerminated{EnvTerminated: m}}
+	case uc.EventKindResourceTerminated:
+		return decodeAs(payload, &corev1.ResourceLifecycle{}, func(m *corev1.ResourceLifecycle) *corev1.EventPayload {
+			return &corev1.EventPayload{Payload: &corev1.EventPayload_ResourceTerminated{ResourceTerminated: m}}
 		})
 	case uc.EventKindExecPreviewRan:
 		return decodeAs(payload, &corev1.ExecPreviewRan{}, func(m *corev1.ExecPreviewRan) *corev1.EventPayload {

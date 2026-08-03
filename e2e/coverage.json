@@ -98,9 +98,9 @@
     },
     "dev_env_exec_usage": {
       "rpcs": [
-        "core.v1.EnvService/ProvisionEnv",
-        "core.v1.EnvService/ListEnvs",
-        "core.v1.EnvService/ExecPreview"
+        "core.v1.ResourceService/ProvisionResource",
+        "core.v1.ResourceService/ListResources",
+        "core.v1.ResourceService/ExecPreview"
       ],
       "go": {
         "file": "env_test.go",
@@ -113,8 +113,8 @@
     },
     "dev_env_restart_rotation": {
       "rpcs": [
-        "core.v1.EnvService/RestartEnv",
-        "core.v1.EnvService/GetEnv"
+        "core.v1.ResourceService/RestartResource",
+        "core.v1.ResourceService/GetResource"
       ],
       "go": {
         "file": "phase7_test.go",
@@ -154,7 +154,7 @@
     },
     "provider_failure_validation": {
       "rpcs": [
-        "core.v1.EnvService/GetEnv"
+        "core.v1.ResourceService/GetResource"
       ],
       "go": {
         "file": "provider_test.go",
@@ -304,13 +304,13 @@
     },
     "env_terminate": {
       "rpcs": [
-        "core.v1.EnvService/TerminateEnv"
+        "core.v1.ResourceService/TerminateResource"
       ],
       "go": {
         "file": "env_test.go",
         "test": "TestA24_A25_A27_AuthReconcileMetering",
         "asserts": [
-          "EnvFailed",
+          "ResourceFailed",
           "provisionEnv"
         ]
       }

@@ -11,8 +11,8 @@ import (
 	"connectrpc.com/connect"
 
 	uc "github.com/aleksclark/ultracore"
-	"github.com/aleksclark/ultracore/envprovider"
-	"github.com/aleksclark/ultracore/envwork"
+	"github.com/aleksclark/ultracore/provider"
+	"github.com/aleksclark/ultracore/resourcework"
 	"github.com/aleksclark/ultracore/gen/go/core/v1/corev1connect"
 	"github.com/aleksclark/ultracore/jobqueue"
 	"github.com/aleksclark/ultracore/secrets"
@@ -24,7 +24,7 @@ type Config struct {
 	// Providers is the provider seam's registry. Registration builds the
 	// adapter through it and probes the real control plane, so a stored
 	// registration is one that has answered rather than one that parsed.
-	Providers *envprovider.Registry
+	Providers *provider.Registry
 	Auth      uc.Authenticator
 	Bus       uc.EventBus
 	Log       *slog.Logger
@@ -35,8 +35,8 @@ type Config struct {
 	Enqueue jobqueue.TxEnqueuer
 	// DefaultModel fills StartRun requests that omit a model config.
 	DefaultModel uc.ModelConfig
-	// Envs orchestrates development-environment lifecycle and ExecPreview.
-	Envs *envwork.Service
+	// Resources orchestrates development-environment lifecycle and ExecPreview.
+	Resources *resourcework.Service
 }
 
 // NewHandler builds the full cored http.Handler: all Connect services under
@@ -61,9 +61,9 @@ func NewHandler(cfg Config) http.Handler {
 	automationPath, automationH := corev1connect.NewAutomationServiceHandler(&automationHandler{store: cfg.Store}, interceptors)
 	mux.Handle(automationPath, automationH)
 
-	if cfg.Envs != nil {
-		envPath, envH := corev1connect.NewEnvServiceHandler(&envHandler{store: cfg.Store, envs: cfg.Envs}, interceptors)
-		mux.Handle(envPath, envH)
+	if cfg.Resources != nil {
+		resourcePath, resourceH := corev1connect.NewResourceServiceHandler(&resourceHandler{store: cfg.Store, resources: cfg.Resources}, interceptors)
+		mux.Handle(resourcePath, resourceH)
 	}
 
 	// The unary interceptor covers Append; Subscribe is a streaming RPC and

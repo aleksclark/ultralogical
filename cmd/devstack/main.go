@@ -162,7 +162,7 @@ type smokeClient struct {
 	sessions corev1connect.SessionServiceClient
 	events   corev1connect.EventServiceClient
 	agents   corev1connect.AgentServiceClient
-	envs     corev1connect.EnvServiceClient
+	resources     corev1connect.ResourceServiceClient
 }
 
 type bearer struct {
@@ -190,7 +190,7 @@ func smoke(ctx context.Context) error {
 		sessions: corev1connect.NewSessionServiceClient(httpClient, api),
 		events:   corev1connect.NewEventServiceClient(httpClient, api),
 		agents:   corev1connect.NewAgentServiceClient(httpClient, api),
-		envs:     corev1connect.NewEnvServiceClient(httpClient, api),
+		resources:     corev1connect.NewResourceServiceClient(httpClient, api),
 		}
 
 	created, err := client.sessions.CreateSession(ctx, connect.NewRequest(&corev1.CreateSessionRequest{
@@ -252,25 +252,25 @@ func smoke(ctx context.Context) error {
 	fmt.Printf("smoke: streamed %d deltas and completed\n", deltas)
 
 	// Provision a real environment and run a command in it.
-	provisioned, err := client.envs.ProvisionEnv(ctx, connect.NewRequest(&corev1.ProvisionEnvRequest{
+	provisioned, err := client.resources.ProvisionResource(ctx, connect.NewRequest(&corev1.ProvisionResourceRequest{
 		SessionId:        session,
-		Spec:             &corev1.EnvSpec{Name: "smoke", Workdir: "/work"},
+		Spec:             &corev1.DevEnvSpec{Name: "smoke", Workdir: "/work"},
 		ProviderInstance: "default",
 	}))
 	if err != nil {
 		return fmt.Errorf("provision env: %w", err)
 	}
-	envID := provisioned.Msg.GetEnv().GetId()
+	envID := provisioned.Msg.GetResource().GetId()
 	ready := false
 	deadline = time.Now().Add(3 * time.Minute)
 	for time.Now().Before(deadline) {
-		got, err := client.envs.GetEnv(ctx, connect.NewRequest(&corev1.GetEnvRequest{EnvId: envID}))
+		got, err := client.resources.GetResource(ctx, connect.NewRequest(&corev1.GetResourceRequest{ResourceId: envID}))
 		if err == nil {
-			switch got.Msg.GetEnv().GetState() {
-			case corev1.EnvState_ENV_STATE_READY:
+			switch got.Msg.GetResource().GetState() {
+			case corev1.ResourceState_RESOURCE_STATE_READY:
 				ready = true
-			case corev1.EnvState_ENV_STATE_FAILED:
-				return fmt.Errorf("env failed: %s", got.Msg.GetEnv().GetFailureMessage())
+			case corev1.ResourceState_RESOURCE_STATE_FAILED:
+				return fmt.Errorf("env failed: %s", got.Msg.GetResource().GetFailureMessage())
 			}
 		}
 		if ready {
@@ -283,8 +283,8 @@ func smoke(ctx context.Context) error {
 	}
 	fmt.Printf("smoke: environment %s ready\n", envID)
 
-	exec, err := client.envs.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
-		EnvId: envID, Command: "echo dev-stack-smoke",
+	exec, err := client.resources.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
+		ResourceId: envID, Command: "echo dev-stack-smoke",
 	}))
 	if err != nil {
 		return fmt.Errorf("exec preview: %w", err)
@@ -294,13 +294,13 @@ func smoke(ctx context.Context) error {
 	}
 	fmt.Println("smoke: ran a command in the environment")
 
-	if _, err := client.envs.TerminateEnv(ctx, connect.NewRequest(&corev1.TerminateEnvRequest{EnvId: envID})); err != nil {
+	if _, err := client.resources.TerminateResource(ctx, connect.NewRequest(&corev1.TerminateResourceRequest{ResourceId: envID})); err != nil {
 		return fmt.Errorf("terminate env: %w", err)
 	}
 	deadline = time.Now().Add(2 * time.Minute)
 	for time.Now().Before(deadline) {
-		got, err := client.envs.GetEnv(ctx, connect.NewRequest(&corev1.GetEnvRequest{EnvId: envID}))
-		if err == nil && got.Msg.GetEnv().GetState() == corev1.EnvState_ENV_STATE_TERMINATED {
+		got, err := client.resources.GetResource(ctx, connect.NewRequest(&corev1.GetResourceRequest{ResourceId: envID}))
+		if err == nil && got.Msg.GetResource().GetState() == corev1.ResourceState_RESOURCE_STATE_TERMINATED {
 			fmt.Println("smoke: environment terminated")
 			return nil
 		}
