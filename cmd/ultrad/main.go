@@ -152,6 +152,7 @@ func envOr(name, def string) string {
 func providerDeployment() envprovider.Deployment {
 	deployment := envprovider.Deployment{
 		BezalelImage:           envOr("ULTRA_BEZALEL_IMAGE", "ultralogical/bezalel:local"),
+		BezalelBinary:          os.Getenv("ULTRA_BEZALEL_BINARY"),
 		KubernetesEndpointMode: envOr("ULTRA_K8S_ENDPOINT_MODE", ""),
 		KubernetesEndpointHost: envOr("ULTRA_K8S_ENDPOINT_HOST", ""),
 	}

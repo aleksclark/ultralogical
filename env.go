@@ -128,6 +128,10 @@ const (
 	ProviderKindHostedEKS     = "hosted_eks"
 	ProviderKindBYONomad      = "byo_nomad"
 	ProviderKindTunnelLocal   = "tunnel_local"
+	// ProviderKindStatic is the worked example from docs/providers.md. It is a
+	// real adapter, not a deployment default: a worker offers it only when a
+	// Bezalel binary is configured.
+	ProviderKindStatic = "static"
 	RateClassBYO              = "byo"
 	RateClassHosted           = "hosted"
 )

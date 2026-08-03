@@ -26,6 +26,7 @@ Kinds:
   hosted_eks    the platform's cluster, with per-org isolation
   byo_nomad     your own Nomad cluster
   tunnel_local  your own machine, through an outbound tunnel
+  static        the walkthrough provider from docs/providers.md
 `
 
 func runProvider(args []string, environment Env, stdout, stderr io.Writer) (int, error) {
