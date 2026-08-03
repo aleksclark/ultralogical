@@ -1,12 +1,42 @@
 # Adding an environment provider
 
 A provider is where an org's environments run. This is the walkthrough for
-adding a new kind, written against the shipped adapters: `envprovider/nomad`
-is the smallest complete one to read end to end, and `envprovider/k8s` shows
-hosted policy layered on the same seam.
+adding a new kind. Start with `envprovider/static`: it is the smallest
+adapter that still passes the shared conformance contract unmodified (under
+200 lines of code), and its CI leg is what proves the seam stays
+implementable. `envprovider/nomad` is the next step up when you need a real
+control plane, and `envprovider/k8s` shows hosted policy layered on the same
+seam.
 
 For what the shipped kinds do and how registration behaves, see
 [agent_docs/providers.md](../agent_docs/providers.md).
+
+## The worked example
+
+`envprovider/static` is intentionally small. One environment is one Bezalel
+process in an unprivileged mount namespace, with the workspace bind-mounted
+at the declared workdir so concurrent environments each own that absolute
+path. Read `static.go` end to end, then:
+
+```sh
+# Needs unprivileged user namespaces (the CI leg permits them on Ubuntu 24.04).
+go test ./envprovider/static/... -count=1 -v -timeout 15m
+```
+
+A worker offers the kind when a Bezalel binary is configured:
+
+```sh
+export ULTRA_BEZALEL_BINARY=/path/to/bezalel
+# Optional: narrow the deployment to the example alone.
+export ULTRA_PROVIDER_KINDS=static
+```
+
+Registration then names a root directory for per-environment state:
+
+```sh
+ultra provider register walkthrough --kind static \
+  --config '{"root":"/var/lib/ultra-static"}'
+```
 
 ## The contract
 

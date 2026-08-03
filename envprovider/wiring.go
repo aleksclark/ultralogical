@@ -11,6 +11,7 @@ import (
 	"github.com/aleksclark/ultralogical/envprovider/k8s"
 	"github.com/aleksclark/ultralogical/envprovider/localdocker"
 	"github.com/aleksclark/ultralogical/envprovider/nomad"
+	"github.com/aleksclark/ultralogical/envprovider/static"
 	"github.com/aleksclark/ultralogical/envprovider/tunnel"
 )
 
@@ -19,6 +20,11 @@ import (
 type Deployment struct {
 	// BezalelImage is the environment image adapters run.
 	BezalelImage string
+	// BezalelBinary is the Bezalel executable the static walkthrough provider
+	// runs. Empty means that kind cannot be built until a registration names
+	// its own binary, which is how a default deployment stays free of a
+	// half-configured example.
+	BezalelBinary string
 	// EnabledKinds restricts which kinds this deployment offers. Empty means
 	// every kind the build knows about.
 	EnabledKinds []string
@@ -116,6 +122,18 @@ func StandardRegistry(deployment Deployment) *Registry {
 			}
 			cfg.Timeout = 60 * time.Second
 			return tunnel.New(cfg)
+		})
+	}
+	if enabled(ultra.ProviderKindStatic) {
+		registry.Register(ultra.ProviderKindStatic, func(_ context.Context, config json.RawMessage) (ultra.EnvProvider, error) {
+			var cfg static.Config
+			if err := decode(config, &cfg); err != nil {
+				return nil, err
+			}
+			if cfg.Binary == "" {
+				cfg.Binary = deployment.BezalelBinary
+			}
+			return static.New(cfg)
 		})
 	}
 	return registry

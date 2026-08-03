@@ -62,6 +62,7 @@ func TestStandardRegistryOffersEveryKind(t *testing.T) {
 	for _, kind := range []string{
 		ultra.ProviderKindLocalDocker, ultra.ProviderKindBYOKubernetes,
 		ultra.ProviderKindHostedEKS, ultra.ProviderKindBYONomad, ultra.ProviderKindTunnelLocal,
+		ultra.ProviderKindStatic,
 	} {
 		if !registry.Enabled(kind) {
 			t.Errorf("the standard registry does not offer %q", kind)

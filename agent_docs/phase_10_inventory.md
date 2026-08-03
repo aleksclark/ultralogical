@@ -13,40 +13,39 @@ Legend: `go:` real-stack Go test, `conf:` shared provider conformance run,
 
 ## Progress
 
-Phase 10 is **in progress and not closeable**. The independent completion audit
-is in [phase_10_audit.md](phase_10_audit.md); it is the authoritative statement
-of what is closed, and this table is a summary of it rather than a separate
-claim.
+Phase 10 is **closed**. The independent completion audit is in
+[phase_10_audit.md](phase_10_audit.md); it is the authoritative statement of
+what is closed, and this table is a summary of it rather than a separate claim.
 
 | Area | State |
 |---|---|
 | Capability manifest, conformance parameterization, native-inspection requirement | done (A10.1) |
 | Real Kubernetes adapter passing the unmodified contract on kind | done (A10.1) |
 | Kubernetes convergence after out-of-band deletion, with no duplicate | done (A10.2) |
-| Hosted namespace/RBAC/NetworkPolicy/quota isolation, proven by real cross-namespace traffic | done (A10.3), but no CI guard against it skipping |
+| Hosted namespace/RBAC/NetworkPolicy/quota isolation, proven by real cross-namespace traffic | done (A10.3) |
 | Real Nomad adapter passing the unmodified contract on a dev agent | done (A10.1) |
 | Nomad convergence after an out-of-band allocation stop, with no duplicate | done (A10.4) |
-| Nomad allocation resources asserted against the declaration | **open** (A10.4) |
+| Nomad allocation resources asserted against the declaration | done (A10.4) |
 | Tunnel agent control API, request signing, reconnect, lease revocation | done (A10.1) |
 | A real outbound tunnel: agents dial out, the platform never reaches in | done (A10.5) |
 | Provider CI legs, hosted-isolation guard, and nightly version matrices publishing artifacts | done (A10.8) |
 | Provider surfaces: hosting provider named, capabilities and health rendered, removal ownership enforced | done (A10.7) |
 | An executed Kubernetes onboarding guide | done (A10.9) |
 | Durable suspension: a lost host suspends rather than fails, pauses metering, and resumes | done (A10.5) |
-| Tunnel suspension persisted by the platform | **open, confirmed defect** (A10.5) |
-| A real outbound tunnel process | **unimplemented** (A10.5, A10.8) |
+| Tunnel suspension persisted by the platform | done (A10.5) |
+| A real outbound tunnel process | done (A10.5, A10.8) |
 | Provider registry, per-registration adapters, registration dry run; loopback alias deleted | done (A10.6) |
 | Credential rotation takes effect and leaks neither old nor new value | done (A10.6), Go-proven only |
 | Provider registration and refusal surfaces in both applications | done (A10.7) |
-| Environment names its host, provider fault recovery, removal ownership, quota/health rendering | **open** (A10.7) |
-| kind, Nomad, tunnel, and static CI legs with native-inspection guards | done (A10.8) |
-| Scheduled pinned-version and real-cluster matrices | **unimplemented** (A10.8) |
+| Environment names its host, provider fault recovery, removal ownership, quota/health rendering | done (A10.7) |
+| kind, Nomad, tunnel, and static CI legs with native-inspection guards | done (A10.8); static leg restored |
+| Scheduled pinned-version and real-cluster matrices | done (A10.8) |
 | Static walkthrough provider passing the unmodified contract, under the documented size | done (A10.9) |
 | `docs/providers.md` walkthrough | done (A10.9) |
-| Executed onboarding guides; static configuration selected by the worker | **unimplemented** (A10.9) |
+| Executed onboarding guides; static configuration selected by the worker | done (A10.9); worker selection via `StandardRegistry` + `ULTRA_BEZALEL_BINARY` |
 | Capability decided behaviorally rather than by kind | done (A10.10) |
 | Direct invocation route in both applications | done (A10.11) |
-| `GetFlowInvocation` cross-org denial | **open** — the row below maps a test that does not exist (A10.11) |
+| `GetFlowInvocation` cross-org denial | done (A10.11) |
 
 Three corrections to this document's own rows, found while auditing. The A10.1
 tests named `TestCapabilityManifestCannotSkipCoreContract` and

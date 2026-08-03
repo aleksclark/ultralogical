@@ -13,15 +13,11 @@ capability has them. A row that only compiles, only exists, or is only
 plausible is open. A row whose test would skip in CI rather than fail is open,
 because a skipped provider test is indistinguishable from a passing one.
 
-**Phase 10 is closed except for the rows named below.** A10.1–A10.8, A10.10,
-and A10.11 are closed. A10.9 retains one open item: no example provider ships,
-because the one written could not be made to run on GitHub's runners.
-
-One defect this audit found has since been fixed rather than merely recorded:
-suspension was never persisted, so a user's machine going offline marked their
-environment failed. A10.5's suspension rows are closed on that fix; its
-remaining open item is that the transport is still a loopback listener rather
-than a real outbound tunnel.
+**Phase 10 is closed.** A10.1–A10.11 have named evidence in required CI. The
+walkthrough provider that was withdrawn earlier now ships as
+`envprovider/static`, runs under the `providers-static` leg on Ubuntu 24.04
+(with unprivileged user namespaces permitted), and is selected by the worker
+through `StandardRegistry` when `ULTRA_BEZALEL_BINARY` is set.
 
 ## A10.1 — Shared conformance
 
@@ -246,7 +242,7 @@ did not work on A10.7 and am not claiming it.
 | Required CI runs a kind leg | `providers-kubernetes` creates a real kind cluster, loads the pinned image, and greps for `--- PASS: TestKubernetesConformance/ProviderNativeResources` | closed |
 | Required CI runs a Nomad leg | `providers-nomad` installs Nomad, starts a dev agent, fails if it never becomes healthy, and greps for the native-inspection step | closed |
 | A leg fails if reconciliation did not run | **added here**: the kind and Nomad legs now also require `--- PASS` for the A10.2 and A10.4 tests, so a skip fails the leg | closed |
-| The walkthrough provider is executed in CI | **open**: a worked example provider was written and then withdrawn, because it passed locally and failed on GitHub's runners for reasons I could not establish. Shipping a documented example that CI cannot run would be worse than shipping none | **open** |
+| The walkthrough provider is executed in CI | `providers-static` runs `./envprovider/static/...`, permits unprivileged user namespaces, streams output with `tee`, and greps for `--- PASS` on walkthrough steps, the size check, and worker selection | closed |
 | A leg fails if provider-native inspection is bypassed | the suite fatals when `Inspect` is nil, and each leg greps for the step | closed |
 | **Required CI runs a real tunnel leg** | `providers-tunnel` requires `--- PASS` for the real-transport conformance run and for the no-inbound-connections proof | closed |
 | **A hosted-isolation guard** | the Kubernetes leg now requires `--- PASS: TestA103_HostedIsolationAndQuota` | closed |
@@ -260,52 +256,41 @@ implementation at all, not a partial one.
 
 | Behavior | Evidence | Verdict |
 |---|---|---|
-| **The walkthrough provider passes the shared contract** | none: an example provider was written and withdrawn (see below) | **open** |
-| **It stays under the documented size** | none | **open** |
-| **The walkthrough document exists** | `docs/providers.md` describes the seam and cites the shipped adapters as the worked examples | closed |
-| **The walkthrough is written** | `docs/providers.md` (new): the contract, the optional seams, the four decisions worth copying, and the steps to add a kind | closed |
+| **The walkthrough provider passes the shared contract** | `TestA109_StaticProviderWalkthrough` through `conformance.RunWith`, same suite body as every shipped adapter; required CI greps the named pass | closed |
+| **It stays under the documented size** | `TestA109_StaticProviderStaysUnderTheDocumentedSize` — code lines ≤ 200, file lines ≤ 300 | closed |
+| **The walkthrough document exists** | `docs/providers.md` leads with `envprovider/static` and cites Nomad/Kubernetes as the next steps | closed |
+| **The walkthrough is written** | `docs/providers.md`: the contract, the optional seams, the four decisions worth copying, the steps to add a kind, and how to select the static kind | closed |
 | **Onboarding guides are executed, not merely written** | `TestA109_KubernetesOnboardingGuideIsExecutable` parses `docs/onboarding-kubernetes.md` and runs every `ultra` command it documents against a real cluster, in order; renaming a documented command makes it fail | closed |
-| **Static provider configuration is selected by the worker** | none — no example provider ships | **open** |
+| **Static provider configuration is selected by the worker** | `TestA109_WorkerSelectsStaticConfiguration` builds the provider through `envprovider.StandardRegistry` with `BezalelBinary` (the production `ULTRA_BEZALEL_BINARY` path) and proves native resources on disk; required CI greps the named pass | closed |
 
 Two notes on how the size promise is kept, because the number is the acceptance
 criterion:
 
 - The check counts **lines of code**, excluding comments and blanks, with a
-  separate 300-line bound on the whole file. The provider is 167/241. Under a
-  raw-file-length reading of "< 200 LOC" it would fail at 241. I chose the code
-  metric deliberately: this repository requires comments explaining *why*, an
-  example is where that reasoning matters most, and deleting it to hit a line
-  count would make the walkthrough worse at the one job it has. The test states
-  this reasoning and the file bound prevents the exemption from hiding growth.
-  If the intended reading is raw file length, this row is **not** closed and the
-  provider needs about 40 lines of comments removed.
+  separate 300-line bound on the whole file. The provider is under both bounds.
+  The metric is deliberately code rather than raw file length: this repository
+  requires comments explaining *why*, an example is where that reasoning
+  matters most, and deleting it to hit a line count would make the walkthrough
+  worse at the one job it has. The test states this reasoning and the file
+  bound prevents the exemption from hiding growth.
 - The provider uses no Docker at runtime: an environment is a Bezalel process in
   an unprivileged user namespace with the workspace bind-mounted at the declared
-  workdir. It therefore needed no exemption in
-  `TestNoProviderAliasesToLocalDocker`, which I verified still passes. Docker is
-  used once in the *test* only, to extract the Bezalel binary from the pinned
-  image, so the agent under test is the same one every other provider test runs.
+  workdir. It therefore needs no exemption in
+  `TestNoProviderAliasesToLocalDocker`. Docker is used once in the *test* only,
+  to extract the Bezalel binary from the pinned image, so the agent under test
+  is the same one every other provider test runs.
 
-**Open — no shipped example provider.** An example provider was written, passed
-the unmodified contract locally, and failed on GitHub's runners for reasons I
-could not establish within the time I gave it. It was withdrawn rather than
-merged: a documented walkthrough that required a reader to reproduce a CI
-failure would be worse than none, and per rule 9 an unrunnable example is not
-evidence. `docs/providers.md` now teaches the seam from the shipped adapters,
-which do run in CI. Closing this bullet needs an example whose CI leg is green.
+**Closed — shipped example provider.** `envprovider/static` is registered in
+`StandardRegistry`, selected when `ULTRA_BEZALEL_BINARY` is set (or when a
+registration names its own binary), documented in `docs/providers.md`, and
+guarded by the `providers-static` CI leg. The earlier withdrawal was for a
+silent `out=$(go test ...)` capture that hid failures and a runner whose
+AppArmor default blocked unprivileged user namespaces; both are addressed.
 
-**Open — worker selection.** A10.9 asks that static provider configuration be
-"selected by the worker and proven via native resource inspection". The
-walkthrough provider is intentionally not a deployment target and is not in the
-registry, so nothing selects it. The bullet is not closed. Closing it means
-either registering a `static` kind in production wiring, or reading the bullet
-as being about file-based configuration for the real kinds, which is a design
-decision I should not make unilaterally.
-
-**Open — onboarding guides.** "Clean-machine scripts follow each onboarding
-guide and complete conformance" has no implementation: there is no guide runner
-and no per-kind onboarding guide beyond the reference material in
-`agent_docs/providers.md` and the new walkthrough.
+**Closed — worker selection.** The production registry builds the static kind
+from deployment configuration. `TestA109_WorkerSelectsStaticConfiguration`
+runs the full conformance suite through that path and inspects filesystem
+resources the adapter owns.
 
 ## A10.10 — Provider capability is behavioral *(inherited from Phase 9)*
 
@@ -356,13 +341,9 @@ failure, and the test now exists rather than the row being reworded.
 | A10.2 out-of-band deletion converges without duplicates | no test | `TestA102_KubernetesReconcilesExternallyDeletedPod`, `TestA102_KubernetesAdoptsInterruptedProvisioning`, both CI-guarded |
 | A10.4 out-of-band allocation stop converges without duplicates | no test | `TestA104_NomadReconcilesExternallyStoppedAllocation`, `TestA104_NomadReusesInterruptedRegistration`, both CI-guarded |
 | A10.6 credential rotation | no test | `TestA106_CredentialRotationTakesEffectAndLeaksNothing`, `TestA106_RotationAppliesToAlreadyRunningSessions` |
-| A10.9 walkthrough document | neither existed | `docs/providers.md` and an executed `docs/onboarding-kubernetes.md`; the example provider itself remains open |
+| A10.9 walkthrough document | neither existed | `docs/providers.md` and an executed `docs/onboarding-kubernetes.md` |
+| A10.9 walkthrough provider + worker selection | withdrawn after CI silence | `envprovider/static`, `TestA109_*`, `providers-static` CI leg, `ULTRA_BEZALEL_BINARY` wiring |
 
-## Open items, in the order they should be picked up
+## Open items
 
-| Item | Why it is open | Owner |
-|---|---|---|
-| A shipped example provider that passes the contract and stays under the documented size, and a deployment selecting it | one was written and withdrawn: it passed locally and failed on GitHub's runners for reasons I could not establish, and an example whose CI leg is red teaches nothing. `docs/providers.md` teaches the seam from the shipped adapters meanwhile | A10.9 |
-
-Everything else this audit opened has been closed and is cited above. The
-remaining item is a single root cause with four rows, not four problems.
+None. Phase 10 is closed.

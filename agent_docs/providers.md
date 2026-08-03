@@ -2,7 +2,7 @@
 
 A provider instance is an org-scoped registration saying where that org's
 environments run. Supported kinds are `local_docker`, `byo_k8s`, `hosted_eks`,
-`byo_nomad`, and `tunnel_local`.
+`byo_nomad`, `tunnel_local`, and `static`.
 
 Every kind is a real adapter driving its own control plane. There is no alias:
 a test fails the build if any adapter imports local Docker, and the shared
@@ -16,6 +16,7 @@ in its own control plane.
 | `hosted_eks` | the same, inside a per-org namespace with RBAC, a NetworkPolicy, and a quota | the platform's cluster |
 | `byo_nomad` | a Nomad job whose allocation publishes the tool port | the org's own Nomad cluster |
 | `tunnel_local` | a container on the user's machine, reached through their outbound tunnel | the user's machine |
+| `static` | a Bezalel process with its workspace bind-mounted at the declared workdir | the machine running the worker (walkthrough provider; needs `ULTRA_BEZALEL_BINARY`) |
 
 ## Registration
 

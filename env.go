@@ -128,8 +128,12 @@ const (
 	ProviderKindHostedEKS     = "hosted_eks"
 	ProviderKindBYONomad      = "byo_nomad"
 	ProviderKindTunnelLocal   = "tunnel_local"
-	RateClassBYO              = "byo"
-	RateClassHosted           = "hosted"
+	// ProviderKindStatic is the worked example from docs/providers.md. It is a
+	// real adapter, not a deployment default: a worker offers it only when a
+	// Bezalel binary is configured.
+	ProviderKindStatic = "static"
+	RateClassBYO       = "byo"
+	RateClassHosted    = "hosted"
 )
 
 // EnvUsage is one append-only metering interval. Ready opens it; a
