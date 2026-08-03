@@ -1,12 +1,12 @@
 // Package static is the worked example from docs/providers.md: the smallest
 // provider that still passes the shared conformance contract unmodified.
 //
-// One environment is one Bezalel process in an unprivileged Linux namespace
-// sandbox, with the workspace bind-mounted at the declared workdir. It exists
-// so a new provider kind can be read end to end in one sitting, and so the
-// documented walkthrough is executable rather than aspirational. A worker
-// offers the kind when a Bezalel binary is configured; it drives no remote
-// control plane of its own.
+// One environment is one Bezalel process in an unprivileged mount namespace
+// and a private root, with the workspace bind-mounted at the declared
+// workdir. That private /work is what lets concurrent environments each own
+// the same absolute path without colliding on the host. A worker offers the
+// kind when a Bezalel binary is configured; it drives no remote control plane
+// of its own.
 package static
 
 import (
@@ -107,32 +107,37 @@ func (p *Provider) Provision(_ context.Context, envID ultra.EnvID, spec ultra.En
 	return encode(handleData{EnvID: string(envID), PID: cmd.Process.Pid, Port: port})
 }
 
-// sandboxScript assembles a minimal root: the host's /usr for a shell and the
-// usual tools, /proc and /dev because the shell needs them, and the
-// environment's own workspace at the declared workdir. Bind-mounting the
-// workspace is what makes the workdir an absolute path inside the sandbox
-// without touching the host filesystem outside this environment's directory.
+// sandboxScript builds a private root on a tmpfs and chroots into it. The
+// workspace is bind-mounted at the declared workdir so every tool call that
+// names that absolute path lands in this environment alone.
 //
-// The clean PATH matters: the host's PATH names directories this root does not
-// have, and a shell that cannot find its own utilities makes every command fail
-// for a reason no caller could diagnose.
+// Device nodes are bind-mounted individually rather than via --rbind of /dev:
+// rbind of the host's /dev hangs on some hardened runners (the failure that
+// forced an earlier withdrawal), and userns root cannot mknod either.
 func sandboxScript(binary, dir, workspace, workdir string, port int) string {
 	root := filepath.Join(dir, "root")
 	return fmt.Sprintf(`set -e
 mkdir -p %[1]s
-mount -t tmpfs tmpfs %[1]s
+mount -t tmpfs -o size=64m tmpfs %[1]s
 mkdir -p %[1]s/usr %[1]s/proc %[1]s/dev %[1]s/tmp %[1]s/etc %[1]s/opt %[1]s%[3]s
-mount --rbind /usr %[1]s/usr
-mount --rbind /dev %[1]s/dev
+mount --bind /usr %[1]s/usr
 mount -t proc proc %[1]s/proc
+touch %[1]s/dev/null %[1]s/dev/zero %[1]s/dev/urandom %[1]s/dev/tty
+mount --bind /dev/null %[1]s/dev/null
+mount --bind /dev/zero %[1]s/dev/zero
+mount --bind /dev/urandom %[1]s/dev/urandom
+mount --bind /dev/tty %[1]s/dev/tty 2>/dev/null || true
 mount --bind %[2]s %[1]s%[3]s
 cp %[4]s %[1]s/opt/bezalel
+# /bin and /lib must resolve into the bound /usr: Bezalel shells out to bash
+# and coreutils by those absolute paths, and a missing /bin/bash is the
+# "no output / exit 1" every tool call would otherwise produce.
 ln -s usr/bin %[1]s/bin
 ln -s usr/lib %[1]s/lib
 ln -s usr/lib64 %[1]s/lib64 2>/dev/null || true
 ln -s usr/sbin %[1]s/sbin 2>/dev/null || true
-exec env PATH=/usr/bin:/bin HOME=%[3]s chroot %[1]s \
-	/opt/bezalel --workdir %[3]s --port %[5]d --host 127.0.0.1
+exec env -i PATH=/usr/bin:/bin HOME=%[3]s BEZALEL_AUTH_TOKEN="$BEZALEL_AUTH_TOKEN" \
+	chroot %[1]s /opt/bezalel --workdir %[3]s --port %[5]d --host 127.0.0.1
 `, root, workspace, workdir, binary, port)
 }
 

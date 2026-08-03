@@ -14,8 +14,9 @@ For what the shipped kinds do and how registration behaves, see
 ## The worked example
 
 `envprovider/static` is intentionally small. One environment is one Bezalel
-process in an unprivileged Linux namespace, with the workspace bind-mounted
-at the declared workdir. Read `static.go` end to end, then:
+process in an unprivileged mount namespace, with the workspace bind-mounted
+at the declared workdir so concurrent environments each own that absolute
+path. Read `static.go` end to end, then:
 
 ```sh
 # Needs unprivileged user namespaces (the CI leg permits them on Ubuntu 24.04).

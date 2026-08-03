@@ -16,7 +16,7 @@ in its own control plane.
 | `hosted_eks` | the same, inside a per-org namespace with RBAC, a NetworkPolicy, and a quota | the platform's cluster |
 | `byo_nomad` | a Nomad job whose allocation publishes the tool port | the org's own Nomad cluster |
 | `tunnel_local` | a container on the user's machine, reached through their outbound tunnel | the user's machine |
-| `static` | a Bezalel process in an unprivileged namespace sandbox | the machine running the worker (walkthrough provider; needs `ULTRA_BEZALEL_BINARY`) |
+| `static` | a Bezalel process with its workspace bind-mounted at the declared workdir | the machine running the worker (walkthrough provider; needs `ULTRA_BEZALEL_BINARY`) |
 
 ## Registration
 
