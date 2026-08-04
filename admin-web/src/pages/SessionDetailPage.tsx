@@ -88,6 +88,24 @@ export function SessionDetailPage() {
         >
           Resources
         </Link>
+        <Link
+          className="text-primary hover:underline"
+          to={listFilterHref("/memory", [{ field: "session_id", value: sid }])}
+        >
+          Memory
+        </Link>
+        <Link
+          className="text-primary hover:underline"
+          to={listFilterHref("/waits", [{ field: "session_id", value: sid }])}
+        >
+          Waits
+        </Link>
+        <Link
+          className="text-primary hover:underline"
+          to={listFilterHref("/automation", [{ field: "session_id", value: sid }])}
+        >
+          Automation
+        </Link>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">

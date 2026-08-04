@@ -13,6 +13,8 @@ const NAV: { to: string; label: string; end?: boolean }[] = [
   { to: "/providers", label: "Providers" },
   { to: "/jobs", label: "Jobs" },
   { to: "/automation", label: "Automation" },
+  { to: "/memory", label: "Memory" },
+  { to: "/waits", label: "Waits" },
   { to: "/credentials", label: "Credentials" },
   { to: "/api-keys", label: "API keys" },
   { to: "/security", label: "Security" },

@@ -90,6 +90,11 @@ export function OverviewPage() {
           label="Open waits"
           value={formatCount(health.openWaitCount)}
           tone={Number(health.openWaitCount) > 0 ? "warning" : "default"}
+          hint={
+            <Link className="text-primary hover:underline" to="/waits">
+              Browse waits →
+            </Link>
+          }
         />
       </div>
 
@@ -118,6 +123,11 @@ export function OverviewPage() {
               to={listFilterHref("/resources", [{ field: "state", value: "failed" }])}
               label="Failed resources"
               detail="Stuck lifecycle → provider → job"
+            />
+            <ProblemLink
+              to={listFilterHref("/waits", [{ field: "state", value: "open" }])}
+              label="Open waits"
+              detail="Spawn/await backlog correlated to runs"
             />
             <ProblemLink
               to="/security"

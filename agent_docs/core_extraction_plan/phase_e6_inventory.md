@@ -12,8 +12,8 @@
 | `ListProviders` / `GetProvider` | `/providers`, `/providers/:id` | `listProviders` | dedicated | Resource filter links |
 | `ListCredentials` / `GetCredential` | `/credentials` | `listCredentials` | drawer | Ciphertext length only |
 | `ListPeriodicPrompts` / `GetPeriodicPrompt` | `/automation` | `listPeriodicPrompts` | drawer | |
-| `ListMemory` / `GetMemory` | session detail / related | `listMemory` available | via session filters | No standalone nav (reachable via session scope) |
-| `ListWaits` / `GetWait` | run correlation | `listWaits` available | via filters | Surface via run/session filters |
+| `ListMemory` / `GetMemory` | `/memory` | `listMemory` | drawer | Also linked from session detail |
+| `ListWaits` / `GetWait` | `/waits` | `listWaits` | drawer | Also linked from run/session detail |
 | `ListJobs` / `GetJob` | `/jobs`, `/jobs/:id` | `listJobs` | dedicated | River; empty if schema absent |
 | `GetRuntimeHealth` | `/`, `/internals` | detail helper | — | Counts + queue depths |
 | `DescribeCollection` | `/internals` | detail helper | — | Descriptor dump |
@@ -38,9 +38,9 @@
 
 | # | Workflow | Entry |
 |---|---|---|
-| 1 | failed run → steps → jobs/resources | `/runs?f=state:eq:failed` → `/runs/:id` |
-| 2 | session event → actor → run | `/events` drawer → actor filter |
-| 3 | stuck resource → provider → jobs | `/resources?f=state:eq:failed` → detail |
+| 1 | failed run → steps → jobs/resources/waits | `/runs?f=state:eq:failed` → `/runs/:id` |
+| 2 | session event → actor → run | `/events` drawer → actor filter (URL `detail=` round-trip) |
+| 3 | stuck resource → provider → jobs | `/resources?f=state:eq:failed` → detail → provider |
 | 4 | cross-tenant same query | `?tenant=` banner on lists |
 | 5 | latency / oldest jobs | overview → jobs presets |
 
@@ -48,7 +48,6 @@
 
 | Item | Why |
 |---|---|
-| Standalone `/memory` and `/waits` nav items | Reachable via session/run filters; data layer supports List* |
 | Server-side saved views | localStorage per browser (documented shortcut) |
 | Storybook | Playwright covers via real pages |
 | axe CI gate | Manual a11y labels present; automated axe optional follow-up |

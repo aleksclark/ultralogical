@@ -96,6 +96,8 @@ Also fails on `@ultracore/client` / `core.v1` imports.
 | `/providers`, `/providers/:id` | Providers + resource links |
 | `/jobs`, `/jobs/:id` | River jobs |
 | `/automation` | Periodic prompts |
+| `/memory` | Session memory entries |
+| `/waits` | Spawn/wait and tool await state |
 | `/credentials` | Ciphertext metadata only |
 | `/api-keys` | Key metadata / revocation only |
 | `/security` | Actor search across events/runs |

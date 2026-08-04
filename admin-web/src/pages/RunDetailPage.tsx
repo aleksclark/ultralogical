@@ -126,6 +126,12 @@ export function RunDetailPage() {
         >
           Resources created
         </Link>
+        <Link
+          className="text-primary hover:underline"
+          to={listFilterHref("/waits", [{ field: "parent_run_id", value: rid }])}
+        >
+          Related waits
+        </Link>
         {r.actorId ? (
           <Link
             className="text-primary hover:underline"

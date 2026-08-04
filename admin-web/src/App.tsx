@@ -10,6 +10,7 @@ import { InternalsPage } from "@/pages/InternalsPage";
 import { JobDetailPage } from "@/pages/JobDetailPage";
 import { JobsPage } from "@/pages/JobsPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { MemoryPage } from "@/pages/MemoryPage";
 import { OverviewPage } from "@/pages/OverviewPage";
 import { ProviderDetailPage } from "@/pages/ProviderDetailPage";
 import { ProvidersPage } from "@/pages/ProvidersPage";
@@ -22,6 +23,7 @@ import { SessionDetailPage } from "@/pages/SessionDetailPage";
 import { SessionsPage } from "@/pages/SessionsPage";
 import { TenantDetailPage } from "@/pages/TenantDetailPage";
 import { TenantsPage } from "@/pages/TenantsPage";
+import { WaitsPage } from "@/pages/WaitsPage";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -55,6 +57,8 @@ export function App() {
         <Route path="jobs" element={<JobsPage />} />
         <Route path="jobs/:id" element={<JobDetailPage />} />
         <Route path="automation" element={<AutomationPage />} />
+        <Route path="memory" element={<MemoryPage />} />
+        <Route path="waits" element={<WaitsPage />} />
         <Route path="credentials" element={<CredentialsPage />} />
         <Route path="api-keys" element={<APIKeysPage />} />
         <Route path="security" element={<SecurityPage />} />

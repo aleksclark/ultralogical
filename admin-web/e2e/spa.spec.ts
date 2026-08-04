@@ -38,6 +38,8 @@ test.describe("collection routes smoke", () => {
     "/providers",
     "/jobs",
     "/automation",
+    "/memory",
+    "/waits",
     "/credentials",
     "/api-keys",
     "/security",
@@ -75,6 +77,19 @@ test.describe("URL query state", () => {
     await expect(page.getByTestId("search-bar")).toHaveValue("admin-e2e-tenant");
   });
 
+  test("filter chip and sort round-trip via URL", async ({ page }) => {
+    await page.goto("/runs?f=state%3Aeq%3Afailed&s=-created_at&limit=25");
+    await waitForCollectionChrome(page);
+    await expect(page).toHaveURL(/f=state%3Aeq%3Afailed/);
+    await expect(page).toHaveURL(/s=-created_at|s=%2Dcreated_at/);
+    await expect(page).toHaveURL(/limit=25/);
+
+    const url = page.url();
+    await page.reload();
+    await expect(page).toHaveURL(url);
+    await waitForCollectionChrome(page);
+  });
+
   test("tenant scope banner appears from ?tenant=", async ({ page }) => {
     await page.goto("/tenants");
     await waitForTable(page);
@@ -86,6 +101,19 @@ test.describe("URL query state", () => {
     await page.goto(`/sessions?tenant=${tenantId}`);
     await expect(page.getByTestId("tenant-scope-banner")).toBeVisible();
     await expect(page.getByTestId("tenant-scope-banner")).toContainText(tenantId!);
+  });
+
+  test("browser back restores prior list context", async ({ page }) => {
+    await page.goto("/tenants?q=admin-e2e-tenant");
+    await waitForTable(page);
+    await expect(page.getByTestId("search-bar")).toHaveValue("admin-e2e-tenant");
+
+    await page.goto("/runs");
+    await waitForCollectionChrome(page);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/tenants/);
+    await expect(page).toHaveURL(/q=admin-e2e-tenant/);
+    await expect(page.getByTestId("search-bar")).toHaveValue("admin-e2e-tenant");
   });
 });
 
@@ -112,59 +140,63 @@ test.describe("pagination bounds", () => {
 });
 
 test.describe("golden workflows", () => {
-  test("1. failed run → detail → related links", async ({ page }) => {
+  test("1. failed run → detail → steps/jobs/resources", async ({ page }) => {
     await page.goto("/runs?f=state%3Aeq%3Afailed");
-    await page.waitForTimeout(500);
-    const empty = await page.getByText("No results").isVisible().catch(() => false);
-    if (empty) {
-      await page.goto("/runs");
-    }
     await waitForTable(page);
+    await expect(page.getByTestId("admin-data-table")).toBeVisible();
     const runLink = page.locator('[data-entity-kind="run"]').first();
     await expect(runLink).toBeVisible();
+    const runId = await runLink.getAttribute("data-entity-id");
+    expect(runId).toBeTruthy();
     await runLink.click();
-    await expect(page.getByTestId("run-detail")).toBeVisible({ timeout: 15_000 });
-    await expect(
-      page.getByRole("link", { name: /Related jobs|Resources created|Session/i }).first(),
-    ).toBeVisible();
+    const detail = page.getByTestId("run-detail");
+    await expect(detail).toBeVisible({ timeout: 15_000 });
+    await expect(page).toHaveURL(new RegExp(`/runs/${runId}`));
+    await expect(detail.getByRole("link", { name: "Related jobs" })).toBeVisible();
+    await expect(detail.getByRole("link", { name: "Resources created" })).toBeVisible();
+    await expect(detail.getByRole("link", { name: "Related waits" })).toBeVisible();
+    await expect(detail.getByRole("link", { name: "Session" })).toBeVisible();
+    // Steps table is present (may be empty for thin seeds, but structure is required).
+    await expect(detail.getByTestId("run-steps").or(detail.getByText("No steps.")).first()).toBeVisible();
   });
 
   test("2. session event → actor → run filter", async ({ page }) => {
     await page.goto("/events");
     await waitForTable(page);
-    // Click a data row (skip header). Virtual rows use role=row.
     const rows = page.getByTestId("admin-data-table").locator('[role="row"][data-row-key]');
     await expect(rows.first()).toBeVisible();
     await rows.first().click();
     await expect(page.getByTestId("detail-drawer")).toBeVisible();
-    await expect(page.getByTestId("event-detail").or(page.getByTestId("json-viewer")).first()).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(page).toHaveURL(/detail=/);
+    await expect(
+      page.getByTestId("event-detail").or(page.getByTestId("json-viewer")).first(),
+    ).toBeVisible({ timeout: 15_000 });
     await expect(
       page.getByRole("link", { name: /filter runs by actor|Session/i }).first(),
     ).toBeVisible();
+    // Deep link is copyable: drawer selection is in the URL.
+    const deep = page.url();
+    expect(deep).toMatch(/detail=/);
+    await page.reload();
+    await expect(page.getByTestId("detail-drawer")).toBeVisible({ timeout: 15_000 });
   });
 
-  test("3. stuck/failed resource → provider link", async ({ page }) => {
+  test("3. stuck/failed resource → provider → jobs", async ({ page }) => {
     await page.goto("/resources?f=state%3Aeq%3Afailed");
-    await page.waitForTimeout(500);
-    const empty = await page.getByText("No results").isVisible().catch(() => false);
-    if (empty) {
-      await page.goto("/resources");
-    }
-    const hasTable = await page.getByTestId("admin-data-table").isVisible().catch(() => false);
-    if (hasTable) {
-      const link = page.locator('[data-entity-kind="resource"]').first();
-      if (await link.isVisible().catch(() => false)) {
-        await link.click();
-        await expect(page.getByTestId("resource-detail")).toBeVisible({ timeout: 15_000 });
-        await expect(
-          page.getByRole("link", { name: /Provider|Related jobs|Session/i }).first(),
-        ).toBeVisible();
-      }
-    } else {
-      await expect(page.locator("h1")).toContainText("Resources");
-    }
+    await waitForTable(page);
+    await expect(page.getByTestId("admin-data-table")).toBeVisible();
+    const link = page.locator('[data-entity-kind="resource"]').first();
+    await expect(link).toBeVisible();
+    await link.click();
+    const resource = page.getByTestId("resource-detail");
+    await expect(resource).toBeVisible({ timeout: 15_000 });
+    await expect(resource.getByRole("link", { name: "Provider" })).toBeVisible();
+    await expect(resource.getByRole("link", { name: "Related jobs" })).toBeVisible();
+    await resource.getByRole("link", { name: "Provider" }).click();
+    const provider = page.getByTestId("provider-detail");
+    await expect(provider).toBeVisible({ timeout: 15_000 });
+    await expect(provider.getByRole("link", { name: "Resources" })).toBeVisible();
+    await expect(provider.getByRole("link", { name: "Related jobs" })).toBeVisible();
   });
 
   test("4. cross-tenant same query with tenant banner", async ({ page }) => {
@@ -173,14 +205,17 @@ test.describe("golden workflows", () => {
     const ids = await page.locator('[data-entity-kind="tenant"]').evaluateAll((els) =>
       els.slice(0, 2).map((e) => e.getAttribute("data-entity-id")),
     );
-    expect(ids.length).toBeGreaterThan(0);
+    expect(ids.length).toBeGreaterThanOrEqual(2);
     const t0 = ids[0]!;
+    const t1 = ids[1]!;
     await page.goto(`/events?tenant=${t0}&q=hello`);
     await expect(page.getByTestId("tenant-scope-banner")).toContainText(t0);
-    if (ids[1]) {
-      await page.goto(`/events?tenant=${ids[1]}&q=hello`);
-      await expect(page.getByTestId("tenant-scope-banner")).toContainText(ids[1]!);
-    }
+    await expect(page).toHaveURL(new RegExp(`tenant=${t0}`));
+    await page.goto(`/events?tenant=${t1}&q=hello`);
+    await expect(page.getByTestId("tenant-scope-banner")).toContainText(t1);
+    await expect(page).toHaveURL(new RegExp(`tenant=${t1}`));
+    // Same free-text query preserved across explicit tenant scopes.
+    await expect(page.getByTestId("search-bar")).toHaveValue("hello");
   });
 
   test("5. latency: oldest jobs / health overview", async ({ page }) => {
@@ -192,6 +227,9 @@ test.describe("golden workflows", () => {
       .click();
     await expect(page).toHaveURL(/\/jobs/);
     await expect(page.locator("h1")).toContainText("Jobs");
+    await waitForCollectionChrome(page);
+    // Deep link carries sort or filter for the problem view.
+    await expect(page).toHaveURL(/[?&](s|f)=/);
   });
 });
 
@@ -202,7 +240,7 @@ test.describe("secrets non-disclosure", () => {
       test.skip();
       return;
     }
-    for (const route of ["/credentials", "/api-keys", "/internals", "/"]) {
+    for (const route of ["/credentials", "/api-keys", "/internals", "/memory", "/"]) {
       await page.goto(route);
       await page.waitForTimeout(400);
       const body = await page.locator("body").innerText();
@@ -235,6 +273,8 @@ test.describe("network isolation", () => {
     await waitForTable(page);
     await page.goto("/runs");
     await page.waitForTimeout(800);
+    await page.goto("/memory");
+    await page.waitForTimeout(500);
     expect(bad, `forbidden network calls: ${bad.join(", ")}`).toEqual([]);
   });
 });

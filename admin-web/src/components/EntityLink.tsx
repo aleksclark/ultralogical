@@ -13,7 +13,8 @@ export type EntityKind =
   | "api-key"
   | "credential"
   | "automation"
-  | "wait";
+  | "wait"
+  | "memory";
 
 function pathFor(kind: EntityKind, id: string, extra?: Record<string, string>): string {
   switch (kind) {
@@ -40,7 +41,11 @@ function pathFor(kind: EntityKind, id: string, extra?: Record<string, string>): 
     case "automation":
       return `/automation?detail=${encodeURIComponent(id)}`;
     case "wait":
-      return `/runs?detail=${encodeURIComponent(id)}`;
+      return `/waits?detail=${encodeURIComponent(id)}`;
+    case "memory":
+      return extra?.sessionId
+        ? `/memory?detail=${encodeURIComponent(`${extra.sessionId}:${id}`)}&f=${encodeURIComponent(`session_id:eq:${extra.sessionId}`)}`
+        : `/memory?detail=${encodeURIComponent(id)}`;
     default:
       return "/";
   }
