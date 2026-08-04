@@ -38,15 +38,15 @@ const (
 )
 
 type e7Env struct {
-	pool   *pgxpool.Pool
-	store  uc.Store
-	admin  *adminstore.AdminStore
-	queue  *riverqueue.Queue
-	engine *command.Engine
-	srv    *httptest.Server
+	pool    *pgxpool.Pool
+	store   uc.Store
+	admin   *adminstore.AdminStore
+	queue   *riverqueue.Queue
+	engine  *command.Engine
+	srv     *httptest.Server
 	keyring secrets.Keyring
-	master string
-	logBuf *bytes.Buffer
+	master  string
+	logBuf  *bytes.Buffer
 }
 
 func setupE7(t *testing.T, reveal bool) *e7Env {
@@ -297,7 +297,7 @@ func TestE7_RevokeAPIKeyAndPausePrompt(t *testing.T) {
 	keyID, _ := seedAPIKey(t, env, ten)
 
 	prev, err := cc.RevokeAPIKey(context.Background(), connect.NewRequest(&adminv1.RevokeAPIKeyRequest{
-		Options: &adminv1.CommandOptions{DryRun: true, Reason: "r"},
+		Options:  &adminv1.CommandOptions{DryRun: true, Reason: "r"},
 		ApiKeyId: string(keyID),
 	}))
 	if err != nil {
@@ -305,7 +305,7 @@ func TestE7_RevokeAPIKeyAndPausePrompt(t *testing.T) {
 	}
 	_, err = cc.RevokeAPIKey(context.Background(), connect.NewRequest(&adminv1.RevokeAPIKeyRequest{
 		Options: &adminv1.CommandOptions{
-			PreviewHash: prev.Msg.Outcome.Preview.PreviewHash,
+			PreviewHash:    prev.Msg.Outcome.Preview.PreviewHash,
 			IdempotencyKey: "revoke-1", Reason: "compomised",
 		},
 		ApiKeyId: string(keyID),
@@ -322,7 +322,7 @@ func TestE7_RevokeAPIKeyAndPausePrompt(t *testing.T) {
 		t.Fatal(err)
 	}
 	pprev, err := cc.PausePeriodicPrompt(context.Background(), connect.NewRequest(&adminv1.PausePeriodicPromptRequest{
-		Options: &adminv1.CommandOptions{DryRun: true, Reason: "r"},
+		Options:          &adminv1.CommandOptions{DryRun: true, Reason: "r"},
 		PeriodicPromptId: string(ppID),
 	}))
 	if err != nil {
@@ -330,7 +330,7 @@ func TestE7_RevokeAPIKeyAndPausePrompt(t *testing.T) {
 	}
 	_, err = cc.PausePeriodicPrompt(context.Background(), connect.NewRequest(&adminv1.PausePeriodicPromptRequest{
 		Options: &adminv1.CommandOptions{
-			PreviewHash: pprev.Msg.Outcome.Preview.PreviewHash,
+			PreviewHash:    pprev.Msg.Outcome.Preview.PreviewHash,
 			IdempotencyKey: "pause-1", Reason: "maintenance",
 		},
 		PeriodicPromptId: string(ppID),
@@ -344,10 +344,10 @@ func TestE7_RevealKillSwitchRoleAndNoPlaintextLogs(t *testing.T) {
 	// kill switch off
 	envOff := setupE7(t, false)
 	ten, _, _ := seedTenantSessionRun(t, envOff, uc.RunCompleted)
-	keyID, plain := seedAPIKey(t, envOff, ten)
+	keyID, _ := seedAPIKey(t, envOff, ten)
 	sec := cmdClientReauth(t, envOff.srv.URL, tokSecurity)
 	_, err := sec.RevealSecret(context.Background(), connect.NewRequest(&adminv1.RevealSecretRequest{
-		Options: &adminv1.CommandOptions{DryRun: true, Reason: "incident"},
+		Options:    &adminv1.CommandOptions{DryRun: true, Reason: "incident"},
 		SecretKind: "api_key", ApiKeyId: string(keyID),
 	}))
 	if err == nil || connect.CodeOf(err) != connect.CodeFailedPrecondition {
@@ -357,12 +357,12 @@ func TestE7_RevealKillSwitchRoleAndNoPlaintextLogs(t *testing.T) {
 	// reveal on
 	env := setupE7(t, true)
 	ten, _, _ = seedTenantSessionRun(t, env, uc.RunCompleted)
-	keyID, plain = seedAPIKey(t, env, ten)
+	keyID, plain := seedAPIKey(t, env, ten)
 
 	// viewer denied
 	view := cmdClientReauth(t, env.srv.URL, tokViewer)
 	_, err = view.RevealSecret(context.Background(), connect.NewRequest(&adminv1.RevealSecretRequest{
-		Options: &adminv1.CommandOptions{DryRun: true, Reason: "x"},
+		Options:    &adminv1.CommandOptions{DryRun: true, Reason: "x"},
 		SecretKind: "api_key", ApiKeyId: string(keyID),
 	}))
 	if err == nil || connect.CodeOf(err) != connect.CodePermissionDenied {
@@ -372,7 +372,7 @@ func TestE7_RevealKillSwitchRoleAndNoPlaintextLogs(t *testing.T) {
 	// operator denied
 	op := cmdClientReauth(t, env.srv.URL, tokOperator)
 	_, err = op.RevealSecret(context.Background(), connect.NewRequest(&adminv1.RevealSecretRequest{
-		Options: &adminv1.CommandOptions{DryRun: true, Reason: "x"},
+		Options:    &adminv1.CommandOptions{DryRun: true, Reason: "x"},
 		SecretKind: "api_key", ApiKeyId: string(keyID),
 	}))
 	if err == nil || connect.CodeOf(err) != connect.CodePermissionDenied {
@@ -382,7 +382,7 @@ func TestE7_RevealKillSwitchRoleAndNoPlaintextLogs(t *testing.T) {
 	// security without reauth
 	secNo := cmdClient(t, env.srv.URL, tokSecurity)
 	prev, err := secNo.RevealSecret(context.Background(), connect.NewRequest(&adminv1.RevealSecretRequest{
-		Options: &adminv1.CommandOptions{DryRun: true, Reason: "incident"},
+		Options:    &adminv1.CommandOptions{DryRun: true, Reason: "incident"},
 		SecretKind: "api_key", ApiKeyId: string(keyID),
 	}))
 	if err != nil {
@@ -397,7 +397,7 @@ func TestE7_RevealKillSwitchRoleAndNoPlaintextLogs(t *testing.T) {
 
 	sec = cmdClientReauth(t, env.srv.URL, tokSecurity)
 	prev, err = sec.RevealSecret(context.Background(), connect.NewRequest(&adminv1.RevealSecretRequest{
-		Options: &adminv1.CommandOptions{DryRun: true, Reason: "incident"},
+		Options:    &adminv1.CommandOptions{DryRun: true, Reason: "incident"},
 		SecretKind: "api_key", ApiKeyId: string(keyID),
 	}))
 	if err != nil {
@@ -405,7 +405,7 @@ func TestE7_RevealKillSwitchRoleAndNoPlaintextLogs(t *testing.T) {
 	}
 	ex, err := sec.RevealSecret(context.Background(), connect.NewRequest(&adminv1.RevealSecretRequest{
 		Options: &adminv1.CommandOptions{
-			PreviewHash: prev.Msg.Outcome.Preview.PreviewHash,
+			PreviewHash:    prev.Msg.Outcome.Preview.PreviewHash,
 			IdempotencyKey: "reveal-1", Reason: "incident-42",
 		},
 		SecretKind: "api_key", ApiKeyId: string(keyID),
@@ -440,7 +440,7 @@ func TestE7_ExportEvidenceAndDisconnectDeferred(t *testing.T) {
 	cc := cmdClient(t, env.srv.URL, tokOperator)
 	_, sess, run := seedTenantSessionRun(t, env, uc.RunFailed)
 	prev, err := cc.ExportIncidentEvidence(context.Background(), connect.NewRequest(&adminv1.ExportIncidentEvidenceRequest{
-		Options: &adminv1.CommandOptions{DryRun: true, Reason: "export"},
+		Options:   &adminv1.CommandOptions{DryRun: true, Reason: "export"},
 		SessionId: string(sess.ID), RunId: string(run.ID), MaxEvents: 10,
 	}))
 	if err != nil {
@@ -448,7 +448,7 @@ func TestE7_ExportEvidenceAndDisconnectDeferred(t *testing.T) {
 	}
 	ex, err := cc.ExportIncidentEvidence(context.Background(), connect.NewRequest(&adminv1.ExportIncidentEvidenceRequest{
 		Options: &adminv1.CommandOptions{
-			PreviewHash: prev.Msg.Outcome.Preview.PreviewHash,
+			PreviewHash:    prev.Msg.Outcome.Preview.PreviewHash,
 			IdempotencyKey: "export-1", Reason: "incident",
 		},
 		SessionId: string(sess.ID), RunId: string(run.ID), MaxEvents: 10,
@@ -460,7 +460,7 @@ func TestE7_ExportEvidenceAndDisconnectDeferred(t *testing.T) {
 		t.Fatal("empty evidence")
 	}
 	_, err = cc.DisconnectSubscriber(context.Background(), connect.NewRequest(&adminv1.DisconnectSubscriberRequest{
-		Options: &adminv1.CommandOptions{DryRun: true, Reason: "x"},
+		Options:   &adminv1.CommandOptions{DryRun: true, Reason: "x"},
 		SessionId: string(sess.ID), SubscriberId: "sub-1",
 	}))
 	if err == nil || connect.CodeOf(err) != connect.CodeFailedPrecondition {
@@ -489,7 +489,7 @@ func TestE7_CoredUnaffectedByAdminDown(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != 200 {
 		t.Fatalf("status %d", resp.StatusCode)
 	}
@@ -498,7 +498,7 @@ func TestE7_CoredUnaffectedByAdminDown(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer r2.Body.Close()
+	defer func() { _ = r2.Body.Close() }()
 	if r2.StatusCode == 200 {
 		t.Fatal("cored-like server must not serve admin commands")
 	}

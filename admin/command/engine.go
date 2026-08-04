@@ -33,23 +33,23 @@ import (
 
 // Flags gates destructive / optional commands (disabled by default).
 type Flags struct {
-	RevealEnabled             bool
-	TerminateEnabled          bool
-	SuspendEnabled            bool
+	RevealEnabled               bool
+	TerminateEnabled            bool
+	SuspendEnabled              bool
 	DisconnectSubscriberEnabled bool
 }
 
 // Deps are runtime dependencies for command execution.
 type Deps struct {
-	Pool        *pgxpool.Pool
-	Store       uc.Store
-	Enqueue     jobqueue.TxEnqueuer
-	River       *riverqueue.Queue
-	Resources   *resourcework.Service // optional; when nil, resource cmds enqueue via store
-	Keyring     secrets.Keyring       // optional; required for reveal
+	Pool         *pgxpool.Pool
+	Store        uc.Store
+	Enqueue      jobqueue.TxEnqueuer
+	River        *riverqueue.Queue
+	Resources    *resourcework.Service // optional; when nil, resource cmds enqueue via store
+	Keyring      secrets.Keyring       // optional; required for reveal
 	BuildVersion string
-	Flags       Flags
-	Log         *slog.Logger
+	Flags        Flags
+	Log          *slog.Logger
 
 	// RateLimit is max command executes per second per process (0 = 20).
 	RateLimit int
@@ -92,18 +92,18 @@ type Meta struct {
 
 // Result is the internal command result before proto mapping.
 type Result struct {
-	DryRun            bool
-	PreviewHash       string
-	Before            map[string]any
-	After             map[string]any
-	Effects           []string
-	Outcome           string // ok | dry_run | already_applied | failed
-	Message           string
-	AuditID           string
-	IdempotentReplay  bool
-	EvidenceJSON      []byte
-	Plaintext         string // reveal only; never log
-	RevealExpires     time.Time
+	DryRun           bool
+	PreviewHash      string
+	Before           map[string]any
+	After            map[string]any
+	Effects          []string
+	Outcome          string // ok | dry_run | already_applied | failed
+	Message          string
+	AuditID          string
+	IdempotentReplay bool
+	EvidenceJSON     []byte
+	Plaintext        string // reveal only; never log
+	RevealExpires    time.Time
 }
 
 var (

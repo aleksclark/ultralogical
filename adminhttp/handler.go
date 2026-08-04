@@ -278,7 +278,6 @@ func (s *readService) ListRelated(ctx context.Context, req *connect.Request[admi
 	return connect.NewResponse(&adminv1.ListRelatedResponse{Items: items, Page: query.PageInfoToProto(info)}), nil
 }
 
-
 func (s *readService) WhoAmI(ctx context.Context, _ *connect.Request[adminv1.WhoAmIRequest]) (*connect.Response[adminv1.WhoAmIResponse], error) {
 	op, ok := operatorFrom(ctx)
 	if !ok {
