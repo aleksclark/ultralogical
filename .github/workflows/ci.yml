@@ -24,11 +24,13 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           git fetch origin ${{ github.base_ref }}
-          # E4 is a planned one-time proto reshape (ultra.v1 -> core.v1). After
-          # this PR merges, break against the v0.1.0 tag instead of master tip.
-          if git log --oneline origin/${{ github.base_ref }}..HEAD | grep -q 'Freeze the consumer surface'; then
-            echo "skipping buf breaking for the extraction reshape PR; gate resumes post-merge against v0.1.0"
-            exit 0
+          # Planned one-time reshape ultra.v1 -> core.v1 (extraction E4).
+          # Skip while master still has ultra/v1; resume against v0.1.0 after merge.
+          if [ -d proto/core/v1 ] && [ ! -d proto/ultra/v1 ]; then
+            if git ls-tree -r --name-only origin/${{ github.base_ref }} | grep -q '^proto/ultra/v1/'; then
+              echo "skipping buf breaking for ultra.v1 -> core.v1 reshape; tag v0.1.0 after merge"
+              exit 0
+            fi
           fi
           buf breaking --against ".git#branch=origin/${{ github.base_ref }},subdir=."
       - name: codegen diff (drift gate A0.5)

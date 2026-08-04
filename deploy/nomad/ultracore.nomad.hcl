@@ -1,5 +1,4 @@
 # Fleet Nomad job for ultracore (home datacenter).
-# IMAGE_TAG / DATABASE_URL / CORE_MASTER_KEY substituted at deploy time.
 job "ultracore" {
   datacenters = ["home"]
   type        = "service"
@@ -35,16 +34,17 @@ job "ultracore" {
       driver = "docker"
 
       config {
-        image   = "ghcr.io/aleksclark/ultracore:${IMAGE_TAG}"
-        command = "/usr/local/bin/cored"
-        ports   = ["http"]
+        image      = "ghcr.io/aleksclark/ultracore:${IMAGE_TAG}"
+        entrypoint = ["/usr/local/bin/cored"]
+        ports      = ["http"]
+        force_pull = false
       }
 
       env {
-        DATABASE_URL      = "${DATABASE_URL}"
-        CORE_MASTER_KEY   = "${CORE_MASTER_KEY}"
-        CORE_ADDR         = ":${NOMAD_PORT_http}"
-        CORE_MIGRATE      = "true"
+        DATABASE_URL       = "${DATABASE_URL}"
+        CORE_MASTER_KEY    = "${CORE_MASTER_KEY}"
+        CORE_ADDR          = ":${NOMAD_PORT_http}"
+        CORE_MIGRATE       = "true"
         CORE_OTLP_ENDPOINT = "http://192.168.0.24:4317"
       }
 
@@ -79,15 +79,17 @@ job "ultracore" {
       driver = "docker"
 
       config {
-        image   = "ghcr.io/aleksclark/ultracore:${IMAGE_TAG}"
-        command = "/usr/local/bin/coreworker"
-        ports   = ["health"]
+        image      = "ghcr.io/aleksclark/ultracore:${IMAGE_TAG}"
+        entrypoint = ["/usr/local/bin/coreworker"]
+        ports      = ["health"]
+        force_pull = false
       }
 
       env {
         DATABASE_URL     = "${DATABASE_URL}"
         CORE_MASTER_KEY  = "${CORE_MASTER_KEY}"
         CORE_ADDR        = ":${NOMAD_PORT_health}"
+        CORE_MIGRATE     = "false"
         CORE_MAX_WORKERS = "10"
       }
 

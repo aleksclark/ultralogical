@@ -12,4 +12,5 @@ FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/cored /out/coreworker /out/core /usr/local/bin/
 USER nonroot:nonroot
 EXPOSE 8080 8081
-ENTRYPOINT ["/usr/local/bin/cored"]
+# CMD (not ENTRYPOINT) so Nomad/compose can select coreworker via command.
+CMD ["/usr/local/bin/cored"]
