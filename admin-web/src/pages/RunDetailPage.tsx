@@ -1,3 +1,5 @@
+import { CommandConfirmModal } from "@/components/CommandConfirmModal";
+import { useOperator } from "@/lib/operator";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { listFilterHref } from "@/components/EntityLink";
@@ -21,6 +23,8 @@ import { defaultQueryState } from "@/query/state";
 import type { RunStepSummary } from "@admin-gen/admin/v1/admin_pb";
 
 export function RunDetailPage() {
+  const { can } = useOperator();
+  const [cmd, setCmd] = useState<"CancelRun" | "ExpireAwait" | null>(null);
   const { id = "" } = useParams();
   const client = useAdminClient();
   const [run, setRun] = useState<unknown>(null);
@@ -97,6 +101,18 @@ export function RunDetailPage() {
           </>
         }
       />
+      <div className="mb-3 flex flex-wrap gap-2" data-testid="run-actions">
+        {can("CancelRun") && (
+          <Button size="sm" variant="destructive" data-testid="action-cancel-run" onClick={() => setCmd("CancelRun")}>Cancel run</Button>
+        )}
+        {can("ExpireAwait") && (
+          <Button size="sm" variant="outline" data-testid="action-expire-await" onClick={() => setCmd("ExpireAwait")}>Expire await</Button>
+        )}
+      </div>
+      {cmd && (
+        <CommandConfirmModal open onClose={() => setCmd(null)} command={cmd} args={{ runId: id }}
+          title={cmd === "CancelRun" ? "Cancel run" : "Expire await"} />
+      )}
 
       <div className="mb-4 flex flex-wrap gap-3 text-sm">
         {sessionId ? (

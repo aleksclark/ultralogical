@@ -3,9 +3,13 @@ import { readFileSync } from "node:fs";
 export type Endpoints = {
   admin_url: string;
   admin_token: string;
+  viewer_token?: string;
+  operator_token?: string;
+  security_token?: string;
   cored_url?: string | null;
   database_url?: string;
   canary_api_key: string;
+  reveal_enabled?: boolean;
 };
 
 /**
@@ -36,8 +40,12 @@ export function loadEndpoints(): Endpoints {
   return {
     admin_url,
     admin_token,
+    viewer_token: process.env.ADMIN_E2E_VIEWER_TOKEN,
+    operator_token: process.env.ADMIN_E2E_OPERATOR_TOKEN,
+    security_token: process.env.ADMIN_E2E_SECURITY_TOKEN,
     cored_url: process.env.ADMIN_E2E_CORED_URL ?? process.env.CORED_URL ?? null,
     canary_api_key:
       process.env.ADMIN_E2E_CANARY_KEY ?? "sk-canary-XyZZy-0451-leak-detector",
+    reveal_enabled: process.env.CORE_ADMIN_REVEAL_ENABLED === "true",
   };
 }

@@ -38,11 +38,19 @@ var known = map[string]bool{
 	"CORE_TOKEN":  true,
 	"CORE_TENANT": true,
 	// coreadmin (private operator API)
-	"CORE_ADMIN_ADDR":          true,
-	"CORE_ADMIN_TOKEN":         true,
-	"CORE_ADMIN_DEV_MODE":      true,
-	"CORE_ADMIN_CORS_ORIGIN":   true,
-	"CORE_ADMIN_CURSOR_SECRET": true,
+	"CORE_ADMIN_ADDR":                         true,
+	"CORE_ADMIN_TOKEN":                        true,
+	"CORE_ADMIN_DEV_MODE":                     true,
+	"CORE_ADMIN_CORS_ORIGIN":                  true,
+	"CORE_ADMIN_CURSOR_SECRET":                true,
+	"CORE_ADMIN_TOKEN_ROLE":                   true,
+	"CORE_ADMIN_TOKENS":                       true,
+	"CORE_ADMIN_REVEAL_ENABLED":               true,
+	"CORE_ADMIN_CMD_RATE_LIMIT":               true,
+	"CORE_ADMIN_CMD_CONCURRENCY":              true,
+	"CORE_ADMIN_ENABLE_TERMINATE":             true,
+	"CORE_ADMIN_ENABLE_SUSPEND":               true,
+	"CORE_ADMIN_ENABLE_DISCONNECT_SUBSCRIBER": true,
 }
 
 // ErrUnknownEnv is returned when one or more unknown CORE_* vars are set.

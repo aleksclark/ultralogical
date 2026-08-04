@@ -143,3 +143,9 @@ tasks:
     desc: Boot real coreadmin+Postgres, serve SPA via Vite proxy, run Playwright golden paths
     cmds:
       - bash scripts/admin-e2e-stack.sh spa
+
+  admin:security:test:
+    desc: Admin ops security suite (roles, stale preview, reveal kill switch, audit)
+    cmds:
+      - go test ./admin/ -run 'E7_|AdminAuth|CoredHasNo|CoredPackage' -count=1 -timeout 30m
+      - bash scripts/check-admin-isolation.sh

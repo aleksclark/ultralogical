@@ -34,9 +34,24 @@ endpoint_json="${state_dir}/endpoints.json"
 pids=()
 start_cored="${ADMIN_E2E_START_CORED:-true}"
 
-admin_token="${CORE_ADMIN_TOKEN:-admin-e2e-operator-token-not-a-tenant-key}"
+admin_token="${CORE_ADMIN_TOKEN:-admin-e2e-admin-token-not-a-tenant-key}"
+viewer_token="${CORE_ADMIN_VIEWER_TOKEN:-admin-e2e-viewer-token}"
+operator_token="${CORE_ADMIN_OPERATOR_TOKEN:-admin-e2e-operator-token}"
+security_token="${CORE_ADMIN_SECURITY_TOKEN:-admin-e2e-security-token}"
 cursor_secret="${CORE_ADMIN_CURSOR_SECRET:-admin-e2e-cursor-secret-0123456789abcdef}"
 canary_api_key="sk-canary-XyZZy-0451-leak-detector"
+# Multi-role map for E7 Playwright; admin_token remains the default SPA/login token.
+admin_tokens_json=$(python3 - "$admin_token" "$viewer_token" "$operator_token" "$security_token" <<'PY'
+import json, sys
+admin, viewer, operator, security = sys.argv[1:]
+print(json.dumps({
+    admin: {"role": "admin", "name": "e2e-admin", "id": "e2e-admin"},
+    viewer: {"role": "viewer", "name": "e2e-viewer", "id": "e2e-viewer"},
+    operator: {"role": "operator", "name": "e2e-operator", "id": "e2e-operator"},
+    security: {"role": "security", "name": "e2e-security", "id": "e2e-security"},
+}))
+PY
+)
 
 log() { printf '[admin-e2e-stack] %s\n' "$*"; }
 fail() { printf '[admin-e2e-stack] FAILED: %s\n' "$*" >&2; exit 1; }
@@ -111,8 +126,9 @@ boot_stack() {
   log "starting coreadmin on port ${admin_port}"
   DATABASE_URL="$database_url" \
   CORE_ADMIN_ADDR="127.0.0.1:${admin_port}" \
-  CORE_ADMIN_TOKEN="$admin_token" \
+  CORE_ADMIN_TOKENS="$admin_tokens_json" \
   CORE_ADMIN_CURSOR_SECRET="$cursor_secret" \
+  CORE_ADMIN_REVEAL_ENABLED="${CORE_ADMIN_REVEAL_ENABLED:-false}" \
   CORE_MIGRATE=true \
     "$state_dir/coreadmin" >"$state_dir/coreadmin.log" 2>&1 &
   pids+=($!)
@@ -146,16 +162,20 @@ boot_stack() {
       fail "seed"
     }
 
-  python3 - "$endpoint_json" "$admin_url" "$admin_token" "$cored_url" "$database_url" "$canary_api_key" <<'PY'
+  python3 - "$endpoint_json" "$admin_url" "$admin_token" "$viewer_token" "$operator_token" "$security_token" "$cored_url" "$database_url" "$canary_api_key" <<'PY'
 import json, sys
-path, admin_url, token, cored_url, database_url, canary = sys.argv[1:]
+(path, admin_url, token, viewer, operator, security, cored_url, database_url, canary) = sys.argv[1:]
 payload = {
     "admin_url": admin_url,
     "admin_token": token,
+    "viewer_token": viewer,
+    "operator_token": operator,
+    "security_token": security,
     "cored_url": cored_url or None,
     "database_url": database_url,
     "canary_api_key": canary,
     "spa_url": None,
+    "reveal_enabled": False,
 }
 with open(path, "w", encoding="utf-8") as f:
     json.dump(payload, f, indent=2)

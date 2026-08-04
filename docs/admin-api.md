@@ -30,6 +30,14 @@ Hard rules:
 | `CORE_ADMIN_DEV_MODE` | `false` | Local-only escape hatch |
 | `CORE_ADMIN_CORS_ORIGIN` | empty | Single SPA origin; empty disables CORS |
 | `CORE_ADMIN_CURSOR_SECRET` | ephemeral | HMAC secret for opaque cursors |
+| `CORE_ADMIN_TOKEN_ROLE` | `admin` | Role for single `CORE_ADMIN_TOKEN` |
+| `CORE_ADMIN_TOKENS` | empty | JSON map token→`{role,name,id}` |
+| `CORE_ADMIN_REVEAL_ENABLED` | `false` | Break-glass reveal kill switch |
+| `CORE_ADMIN_ENABLE_TERMINATE` | `false` | Allow ResourceTerminate |
+| `CORE_ADMIN_ENABLE_SUSPEND` | `false` | Allow ResourceSuspend |
+| `CORE_ADMIN_CMD_RATE_LIMIT` | `20` | Command executes per second |
+| `CORE_ADMIN_CMD_CONCURRENCY` | `8` | Max in-flight commands |
+| `CORE_MASTER_KEY` | empty | Optional; required for reveal decrypt |
 | `CORE_MIGRATE` | `true` | Apply goose migrations on boot |
 
 \*required unless `CORE_ADMIN_DEV_MODE=true`.
@@ -74,6 +82,11 @@ Rules:
 - `GetRuntimeHealth`
 - `GetSessionTimeline`
 - `ListRelated` (first-page relationship navigation; deep lists use filtered `List*`)
+- `WhoAmI` (operator id/role/permissions)
+- `ListAuditEvents` / `GetAuditEvent`
+
+`AdminCommandService` (ConnectRPC) — typed mutations with dry-run/preview hash/
+idempotency/audit. See [`docs/admin-ops.md`](./admin-ops.md).
 
 Admin store code lives in `admin/store` (not `postgres/`) so the `cored`
 binary never links admin protos or the query engine.
@@ -87,7 +100,8 @@ Ordinary admin reads never return:
 - resource token plaintext
 
 Visible metadata may include prefixes, hash prefixes, ciphertext byte lengths,
-and redaction status. Break-glass reveal is deferred to E7.
+and redaction status. Break-glass reveal is `RevealSecret` behind
+`CORE_ADMIN_REVEAL_ENABLED` (default off); see admin-ops.md.
 
 ## Deployment
 
@@ -157,8 +171,7 @@ task admin:web:test   # Playwright SPA against real coreadmin + seeded Postgres
 
 ## Non-goals
 
-- No mutating/admin operations or audit log (E7)
-- No break-glass secret reveal (E7)
+- No generic SQL/shell mutation primitive
 - No changes to consumer `core.v1` semantics
 - SPA is never mounted on `cored`
 

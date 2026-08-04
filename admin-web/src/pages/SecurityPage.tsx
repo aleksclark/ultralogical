@@ -18,7 +18,7 @@ import type { EventSummary, RunSummary } from "@admin-gen/admin/v1/admin_pb";
 
 /**
  * Security diagnostics from available read data (actor search across events/runs).
- * Full operator audit log arrives in E7.
+ * Operator command audit is on /audit.
  */
 export function SecurityPage() {
   const [actor, setActor] = useState("");
@@ -53,7 +53,7 @@ export function SecurityPage() {
     <div data-testid="security-page">
       <PageHeader
         title="Security diagnostics"
-        description="Actor attribution search across events and runs. Operator audit log is E7."
+        description="Actor attribution search across events and runs. See Audit for immutable operator command history."
       />
 
       <Card className="mb-4">
@@ -76,6 +76,9 @@ export function SecurityPage() {
           <div className="mt-3 flex flex-wrap gap-3 text-xs">
             <Link className="text-primary hover:underline" to={listFilterHref("/api-keys", [])}>
               API key metadata
+            </Link>
+            <Link className="text-primary hover:underline" to="/audit">
+              Operator audit log
             </Link>
             <Link className="text-primary hover:underline" to={listFilterHref("/credentials", [])}>
               Credential metadata

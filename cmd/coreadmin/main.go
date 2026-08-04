@@ -16,6 +16,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aleksclark/ultracore/admin/authz"
+	"github.com/aleksclark/ultracore/admin/command"
 	"github.com/aleksclark/ultracore/admin/query"
 	adminstore "github.com/aleksclark/ultracore/admin/store"
 	"github.com/aleksclark/ultracore/adminhttp"
@@ -50,20 +52,22 @@ func run(log *slog.Logger) error {
 	}
 
 	devMode := config.Bool("CORE_ADMIN_DEV_MODE", false)
-	token := os.Getenv("CORE_ADMIN_TOKEN")
-	if token == "" && !devMode {
-		return errors.New("CORE_ADMIN_TOKEN is required outside CORE_ADMIN_DEV_MODE")
+	tokens, err := authz.LoadTokens()
+	if err != nil {
+		return err
 	}
-	if token == "" && devMode {
-		log.Warn("coreadmin running in dev mode without CORE_ADMIN_TOKEN; any non-empty bearer is accepted")
+	tokens.DevMode = devMode
+	if !tokens.HasTokens() && !devMode {
+		return errors.New("CORE_ADMIN_TOKEN or CORE_ADMIN_TOKENS is required outside CORE_ADMIN_DEV_MODE")
+	}
+	if !tokens.HasTokens() && devMode {
+		log.Warn("coreadmin running in dev mode without operator tokens; any non-empty bearer is accepted as admin")
 	}
 
 	addr := config.String("CORE_ADMIN_ADDR", "127.0.0.1:8082")
 	corsOrigin := os.Getenv("CORE_ADMIN_CORS_ORIGIN")
 	cursorSecret := os.Getenv("CORE_ADMIN_CURSOR_SECRET")
 	if cursorSecret == "" {
-		// Derive an ephemeral secret so cursors work in local dev; production
-		// should set CORE_ADMIN_CURSOR_SECRET for multi-replica stability.
 		b := make([]byte, 32)
 		if _, err := rand.Read(b); err != nil {
 			return err
@@ -84,20 +88,49 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	defer pool.Close()
-	_ = store
 
-	// Ensure River schema exists so job introspection works.
-	if _, err := riverqueue.New(ctx, pool, riverqueue.Config{}); err != nil {
+	queue, err := riverqueue.New(ctx, pool, riverqueue.Config{})
+	if err != nil {
 		return fmt.Errorf("river migrate: %w", err)
 	}
 
+	var keyring secrets.Keyring
+	if mk := os.Getenv("CORE_MASTER_KEY"); mk != "" {
+		kr, err := secrets.NewAESKeyring(mk)
+		if err != nil {
+			return fmt.Errorf("CORE_MASTER_KEY: %w", err)
+		}
+		keyring = kr
+	}
+
+	revealEnabled := config.Bool("CORE_ADMIN_REVEAL_ENABLED", false)
+	engine := command.New(command.Deps{
+		Pool:         pool,
+		Store:        store,
+		Enqueue:      postgres.TxEnqueuer{Queue: queue},
+		River:        queue,
+		Keyring:      keyring,
+		BuildVersion: BuildVersion,
+		Flags: command.Flags{
+			RevealEnabled:               revealEnabled,
+			TerminateEnabled:            config.Bool("CORE_ADMIN_ENABLE_TERMINATE", false),
+			SuspendEnabled:              config.Bool("CORE_ADMIN_ENABLE_SUSPEND", false),
+			DisconnectSubscriberEnabled: config.Bool("CORE_ADMIN_ENABLE_DISCONNECT_SUBSCRIBER", false),
+		},
+		Log:           log,
+		RateLimit:     config.Int("CORE_ADMIN_CMD_RATE_LIMIT", 20),
+		MaxConcurrent: config.Int("CORE_ADMIN_CMD_CONCURRENCY", 8),
+	})
+
 	adminStore := adminstore.NewAdminStore(pool, &query.Signer{Secret: []byte(cursorSecret)}, BuildVersion)
 	handler := adminhttp.NewHandler(adminhttp.Config{
-		Store:      adminStore,
-		Token:      token,
-		DevMode:    devMode,
-		CORSOrigin: corsOrigin,
-		Log:        log,
+		Store:         adminStore,
+		Tokens:        tokens,
+		DevMode:       devMode,
+		CORSOrigin:    corsOrigin,
+		Log:           log,
+		Engine:        engine,
+		RevealEnabled: revealEnabled,
 		Ready: func() error {
 			if err := pool.Ping(context.Background()); err != nil {
 				return fmt.Errorf("postgres: %w", err)
@@ -118,7 +151,7 @@ func run(log *slog.Logger) error {
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
-	log.Info("coreadmin listening", "addr", addr, "dev_mode", devMode)
+	log.Info("coreadmin listening", "addr", addr, "dev_mode", devMode, "reveal_enabled", revealEnabled)
 
 	select {
 	case err := <-errCh:

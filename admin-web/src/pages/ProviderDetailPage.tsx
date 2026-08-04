@@ -1,3 +1,5 @@
+import { CommandConfirmModal } from "@/components/CommandConfirmModal";
+import { useOperator } from "@/lib/operator";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { listFilterHref } from "@/components/EntityLink";
@@ -9,12 +11,15 @@ import {
   ErrorState,
   PageHeader,
   Skeleton,
+  Button,
 } from "@/components/ui";
 import { fetchProvider } from "@/data/details";
 import { useAdminClient } from "@/lib/client";
 import { formatTs } from "@/lib/format";
 
 export function ProviderDetailPage() {
+  const { can } = useOperator();
+  const [cmdOpen, setCmdOpen] = useState(false);
   const { id = "" } = useParams();
   const client = useAdminClient();
   const [detail, setDetail] = useState<unknown>(null);
@@ -58,6 +63,15 @@ export function ProviderDetailPage() {
         description={pid}
         actions={<Badge variant="outline">{p.state ?? "provider"}</Badge>}
       />
+      <div className="mb-3 flex flex-wrap gap-2" data-testid="provider-actions">
+        {can("ReprobeProvider") && (
+          <Button size="sm" data-testid="action-reprobe-provider" onClick={() => setCmdOpen(true)}>Re-probe provider</Button>
+        )}
+      </div>
+      {cmdOpen && (
+        <CommandConfirmModal open onClose={() => setCmdOpen(false)} command="ReprobeProvider"
+          args={{ providerId: id }} title="Re-probe provider" />
+      )}
 
       <div className="mb-4 flex flex-wrap gap-3 text-sm">
         <Link

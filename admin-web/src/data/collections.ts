@@ -22,7 +22,8 @@ export type CollectionName =
   | "periodic_prompts"
   | "memory"
   | "waits"
-  | "jobs";
+  | "jobs"
+  | "audit_events";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyItem = any;
@@ -34,7 +35,7 @@ function makeList(
   return async (state: QueryState, signal: AbortSignal): Promise<CollectionPage<AnyItem>> => {
     const search = toSearchRequest(state, {
       // tenants collection has no tenant_id field
-      skipTenant: name === "tenants",
+      skipTenant: name === "tenants" || name === "audit_events",
     });
     const opts = { signal };
 
@@ -65,6 +66,8 @@ function makeList(
         return pageFrom(await client.listWaits({ search }, opts));
       case "jobs":
         return pageFrom(await client.listJobs({ search }, opts));
+      case "audit_events":
+        return pageFrom(await client.listAuditEvents({ search }, opts));
       default: {
         const _exhaustive: never = name;
         throw new Error(`unknown collection: ${_exhaustive}`);

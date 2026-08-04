@@ -1,3 +1,5 @@
+import { CommandConfirmModal } from "@/components/CommandConfirmModal";
+import { useOperator } from "@/lib/operator";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { listFilterHref } from "@/components/EntityLink";
@@ -9,12 +11,15 @@ import {
   ErrorState,
   PageHeader,
   Skeleton,
+  Button,
 } from "@/components/ui";
 import { fetchResource } from "@/data/details";
 import { useAdminClient } from "@/lib/client";
 import { formatTs } from "@/lib/format";
 
 export function ResourceDetailPage() {
+  const { can } = useOperator();
+  const [cmd, setCmd] = useState<"ResourceReconcile" | "ResourceRestart" | "ResourceTerminate" | "ResourceAdoptionProbe" | null>(null);
   const { id = "" } = useParams();
   const client = useAdminClient();
   const [detail, setDetail] = useState<unknown>(null);
@@ -64,6 +69,24 @@ export function ResourceDetailPage() {
         description={`${r.kind ?? ""} · ${rid}`}
         actions={<Badge variant={state === "failed" ? "destructive" : "outline"}>{state}</Badge>}
       />
+      <div className="mb-3 flex flex-wrap gap-2" data-testid="resource-actions">
+        {can("ResourceReconcile") && (
+          <Button size="sm" data-testid="action-resource-reconcile" onClick={() => setCmd("ResourceReconcile")}>Reconcile</Button>
+        )}
+        {can("ResourceRestart") && (
+          <Button size="sm" data-testid="action-resource-restart" onClick={() => setCmd("ResourceRestart")}>Restart</Button>
+        )}
+        {can("ResourceAdoptionProbe") && (
+          <Button size="sm" variant="outline" onClick={() => setCmd("ResourceAdoptionProbe")}>Adoption probe</Button>
+        )}
+        {can("ResourceTerminate") && (
+          <Button size="sm" variant="destructive" data-testid="action-resource-terminate" onClick={() => setCmd("ResourceTerminate")}>Terminate</Button>
+        )}
+      </div>
+      {cmd && (
+        <CommandConfirmModal open onClose={() => setCmd(null)} command={cmd} args={{ resourceId: id }}
+          title={cmd} confirmPhrase={cmd === "ResourceTerminate" ? "terminate" : undefined} />
+      )}
 
       <div className="mb-4 flex flex-wrap gap-3 text-sm">
         {providerId ? (

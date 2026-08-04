@@ -43,6 +43,7 @@ test.describe("collection routes smoke", () => {
     "/credentials",
     "/api-keys",
     "/security",
+    "/audit",
     "/internals",
   ];
 
@@ -51,6 +52,8 @@ test.describe("collection routes smoke", () => {
       await page.goto(route);
       if (route === "/security") {
         await expect(page.getByTestId("security-page")).toBeVisible();
+      } else if (route === "/audit") {
+        await expect(page.getByTestId("audit-page")).toBeVisible();
       } else if (route === "/internals") {
         await expect(page.getByTestId("internals-page")).toBeVisible();
       } else {
@@ -276,5 +279,40 @@ test.describe("network isolation", () => {
     await page.goto("/memory");
     await page.waitForTimeout(500);
     expect(bad, `forbidden network calls: ${bad.join(", ")}`).toEqual([]);
+  });
+});
+
+test.describe("E7 ops: audit and commands", () => {
+  test("audit page renders", async ({ page }) => {
+    await page.goto("/audit");
+    await expect(page.getByTestId("audit-page")).toBeVisible();
+    await waitForCollectionChrome(page);
+  });
+
+  test("operator role visible in shell", async ({ page }) => {
+    await expect(page.getByTestId("operator-role")).toBeVisible();
+  });
+
+  test("run detail exposes cancel when permitted", async ({ page }) => {
+    await page.goto("/runs");
+    await waitForTable(page);
+    const link = page.locator('a[href^="/runs/"]').first();
+    if ((await link.count()) === 0) {
+      test.skip();
+      return;
+    }
+    await link.click();
+    await expect(page.getByTestId("run-detail")).toBeVisible();
+    // Admin e2e token is single admin role by default — action should exist.
+    const cancel = page.getByTestId("action-cancel-run");
+    if (await cancel.count()) {
+      await cancel.click();
+      await expect(page.getByTestId("command-confirm-modal")).toBeVisible();
+      await page.getByTestId("command-reason").fill("e2e preview only");
+      await page.getByTestId("command-preview").click();
+      await expect(page.getByText(/Expected effects|preview_hash/i)).toBeVisible({ timeout: 15000 });
+      // Do not execute destructive cancel in shared seed unless preview succeeded.
+      await page.getByRole("button", { name: "Close" }).click();
+    }
   });
 });

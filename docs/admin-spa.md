@@ -1,6 +1,6 @@
 # Private admin SPA (`admin-web`)
 
-The admin SPA is a **private, read-only** React console over `admin.v1` only.
+The admin SPA is a **private** React console over `admin.v1` only (read + gated commands).
 It is not mounted on `cored`, not published on the public edge, and must never
 import `@ultracore/client` or call `core.v1`.
 
@@ -101,6 +101,7 @@ Also fails on `@ultracore/client` / `core.v1` imports.
 | `/credentials` | Ciphertext metadata only |
 | `/api-keys` | Key metadata / revocation only |
 | `/security` | Actor search across events/runs |
+| `/audit` | Immutable operator command audit |
 | `/internals` | Build/schema/descriptors/raw health |
 
 ## How to run
@@ -139,9 +140,15 @@ task admin:web:test
 - Secrets (API key plaintext, credential plaintext, resource tokens) never render.
 - Canary secret checks in Playwright scan DOM + storage.
 
-## Non-goals (E7)
+## Ops (E7)
 
-- Mutations / break-glass secret reveal
+- Role-aware command buttons on detail pages; confirmation modal (preview → execute)
+- Break-glass reveal modal with reauth + reason; no auto clipboard / localStorage
+- Audit page lists `admin_audit_events` via collection primitives
+- Commands live in `src/data/commands.ts` (not the List* data layer)
+
+## Non-goals
+
 - Server-side saved views
 - Mounting SPA on `cored`
-- Operator audit log UI (placeholder links only)
+- Generic bulk mutation without typed confirmation

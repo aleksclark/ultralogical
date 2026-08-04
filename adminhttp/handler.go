@@ -7,13 +7,16 @@ import (
 	"connectrpc.com/connect"
 
 	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/admin/authz"
 	"github.com/aleksclark/ultracore/admin/query"
 	adminstore "github.com/aleksclark/ultracore/admin/store"
 	adminv1 "github.com/aleksclark/ultracore/gen/go/admin/v1"
 )
 
 type readService struct {
-	store *adminstore.AdminStore
+	store         *adminstore.AdminStore
+	tokens        *authz.TokenDirectory
+	revealEnabled bool
 }
 
 func (s *readService) DescribeCollection(ctx context.Context, req *connect.Request[adminv1.DescribeCollectionRequest]) (*connect.Response[adminv1.DescribeCollectionResponse], error) {
@@ -273,6 +276,38 @@ func (s *readService) ListRelated(ctx context.Context, req *connect.Request[admi
 		return nil, mapErr(err)
 	}
 	return connect.NewResponse(&adminv1.ListRelatedResponse{Items: items, Page: query.PageInfoToProto(info)}), nil
+}
+
+func (s *readService) WhoAmI(ctx context.Context, _ *connect.Request[adminv1.WhoAmIRequest]) (*connect.Response[adminv1.WhoAmIResponse], error) {
+	op, ok := operatorFrom(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("missing operator"))
+	}
+	return connect.NewResponse(&adminv1.WhoAmIResponse{
+		Operator: &adminv1.OperatorIdentity{
+			Id:            op.ID,
+			Name:          op.Name,
+			Role:          string(op.Role),
+			Permissions:   authz.Permissions(op.Role),
+			RevealEnabled: s.revealEnabled && authz.Can(op.Role, authz.CmdRevealSecret),
+		},
+	}), nil
+}
+
+func (s *readService) ListAuditEvents(ctx context.Context, req *connect.Request[adminv1.ListAuditEventsRequest]) (*connect.Response[adminv1.ListAuditEventsResponse], error) {
+	items, page, err := s.store.ListAuditEvents(ctx, query.SearchFromProto(req.Msg.GetSearch()))
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	return connect.NewResponse(&adminv1.ListAuditEventsResponse{Items: items, Page: query.PageInfoToProto(page)}), nil
+}
+
+func (s *readService) GetAuditEvent(ctx context.Context, req *connect.Request[adminv1.GetAuditEventRequest]) (*connect.Response[adminv1.GetAuditEventResponse], error) {
+	item, err := s.store.GetAuditEvent(ctx, req.Msg.GetId())
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	return connect.NewResponse(&adminv1.GetAuditEventResponse{Item: item}), nil
 }
 
 func mapErr(err error) error {

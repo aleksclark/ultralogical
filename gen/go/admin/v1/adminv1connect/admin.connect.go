@@ -23,6 +23,8 @@ const _ = connect.IsAtLeastVersion1_13_0
 const (
 	// AdminReadServiceName is the fully-qualified name of the AdminReadService service.
 	AdminReadServiceName = "admin.v1.AdminReadService"
+	// AdminCommandServiceName is the fully-qualified name of the AdminCommandService service.
+	AdminCommandServiceName = "admin.v1.AdminCommandService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -121,6 +123,68 @@ const (
 	// AdminReadServiceListRelatedProcedure is the fully-qualified name of the AdminReadService's
 	// ListRelated RPC.
 	AdminReadServiceListRelatedProcedure = "/admin.v1.AdminReadService/ListRelated"
+	// AdminReadServiceWhoAmIProcedure is the fully-qualified name of the AdminReadService's WhoAmI RPC.
+	AdminReadServiceWhoAmIProcedure = "/admin.v1.AdminReadService/WhoAmI"
+	// AdminReadServiceListAuditEventsProcedure is the fully-qualified name of the AdminReadService's
+	// ListAuditEvents RPC.
+	AdminReadServiceListAuditEventsProcedure = "/admin.v1.AdminReadService/ListAuditEvents"
+	// AdminReadServiceGetAuditEventProcedure is the fully-qualified name of the AdminReadService's
+	// GetAuditEvent RPC.
+	AdminReadServiceGetAuditEventProcedure = "/admin.v1.AdminReadService/GetAuditEvent"
+	// AdminCommandServiceRetryQueueJobProcedure is the fully-qualified name of the
+	// AdminCommandService's RetryQueueJob RPC.
+	AdminCommandServiceRetryQueueJobProcedure = "/admin.v1.AdminCommandService/RetryQueueJob"
+	// AdminCommandServiceCancelQueueJobProcedure is the fully-qualified name of the
+	// AdminCommandService's CancelQueueJob RPC.
+	AdminCommandServiceCancelQueueJobProcedure = "/admin.v1.AdminCommandService/CancelQueueJob"
+	// AdminCommandServiceCancelRunProcedure is the fully-qualified name of the AdminCommandService's
+	// CancelRun RPC.
+	AdminCommandServiceCancelRunProcedure = "/admin.v1.AdminCommandService/CancelRun"
+	// AdminCommandServiceAnswerAwaitProcedure is the fully-qualified name of the AdminCommandService's
+	// AnswerAwait RPC.
+	AdminCommandServiceAnswerAwaitProcedure = "/admin.v1.AdminCommandService/AnswerAwait"
+	// AdminCommandServiceExpireAwaitProcedure is the fully-qualified name of the AdminCommandService's
+	// ExpireAwait RPC.
+	AdminCommandServiceExpireAwaitProcedure = "/admin.v1.AdminCommandService/ExpireAwait"
+	// AdminCommandServiceResourceReconcileProcedure is the fully-qualified name of the
+	// AdminCommandService's ResourceReconcile RPC.
+	AdminCommandServiceResourceReconcileProcedure = "/admin.v1.AdminCommandService/ResourceReconcile"
+	// AdminCommandServiceResourceRestartProcedure is the fully-qualified name of the
+	// AdminCommandService's ResourceRestart RPC.
+	AdminCommandServiceResourceRestartProcedure = "/admin.v1.AdminCommandService/ResourceRestart"
+	// AdminCommandServiceResourceSuspendProcedure is the fully-qualified name of the
+	// AdminCommandService's ResourceSuspend RPC.
+	AdminCommandServiceResourceSuspendProcedure = "/admin.v1.AdminCommandService/ResourceSuspend"
+	// AdminCommandServiceResourceTerminateProcedure is the fully-qualified name of the
+	// AdminCommandService's ResourceTerminate RPC.
+	AdminCommandServiceResourceTerminateProcedure = "/admin.v1.AdminCommandService/ResourceTerminate"
+	// AdminCommandServiceResourceAdoptionProbeProcedure is the fully-qualified name of the
+	// AdminCommandService's ResourceAdoptionProbe RPC.
+	AdminCommandServiceResourceAdoptionProbeProcedure = "/admin.v1.AdminCommandService/ResourceAdoptionProbe"
+	// AdminCommandServiceReprobeProviderProcedure is the fully-qualified name of the
+	// AdminCommandService's ReprobeProvider RPC.
+	AdminCommandServiceReprobeProviderProcedure = "/admin.v1.AdminCommandService/ReprobeProvider"
+	// AdminCommandServiceRevokeAPIKeyProcedure is the fully-qualified name of the AdminCommandService's
+	// RevokeAPIKey RPC.
+	AdminCommandServiceRevokeAPIKeyProcedure = "/admin.v1.AdminCommandService/RevokeAPIKey"
+	// AdminCommandServiceDisableCredentialProcedure is the fully-qualified name of the
+	// AdminCommandService's DisableCredential RPC.
+	AdminCommandServiceDisableCredentialProcedure = "/admin.v1.AdminCommandService/DisableCredential"
+	// AdminCommandServicePausePeriodicPromptProcedure is the fully-qualified name of the
+	// AdminCommandService's PausePeriodicPrompt RPC.
+	AdminCommandServicePausePeriodicPromptProcedure = "/admin.v1.AdminCommandService/PausePeriodicPrompt"
+	// AdminCommandServiceResumePeriodicPromptProcedure is the fully-qualified name of the
+	// AdminCommandService's ResumePeriodicPrompt RPC.
+	AdminCommandServiceResumePeriodicPromptProcedure = "/admin.v1.AdminCommandService/ResumePeriodicPrompt"
+	// AdminCommandServiceDisconnectSubscriberProcedure is the fully-qualified name of the
+	// AdminCommandService's DisconnectSubscriber RPC.
+	AdminCommandServiceDisconnectSubscriberProcedure = "/admin.v1.AdminCommandService/DisconnectSubscriber"
+	// AdminCommandServiceExportIncidentEvidenceProcedure is the fully-qualified name of the
+	// AdminCommandService's ExportIncidentEvidence RPC.
+	AdminCommandServiceExportIncidentEvidenceProcedure = "/admin.v1.AdminCommandService/ExportIncidentEvidence"
+	// AdminCommandServiceRevealSecretProcedure is the fully-qualified name of the AdminCommandService's
+	// RevealSecret RPC.
+	AdminCommandServiceRevealSecretProcedure = "/admin.v1.AdminCommandService/RevealSecret"
 )
 
 // AdminReadServiceClient is a client for the admin.v1.AdminReadService service.
@@ -155,6 +219,9 @@ type AdminReadServiceClient interface {
 	GetRuntimeHealth(context.Context, *connect.Request[v1.GetRuntimeHealthRequest]) (*connect.Response[v1.GetRuntimeHealthResponse], error)
 	GetSessionTimeline(context.Context, *connect.Request[v1.GetSessionTimelineRequest]) (*connect.Response[v1.GetSessionTimelineResponse], error)
 	ListRelated(context.Context, *connect.Request[v1.ListRelatedRequest]) (*connect.Response[v1.ListRelatedResponse], error)
+	WhoAmI(context.Context, *connect.Request[v1.WhoAmIRequest]) (*connect.Response[v1.WhoAmIResponse], error)
+	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
+	GetAuditEvent(context.Context, *connect.Request[v1.GetAuditEventRequest]) (*connect.Response[v1.GetAuditEventResponse], error)
 }
 
 // NewAdminReadServiceClient constructs a client for the admin.v1.AdminReadService service. By
@@ -348,6 +415,24 @@ func NewAdminReadServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(adminReadServiceMethods.ByName("ListRelated")),
 			connect.WithClientOptions(opts...),
 		),
+		whoAmI: connect.NewClient[v1.WhoAmIRequest, v1.WhoAmIResponse](
+			httpClient,
+			baseURL+AdminReadServiceWhoAmIProcedure,
+			connect.WithSchema(adminReadServiceMethods.ByName("WhoAmI")),
+			connect.WithClientOptions(opts...),
+		),
+		listAuditEvents: connect.NewClient[v1.ListAuditEventsRequest, v1.ListAuditEventsResponse](
+			httpClient,
+			baseURL+AdminReadServiceListAuditEventsProcedure,
+			connect.WithSchema(adminReadServiceMethods.ByName("ListAuditEvents")),
+			connect.WithClientOptions(opts...),
+		),
+		getAuditEvent: connect.NewClient[v1.GetAuditEventRequest, v1.GetAuditEventResponse](
+			httpClient,
+			baseURL+AdminReadServiceGetAuditEventProcedure,
+			connect.WithSchema(adminReadServiceMethods.ByName("GetAuditEvent")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -383,6 +468,9 @@ type adminReadServiceClient struct {
 	getRuntimeHealth    *connect.Client[v1.GetRuntimeHealthRequest, v1.GetRuntimeHealthResponse]
 	getSessionTimeline  *connect.Client[v1.GetSessionTimelineRequest, v1.GetSessionTimelineResponse]
 	listRelated         *connect.Client[v1.ListRelatedRequest, v1.ListRelatedResponse]
+	whoAmI              *connect.Client[v1.WhoAmIRequest, v1.WhoAmIResponse]
+	listAuditEvents     *connect.Client[v1.ListAuditEventsRequest, v1.ListAuditEventsResponse]
+	getAuditEvent       *connect.Client[v1.GetAuditEventRequest, v1.GetAuditEventResponse]
 }
 
 // DescribeCollection calls admin.v1.AdminReadService.DescribeCollection.
@@ -535,6 +623,21 @@ func (c *adminReadServiceClient) ListRelated(ctx context.Context, req *connect.R
 	return c.listRelated.CallUnary(ctx, req)
 }
 
+// WhoAmI calls admin.v1.AdminReadService.WhoAmI.
+func (c *adminReadServiceClient) WhoAmI(ctx context.Context, req *connect.Request[v1.WhoAmIRequest]) (*connect.Response[v1.WhoAmIResponse], error) {
+	return c.whoAmI.CallUnary(ctx, req)
+}
+
+// ListAuditEvents calls admin.v1.AdminReadService.ListAuditEvents.
+func (c *adminReadServiceClient) ListAuditEvents(ctx context.Context, req *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error) {
+	return c.listAuditEvents.CallUnary(ctx, req)
+}
+
+// GetAuditEvent calls admin.v1.AdminReadService.GetAuditEvent.
+func (c *adminReadServiceClient) GetAuditEvent(ctx context.Context, req *connect.Request[v1.GetAuditEventRequest]) (*connect.Response[v1.GetAuditEventResponse], error) {
+	return c.getAuditEvent.CallUnary(ctx, req)
+}
+
 // AdminReadServiceHandler is an implementation of the admin.v1.AdminReadService service.
 type AdminReadServiceHandler interface {
 	DescribeCollection(context.Context, *connect.Request[v1.DescribeCollectionRequest]) (*connect.Response[v1.DescribeCollectionResponse], error)
@@ -567,6 +670,9 @@ type AdminReadServiceHandler interface {
 	GetRuntimeHealth(context.Context, *connect.Request[v1.GetRuntimeHealthRequest]) (*connect.Response[v1.GetRuntimeHealthResponse], error)
 	GetSessionTimeline(context.Context, *connect.Request[v1.GetSessionTimelineRequest]) (*connect.Response[v1.GetSessionTimelineResponse], error)
 	ListRelated(context.Context, *connect.Request[v1.ListRelatedRequest]) (*connect.Response[v1.ListRelatedResponse], error)
+	WhoAmI(context.Context, *connect.Request[v1.WhoAmIRequest]) (*connect.Response[v1.WhoAmIResponse], error)
+	ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error)
+	GetAuditEvent(context.Context, *connect.Request[v1.GetAuditEventRequest]) (*connect.Response[v1.GetAuditEventResponse], error)
 }
 
 // NewAdminReadServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -756,6 +862,24 @@ func NewAdminReadServiceHandler(svc AdminReadServiceHandler, opts ...connect.Han
 		connect.WithSchema(adminReadServiceMethods.ByName("ListRelated")),
 		connect.WithHandlerOptions(opts...),
 	)
+	adminReadServiceWhoAmIHandler := connect.NewUnaryHandler(
+		AdminReadServiceWhoAmIProcedure,
+		svc.WhoAmI,
+		connect.WithSchema(adminReadServiceMethods.ByName("WhoAmI")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminReadServiceListAuditEventsHandler := connect.NewUnaryHandler(
+		AdminReadServiceListAuditEventsProcedure,
+		svc.ListAuditEvents,
+		connect.WithSchema(adminReadServiceMethods.ByName("ListAuditEvents")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminReadServiceGetAuditEventHandler := connect.NewUnaryHandler(
+		AdminReadServiceGetAuditEventProcedure,
+		svc.GetAuditEvent,
+		connect.WithSchema(adminReadServiceMethods.ByName("GetAuditEvent")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/admin.v1.AdminReadService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AdminReadServiceDescribeCollectionProcedure:
@@ -818,6 +942,12 @@ func NewAdminReadServiceHandler(svc AdminReadServiceHandler, opts ...connect.Han
 			adminReadServiceGetSessionTimelineHandler.ServeHTTP(w, r)
 		case AdminReadServiceListRelatedProcedure:
 			adminReadServiceListRelatedHandler.ServeHTTP(w, r)
+		case AdminReadServiceWhoAmIProcedure:
+			adminReadServiceWhoAmIHandler.ServeHTTP(w, r)
+		case AdminReadServiceListAuditEventsProcedure:
+			adminReadServiceListAuditEventsHandler.ServeHTTP(w, r)
+		case AdminReadServiceGetAuditEventProcedure:
+			adminReadServiceGetAuditEventHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -945,4 +1075,528 @@ func (UnimplementedAdminReadServiceHandler) GetSessionTimeline(context.Context, 
 
 func (UnimplementedAdminReadServiceHandler) ListRelated(context.Context, *connect.Request[v1.ListRelatedRequest]) (*connect.Response[v1.ListRelatedResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminReadService.ListRelated is not implemented"))
+}
+
+func (UnimplementedAdminReadServiceHandler) WhoAmI(context.Context, *connect.Request[v1.WhoAmIRequest]) (*connect.Response[v1.WhoAmIResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminReadService.WhoAmI is not implemented"))
+}
+
+func (UnimplementedAdminReadServiceHandler) ListAuditEvents(context.Context, *connect.Request[v1.ListAuditEventsRequest]) (*connect.Response[v1.ListAuditEventsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminReadService.ListAuditEvents is not implemented"))
+}
+
+func (UnimplementedAdminReadServiceHandler) GetAuditEvent(context.Context, *connect.Request[v1.GetAuditEventRequest]) (*connect.Response[v1.GetAuditEventResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminReadService.GetAuditEvent is not implemented"))
+}
+
+// AdminCommandServiceClient is a client for the admin.v1.AdminCommandService service.
+type AdminCommandServiceClient interface {
+	RetryQueueJob(context.Context, *connect.Request[v1.RetryQueueJobRequest]) (*connect.Response[v1.RetryQueueJobResponse], error)
+	CancelQueueJob(context.Context, *connect.Request[v1.CancelQueueJobRequest]) (*connect.Response[v1.CancelQueueJobResponse], error)
+	CancelRun(context.Context, *connect.Request[v1.CancelRunRequest]) (*connect.Response[v1.CancelRunResponse], error)
+	AnswerAwait(context.Context, *connect.Request[v1.AnswerAwaitRequest]) (*connect.Response[v1.AnswerAwaitResponse], error)
+	ExpireAwait(context.Context, *connect.Request[v1.ExpireAwaitRequest]) (*connect.Response[v1.ExpireAwaitResponse], error)
+	ResourceReconcile(context.Context, *connect.Request[v1.ResourceReconcileRequest]) (*connect.Response[v1.ResourceReconcileResponse], error)
+	ResourceRestart(context.Context, *connect.Request[v1.ResourceRestartRequest]) (*connect.Response[v1.ResourceRestartResponse], error)
+	ResourceSuspend(context.Context, *connect.Request[v1.ResourceSuspendRequest]) (*connect.Response[v1.ResourceSuspendResponse], error)
+	ResourceTerminate(context.Context, *connect.Request[v1.ResourceTerminateRequest]) (*connect.Response[v1.ResourceTerminateResponse], error)
+	ResourceAdoptionProbe(context.Context, *connect.Request[v1.ResourceAdoptionProbeRequest]) (*connect.Response[v1.ResourceAdoptionProbeResponse], error)
+	ReprobeProvider(context.Context, *connect.Request[v1.ReprobeProviderRequest]) (*connect.Response[v1.ReprobeProviderResponse], error)
+	RevokeAPIKey(context.Context, *connect.Request[v1.RevokeAPIKeyRequest]) (*connect.Response[v1.RevokeAPIKeyResponse], error)
+	DisableCredential(context.Context, *connect.Request[v1.DisableCredentialRequest]) (*connect.Response[v1.DisableCredentialResponse], error)
+	PausePeriodicPrompt(context.Context, *connect.Request[v1.PausePeriodicPromptRequest]) (*connect.Response[v1.PausePeriodicPromptResponse], error)
+	ResumePeriodicPrompt(context.Context, *connect.Request[v1.ResumePeriodicPromptRequest]) (*connect.Response[v1.ResumePeriodicPromptResponse], error)
+	DisconnectSubscriber(context.Context, *connect.Request[v1.DisconnectSubscriberRequest]) (*connect.Response[v1.DisconnectSubscriberResponse], error)
+	ExportIncidentEvidence(context.Context, *connect.Request[v1.ExportIncidentEvidenceRequest]) (*connect.Response[v1.ExportIncidentEvidenceResponse], error)
+	RevealSecret(context.Context, *connect.Request[v1.RevealSecretRequest]) (*connect.Response[v1.RevealSecretResponse], error)
+}
+
+// NewAdminCommandServiceClient constructs a client for the admin.v1.AdminCommandService service. By
+// default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses,
+// and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
+// connect.WithGRPC() or connect.WithGRPCWeb() options.
+//
+// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
+// http://api.acme.com or https://acme.com/grpc).
+func NewAdminCommandServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) AdminCommandServiceClient {
+	baseURL = strings.TrimRight(baseURL, "/")
+	adminCommandServiceMethods := v1.File_admin_v1_admin_proto.Services().ByName("AdminCommandService").Methods()
+	return &adminCommandServiceClient{
+		retryQueueJob: connect.NewClient[v1.RetryQueueJobRequest, v1.RetryQueueJobResponse](
+			httpClient,
+			baseURL+AdminCommandServiceRetryQueueJobProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("RetryQueueJob")),
+			connect.WithClientOptions(opts...),
+		),
+		cancelQueueJob: connect.NewClient[v1.CancelQueueJobRequest, v1.CancelQueueJobResponse](
+			httpClient,
+			baseURL+AdminCommandServiceCancelQueueJobProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("CancelQueueJob")),
+			connect.WithClientOptions(opts...),
+		),
+		cancelRun: connect.NewClient[v1.CancelRunRequest, v1.CancelRunResponse](
+			httpClient,
+			baseURL+AdminCommandServiceCancelRunProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("CancelRun")),
+			connect.WithClientOptions(opts...),
+		),
+		answerAwait: connect.NewClient[v1.AnswerAwaitRequest, v1.AnswerAwaitResponse](
+			httpClient,
+			baseURL+AdminCommandServiceAnswerAwaitProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("AnswerAwait")),
+			connect.WithClientOptions(opts...),
+		),
+		expireAwait: connect.NewClient[v1.ExpireAwaitRequest, v1.ExpireAwaitResponse](
+			httpClient,
+			baseURL+AdminCommandServiceExpireAwaitProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("ExpireAwait")),
+			connect.WithClientOptions(opts...),
+		),
+		resourceReconcile: connect.NewClient[v1.ResourceReconcileRequest, v1.ResourceReconcileResponse](
+			httpClient,
+			baseURL+AdminCommandServiceResourceReconcileProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("ResourceReconcile")),
+			connect.WithClientOptions(opts...),
+		),
+		resourceRestart: connect.NewClient[v1.ResourceRestartRequest, v1.ResourceRestartResponse](
+			httpClient,
+			baseURL+AdminCommandServiceResourceRestartProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("ResourceRestart")),
+			connect.WithClientOptions(opts...),
+		),
+		resourceSuspend: connect.NewClient[v1.ResourceSuspendRequest, v1.ResourceSuspendResponse](
+			httpClient,
+			baseURL+AdminCommandServiceResourceSuspendProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("ResourceSuspend")),
+			connect.WithClientOptions(opts...),
+		),
+		resourceTerminate: connect.NewClient[v1.ResourceTerminateRequest, v1.ResourceTerminateResponse](
+			httpClient,
+			baseURL+AdminCommandServiceResourceTerminateProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("ResourceTerminate")),
+			connect.WithClientOptions(opts...),
+		),
+		resourceAdoptionProbe: connect.NewClient[v1.ResourceAdoptionProbeRequest, v1.ResourceAdoptionProbeResponse](
+			httpClient,
+			baseURL+AdminCommandServiceResourceAdoptionProbeProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("ResourceAdoptionProbe")),
+			connect.WithClientOptions(opts...),
+		),
+		reprobeProvider: connect.NewClient[v1.ReprobeProviderRequest, v1.ReprobeProviderResponse](
+			httpClient,
+			baseURL+AdminCommandServiceReprobeProviderProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("ReprobeProvider")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeAPIKey: connect.NewClient[v1.RevokeAPIKeyRequest, v1.RevokeAPIKeyResponse](
+			httpClient,
+			baseURL+AdminCommandServiceRevokeAPIKeyProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("RevokeAPIKey")),
+			connect.WithClientOptions(opts...),
+		),
+		disableCredential: connect.NewClient[v1.DisableCredentialRequest, v1.DisableCredentialResponse](
+			httpClient,
+			baseURL+AdminCommandServiceDisableCredentialProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("DisableCredential")),
+			connect.WithClientOptions(opts...),
+		),
+		pausePeriodicPrompt: connect.NewClient[v1.PausePeriodicPromptRequest, v1.PausePeriodicPromptResponse](
+			httpClient,
+			baseURL+AdminCommandServicePausePeriodicPromptProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("PausePeriodicPrompt")),
+			connect.WithClientOptions(opts...),
+		),
+		resumePeriodicPrompt: connect.NewClient[v1.ResumePeriodicPromptRequest, v1.ResumePeriodicPromptResponse](
+			httpClient,
+			baseURL+AdminCommandServiceResumePeriodicPromptProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("ResumePeriodicPrompt")),
+			connect.WithClientOptions(opts...),
+		),
+		disconnectSubscriber: connect.NewClient[v1.DisconnectSubscriberRequest, v1.DisconnectSubscriberResponse](
+			httpClient,
+			baseURL+AdminCommandServiceDisconnectSubscriberProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("DisconnectSubscriber")),
+			connect.WithClientOptions(opts...),
+		),
+		exportIncidentEvidence: connect.NewClient[v1.ExportIncidentEvidenceRequest, v1.ExportIncidentEvidenceResponse](
+			httpClient,
+			baseURL+AdminCommandServiceExportIncidentEvidenceProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("ExportIncidentEvidence")),
+			connect.WithClientOptions(opts...),
+		),
+		revealSecret: connect.NewClient[v1.RevealSecretRequest, v1.RevealSecretResponse](
+			httpClient,
+			baseURL+AdminCommandServiceRevealSecretProcedure,
+			connect.WithSchema(adminCommandServiceMethods.ByName("RevealSecret")),
+			connect.WithClientOptions(opts...),
+		),
+	}
+}
+
+// adminCommandServiceClient implements AdminCommandServiceClient.
+type adminCommandServiceClient struct {
+	retryQueueJob          *connect.Client[v1.RetryQueueJobRequest, v1.RetryQueueJobResponse]
+	cancelQueueJob         *connect.Client[v1.CancelQueueJobRequest, v1.CancelQueueJobResponse]
+	cancelRun              *connect.Client[v1.CancelRunRequest, v1.CancelRunResponse]
+	answerAwait            *connect.Client[v1.AnswerAwaitRequest, v1.AnswerAwaitResponse]
+	expireAwait            *connect.Client[v1.ExpireAwaitRequest, v1.ExpireAwaitResponse]
+	resourceReconcile      *connect.Client[v1.ResourceReconcileRequest, v1.ResourceReconcileResponse]
+	resourceRestart        *connect.Client[v1.ResourceRestartRequest, v1.ResourceRestartResponse]
+	resourceSuspend        *connect.Client[v1.ResourceSuspendRequest, v1.ResourceSuspendResponse]
+	resourceTerminate      *connect.Client[v1.ResourceTerminateRequest, v1.ResourceTerminateResponse]
+	resourceAdoptionProbe  *connect.Client[v1.ResourceAdoptionProbeRequest, v1.ResourceAdoptionProbeResponse]
+	reprobeProvider        *connect.Client[v1.ReprobeProviderRequest, v1.ReprobeProviderResponse]
+	revokeAPIKey           *connect.Client[v1.RevokeAPIKeyRequest, v1.RevokeAPIKeyResponse]
+	disableCredential      *connect.Client[v1.DisableCredentialRequest, v1.DisableCredentialResponse]
+	pausePeriodicPrompt    *connect.Client[v1.PausePeriodicPromptRequest, v1.PausePeriodicPromptResponse]
+	resumePeriodicPrompt   *connect.Client[v1.ResumePeriodicPromptRequest, v1.ResumePeriodicPromptResponse]
+	disconnectSubscriber   *connect.Client[v1.DisconnectSubscriberRequest, v1.DisconnectSubscriberResponse]
+	exportIncidentEvidence *connect.Client[v1.ExportIncidentEvidenceRequest, v1.ExportIncidentEvidenceResponse]
+	revealSecret           *connect.Client[v1.RevealSecretRequest, v1.RevealSecretResponse]
+}
+
+// RetryQueueJob calls admin.v1.AdminCommandService.RetryQueueJob.
+func (c *adminCommandServiceClient) RetryQueueJob(ctx context.Context, req *connect.Request[v1.RetryQueueJobRequest]) (*connect.Response[v1.RetryQueueJobResponse], error) {
+	return c.retryQueueJob.CallUnary(ctx, req)
+}
+
+// CancelQueueJob calls admin.v1.AdminCommandService.CancelQueueJob.
+func (c *adminCommandServiceClient) CancelQueueJob(ctx context.Context, req *connect.Request[v1.CancelQueueJobRequest]) (*connect.Response[v1.CancelQueueJobResponse], error) {
+	return c.cancelQueueJob.CallUnary(ctx, req)
+}
+
+// CancelRun calls admin.v1.AdminCommandService.CancelRun.
+func (c *adminCommandServiceClient) CancelRun(ctx context.Context, req *connect.Request[v1.CancelRunRequest]) (*connect.Response[v1.CancelRunResponse], error) {
+	return c.cancelRun.CallUnary(ctx, req)
+}
+
+// AnswerAwait calls admin.v1.AdminCommandService.AnswerAwait.
+func (c *adminCommandServiceClient) AnswerAwait(ctx context.Context, req *connect.Request[v1.AnswerAwaitRequest]) (*connect.Response[v1.AnswerAwaitResponse], error) {
+	return c.answerAwait.CallUnary(ctx, req)
+}
+
+// ExpireAwait calls admin.v1.AdminCommandService.ExpireAwait.
+func (c *adminCommandServiceClient) ExpireAwait(ctx context.Context, req *connect.Request[v1.ExpireAwaitRequest]) (*connect.Response[v1.ExpireAwaitResponse], error) {
+	return c.expireAwait.CallUnary(ctx, req)
+}
+
+// ResourceReconcile calls admin.v1.AdminCommandService.ResourceReconcile.
+func (c *adminCommandServiceClient) ResourceReconcile(ctx context.Context, req *connect.Request[v1.ResourceReconcileRequest]) (*connect.Response[v1.ResourceReconcileResponse], error) {
+	return c.resourceReconcile.CallUnary(ctx, req)
+}
+
+// ResourceRestart calls admin.v1.AdminCommandService.ResourceRestart.
+func (c *adminCommandServiceClient) ResourceRestart(ctx context.Context, req *connect.Request[v1.ResourceRestartRequest]) (*connect.Response[v1.ResourceRestartResponse], error) {
+	return c.resourceRestart.CallUnary(ctx, req)
+}
+
+// ResourceSuspend calls admin.v1.AdminCommandService.ResourceSuspend.
+func (c *adminCommandServiceClient) ResourceSuspend(ctx context.Context, req *connect.Request[v1.ResourceSuspendRequest]) (*connect.Response[v1.ResourceSuspendResponse], error) {
+	return c.resourceSuspend.CallUnary(ctx, req)
+}
+
+// ResourceTerminate calls admin.v1.AdminCommandService.ResourceTerminate.
+func (c *adminCommandServiceClient) ResourceTerminate(ctx context.Context, req *connect.Request[v1.ResourceTerminateRequest]) (*connect.Response[v1.ResourceTerminateResponse], error) {
+	return c.resourceTerminate.CallUnary(ctx, req)
+}
+
+// ResourceAdoptionProbe calls admin.v1.AdminCommandService.ResourceAdoptionProbe.
+func (c *adminCommandServiceClient) ResourceAdoptionProbe(ctx context.Context, req *connect.Request[v1.ResourceAdoptionProbeRequest]) (*connect.Response[v1.ResourceAdoptionProbeResponse], error) {
+	return c.resourceAdoptionProbe.CallUnary(ctx, req)
+}
+
+// ReprobeProvider calls admin.v1.AdminCommandService.ReprobeProvider.
+func (c *adminCommandServiceClient) ReprobeProvider(ctx context.Context, req *connect.Request[v1.ReprobeProviderRequest]) (*connect.Response[v1.ReprobeProviderResponse], error) {
+	return c.reprobeProvider.CallUnary(ctx, req)
+}
+
+// RevokeAPIKey calls admin.v1.AdminCommandService.RevokeAPIKey.
+func (c *adminCommandServiceClient) RevokeAPIKey(ctx context.Context, req *connect.Request[v1.RevokeAPIKeyRequest]) (*connect.Response[v1.RevokeAPIKeyResponse], error) {
+	return c.revokeAPIKey.CallUnary(ctx, req)
+}
+
+// DisableCredential calls admin.v1.AdminCommandService.DisableCredential.
+func (c *adminCommandServiceClient) DisableCredential(ctx context.Context, req *connect.Request[v1.DisableCredentialRequest]) (*connect.Response[v1.DisableCredentialResponse], error) {
+	return c.disableCredential.CallUnary(ctx, req)
+}
+
+// PausePeriodicPrompt calls admin.v1.AdminCommandService.PausePeriodicPrompt.
+func (c *adminCommandServiceClient) PausePeriodicPrompt(ctx context.Context, req *connect.Request[v1.PausePeriodicPromptRequest]) (*connect.Response[v1.PausePeriodicPromptResponse], error) {
+	return c.pausePeriodicPrompt.CallUnary(ctx, req)
+}
+
+// ResumePeriodicPrompt calls admin.v1.AdminCommandService.ResumePeriodicPrompt.
+func (c *adminCommandServiceClient) ResumePeriodicPrompt(ctx context.Context, req *connect.Request[v1.ResumePeriodicPromptRequest]) (*connect.Response[v1.ResumePeriodicPromptResponse], error) {
+	return c.resumePeriodicPrompt.CallUnary(ctx, req)
+}
+
+// DisconnectSubscriber calls admin.v1.AdminCommandService.DisconnectSubscriber.
+func (c *adminCommandServiceClient) DisconnectSubscriber(ctx context.Context, req *connect.Request[v1.DisconnectSubscriberRequest]) (*connect.Response[v1.DisconnectSubscriberResponse], error) {
+	return c.disconnectSubscriber.CallUnary(ctx, req)
+}
+
+// ExportIncidentEvidence calls admin.v1.AdminCommandService.ExportIncidentEvidence.
+func (c *adminCommandServiceClient) ExportIncidentEvidence(ctx context.Context, req *connect.Request[v1.ExportIncidentEvidenceRequest]) (*connect.Response[v1.ExportIncidentEvidenceResponse], error) {
+	return c.exportIncidentEvidence.CallUnary(ctx, req)
+}
+
+// RevealSecret calls admin.v1.AdminCommandService.RevealSecret.
+func (c *adminCommandServiceClient) RevealSecret(ctx context.Context, req *connect.Request[v1.RevealSecretRequest]) (*connect.Response[v1.RevealSecretResponse], error) {
+	return c.revealSecret.CallUnary(ctx, req)
+}
+
+// AdminCommandServiceHandler is an implementation of the admin.v1.AdminCommandService service.
+type AdminCommandServiceHandler interface {
+	RetryQueueJob(context.Context, *connect.Request[v1.RetryQueueJobRequest]) (*connect.Response[v1.RetryQueueJobResponse], error)
+	CancelQueueJob(context.Context, *connect.Request[v1.CancelQueueJobRequest]) (*connect.Response[v1.CancelQueueJobResponse], error)
+	CancelRun(context.Context, *connect.Request[v1.CancelRunRequest]) (*connect.Response[v1.CancelRunResponse], error)
+	AnswerAwait(context.Context, *connect.Request[v1.AnswerAwaitRequest]) (*connect.Response[v1.AnswerAwaitResponse], error)
+	ExpireAwait(context.Context, *connect.Request[v1.ExpireAwaitRequest]) (*connect.Response[v1.ExpireAwaitResponse], error)
+	ResourceReconcile(context.Context, *connect.Request[v1.ResourceReconcileRequest]) (*connect.Response[v1.ResourceReconcileResponse], error)
+	ResourceRestart(context.Context, *connect.Request[v1.ResourceRestartRequest]) (*connect.Response[v1.ResourceRestartResponse], error)
+	ResourceSuspend(context.Context, *connect.Request[v1.ResourceSuspendRequest]) (*connect.Response[v1.ResourceSuspendResponse], error)
+	ResourceTerminate(context.Context, *connect.Request[v1.ResourceTerminateRequest]) (*connect.Response[v1.ResourceTerminateResponse], error)
+	ResourceAdoptionProbe(context.Context, *connect.Request[v1.ResourceAdoptionProbeRequest]) (*connect.Response[v1.ResourceAdoptionProbeResponse], error)
+	ReprobeProvider(context.Context, *connect.Request[v1.ReprobeProviderRequest]) (*connect.Response[v1.ReprobeProviderResponse], error)
+	RevokeAPIKey(context.Context, *connect.Request[v1.RevokeAPIKeyRequest]) (*connect.Response[v1.RevokeAPIKeyResponse], error)
+	DisableCredential(context.Context, *connect.Request[v1.DisableCredentialRequest]) (*connect.Response[v1.DisableCredentialResponse], error)
+	PausePeriodicPrompt(context.Context, *connect.Request[v1.PausePeriodicPromptRequest]) (*connect.Response[v1.PausePeriodicPromptResponse], error)
+	ResumePeriodicPrompt(context.Context, *connect.Request[v1.ResumePeriodicPromptRequest]) (*connect.Response[v1.ResumePeriodicPromptResponse], error)
+	DisconnectSubscriber(context.Context, *connect.Request[v1.DisconnectSubscriberRequest]) (*connect.Response[v1.DisconnectSubscriberResponse], error)
+	ExportIncidentEvidence(context.Context, *connect.Request[v1.ExportIncidentEvidenceRequest]) (*connect.Response[v1.ExportIncidentEvidenceResponse], error)
+	RevealSecret(context.Context, *connect.Request[v1.RevealSecretRequest]) (*connect.Response[v1.RevealSecretResponse], error)
+}
+
+// NewAdminCommandServiceHandler builds an HTTP handler from the service implementation. It returns
+// the path on which to mount the handler and the handler itself.
+//
+// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
+// and JSON codecs. They also support gzip compression.
+func NewAdminCommandServiceHandler(svc AdminCommandServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	adminCommandServiceMethods := v1.File_admin_v1_admin_proto.Services().ByName("AdminCommandService").Methods()
+	adminCommandServiceRetryQueueJobHandler := connect.NewUnaryHandler(
+		AdminCommandServiceRetryQueueJobProcedure,
+		svc.RetryQueueJob,
+		connect.WithSchema(adminCommandServiceMethods.ByName("RetryQueueJob")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceCancelQueueJobHandler := connect.NewUnaryHandler(
+		AdminCommandServiceCancelQueueJobProcedure,
+		svc.CancelQueueJob,
+		connect.WithSchema(adminCommandServiceMethods.ByName("CancelQueueJob")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceCancelRunHandler := connect.NewUnaryHandler(
+		AdminCommandServiceCancelRunProcedure,
+		svc.CancelRun,
+		connect.WithSchema(adminCommandServiceMethods.ByName("CancelRun")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceAnswerAwaitHandler := connect.NewUnaryHandler(
+		AdminCommandServiceAnswerAwaitProcedure,
+		svc.AnswerAwait,
+		connect.WithSchema(adminCommandServiceMethods.ByName("AnswerAwait")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceExpireAwaitHandler := connect.NewUnaryHandler(
+		AdminCommandServiceExpireAwaitProcedure,
+		svc.ExpireAwait,
+		connect.WithSchema(adminCommandServiceMethods.ByName("ExpireAwait")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceResourceReconcileHandler := connect.NewUnaryHandler(
+		AdminCommandServiceResourceReconcileProcedure,
+		svc.ResourceReconcile,
+		connect.WithSchema(adminCommandServiceMethods.ByName("ResourceReconcile")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceResourceRestartHandler := connect.NewUnaryHandler(
+		AdminCommandServiceResourceRestartProcedure,
+		svc.ResourceRestart,
+		connect.WithSchema(adminCommandServiceMethods.ByName("ResourceRestart")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceResourceSuspendHandler := connect.NewUnaryHandler(
+		AdminCommandServiceResourceSuspendProcedure,
+		svc.ResourceSuspend,
+		connect.WithSchema(adminCommandServiceMethods.ByName("ResourceSuspend")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceResourceTerminateHandler := connect.NewUnaryHandler(
+		AdminCommandServiceResourceTerminateProcedure,
+		svc.ResourceTerminate,
+		connect.WithSchema(adminCommandServiceMethods.ByName("ResourceTerminate")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceResourceAdoptionProbeHandler := connect.NewUnaryHandler(
+		AdminCommandServiceResourceAdoptionProbeProcedure,
+		svc.ResourceAdoptionProbe,
+		connect.WithSchema(adminCommandServiceMethods.ByName("ResourceAdoptionProbe")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceReprobeProviderHandler := connect.NewUnaryHandler(
+		AdminCommandServiceReprobeProviderProcedure,
+		svc.ReprobeProvider,
+		connect.WithSchema(adminCommandServiceMethods.ByName("ReprobeProvider")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceRevokeAPIKeyHandler := connect.NewUnaryHandler(
+		AdminCommandServiceRevokeAPIKeyProcedure,
+		svc.RevokeAPIKey,
+		connect.WithSchema(adminCommandServiceMethods.ByName("RevokeAPIKey")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceDisableCredentialHandler := connect.NewUnaryHandler(
+		AdminCommandServiceDisableCredentialProcedure,
+		svc.DisableCredential,
+		connect.WithSchema(adminCommandServiceMethods.ByName("DisableCredential")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServicePausePeriodicPromptHandler := connect.NewUnaryHandler(
+		AdminCommandServicePausePeriodicPromptProcedure,
+		svc.PausePeriodicPrompt,
+		connect.WithSchema(adminCommandServiceMethods.ByName("PausePeriodicPrompt")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceResumePeriodicPromptHandler := connect.NewUnaryHandler(
+		AdminCommandServiceResumePeriodicPromptProcedure,
+		svc.ResumePeriodicPrompt,
+		connect.WithSchema(adminCommandServiceMethods.ByName("ResumePeriodicPrompt")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceDisconnectSubscriberHandler := connect.NewUnaryHandler(
+		AdminCommandServiceDisconnectSubscriberProcedure,
+		svc.DisconnectSubscriber,
+		connect.WithSchema(adminCommandServiceMethods.ByName("DisconnectSubscriber")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceExportIncidentEvidenceHandler := connect.NewUnaryHandler(
+		AdminCommandServiceExportIncidentEvidenceProcedure,
+		svc.ExportIncidentEvidence,
+		connect.WithSchema(adminCommandServiceMethods.ByName("ExportIncidentEvidence")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminCommandServiceRevealSecretHandler := connect.NewUnaryHandler(
+		AdminCommandServiceRevealSecretProcedure,
+		svc.RevealSecret,
+		connect.WithSchema(adminCommandServiceMethods.ByName("RevealSecret")),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/admin.v1.AdminCommandService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case AdminCommandServiceRetryQueueJobProcedure:
+			adminCommandServiceRetryQueueJobHandler.ServeHTTP(w, r)
+		case AdminCommandServiceCancelQueueJobProcedure:
+			adminCommandServiceCancelQueueJobHandler.ServeHTTP(w, r)
+		case AdminCommandServiceCancelRunProcedure:
+			adminCommandServiceCancelRunHandler.ServeHTTP(w, r)
+		case AdminCommandServiceAnswerAwaitProcedure:
+			adminCommandServiceAnswerAwaitHandler.ServeHTTP(w, r)
+		case AdminCommandServiceExpireAwaitProcedure:
+			adminCommandServiceExpireAwaitHandler.ServeHTTP(w, r)
+		case AdminCommandServiceResourceReconcileProcedure:
+			adminCommandServiceResourceReconcileHandler.ServeHTTP(w, r)
+		case AdminCommandServiceResourceRestartProcedure:
+			adminCommandServiceResourceRestartHandler.ServeHTTP(w, r)
+		case AdminCommandServiceResourceSuspendProcedure:
+			adminCommandServiceResourceSuspendHandler.ServeHTTP(w, r)
+		case AdminCommandServiceResourceTerminateProcedure:
+			adminCommandServiceResourceTerminateHandler.ServeHTTP(w, r)
+		case AdminCommandServiceResourceAdoptionProbeProcedure:
+			adminCommandServiceResourceAdoptionProbeHandler.ServeHTTP(w, r)
+		case AdminCommandServiceReprobeProviderProcedure:
+			adminCommandServiceReprobeProviderHandler.ServeHTTP(w, r)
+		case AdminCommandServiceRevokeAPIKeyProcedure:
+			adminCommandServiceRevokeAPIKeyHandler.ServeHTTP(w, r)
+		case AdminCommandServiceDisableCredentialProcedure:
+			adminCommandServiceDisableCredentialHandler.ServeHTTP(w, r)
+		case AdminCommandServicePausePeriodicPromptProcedure:
+			adminCommandServicePausePeriodicPromptHandler.ServeHTTP(w, r)
+		case AdminCommandServiceResumePeriodicPromptProcedure:
+			adminCommandServiceResumePeriodicPromptHandler.ServeHTTP(w, r)
+		case AdminCommandServiceDisconnectSubscriberProcedure:
+			adminCommandServiceDisconnectSubscriberHandler.ServeHTTP(w, r)
+		case AdminCommandServiceExportIncidentEvidenceProcedure:
+			adminCommandServiceExportIncidentEvidenceHandler.ServeHTTP(w, r)
+		case AdminCommandServiceRevealSecretProcedure:
+			adminCommandServiceRevealSecretHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// UnimplementedAdminCommandServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedAdminCommandServiceHandler struct{}
+
+func (UnimplementedAdminCommandServiceHandler) RetryQueueJob(context.Context, *connect.Request[v1.RetryQueueJobRequest]) (*connect.Response[v1.RetryQueueJobResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.RetryQueueJob is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) CancelQueueJob(context.Context, *connect.Request[v1.CancelQueueJobRequest]) (*connect.Response[v1.CancelQueueJobResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.CancelQueueJob is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) CancelRun(context.Context, *connect.Request[v1.CancelRunRequest]) (*connect.Response[v1.CancelRunResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.CancelRun is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) AnswerAwait(context.Context, *connect.Request[v1.AnswerAwaitRequest]) (*connect.Response[v1.AnswerAwaitResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.AnswerAwait is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) ExpireAwait(context.Context, *connect.Request[v1.ExpireAwaitRequest]) (*connect.Response[v1.ExpireAwaitResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.ExpireAwait is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) ResourceReconcile(context.Context, *connect.Request[v1.ResourceReconcileRequest]) (*connect.Response[v1.ResourceReconcileResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.ResourceReconcile is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) ResourceRestart(context.Context, *connect.Request[v1.ResourceRestartRequest]) (*connect.Response[v1.ResourceRestartResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.ResourceRestart is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) ResourceSuspend(context.Context, *connect.Request[v1.ResourceSuspendRequest]) (*connect.Response[v1.ResourceSuspendResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.ResourceSuspend is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) ResourceTerminate(context.Context, *connect.Request[v1.ResourceTerminateRequest]) (*connect.Response[v1.ResourceTerminateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.ResourceTerminate is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) ResourceAdoptionProbe(context.Context, *connect.Request[v1.ResourceAdoptionProbeRequest]) (*connect.Response[v1.ResourceAdoptionProbeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.ResourceAdoptionProbe is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) ReprobeProvider(context.Context, *connect.Request[v1.ReprobeProviderRequest]) (*connect.Response[v1.ReprobeProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.ReprobeProvider is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) RevokeAPIKey(context.Context, *connect.Request[v1.RevokeAPIKeyRequest]) (*connect.Response[v1.RevokeAPIKeyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.RevokeAPIKey is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) DisableCredential(context.Context, *connect.Request[v1.DisableCredentialRequest]) (*connect.Response[v1.DisableCredentialResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.DisableCredential is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) PausePeriodicPrompt(context.Context, *connect.Request[v1.PausePeriodicPromptRequest]) (*connect.Response[v1.PausePeriodicPromptResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.PausePeriodicPrompt is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) ResumePeriodicPrompt(context.Context, *connect.Request[v1.ResumePeriodicPromptRequest]) (*connect.Response[v1.ResumePeriodicPromptResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.ResumePeriodicPrompt is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) DisconnectSubscriber(context.Context, *connect.Request[v1.DisconnectSubscriberRequest]) (*connect.Response[v1.DisconnectSubscriberResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.DisconnectSubscriber is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) ExportIncidentEvidence(context.Context, *connect.Request[v1.ExportIncidentEvidenceRequest]) (*connect.Response[v1.ExportIncidentEvidenceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.ExportIncidentEvidence is not implemented"))
+}
+
+func (UnimplementedAdminCommandServiceHandler) RevealSecret(context.Context, *connect.Request[v1.RevealSecretRequest]) (*connect.Response[v1.RevealSecretResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin.v1.AdminCommandService.RevealSecret is not implemented"))
 }

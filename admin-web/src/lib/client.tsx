@@ -14,12 +14,21 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import { AdminReadService } from "@admin-gen/admin/v1/admin_pb";
+import {
+  AdminCommandService,
+  AdminReadService,
+} from "@admin-gen/admin/v1/admin_pb";
 import { useAuth } from "./auth";
 
 export type AdminClient = Client<typeof AdminReadService>;
+export type AdminCommandClient = Client<typeof AdminCommandService>;
 
-const ClientContext = createContext<AdminClient | null>(null);
+type Clients = {
+  read: AdminClient;
+  command: AdminCommandClient;
+};
+
+const ClientContext = createContext<Clients | null>(null);
 
 function bearerInterceptor(token: string | null): Interceptor {
   return (next) => async (req) => {
@@ -33,26 +42,34 @@ function bearerInterceptor(token: string | null): Interceptor {
 export function adminApiBaseUrl(): string {
   const fromEnv = (import.meta.env.VITE_ADMIN_API_URL as string | undefined)?.trim();
   if (fromEnv) return fromEnv.replace(/\/$/, "");
-  // Same-origin → Vite proxy or colocated reverse proxy.
   return "";
 }
 
 export function AdminClientProvider({ children }: { children: ReactNode }) {
   const { token } = useAuth();
 
-  const client = useMemo(() => {
+  const clients = useMemo(() => {
     const transport = createConnectTransport({
       baseUrl: adminApiBaseUrl() || window.location.origin,
       interceptors: [bearerInterceptor(token)],
     });
-    return createClient(AdminReadService, transport);
+    return {
+      read: createClient(AdminReadService, transport),
+      command: createClient(AdminCommandService, transport),
+    };
   }, [token]);
 
-  return <ClientContext.Provider value={client}>{children}</ClientContext.Provider>;
+  return <ClientContext.Provider value={clients}>{children}</ClientContext.Provider>;
 }
 
 export function useAdminClient(): AdminClient {
   const ctx = useContext(ClientContext);
   if (!ctx) throw new Error("useAdminClient requires AdminClientProvider");
-  return ctx;
+  return ctx.read;
+}
+
+export function useAdminCommandClient(): AdminCommandClient {
+  const ctx = useContext(ClientContext);
+  if (!ctx) throw new Error("useAdminCommandClient requires AdminClientProvider");
+  return ctx.command;
 }

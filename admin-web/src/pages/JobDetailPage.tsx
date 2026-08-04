@@ -1,3 +1,5 @@
+import { CommandConfirmModal } from "@/components/CommandConfirmModal";
+import { useOperator } from "@/lib/operator";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { listFilterHref } from "@/components/EntityLink";
@@ -9,12 +11,15 @@ import {
   ErrorState,
   PageHeader,
   Skeleton,
+  Button,
 } from "@/components/ui";
 import { fetchJob } from "@/data/details";
 import { useAdminClient } from "@/lib/client";
 import { formatTs } from "@/lib/format";
 
 export function JobDetailPage() {
+  const { can } = useOperator();
+  const [cmd, setCmd] = useState<"RetryQueueJob" | "CancelQueueJob" | null>(null);
   const { id = "" } = useParams();
   const client = useAdminClient();
   const [detail, setDetail] = useState<unknown>(null);
@@ -63,6 +68,19 @@ export function JobDetailPage() {
         description={kind}
         actions={<Badge variant="outline">{j.state ?? "job"}</Badge>}
       />
+      <div className="mb-3 flex flex-wrap gap-2" data-testid="job-actions">
+        {can("RetryQueueJob") && (
+          <Button size="sm" data-testid="action-retry-job" onClick={() => setCmd("RetryQueueJob")}>Retry job</Button>
+        )}
+        {can("CancelQueueJob") && (
+          <Button size="sm" variant="destructive" data-testid="action-cancel-job" onClick={() => setCmd("CancelQueueJob")}>Cancel job</Button>
+        )}
+      </div>
+      {cmd && (
+        <CommandConfirmModal open onClose={() => setCmd(null)} command={cmd}
+          args={{ jobId: BigInt(id || "0") }}
+          title={cmd === "RetryQueueJob" ? "Retry queue job" : "Cancel queue job"} />
+      )}
 
       <div className="mb-4 flex flex-wrap gap-3 text-sm">
         <Link

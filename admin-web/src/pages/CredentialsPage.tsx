@@ -1,10 +1,12 @@
+import { CommandConfirmModal } from "@/components/CommandConfirmModal";
+import { useOperator } from "@/lib/operator";
 import { useEffect, useState } from "react";
 import type { ColumnDef } from "@/components/AdminDataTable";
 import { CollectionPage } from "@/components/CollectionPage";
 import { EntityLink } from "@/components/EntityLink";
 import type { FilterFieldMeta } from "@/components/FilterBuilder";
 import { JsonViewer } from "@/components/JsonViewer";
-import { Badge, Skeleton } from "@/components/ui";
+import { Badge, Button, Skeleton } from "@/components/ui";
 import { fetchCredential } from "@/data/details";
 import { useAdminClient } from "@/lib/client";
 import { formatBytes, formatTs } from "@/lib/format";
@@ -109,16 +111,50 @@ function CredentialDetail({ id, row }: { id: string; row?: CredentialSummary }) 
 }
 
 export function CredentialsPage() {
+  const { can, operator } = useOperator();
+  const [disable, setDisable] = useState<{ tenantId: string; kind: string; name: string } | null>(null);
+  const [reveal, setReveal] = useState<{ tenantId: string; kind: string; name: string } | null>(null);
+
   return (
-    <CollectionPage<CredentialSummary>
+    <>
+      {disable && (
+        <CommandConfirmModal open onClose={() => setDisable(null)} command="DisableCredential"
+          args={{ tenantId: disable.tenantId, kind: disable.kind, name: disable.name }}
+          title="Disable credential" confirmPhrase="disable" />
+      )}
+      {reveal && (
+        <CommandConfirmModal open onClose={() => setReveal(null)} command="RevealSecret"
+          args={{ secretKind: "credential", tenantId: reveal.tenantId, credentialKind: reveal.kind, credentialName: reveal.name }}
+          title="Break-glass reveal credential" requireReauth />
+      )}
+      <CollectionPage<CredentialSummary>
       title="Credentials"
       description="Encrypted credential metadata only. Plaintext is never returned."
       collection="credentials"
+      toolbarExtra={<div className="flex gap-2">
+        {can("DisableCredential") && (
+          <Button size="sm" variant="outline" data-testid="action-disable-credential" onClick={() => {
+            const tenantId = window.prompt("Tenant id")?.trim();
+            const kind = window.prompt("Credential kind")?.trim();
+            const name = window.prompt("Credential name")?.trim();
+            if (tenantId && kind && name) setDisable({ tenantId, kind, name });
+          }}>Disable…</Button>
+        )}
+        {can("RevealSecret") && operator?.revealEnabled && (
+          <Button size="sm" variant="destructive" data-testid="action-reveal-credential" onClick={() => {
+            const tenantId = window.prompt("Tenant id")?.trim();
+            const kind = window.prompt("Credential kind")?.trim();
+            const name = window.prompt("Credential name")?.trim();
+            if (tenantId && kind && name) setReveal({ tenantId, kind, name });
+          }}>Reveal…</Button>
+        )}
+      </div>}
       columns={columns}
       filterFields={filters}
       rowKey={credKey}
       detailTitle={(id) => `Credential ${id}`}
       renderDetail={(id, row) => <CredentialDetail id={id} row={row} />}
     />
+    </>
   );
 }
