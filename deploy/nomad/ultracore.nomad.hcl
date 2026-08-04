@@ -1,40 +1,53 @@
-# Nomad job example for aleks' fleet. Adjust datacenter/count/resources.
+# Fleet Nomad job for ultracore (home datacenter).
+# IMAGE_TAG / DATABASE_URL / CORE_MASTER_KEY substituted at deploy time.
 job "ultracore" {
-  datacenters = ["dc1"]
+  datacenters = ["home"]
   type        = "service"
 
   group "api" {
-    count = 2
+    count = 1
 
     network {
-      port "http" { to = 8080 }
+      port "http" {}
     }
 
     service {
-      name = "cored"
-      port = "http"
+      name     = "cored"
+      port     = "http"
+      provider = "nomad"
+
+      tags = [
+        "traefik.enable=true",
+        "traefik.http.routers.cored.rule=Host(`core.fleet.clark.team`) || Host(`core.clark.team`)",
+        "traefik.http.routers.cored.entrypoints=websecure",
+        "traefik.http.routers.cored.tls.certresolver=letsencrypt",
+      ]
+
       check {
         type     = "http"
         path     = "/readyz"
-        interval = "5s"
-        timeout  = "2s"
+        interval = "10s"
+        timeout  = "3s"
       }
     }
 
     task "cored" {
       driver = "docker"
+
       config {
-        image   = "ghcr.io/aleksclark/ultracore:0.1.0"
+        image   = "ghcr.io/aleksclark/ultracore:${IMAGE_TAG}"
         command = "/usr/local/bin/cored"
         ports   = ["http"]
       }
+
       env {
-        DATABASE_URL     = "postgres://core:core@postgres.service.consul:5432/core?sslmode=disable"
-        CORE_MASTER_KEY  = "<set-via-vault-or-nomad-var>"
-        CORE_ADDR        = ":8080"
-        CORE_MIGRATE     = "false"
-        CORE_OTLP_ENDPOINT = "http://otel-collector:4317"
+        DATABASE_URL      = "${DATABASE_URL}"
+        CORE_MASTER_KEY   = "${CORE_MASTER_KEY}"
+        CORE_ADDR         = ":${NOMAD_PORT_http}"
+        CORE_MIGRATE      = "true"
+        CORE_OTLP_ENDPOINT = "http://192.168.0.24:4317"
       }
+
       resources {
         cpu    = 500
         memory = 512
@@ -43,38 +56,43 @@ job "ultracore" {
   }
 
   group "worker" {
-    count = 2
+    count = 1
 
     network {
-      port "health" { to = 8081 }
+      port "health" {}
     }
 
     service {
-      name = "coreworker"
-      port = "health"
+      name     = "coreworker"
+      port     = "health"
+      provider = "nomad"
+
       check {
         type     = "http"
         path     = "/readyz"
-        interval = "5s"
-        timeout  = "2s"
+        interval = "10s"
+        timeout  = "3s"
       }
     }
 
     task "coreworker" {
       driver = "docker"
+
       config {
-        image   = "ghcr.io/aleksclark/ultracore:0.1.0"
+        image   = "ghcr.io/aleksclark/ultracore:${IMAGE_TAG}"
         command = "/usr/local/bin/coreworker"
         ports   = ["health"]
       }
+
       env {
-        DATABASE_URL    = "postgres://core:core@postgres.service.consul:5432/core?sslmode=disable"
-        CORE_MASTER_KEY = "<set-via-vault-or-nomad-var>"
-        CORE_ADDR       = ":8081"
+        DATABASE_URL     = "${DATABASE_URL}"
+        CORE_MASTER_KEY  = "${CORE_MASTER_KEY}"
+        CORE_ADDR        = ":${NOMAD_PORT_health}"
         CORE_MAX_WORKERS = "10"
       }
+
       resources {
-        cpu    = 1000
+        cpu    = 500
         memory = 1024
       }
     }

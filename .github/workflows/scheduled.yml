@@ -62,7 +62,7 @@ jobs:
           CORE_BEZALEL_IMAGE: ultracore/bezalel:phase2-test
         run: |
           set -o pipefail
-          go test ./envprovider/k8s/... -count=1 -v -timeout 40m 2>&1 | tee /tmp/kubernetes-conformance.txt
+          go test ./provider/k8s/... -count=1 -v -timeout 40m 2>&1 | tee /tmp/kubernetes-conformance.txt
       - name: Publish the conformance record
         if: always()
         uses: actions/upload-artifact@v4
@@ -112,7 +112,7 @@ jobs:
           CORE_BEZALEL_IMAGE: ultracore/bezalel:phase2-test
         run: |
           set -o pipefail
-          go test ./envprovider/nomad/... -count=1 -v -timeout 40m 2>&1 | tee /tmp/nomad-conformance.txt
+          go test ./provider/nomad/... -count=1 -v -timeout 40m 2>&1 | tee /tmp/nomad-conformance.txt
       - name: Publish the conformance record
         if: always()
         uses: actions/upload-artifact@v4
