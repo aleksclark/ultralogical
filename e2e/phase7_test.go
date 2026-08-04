@@ -703,7 +703,7 @@ func TestA78_DevStackSmoke(t *testing.T) {
 		t.Fatalf("dev stack smoke failed: %v\n%s", err, out)
 	}
 	for _, want := range []string{
-		"seeded org",
+		"seeded tenant",
 		"streamed",
 		"ready",
 		"ran a command in the environment",

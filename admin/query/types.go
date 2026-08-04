@@ -11,16 +11,16 @@ import (
 
 // Cost limits applied to every compiled search.
 const (
-	DefaultLimit       = 50
-	MaxLimit           = 250
-	MaxFilters         = 16
-	MaxSorts           = 4
-	MaxQueryLength     = 256
-	MaxFilterValues    = 64
-	DefaultCursorTTL   = 24 * time.Hour
+	DefaultLimit        = 50
+	MaxLimit            = 250
+	MaxFilters          = 16
+	MaxSorts            = 4
+	MaxQueryLength      = 256
+	MaxFilterValues     = 64
+	DefaultCursorTTL    = 24 * time.Hour
 	DefaultQueryTimeout = 5 * time.Second
-	MaxPreviewBytes    = 256
-	MaxSummaryBytes    = 64 * 1024
+	MaxPreviewBytes     = 256
+	MaxSummaryBytes     = 64 * 1024
 )
 
 // FieldType is the scalar type of a descriptor field.
@@ -70,9 +70,9 @@ type Field struct {
 
 // Collection is the descriptor for one admin list surface.
 type Collection struct {
-	Name         string
-	Description  string
-	From         string // FROM clause body, e.g. "tenants t"
+	Name        string
+	Description string
+	From        string // FROM clause body, e.g. "tenants t"
 	// Select is the SELECT list for summary rows (without SELECT keyword).
 	Select string
 	// SelectArgs are fixed args prepended before filter args.
@@ -125,17 +125,17 @@ type PageInfo struct {
 
 // Errors returned before SQL construction.
 var (
-	ErrInvalidLimit   = errors.New("query: limit exceeds maximum of 250")
-	ErrInvalidField   = errors.New("query: unknown field")
-	ErrInvalidOp      = errors.New("query: operator not allowed for field")
-	ErrInvalidSort    = errors.New("query: field is not sortable")
-	ErrTooManyFilters = errors.New("query: too many filters")
-	ErrTooManySorts   = errors.New("query: too many sorts")
-	ErrQueryTooLong   = errors.New("query: text search too long")
-	ErrBadCursor      = errors.New("query: invalid or expired cursor")
-	ErrCursorMismatch = errors.New("query: cursor does not match request")
+	ErrInvalidLimit      = errors.New("query: limit exceeds maximum of 250")
+	ErrInvalidField      = errors.New("query: unknown field")
+	ErrInvalidOp         = errors.New("query: operator not allowed for field")
+	ErrInvalidSort       = errors.New("query: field is not sortable")
+	ErrTooManyFilters    = errors.New("query: too many filters")
+	ErrTooManySorts      = errors.New("query: too many sorts")
+	ErrQueryTooLong      = errors.New("query: text search too long")
+	ErrBadCursor         = errors.New("query: invalid or expired cursor")
+	ErrCursorMismatch    = errors.New("query: cursor does not match request")
 	ErrUnknownCollection = errors.New("query: unknown collection")
-	ErrBadValue       = errors.New("query: invalid filter value")
+	ErrBadValue          = errors.New("query: invalid filter value")
 )
 
 // ValidationError carries a human-readable reason.

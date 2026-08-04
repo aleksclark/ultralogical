@@ -126,7 +126,7 @@ func TestCoredHasNoAdminRoutes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if resp.StatusCode != http.StatusNotFound && resp.StatusCode != http.StatusMethodNotAllowed {
 			// Connect may return 415/404 depending on content-type; never 200.
 			if resp.StatusCode == http.StatusOK {
@@ -340,7 +340,7 @@ func TestAdminEventsScalePagination(t *testing.T) {
 				b.WriteByte(',')
 			}
 			i := len(args)
-			b.WriteString(fmt.Sprintf("($%d,$%d,'service','t','user_message',$%d)", i+1, i+2, i+3))
+			fmt.Fprintf(&b, "($%d,$%d,'service','t','user_message',$%d)", i+1, i+2, i+3)
 			args = append(args, string(sess.ID), seq, []byte(`{"text":"hello"}`))
 		}
 		if _, err := pool.Exec(ctx, b.String(), args...); err != nil {

@@ -161,7 +161,7 @@ func (c *Compiler) Compile(col Collection, req Request) (*Compiled, error) {
 	b.WriteString(strings.Join(orderParts, ", "))
 	// Fetch one extra row to detect has_more.
 	args = append(args, limit+1)
-	b.WriteString(fmt.Sprintf(" LIMIT $%d", len(args)))
+	fmt.Fprintf(&b, " LIMIT $%d", len(args))
 
 	return &Compiled{
 		SQL:         b.String(),

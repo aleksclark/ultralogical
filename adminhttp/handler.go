@@ -6,10 +6,10 @@ import (
 
 	"connectrpc.com/connect"
 
+	uc "github.com/aleksclark/ultracore"
 	"github.com/aleksclark/ultracore/admin/query"
 	adminv1 "github.com/aleksclark/ultracore/gen/go/admin/v1"
 	"github.com/aleksclark/ultracore/postgres"
-	uc "github.com/aleksclark/ultracore"
 )
 
 type readService struct {

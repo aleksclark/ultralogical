@@ -155,7 +155,6 @@ func tsPtr(t *time.Time) *timestamppb.Timestamp {
 	return timestamppb.New(*t)
 }
 
-
 func asString(v any) string {
 	if v == nil {
 		return ""
@@ -235,17 +234,6 @@ func asBool(v any) bool {
 		return t
 	default:
 		return false
-	}
-}
-
-func asBytes(v any) []byte {
-	switch t := v.(type) {
-	case []byte:
-		return t
-	case string:
-		return []byte(t)
-	default:
-		return nil
 	}
 }
 

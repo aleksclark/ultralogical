@@ -11,8 +11,8 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/aleksclark/ultracore/postgres"
 	"github.com/aleksclark/ultracore/gen/go/admin/v1/adminv1connect"
+	"github.com/aleksclark/ultracore/postgres"
 )
 
 // Config carries admin handler dependencies.
