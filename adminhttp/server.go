@@ -38,6 +38,9 @@ type Config struct {
 	Engine *command.Engine
 	// RevealEnabled surfaces WhoAmI.reveal_enabled (Engine also enforces).
 	RevealEnabled bool
+	// SPA is optional embedded static assets for the admin UI. API paths are
+	// never shadowed; missing assets fall through to index.html for SPA routes.
+	SPA http.FileSystem
 }
 
 func (cfg Config) directory() *authz.TokenDirectory {
@@ -90,10 +93,41 @@ func NewHandler(cfg Config) http.Handler {
 	})
 
 	var handler http.Handler = mux
+	if cfg.SPA != nil {
+		handler = withSPA(cfg.SPA, handler)
+	}
 	if cfg.CORSOrigin != "" {
 		handler = cors(cfg.CORSOrigin, handler)
 	}
 	return handler
+}
+
+// withSPA serves embedded SPA assets for browser GET/HEAD requests that are
+// not Connect-RPC or health endpoints. Connect paths always hit the API mux.
+func withSPA(fsys http.FileSystem, api http.Handler) http.Handler {
+	fileServer := http.FileServer(fsys)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			api.ServeHTTP(w, r)
+			return
+		}
+		path := r.URL.Path
+		if path == "/healthz" || path == "/readyz" || strings.HasPrefix(path, "/admin.v1.") {
+			api.ServeHTTP(w, r)
+			return
+		}
+		// Try exact asset first; fall back to index.html for client routes.
+		if path != "/" {
+			if f, err := fsys.Open(path); err == nil {
+				_ = f.Close()
+				fileServer.ServeHTTP(w, r)
+				return
+			}
+		}
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/"
+		fileServer.ServeHTTP(w, r2)
+	})
 }
 
 func cors(origin string, next http.Handler) http.Handler {

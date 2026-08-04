@@ -6,9 +6,11 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"embed"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -29,6 +31,9 @@ import (
 
 // BuildVersion is set via -ldflags at release time.
 var BuildVersion = "dev"
+
+//go:embed all:spa
+var spaEmbed embed.FS
 
 func main() {
 	log := slog.New(secrets.NewRedactingHandler(slog.NewJSONHandler(os.Stderr, nil)))
@@ -123,6 +128,13 @@ func run(log *slog.Logger) error {
 	})
 
 	adminStore := adminstore.NewAdminStore(pool, &query.Signer{Secret: []byte(cursorSecret)}, BuildVersion)
+	var spaFS http.FileSystem
+	if sub, err := fs.Sub(spaEmbed, "spa"); err == nil {
+		if f, err := sub.Open("index.html"); err == nil {
+			_ = f.Close()
+			spaFS = http.FS(sub)
+		}
+	}
 	handler := adminhttp.NewHandler(adminhttp.Config{
 		Store:         adminStore,
 		Tokens:        tokens,
@@ -131,6 +143,7 @@ func run(log *slog.Logger) error {
 		Log:           log,
 		Engine:        engine,
 		RevealEnabled: revealEnabled,
+		SPA:           spaFS,
 		Ready: func() error {
 			if err := pool.Ping(context.Background()); err != nil {
 				return fmt.Errorf("postgres: %w", err)
