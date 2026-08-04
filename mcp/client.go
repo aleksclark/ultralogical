@@ -111,7 +111,7 @@ func (c *Client) Initialize(ctx context.Context) error {
 	return c.rpc(ctx, "initialize", map[string]any{
 		"protocolVersion": "2024-11-05",
 		"capabilities":    map[string]any{},
-		"clientInfo":      map[string]string{"name": "ultralogical", "version": "0.1.0"},
+		"clientInfo":      map[string]string{"name": "ultracore", "version": "0.1.0"},
 	}, &map[string]any{})
 }
 

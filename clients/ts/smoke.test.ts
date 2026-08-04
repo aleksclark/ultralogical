@@ -1,68 +1,122 @@
-// Smoke test for the generated TypeScript client (acceptance A0.1 TS leg).
-// Driven by the Go functional suite (e2e/ts_smoke_test.go), which boots the
-// real stack and provides connection details via environment variables.
+// Expanded TS SDK smoke: session → run → stream → resource lifecycle → replay.
+// Driven by e2e/ts_smoke_test.go against the real stack.
 import { describe, expect, it } from "vitest";
-import { createClient } from "@connectrpc/connect";
-import { createConnectTransport } from "@connectrpc/connect-node";
-import { OrgService } from "./src/gen/ultra/v1/org_pb.js";
-import { SessionService } from "./src/gen/ultra/v1/session_pb.js";
-import { EventService } from "./src/gen/ultra/v1/event_pb.js";
+import { createClient, eventKind, RunState } from "./src/index.js";
 
-const baseUrl = process.env.ULTRAD_URL;
-const token = process.env.ULTRA_TOKEN;
-const orgId = process.env.ULTRA_ORG_ID;
+const baseUrl = process.env.CORED_URL;
+const token = process.env.CORE_TOKEN;
+const tenantId = process.env.CORE_TENANT_ID;
 
-describe.skipIf(!baseUrl)("ultralogical TS client smoke", () => {
-  const transport = createConnectTransport({
+describe.skipIf(!baseUrl)("ultracore TS SDK smoke", () => {
+  const client = createClient({
     baseUrl: baseUrl ?? "",
-    httpVersion: "1.1",
+    apiKey: token ?? "",
+    actor: "service/ts-smoke",
   });
-  const headers = { Authorization: `Bearer ${token}` };
 
-  it("creates and fetches a session, appends and subscribes to events", async () => {
-    const sessions = createClient(SessionService, transport);
-    const events = createClient(EventService, transport);
-    const orgs = createClient(OrgService, transport);
+  it("session roundtrip, append, subscribe", async () => {
+    const tenant = await client.tenants.getTenant({ tenantId: tenantId ?? "" });
+    expect(tenant.tenant?.id).toBe(tenantId);
 
-    // Org is visible to its member.
-    const org = await orgs.getOrg({ orgId: orgId ?? "" }, { headers });
-    expect(org.org?.id).toBe(orgId);
-
-    // CreateSession -> GetSession roundtrip (A0.1).
-    const created = await sessions.createSession(
-      { orgId: orgId ?? "", title: "ts smoke" },
-      { headers },
-    );
+    const created = await client.sessions.createSession({
+      tenantId: tenantId ?? "",
+      title: "ts smoke",
+      labels: { suite: "ts" },
+    });
     const sessionId = created.session?.id ?? "";
     expect(sessionId).not.toBe("");
 
-    const fetched = await sessions.getSession({ sessionId }, { headers });
+    const fetched = await client.sessions.getSession({ sessionId });
     expect(fetched.session?.title).toBe("ts smoke");
-    expect(fetched.session?.orgId).toBe(orgId);
+    expect(fetched.session?.tenantId).toBe(tenantId);
 
-    // Append returns the produced seq; Subscribe replays it.
-    const appended = await events.append(
-      {
-        sessionId,
-        payload: {
-          payload: { case: "userMessage", value: { text: "hello from ts" } },
-        },
-      },
-      { headers },
-    );
-    expect(appended.seq).toBe(1n);
+    const seq = await client.appendUserMessage(sessionId, "hello from ts");
+    expect(seq).toBe(1n);
 
-    for await (const resp of events.subscribe(
-      { sessionId, fromSeq: 0n },
-      { headers },
-    )) {
-      if (resp.event === undefined) continue; // keepalive
-      expect(resp.event.seq).toBe(1n);
-      expect(
-        resp.event.payload?.payload.case === "userMessage" &&
-          resp.event.payload.payload.value.text,
-      ).toBe("hello from ts");
+    for await (const ev of client.subscribe(sessionId, { fromSeq: 0n, reconnect: false })) {
+      expect(ev.seq).toBe(1n);
+      expect(eventKind(ev)).toBe("user_message");
       break;
     }
+
+    // Replay via Get matches subscribe.
+    const events = await client.getEvents(sessionId, 0n);
+    expect(events.length).toBeGreaterThanOrEqual(1);
+    expect(events[0]?.seq).toBe(1n);
+    expect(eventKind(events[0]!)).toBe("user_message");
+  });
+
+  it("start run against modelscript and stream deltas", async () => {
+    const created = await client.sessions.createSession({
+      tenantId: tenantId ?? "",
+      title: "ts run smoke",
+    });
+    const sessionId = created.session?.id ?? "";
+
+    const { run } = await client.startRun(sessionId, "say hello");
+    expect(run.id).not.toBe("");
+
+    const seen: string[] = [];
+    const deadline = Date.now() + 60_000;
+    for await (const ev of client.subscribe(sessionId, { fromSeq: 0n, reconnect: false })) {
+      seen.push(eventKind(ev));
+      if (seen.includes("run_completed") || seen.includes("run_failed") || seen.includes("run_awaiting")) {
+        break;
+      }
+      if (Date.now() > deadline) break;
+    }
+    expect(seen.some((k) => k === "run_started" || k === "text_delta" || k === "run_completed")).toBe(true);
+
+    const terminal = await client.awaitRun(run.id, {
+      timeoutMs: 30_000,
+      states: [RunState.COMPLETED, RunState.FAILED, RunState.AWAITING, RunState.CANCELLED],
+    });
+    expect([RunState.COMPLETED, RunState.FAILED, RunState.AWAITING, RunState.CANCELLED]).toContain(
+      terminal.state,
+    );
+
+    // Dump payloads for Go parity comparison (e2e/replay_parity_test.go).
+    const all = await client.getEvents(sessionId, 0n);
+    const payloads = all.map((e) => ({
+      seq: e.seq.toString(),
+      kind: eventKind(e),
+    }));
+    if (process.env.TS_REPLAY_OUT) {
+      const fs = await import("node:fs");
+      fs.writeFileSync(process.env.TS_REPLAY_OUT, JSON.stringify(payloads));
+    }
+  });
+
+  it("subscribe resume has no gaps after disconnect", async () => {
+    const created = await client.sessions.createSession({
+      tenantId: tenantId ?? "",
+      title: "ts resume",
+    });
+    const sessionId = created.session?.id ?? "";
+
+    // Seed a few events.
+    for (let i = 0; i < 5; i++) {
+      await client.appendUserMessage(sessionId, `msg-${i}`);
+    }
+
+    const first: bigint[] = [];
+    let last = 0n;
+    for await (const ev of client.subscribe(sessionId, { fromSeq: 0n, reconnect: false })) {
+      first.push(ev.seq);
+      last = ev.seq;
+      if (first.length >= 3) break;
+    }
+
+    const rest: bigint[] = [];
+    for await (const ev of client.subscribe(sessionId, { fromSeq: last, reconnect: false })) {
+      rest.push(ev.seq);
+      if (rest.length + first.length >= 5) break;
+    }
+
+    const all = [...first, ...rest];
+    for (let i = 1; i < all.length; i++) {
+      expect(all[i]).toBe(all[i - 1]! + 1n);
+    }
+    expect(new Set(all.map(String)).size).toBe(all.length);
   });
 });

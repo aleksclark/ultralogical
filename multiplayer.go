@@ -1,127 +1,10 @@
-package ultra
+package core
 
 import (
 	"context"
 	"encoding/json"
 	"time"
 )
-
-// Grants is the monotonically-decreasing authority attached to a run.
-type Grants struct {
-	Tools       []string `json:"tools"`
-	EnvAll      bool     `json:"env_all"`
-	Envs        []EnvID  `json:"envs,omitempty"`
-	MaySpawn    bool     `json:"may_spawn"`
-	MaxChildren int      `json:"max_children"`
-}
-
-// RootGrants are assigned by the server to human-started runs.
-func RootGrants() Grants {
-	return Grants{Tools: []string{"*"}, EnvAll: true, MaySpawn: true, MaxChildren: 16}
-}
-
-func stringSet(values []string) map[string]bool {
-	out := map[string]bool{}
-	for _, v := range values {
-		out[v] = true
-	}
-	return out
-}
-func envSet(values []EnvID) map[EnvID]bool {
-	out := map[EnvID]bool{}
-	for _, v := range values {
-		out[v] = true
-	}
-	return out
-}
-
-// CanonicalTools is every capability a run can be granted: the native tools
-// plus the environment tools Bezalel exposes.
-//
-// It exists so a run can be offered an explicit denial stub for the tools it
-// lacks. Simply omitting them would be worse: the agent framework answers an
-// unknown tool call by listing every tool that *does* exist, which is an
-// existence oracle. A uniform refusal reveals nothing.
-func CanonicalTools() []string {
-	return []string{
-		// Native session and orchestration tools.
-		"ask_user", "post_event",
-		"session_memory_get", "session_memory_list", "session_memory_set", "session_memory_delete",
-		"spawn_agent", "wait_for_agents", "run_agent_cohort",
-		"provision_env", "list_envs", "terminate_env",
-		// Environment tools served over MCP.
-		"bash", "view", "write", "edit", "multiedit", "delete", "ls", "glob", "grep",
-		"job_output", "job_kill", "download", "fetch", "web_fetch",
-		"lsp_diagnostics", "lsp_references", "lsp_restart",
-	}
-}
-
-// AllowsTool checks a canonical capability (not a displayed env alias).
-func (g Grants) AllowsTool(name string) bool { s := stringSet(g.Tools); return s["*"] || s[name] }
-
-// AllowsEnv checks environment authority.
-func (g Grants) AllowsEnv(id EnvID) bool { return g.EnvAll || envSet(g.Envs)[id] }
-
-// SubsetOf validates the privilege lattice.
-func (g Grants) SubsetOf(parent Grants) bool {
-	if g.EnvAll && !parent.EnvAll {
-		return false
-	}
-	if !parent.EnvAll {
-		for _, id := range g.Envs {
-			if !parent.AllowsEnv(id) {
-				return false
-			}
-		}
-	}
-	for _, tool := range g.Tools {
-		if !parent.AllowsTool(tool) {
-			return false
-		}
-	}
-	if g.MaySpawn && !parent.MaySpawn {
-		return false
-	}
-	return g.MaxChildren <= parent.MaxChildren
-}
-
-// ParticipantKind distinguishes humans and agents.
-type ParticipantKind string
-
-const (
-	ParticipantHuman ParticipantKind = "human"
-	ParticipantAgent ParticipantKind = "agent"
-)
-
-// PresenceState is a participant's current presence state.
-type PresenceState string
-
-const (
-	PresenceActive PresenceState = "active"
-	PresenceIdle   PresenceState = "idle"
-	PresenceLeft   PresenceState = "left"
-)
-
-// Participant is one human or agent in a session.
-type Participant struct {
-	SessionID     SessionID
-	Kind          ParticipantKind
-	ParticipantID string
-	Display       string
-	State         PresenceState
-	JoinedAt      time.Time
-	LastSeenAt    time.Time
-	LeftAt        *time.Time
-}
-
-// ParticipantStore manages session presence.
-type ParticipantStore interface {
-	Join(context.Context, Participant) (bool, error)
-	Heartbeat(context.Context, SessionID, ParticipantKind, string) error
-	Leave(context.Context, SessionID, ParticipantKind, string) (bool, error)
-	List(context.Context, SessionID) ([]Participant, error)
-	ReapIdle(context.Context, time.Time, int) ([]Participant, error)
-}
 
 // SessionMemoryEntry is durable session-scoped structured memory.
 type SessionMemoryEntry struct {
@@ -144,9 +27,9 @@ const (
 // (for example "investigation.findings.db").
 //
 // The convention is enforced rather than merely documented: memory is shared
-// across every run and human in a session, so keys with whitespace, control
-// characters, or empty segments make the namespace unreadable and invite
-// collisions between agents that meant different things.
+// across every run in a session, so keys with whitespace, control characters,
+// or empty segments make the namespace unreadable and invite collisions between
+// agents that meant different things.
 func ValidMemoryKey(key string) bool {
 	if key == "" || len(key) > MaxMemoryKeyBytes {
 		return false
@@ -225,6 +108,7 @@ type RunWait struct {
 // Terminal reports whether a wait has left the open state.
 func (w RunWait) Terminal() bool { return w.State != WaitOpen }
 
+// RunWaitMember is one child a wait is watching.
 type RunWaitMember struct {
 	WaitID  string
 	RunID   RunID
@@ -257,6 +141,7 @@ type WaitOutcome struct {
 	Pending   int                `json:"pending,omitempty"`
 }
 
+// RunWaitStore manages durable waits within one tenant.
 type RunWaitStore interface {
 	Create(context.Context, RunWait, []RunWaitMember) error
 	Get(context.Context, string) (RunWait, error)

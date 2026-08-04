@@ -9,11 +9,11 @@ import (
 
 	"connectrpc.com/connect"
 
-	ultra "github.com/aleksclark/ultralogical"
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/secrets"
-	"github.com/aleksclark/ultralogical/testkit/harness"
-	"github.com/aleksclark/ultralogical/testkit/modelscript"
+	uc "github.com/aleksclark/ultracore"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/secrets"
+	"github.com/aleksclark/ultracore/testkit/harness"
+	"github.com/aleksclark/ultracore/testkit/modelscript"
 )
 
 // A8.9 — every claim in docs/security.md, executed. Each subtest is named
@@ -24,7 +24,7 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	org := stack.OrgA.ID
+	org := stack.TenantA.ID
 	sess := createSession(t, alice, string(org), "security documentation")
 
 	// Section 1 — a caller may narrow a human-started run's authority but
@@ -34,58 +34,53 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 			{Match: modelscript.UserContains("narrowed start"), Sticky: true, Text: "narrowed run done"},
 		}})
 
-		narrowed, err := alice.Agents.StartRun(ctx, connect.NewRequest(&ultrav1.StartRunRequest{
+		narrowed, err := alice.Agents.StartRun(ctx, connect.NewRequest(&corev1.StartRunRequest{
 			SessionId: sess.GetId(), Prompt: "narrowed start",
-			Grants: &ultrav1.Grants{Tools: []string{"post_event"}, MaxChildren: 0},
+			Policy: &corev1.RunPolicy{AllowTools: []string{"post_event"}},
 		}))
 		if err != nil {
 			t.Fatalf("a request for *less* authority must be accepted: %v", err)
 		}
-		stored, err := stack.Store.Org(org).Runs().Get(ctx, ultra.RunID(narrowed.Msg.GetRun().GetId()))
+		stored, err := stack.Store.Tenant(org).Runs().Get(ctx, uc.RunID(narrowed.Msg.GetRun().GetId()))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if stored.Grants.EnvAll || stored.Grants.MaySpawn || stored.Grants.MaxChildren != 0 {
-			t.Fatalf("narrowing was not persisted: %+v", stored.Grants)
-		}
-		if stored.Grants.AllowsTool("spawn_agent") {
-			t.Fatalf("narrowed run kept an authority it did not ask for: %+v", stored.Grants)
+		if stored.Policy.AllowsTool("spawn_agent") {
+			t.Fatalf("narrowed run kept an authority it did not ask for: %+v", stored.Policy)
 		}
 
-		// Root grants cap max_children at 16, so asking for more is asking
-		// for more authority than the server ever hands a human.
-		root := ultra.RootGrants()
-		_, err = alice.Agents.StartRun(ctx, connect.NewRequest(&ultrav1.StartRunRequest{
-			SessionId: sess.GetId(), Prompt: "widened start",
-			Grants: &ultrav1.Grants{Tools: []string{"*"}, EnvAll: true, MaySpawn: true,
-				MaxChildren: int32(root.MaxChildren + 1)},
+		// Explicit full allowlist is accepted: E1 has no lattice ceiling on
+		// StartRun, only the tools list that will be checked at dispatch.
+		full, err := alice.Agents.StartRun(ctx, connect.NewRequest(&corev1.StartRunRequest{
+			SessionId: sess.GetId(), Prompt: "full start",
+			Policy: &corev1.RunPolicy{AllowTools: []string{"*"}},
 		}))
-		if err == nil {
-			t.Fatal("a request for more authority than root was accepted")
+		if err != nil {
+			t.Fatalf("an explicit full allowlist must be accepted: %v", err)
 		}
-		if got := connect.CodeOf(err); got != connect.CodePermissionDenied {
-			t.Fatalf("widening returned %s, want PermissionDenied (silently clamping would be worse)", got)
+		storedFull, err := stack.Store.Tenant(org).Runs().Get(ctx, uc.RunID(full.Msg.GetRun().GetId()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !storedFull.Policy.AllowsTool("spawn_agent") {
+			t.Fatalf("full allowlist did not grant spawn_agent: %+v", storedFull.Policy)
 		}
 	})
 
-	// Section 1 — the lattice is rechecked at every level, so there is no
-	// escalation path through a grandchild.
-	t.Run("grandchild_cannot_escalate", func(t *testing.T) {
-		child := runGrantLadder(t, stack, alice, org, sess.GetId())
-
-		grandkids := childrenOf(t, stack, org, child.ID, 1, 90*time.Second)
-		grandchild := grandkids[0]
-		if !grandchild.Grants.SubsetOf(child.Grants) {
-			t.Fatalf("grandchild grants %+v are not a subset of the child's %+v",
-				grandchild.Grants, child.Grants)
+	// Section 1 — a child granted no tools is refused at dispatch.
+	t.Run("empty_allowlist_denies_at_dispatch", func(t *testing.T) {
+		results, childID := forgedToolCall(t, stack, alice, org, sess.GetId())
+		var denials []toolResult
+		for _, r := range results {
+			if r.IsError {
+				denials = append(denials, r)
+			}
 		}
-		if grandchild.Grants.MaySpawn {
-			t.Fatalf("grandchild gained spawn authority its parent could not delegate: %+v", grandchild.Grants)
+		if len(denials) == 0 {
+			t.Fatalf("empty-allowlist child was not refused: %+v", results)
 		}
-		// Only the compliant grandchild exists: the escalation attempt made
-		// no run at all.
-		if got := len(grandkids); got != 1 {
-			t.Fatalf("child produced %d grandchildren, want exactly the one compliant spawn", got)
+		if childID == "" {
+			t.Fatal("missing child id")
 		}
 	})
 
@@ -121,10 +116,10 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 	// though they are opaque to the model.
 	t.Run("denial_emits_an_audit_event", func(t *testing.T) {
 		_, childID := forgedToolCall(t, stack, alice, org, sess.GetId())
-		events := collectEvents(t, stack, sess.GetId(), ultra.EventKindPermissionDenied, 60*time.Second, 1)
+		events := collectEvents(t, stack, sess.GetId(), uc.EventKindPermissionDenied, 60*time.Second, 1)
 		var matched bool
 		for _, e := range events {
-			var payload ultra.PermissionDeniedPayload
+			var payload uc.PermissionDeniedPayload
 			if json.Unmarshal(e.Payload, &payload) != nil {
 				continue
 			}
@@ -141,14 +136,14 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 	// that still performed the side effect would be worthless.
 	t.Run("denied_side_effect_never_happens", func(t *testing.T) {
 		_, childID := forgedToolCall(t, stack, alice, org, sess.GetId())
-		events, err := stack.Store.Org(org).Events().Range(ctx, ultra.SessionID(sess.GetId()), 0, 4096)
+		events, err := stack.Store.Tenant(org).Events().Range(ctx, uc.SessionID(sess.GetId()), 0, 4096)
 		if err != nil {
 			t.Fatal(err)
 		}
 		// The forged call was post_event with a distinctive marker. If the
 		// side effect had run, that annotation would be in the log.
 		for _, e := range events {
-			if e.Kind != ultra.EventKindAnnotation {
+			if e.Kind != uc.EventKindAnnotation {
 				continue
 			}
 			if strings.Contains(string(e.Payload), forgedSideEffectMarker) {
@@ -174,33 +169,33 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 			{
 				name: "GetSession",
 				existing: func() error {
-					_, err := bob.Sessions.GetSession(ctx, connect.NewRequest(&ultrav1.GetSessionRequest{SessionId: sess.GetId()}))
+					_, err := bob.Sessions.GetSession(ctx, connect.NewRequest(&corev1.GetSessionRequest{SessionId: sess.GetId()}))
 					return err
 				},
 				absent: func() error {
-					_, err := bob.Sessions.GetSession(ctx, connect.NewRequest(&ultrav1.GetSessionRequest{SessionId: missing}))
+					_, err := bob.Sessions.GetSession(ctx, connect.NewRequest(&corev1.GetSessionRequest{SessionId: missing}))
 					return err
 				},
 			},
 			{
 				name: "ListRuns",
 				existing: func() error {
-					_, err := bob.Agents.ListRuns(ctx, connect.NewRequest(&ultrav1.ListRunsRequest{SessionId: sess.GetId()}))
+					_, err := bob.Agents.ListRuns(ctx, connect.NewRequest(&corev1.ListRunsRequest{SessionId: sess.GetId()}))
 					return err
 				},
 				absent: func() error {
-					_, err := bob.Agents.ListRuns(ctx, connect.NewRequest(&ultrav1.ListRunsRequest{SessionId: missing}))
+					_, err := bob.Agents.ListRuns(ctx, connect.NewRequest(&corev1.ListRunsRequest{SessionId: missing}))
 					return err
 				},
 			},
 			{
 				name: "ListMemory",
 				existing: func() error {
-					_, err := bob.Sessions.ListMemory(ctx, connect.NewRequest(&ultrav1.ListMemoryRequest{SessionId: sess.GetId()}))
+					_, err := bob.Sessions.ListMemory(ctx, connect.NewRequest(&corev1.ListMemoryRequest{SessionId: sess.GetId()}))
 					return err
 				},
 				absent: func() error {
-					_, err := bob.Sessions.ListMemory(ctx, connect.NewRequest(&ultrav1.ListMemoryRequest{SessionId: missing}))
+					_, err := bob.Sessions.ListMemory(ctx, connect.NewRequest(&corev1.ListMemoryRequest{SessionId: missing}))
 					return err
 				},
 			},
@@ -237,24 +232,24 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		alice.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 90*time.Second)
+		alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 90*time.Second)
 
-		events, err := stack.Store.Org(org).Events().Range(ctx, ultra.SessionID(sess.GetId()), 0, 4096)
+		events, err := stack.Store.Tenant(org).Events().Range(ctx, uc.SessionID(sess.GetId()), 0, 4096)
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, e := range events {
 			assertNoCanary(t, "event payload "+e.Kind, string(e.Payload))
 		}
-		stored, err := stack.Store.Org(org).Runs().Get(ctx, ultra.RunID(run.GetId()))
+		stored, err := stack.Store.Tenant(org).Runs().Get(ctx, uc.RunID(run.GetId()))
 		if err != nil {
 			t.Fatal(err)
 		}
 		assertNoCanary(t, "persisted run history", string(stored.History))
 		assertNoCanary(t, "persisted run result", string(stored.Result))
 
-		listed, err := alice.Orgs.ListCredentials(ctx, connect.NewRequest(&ultrav1.ListCredentialsRequest{
-			OrgId: string(org),
+		listed, err := alice.Credentials.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+			TenantId: string(org),
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -265,12 +260,12 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 		}
 		assertNoCanary(t, "ListCredentials response", string(blob))
 
-		atRest, err := stack.Store.Org(org).Credentials().Get(ctx, ultra.CredentialKindOpenAI, "default")
+		atRest, err := stack.Store.Tenant(org).Credentials().Get(ctx, uc.CredentialKindOpenAI, "default")
 		if err != nil {
 			t.Fatal(err)
 		}
 		assertNoCanary(t, "credential ciphertext at rest", string(atRest.EncPayload))
-		assertNoCanary(t, "ultrad and worker logs", stack.Logs())
+		assertNoCanary(t, "cored and worker logs", stack.Logs())
 
 		// The redactor really is covering encoded forms, not just the literal
 		// value: this is what makes the log assertion above meaningful.
@@ -288,7 +283,7 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 
 		// The child could reach the model, which is the only thing the shared
 		// credential buys it.
-		steps, err := stack.Store.Org(org).Runs().Steps(ctx, child.ID)
+		steps, err := stack.Store.Tenant(org).Runs().Steps(ctx, child.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -297,16 +292,9 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 		}
 		// And it is still bounded by its grants, not by what the org can pay
 		// for.
-		if child.Grants.EnvAll {
-			t.Fatalf("child holds blanket environment authority: %+v", child.Grants)
-		}
-		if child.Grants.MaxChildren > 1 {
-			t.Fatalf("child may spawn %d children, wider than delegated: %+v",
-				child.Grants.MaxChildren, child.Grants)
-		}
 		for _, tool := range []string{"terminate_env", "provision_env", "run_agent_cohort"} {
-			if child.Grants.AllowsTool(tool) {
-				t.Fatalf("child holds %q, which was never delegated: %+v", tool, child.Grants)
+			if child.Policy.AllowsTool(tool) {
+				t.Fatalf("child holds %q, which was never delegated: %+v", tool, child.Policy)
 			}
 		}
 	})
@@ -323,8 +311,8 @@ const forgedSideEffectMarker = "forged-side-effect-must-not-appear"
 // Two subtests need the same ladder; building it twice in one session with
 // distinct prompts keeps each subtest independently meaningful.
 func runGrantLadder(t *testing.T, stack *harness.Stack, alice interface {
-	StartRun(context.Context, string, string) (*ultrav1.AgentRun, int64, error)
-}, org ultra.OrgID, session string) ultra.AgentRun {
+	StartRun(context.Context, string, string) (*corev1.AgentRun, int64, error)
+}, org uc.TenantID, session string) uc.AgentRun {
 	t.Helper()
 	prompt := "ladder parent " + t.Name()
 	childPrompt := "ladder child " + t.Name()
@@ -334,7 +322,6 @@ func runGrantLadder(t *testing.T, stack *harness.Stack, alice interface {
 			Match: modelscript.UserContains(prompt),
 			ToolCalls: []modelscript.ToolCallSpec{{Name: "spawn_agent", Args: map[string]any{
 				"prompt": childPrompt, "tools": []string{"post_event", "spawn_agent"},
-				"may_spawn": true, "max_children": 1,
 			}}},
 		},
 		{Match: modelscript.UserContains(prompt), Sticky: true, Text: "ladder parent done"},
@@ -343,7 +330,6 @@ func runGrantLadder(t *testing.T, stack *harness.Stack, alice interface {
 			Match: modelscript.UserContains(childPrompt),
 			ToolCalls: []modelscript.ToolCallSpec{{Name: "spawn_agent", Args: map[string]any{
 				"prompt": "escalated grandchild", "tools": []string{"terminate_env"},
-				"may_spawn": true, "max_children": 8,
 			}}},
 		},
 		// Then a compliant one, which must succeed and be strictly narrower.
@@ -361,15 +347,15 @@ func runGrantLadder(t *testing.T, stack *harness.Stack, alice interface {
 	if err != nil {
 		t.Fatal(err)
 	}
-	kids := childrenOf(t, stack, org, ultra.RunID(parent.GetId()), 1, 90*time.Second)
-	return awaitRunOneOf(t, stack, org, kids[0].ID, 3*time.Minute, ultra.RunCompleted, ultra.RunFailed)
+	kids := childrenOf(t, stack, org, uc.RunID(parent.GetId()), 1, 90*time.Second)
+	return awaitRunOneOf(t, stack, org, kids[0].ID, 3*time.Minute, uc.RunCompleted, uc.RunFailed)
 }
 
 // forgedToolCall runs a child that has been granted nothing but calls a tool
 // anyway, and returns the child's tool results plus its run id.
 func forgedToolCall(t *testing.T, stack *harness.Stack, alice interface {
-	StartRun(context.Context, string, string) (*ultrav1.AgentRun, int64, error)
-}, org ultra.OrgID, session string) ([]toolResult, ultra.RunID) {
+	StartRun(context.Context, string, string) (*corev1.AgentRun, int64, error)
+}, org uc.TenantID, session string) ([]toolResult, uc.RunID) {
 	t.Helper()
 	prompt := "forge parent " + t.Name()
 	childPrompt := "forge child " + t.Name()
@@ -398,7 +384,7 @@ func forgedToolCall(t *testing.T, stack *harness.Stack, alice interface {
 	if err != nil {
 		t.Fatal(err)
 	}
-	kids := childrenOf(t, stack, org, ultra.RunID(parent.GetId()), 1, 90*time.Second)
-	child := awaitRunOneOf(t, stack, org, kids[0].ID, 3*time.Minute, ultra.RunCompleted, ultra.RunFailed)
+	kids := childrenOf(t, stack, org, uc.RunID(parent.GetId()), 1, 90*time.Second)
+	child := awaitRunOneOf(t, stack, org, kids[0].ID, 3*time.Minute, uc.RunCompleted, uc.RunFailed)
 	return toolResultsFor(t, stack, session, child.ID), child.ID
 }

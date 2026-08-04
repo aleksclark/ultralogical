@@ -2,623 +2,973 @@
   "capabilities": {
     "auth_org_sessions": {
       "rpcs": [
-        "ultra.v1.OrgService/ListOrgs",
-        "ultra.v1.SessionService/CreateSession",
-        "ultra.v1.SessionService/ListSessions",
-        "ultra.v1.SessionService/GetSession"
+        "core.v1.TenantService/ListTenants",
+        "core.v1.SessionService/CreateSession",
+        "core.v1.SessionService/ListSessions",
+        "core.v1.SessionService/GetSession",
+        "core.v1.TenantService/GetTenant"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "create session, stream, answer, and reload history",
+      "go_functional": {
+        "file": "functional_test.go",
+        "test": "TestA01_SessionRoundtrip",
         "asserts": [
-          "getByRole(\"button\", { name: \"Browser golden\" })",
-          "data-status=\"completed\""
+          "created session malformed",
+          "ListSessions"
         ]
       },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_session_list_and_timeline",
+      "go_sdk": {
+        "file": "functional_test.go",
+        "test": "TestA01_SessionRoundtrip",
         "asserts": [
-          "await_rendered(cx, \"session-list\"",
-          "await_rendered(cx, \"session:GPUI session list\""
+          "created session malformed",
+          "ListSessions"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "session roundtrip, append, subscribe",
+        "asserts": [
+          "createSession",
+          "getSession",
+          "subscribe"
         ]
       }
     },
     "connection_state": {
       "rpcs": [
-        "ultra.v1.EventService/Subscribe"
+        "core.v1.EventService/Subscribe"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "renders shadcn primitives in dark mode",
+      "go_functional": {
+        "file": "functional_test.go",
+        "test": "TestA02_AppendFanout",
         "asserts": [
-          "getByTestId(\"connection-state\")"
+          "append seq = %d, want 1",
+          "subscriber"
         ]
       },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_session_list_and_timeline",
+      "go_sdk": {
+        "file": "functional_test.go",
+        "test": "TestA02_AppendFanout",
         "asserts": [
-          "connection:disconnected",
-          "await_rendered(cx, \"connection:live\""
+          "append seq = %d, want 1",
+          "subscriber"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "session roundtrip, append, subscribe",
+        "asserts": [
+          "subscribe",
+          "user_message"
         ]
       }
     },
     "incremental_streaming": {
       "rpcs": [
-        "ultra.v1.AgentService/StartRun"
+        "core.v1.RunService/StartRun"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "renders incremental streamed frames before completion",
+      "go_functional": {
+        "file": "agent_test.go",
+        "test": "TestA15_TrueStreaming",
         "asserts": [
-          "distinct rendered states",
-          "folded streamed delta frames"
+          "GetTextDelta",
+          "stream it"
         ]
       },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_incremental_stream_frames",
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestA15_TrueStreaming",
         "asserts": [
-          "window painted {} assistant frames",
-          "streamed frames, want at least 2"
+          "GetTextDelta",
+          "stream it"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "start run against modelscript and stream deltas",
+        "asserts": [
+          "startRun",
+          "run_started"
         ]
       }
     },
     "event_replay": {
       "rpcs": [
-        "ultra.v1.EventService/Append"
+        "core.v1.EventService/Append"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "replays identical timeline after reload",
+      "go_functional": {
+        "file": "functional_test.go",
+        "test": "TestA03_ResumeContract",
         "asserts": [
-          "expect(after).toEqual(before)"
+          "AppendUserMessage",
+          "events[0].GetSeq() != 2"
         ]
       },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "replays_identical_timeline",
+      "go_sdk": {
+        "file": "functional_test.go",
+        "test": "TestA03_ResumeContract",
         "asserts": [
-          "replayed timeline differs from the original",
-          "replayed row {label:?} was not painted"
+          "AppendUserMessage",
+          "events[0].GetSeq() != 2"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "session roundtrip, append, subscribe",
+        "asserts": [
+          "getEvents",
+          "user_message"
         ]
       }
     },
     "agent_stream_and_await": {
       "rpcs": [
-        "ultra.v1.AgentService/PromptRun",
-        "ultra.v1.AgentService/GetRun"
+        "core.v1.RunService/AnswerRun",
+        "core.v1.RunService/GetRun"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "create session, stream, answer, and reload history",
+      "go_functional": {
+        "file": "agent_test.go",
+        "test": "TestA13_AwaitingWithoutParkedWorkers",
         "asserts": [
-          "data-kind=\"question\"",
-          "great choice of blue"
+          "GetRunAwaiting",
+          "Which color?"
         ]
       },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_question_and_answers",
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestA13_AwaitingWithoutParkedWorkers",
         "asserts": [
-          "row:question: Which color? [red/blue]",
-          "resumed turn was not rendered"
+          "GetRunAwaiting",
+          "Which color?"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "start run against modelscript and stream deltas",
+        "asserts": [
+          "awaitRun",
+          "RunState"
         ]
       }
     },
     "credential_gateway_fields": {
       "rpcs": [
-        "ultra.v1.OrgService/PutCredential",
-        "ultra.v1.OrgService/ListCredentials"
+        "core.v1.CredentialService/PutCredential",
+        "core.v1.CredentialService/ListCredentials"
       ],
-      "web": {
-        "file": "settings.spec.ts",
-        "test": "settings supports API key, base URL, and extra headers",
+      "go_functional": {
+        "file": "agent_test.go",
+        "test": "TestCredentialRPCs",
         "asserts": [
-          "getByLabel(\"OpenAI API key\")",
-          "getByLabel(\"Extra headers JSON\")"
+          "GetCredential().GetName()",
+          "json.Unmarshal(plaintext"
         ]
       },
-      "rust": {
-        "file": "provider_e2e.rs",
-        "test": "stores_credential_with_gateway_fields",
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestCredentialRPCs",
         "asserts": [
-          "await_rendered(cx, \"credential:inference:openai:desktop-gateway\", FRAME_ATTEMPTS)",
-          "the credential surface exposed secret material"
+          "GetCredential().GetName()",
+          "json.Unmarshal(plaintext"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers credential_gateway_fields",
+        "asserts": [
+          "credential_gateway_fields"
         ]
       }
     },
     "credential_redaction": {
       "rpcs": [
-        "ultra.v1.OrgService/DeleteCredential"
+        "core.v1.CredentialService/DeleteCredential"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "never exposes credential material",
+      "go_functional": {
+        "file": "agent_test.go",
+        "test": "TestA17_ByoCredentials",
         "asserts": [
-          "expect(dom).not.toContain(canary)",
-          "encodeURIComponent(canary)"
+          "credential_missing",
+          "failure reason"
         ]
       },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "never_exposes_credential_material",
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestA17_ByoCredentials",
         "asserts": [
-          "rendered desktop state contains the credential canary",
-          "encoded credential canary"
+          "credential_missing",
+          "failure reason"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers credential_redaction",
+        "asserts": [
+          "credential_redaction"
         ]
       }
     },
     "dev_env_exec_usage": {
       "rpcs": [
-        "ultra.v1.EnvService/ProvisionEnv",
-        "ultra.v1.EnvService/ListEnvs",
-        "ultra.v1.EnvService/ExecPreview"
+        "core.v1.ResourceService/ProvisionResource",
+        "core.v1.ResourceService/ListResources",
+        "core.v1.ResourceService/ExecPreview"
       ],
-      "web": {
-        "file": "environment.spec.ts",
-        "test": "provisions a real environment and runs ExecPreview",
+      "go_functional": {
+        "file": "env_test.go",
+        "test": "TestA22_A23_AgentEnvPersistence",
         "asserts": [
-          "expect([...phases]).toContain(\"ready\")",
-          "getByTestId(\"env-output\")"
+          "provisionEnv",
+          "create README"
         ]
       },
-      "rust": {
-        "file": "environment_e2e.rs",
-        "test": "shows_environment_lifecycle_and_exec",
+      "go_sdk": {
+        "file": "env_test.go",
+        "test": "TestA22_A23_AgentEnvPersistence",
         "asserts": [
-          "window never painted a pre-ready lifecycle phase",
-          "await_rendered(cx, \"exec-output:gpui-environment\""
+          "provisionEnv",
+          "create README"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers dev_env_exec_usage",
+        "asserts": [
+          "dev_env_exec_usage"
         ]
       }
     },
     "dev_env_restart_rotation": {
       "rpcs": [
-        "ultra.v1.EnvService/RestartEnv",
-        "ultra.v1.EnvService/GetEnv"
+        "core.v1.ResourceService/RestartResource",
+        "core.v1.ResourceService/GetResource"
       ],
-      "web": {
-        "file": "environment.spec.ts",
-        "test": "restarts an environment and shows a new epoch",
+      "go_functional": {
+        "file": "phase7_test.go",
+        "test": "TestA74_EnvDurabilityAndRotation",
         "asserts": [
-          ".toBeGreaterThan(before)",
-          "after-restart"
+          "ExecPreview",
+          "cached client"
         ]
       },
-      "rust": {
-        "file": "environment_e2e.rs",
-        "test": "shows_environment_restart_epoch",
+      "go_sdk": {
+        "file": "phase7_test.go",
+        "test": "TestA74_EnvDurabilityAndRotation",
         "asserts": [
-          "await_rendered(cx, \"env:gpui-restart:ready:2\"",
-          "await_rendered(cx, \"exec-output:after-gpui-restart\""
-        ]
-      }
-    },
-    "env_usage_metering": {
-      "rpcs": [
-        "ultra.v1.BillingService/GetUsage",
-        "ultra.v1.EnvService/TerminateEnv"
-      ],
-      "web": {
-        "file": "environment.spec.ts",
-        "test": "shows org usage totals",
-        "asserts": [
-          "toHaveAttribute(\"data-open\", \"true\")",
-          ".toBe(\"false\")"
+          "ExecPreview",
+          "cached client"
         ]
       },
-      "rust": {
-        "file": "environment_e2e.rs",
-        "test": "shows_org_usage_totals",
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers dev_env_restart_rotation",
         "asserts": [
-          "interval should be open while the env is ready",
-          "usage interval never closed after termination"
-        ]
-      }
-    },
-    "presence": {
-      "rpcs": [
-        "ultra.v1.SessionService/Join",
-        "ultra.v1.SessionService/ListParticipants",
-        "ultra.v1.SessionService/Heartbeat"
-      ],
-      "web": {
-        "file": "multiplayer.spec.ts",
-        "test": "shows presence and session memory",
-        "asserts": [
-          "getByTestId(\"presence\")"
-        ]
-      },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_presence",
-        "asserts": [
-          "presence never reached rendered state",
-          "await_rendered(cx, \"row:you: presence check\""
+          "dev_env_restart_rotation"
         ]
       }
     },
     "prompt_input": {
       "rpcs": [
-        "ultra.v1.AgentService/ListRuns"
+        "core.v1.RunService/ListRuns"
       ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "create session, stream, answer, and reload history",
+      "go_functional": {
+        "file": "agent_test.go",
+        "test": "TestA11_HappyPathSequence",
         "asserts": [
-          "getByLabel(\"Prompt\").fill",
-          "getByRole(\"button\", { name: \"Send\" })"
+          "event_seq",
+          "RunStarted"
         ]
       },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "accepts_prompt_keystrokes",
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestA11_HappyPathSequence",
         "asserts": [
-          "cx.simulate_keystrokes(\"h i\")",
-          "await_rendered(cx, \"prompt:hi\""
+          "event_seq",
+          "RunStarted"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "start run against modelscript and stream deltas",
+        "asserts": [
+          "startRun",
+          "say hello"
         ]
       }
     },
     "provider_registration_kinds": {
       "rpcs": [
-        "ultra.v1.OrgService/RegisterProvider",
-        "ultra.v1.OrgService/ListProviders"
+        "core.v1.ProviderService/RegisterProvider",
+        "core.v1.ProviderService/ListProviders"
       ],
-      "web": {
-        "file": "providers.spec.ts",
-        "test": "registers a real cluster and shows its capabilities",
+      "go_functional": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
         "asserts": [
-          "toHaveAttribute(\"data-supported\", \"yes\")",
-          "toHaveAttribute(\"data-rate-class\", \"byo\")"
+          "ProviderKindBYOKubernetes",
+          "reachable cluster"
         ]
       },
-      "rust": {
-        "file": "provider_e2e.rs",
-        "test": "registers_provider_and_shows_capabilities",
+      "go_sdk": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
         "asserts": [
-          "await_rendered(cx, \"provider:desktop-cluster:byo_k8s:byo\", FRAME_ATTEMPTS)",
-          "the window hides the capabilities this cluster lacks"
+          "ProviderKindBYOKubernetes",
+          "reachable cluster"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers provider_registration_kinds",
+        "asserts": [
+          "provider_registration_kinds"
         ]
       }
     },
     "provider_failure_validation": {
       "rpcs": [
-        "ultra.v1.EnvService/GetEnv"
+        "core.v1.ResourceService/GetResource"
       ],
-      "web": {
-        "file": "providers.spec.ts",
-        "test": "shows why an unreachable cluster was refused",
+      "go_functional": {
+        "file": "provider_test.go",
+        "test": "TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing",
         "asserts": [
-          "toContainText(/unreachable/i)",
-          "toHaveCount(0)"
+          "unusable registration was accepted",
+          "invalid_argument"
         ]
       },
-      "rust": {
-        "file": "provider_e2e.rs",
-        "test": "shows_why_a_registration_was_refused",
+      "go_sdk": {
+        "file": "provider_test.go",
+        "test": "TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing",
         "asserts": [
-          "the refusal does not say the control plane was unreachable",
-          "a refused registration was stored"
-        ]
-      }
-    },
-    "shadcn_dark_surface": {
-      "rpcs": [
-        "ultra.v1.OrgService/GetOrg"
-      ],
-      "web": {
-        "file": "session.spec.ts",
-        "test": "renders shadcn primitives in dark mode",
-        "asserts": [
-          "toHaveClass(/dark/)",
-          "toHaveClass(/inline-flex/)"
+          "unusable registration was accepted",
+          "invalid_argument"
         ]
       },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_dark_application_shell",
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers provider_failure_validation",
         "asserts": [
-          "await_rendered(cx, \"window:dark\"",
-          "await_rendered(cx, \"usage-panel\""
+          "provider_failure_validation"
         ]
       }
     },
     "session_memory": {
       "rpcs": [
-        "ultra.v1.SessionService/SetMemory",
-        "ultra.v1.SessionService/ListMemory"
+        "core.v1.SessionService/SetMemory",
+        "core.v1.SessionService/ListMemory"
       ],
-      "web": {
-        "file": "multiplayer.spec.ts",
-        "test": "shows presence and session memory",
+      "go_functional": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
         "asserts": [
-          "getByTestId(\"session-memory\")",
-          "data-testid=\"memory-entry\"][data-key=\"web.note\""
+          "concurrent_writes_are_atomic",
+          "caps_are_enforced"
         ]
       },
-      "rust": {
-        "file": "desktop_e2e.rs",
-        "test": "renders_session_memory",
+      "go_sdk": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
         "asserts": [
-          "await_rendered(cx, \"memory:desktop.note",
-          "memory entry was never painted"
+          "concurrent_writes_are_atomic",
+          "caps_are_enforced"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers session_memory",
+        "asserts": [
+          "session_memory"
         ]
       }
     },
     "run_tree_linkage": {
-      "web": {
-        "file": "run-tree.spec.ts",
-        "test": "renders a spawned run tree with child lanes",
-        "asserts": [
-          "toHaveAttribute(\"data-parent-run-id\", parentId!)",
-          "getByTestId(\"cohort-marker\")"
-        ]
-      },
-      "rust": {
-        "file": "run_tree_e2e.rs",
-        "test": "renders_run_tree_and_lanes",
-        "asserts": [
-          "await_rendered(cx, \"run-tree\", FRAME_ATTEMPTS)",
-          "does not point at the parent"
-        ]
-      },
       "rpcs": [
-        "ultra.v1.AgentService/GetRunTree"
-      ]
+        "core.v1.RunService/GetRunTree"
+      ],
+      "go_functional": {
+        "file": "phase8_orchestration_test.go",
+        "test": "TestA81_SpawnDurabilityAndGrants",
+        "asserts": [
+          "spawn key",
+          "grandchild"
+        ]
+      },
+      "go_sdk": {
+        "file": "phase8_orchestration_test.go",
+        "test": "TestA81_SpawnDurabilityAndGrants",
+        "asserts": [
+          "spawn key",
+          "grandchild"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers run_tree_linkage",
+        "asserts": [
+          "run_tree_linkage"
+        ]
+      }
     },
     "run_lane_filter": {
-      "web": {
-        "file": "run-tree.spec.ts",
-        "test": "filters the timeline to one run lane",
-        "asserts": [
-          "toHaveAttribute(\"data-lane\", childId!)",
-          "Show all runs"
-        ]
-      },
-      "rust": {
-        "file": "run_tree_e2e.rs",
-        "test": "filters_timeline_to_one_lane",
-        "asserts": [
-          "await_rendered(cx, selector(format!(\"lane-rows:all:{all_rows}\")), FRAME_ATTEMPTS)",
-          "did not narrow the timeline"
-        ]
-      },
       "rpcs": [
-        "ultra.v1.AgentService/ListRuns"
-      ]
+        "core.v1.RunService/ListRuns"
+      ],
+      "go_functional": {
+        "file": "phase8_orchestration_test.go",
+        "test": "TestA83_CohortFanOutFanIn",
+        "asserts": [
+          "cohort created",
+          "cohort id"
+        ]
+      },
+      "go_sdk": {
+        "file": "phase8_orchestration_test.go",
+        "test": "TestA83_CohortFanOutFanIn",
+        "asserts": [
+          "cohort created",
+          "cohort id"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers run_lane_filter",
+        "asserts": [
+          "run_lane_filter"
+        ]
+      }
     },
     "wait_transitions": {
-      "web": {
-        "file": "run-tree.spec.ts",
-        "test": "shows wait and failure transitions",
-        "asserts": [
-          ".toBe(\"timed_out\")",
-          "data-run-state=\"completed\""
-        ]
-      },
-      "rust": {
-        "file": "run_tree_e2e.rs",
-        "test": "renders_wait_transitions",
-        "asserts": [
-          "rendered(cx, \"wait:cohort:timed_out:1\")",
-          "await_rendered(cx, \"row:run completed\", FRAME_ATTEMPTS)"
-        ]
-      },
       "rpcs": [
-        "ultra.v1.AgentService/GetRun"
-      ]
+        "core.v1.RunService/GetRun",
+        "core.v1.RunService/CancelRun"
+      ],
+      "go_functional": {
+        "file": "phase8_waits_test.go",
+        "test": "TestA82_WaitRaceMatrix",
+        "asserts": [
+          "awaitRunOneOf",
+          "outcome.Completed"
+        ]
+      },
+      "go_sdk": {
+        "file": "phase8_waits_test.go",
+        "test": "TestA82_WaitRaceMatrix",
+        "asserts": [
+          "awaitRunOneOf",
+          "outcome.Completed"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers wait_transitions",
+        "asserts": [
+          "wait_transitions"
+        ]
+      }
     },
     "agent_memory_inspection": {
-      "web": {
-        "file": "run-tree.spec.ts",
-        "test": "inspects agent-written session memory",
-        "asserts": [
-          "data-testid=\"memory-entry\"][data-key=\"browser.note\"",
-          "toContainText(\"written by an agent\")"
-        ]
-      },
-      "rust": {
-        "file": "run_tree_e2e.rs",
-        "test": "inspects_memory_and_reconnects",
-        "asserts": [
-          "await_rendered(cx, \"memory:desktop.note\", FRAME_ATTEMPTS)",
-          "await_rendered(cx, \"memory-count:1\", FRAME_ATTEMPTS)"
-        ]
-      },
       "rpcs": [
-        "ultra.v1.SessionService/ListMemory"
-      ]
+        "core.v1.SessionService/ListMemory"
+      ],
+      "go_functional": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
+        "asserts": [
+          "agent_written_memory_survives_run_boundaries",
+          "key_namespace_is_enforced"
+        ]
+      },
+      "go_sdk": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
+        "asserts": [
+          "agent_written_memory_survives_run_boundaries",
+          "key_namespace_is_enforced"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers agent_memory_inspection",
+        "asserts": [
+          "agent_memory_inspection"
+        ]
+      }
     },
     "replica_reconnect": {
-      "web": {
-        "file": "run-tree.spec.ts",
-        "test": "reconnects through a second replica",
-        "asserts": [
-          "getByTestId(\"replica-switch\")",
-          ".toBe(normalize(before))"
-        ]
-      },
-      "rust": {
-        "file": "run_tree_e2e.rs",
-        "test": "inspects_memory_and_reconnects",
-        "asserts": [
-          "open_app_at(cx, &alt)",
-          "the second replica rendered a different timeline"
-        ]
-      },
       "rpcs": [
-        "ultra.v1.EventService/Subscribe"
-      ]
-    },
-    "flow_catalog_versions": {
-      "rpcs": [
-        "ultra.v1.FlowService/ListFlows",
-        "ultra.v1.FlowService/GetFlow",
-        "ultra.v1.FlowService/ListFlowVersions"
+        "core.v1.EventService/Subscribe"
       ],
-      "web": {
-        "file": "flows.spec.ts",
-        "test": "lists the flow catalog and selects a version",
+      "go_functional": {
+        "file": "phase8_replicas_test.go",
+        "test": "TestA84_CrossReplicaSubscription",
         "asserts": [
-          "toHaveAttribute(\"data-type\", \"string\")",
-          "not.toContainText(\"reviewer v2\")"
+          "ReplicaBaseURLs",
+          "WorkerCount"
         ]
       },
-      "rust": {
-        "file": "flow_e2e.rs",
-        "test": "renders_flow_catalog_and_version_selection",
+      "go_sdk": {
+        "file": "phase8_replicas_test.go",
+        "test": "TestA84_CrossReplicaSubscription",
         "asserts": [
-          "await_rendered(cx, \"flow-version:1\", FRAME_ATTEMPTS)",
-          "selecting version 1 did not change the shown definition"
-        ]
-      }
-    },
-    "flow_authoring_validation": {
-      "rpcs": [
-        "ultra.v1.FlowService/PutFlow",
-        "ultra.v1.FlowService/ValidateFlow"
-      ],
-      "web": {
-        "file": "flows.spec.ts",
-        "test": "rejects an invalid flow with typed field paths",
-        "asserts": [
-          "toHaveAttribute(\"data-code\", \"invalid_template\")",
-          "toHaveAttribute(\"data-code\", \"unknown_tool\")"
+          "ReplicaBaseURLs",
+          "WorkerCount"
         ]
       },
-      "rust": {
-        "file": "flow_e2e.rs",
-        "test": "renders_flow_validation_errors",
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "subscribe resume has no gaps after disconnect",
         "asserts": [
-          "await_rendered(cx, \"flow-error:agents.reviewer.prompt:invalid_template\", FRAME_ATTEMPTS)",
-          "await_rendered(cx, \"flow-errors:0\", FRAME_ATTEMPTS)"
-        ]
-      }
-    },
-    "flow_invocation_progress": {
-      "rpcs": [
-        "ultra.v1.FlowService/InvokeFlow",
-        "ultra.v1.FlowService/ListFlowInvocations"
-      ],
-      "web": {
-        "file": "flows.spec.ts",
-        "test": "invokes a flow and shows provenance and progress",
-        "asserts": [
-          "toHaveAttribute(\"data-terminal-reason\", \"completed\")",
-          "expect(keys[keys.length - 1]).toBe(\"terminal\")"
-        ]
-      },
-      "rust": {
-        "file": "flow_e2e.rs",
-        "test": "renders_flow_invocation_progress",
-        "asserts": [
-          "await_rendered(cx, \"progress:stage_started:0\", FRAME_ATTEMPTS)",
-          "await_rendered(cx, \"flow-run:reviewer:completed\", FRAME_ATTEMPTS)"
-        ]
-      }
-    },
-    "flow_cancellation_recovery": {
-      "rpcs": [
-        "ultra.v1.FlowService/CancelFlowInvocation",
-        "ultra.v1.AgentService/CancelRun"
-      ],
-      "web": {
-        "file": "flows.spec.ts",
-        "test": "cancels an invocation and recovers state after reload",
-        "asserts": [
-          "toBe(\"cancelled\")",
-          "expect(after).toEqual(before)"
-        ]
-      },
-      "rust": {
-        "file": "flow_e2e.rs",
-        "test": "cancels_and_recovers_flow_invocation",
-        "asserts": [
-          "await_rendered(cx, \"invocation-reason:cancelled\", FRAME_ATTEMPTS)",
-          "the reconnected window rebuilt different progress"
-        ]
-      }
-    },
-    "flow_direct_invocation": {
-      "rpcs": [
-        "ultra.v1.FlowService/GetFlowInvocation"
-      ],
-      "web": {
-        "file": "flows.spec.ts",
-        "test": "opens an invocation directly by id",
-        "asserts": [
-          "expect(directProgress).toEqual(listedProgress)",
-          "toHaveAttribute(\"data-terminal-reason\", \"completed\")"
-        ]
-      },
-      "rust": {
-        "file": "flow_e2e.rs",
-        "test": "opens_invocation_by_id",
-        "asserts": [
-          "the two routes rendered different progress",
-          "await_rendered(direct_cx, \"flow-run:reviewer:completed\", FRAME_ATTEMPTS)"
+          "fromSeq",
+          "all[i]"
         ]
       }
     },
     "provider_ownership_and_hosting": {
       "rpcs": [
-        "ultra.v1.OrgService/DeleteProvider"
+        "core.v1.ProviderService/DeregisterProvider"
       ],
-      "web": {
-        "file": "providers.spec.ts",
-        "test": "names the hosting provider and refuses to orphan environments",
+      "go_functional": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
         "asserts": [
-          "toHaveAttribute(\"data-provider-name\", \"default\")",
-          "toContainText(/still hosts/i)"
+          "RegisterProvider",
+          "ListProviders"
         ]
       },
-      "rust": {
-        "file": "provider_e2e.rs",
-        "test": "names_the_hosting_provider_and_refuses_to_orphan",
+      "go_sdk": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
         "asserts": [
-          "the environment does not name the registration hosting it",
-          "a refused removal deleted the provider anyway"
+          "RegisterProvider",
+          "ListProviders"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers provider_ownership_and_hosting",
+        "asserts": [
+          "provider_ownership_and_hosting"
+        ]
+      }
+    },
+    "flat_allowlist_denial": {
+      "rpcs": [
+        "core.v1.RunService/StartRun"
+      ],
+      "go_functional": {
+        "file": "agent_test.go",
+        "test": "TestE1_FlatAllowlistDenialVisibility",
+        "asserts": [
+          "expected a tool result for the denied call",
+          "PermissionDenied"
+        ]
+      },
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestE1_FlatAllowlistDenialVisibility",
+        "asserts": [
+          "expected a tool result for the denied call",
+          "PermissionDenied"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers flat_allowlist_denial",
+        "asserts": [
+          "flat_allowlist_denial"
+        ]
+      }
+    },
+    "periodic_prompts": {
+      "rpcs": [
+        "core.v1.AutomationService/PutPeriodicPrompt",
+        "core.v1.AutomationService/ListPeriodicPrompts",
+        "core.v1.AutomationService/SetPeriodicPromptEnabled"
+      ],
+      "go_functional": {
+        "file": "automation_test.go",
+        "test": "TestA66_PeriodicPromptAPI",
+        "asserts": [
+          "GetPeriodicPrompts",
+          "list="
+        ]
+      },
+      "go_sdk": {
+        "file": "automation_test.go",
+        "test": "TestA66_PeriodicPromptAPI",
+        "asserts": [
+          "GetPeriodicPrompts",
+          "list="
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers periodic_prompts",
+        "asserts": [
+          "periodic_prompts"
+        ]
+      }
+    },
+    "tenant_isolation": {
+      "rpcs": [
+        "core.v1.TenantService/GetTenant",
+        "core.v1.TenantService/CreateTenant",
+        "core.v1.TenantService/CreateAPIKey",
+        "core.v1.TenantService/ListAPIKeys",
+        "core.v1.TenantService/RevokeAPIKey",
+        "core.v1.SessionService/UpdateSessionLabels"
+      ],
+      "go_functional": {
+        "file": "functional_test.go",
+        "test": "TestA06_TenantIsolation",
+        "asserts": [
+          "cross-tenant access succeeded",
+          "not_found"
+        ]
+      },
+      "go_sdk": {
+        "file": "functional_test.go",
+        "test": "TestA06_TenantIsolation",
+        "asserts": [
+          "cross-tenant access succeeded",
+          "not_found"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers tenant_isolation",
+        "asserts": [
+          "tenant_isolation"
+        ]
+      }
+    },
+    "env_terminate": {
+      "rpcs": [
+        "core.v1.ResourceService/TerminateResource"
+      ],
+      "go_functional": {
+        "file": "env_test.go",
+        "test": "TestA24_A25_A27_AuthReconcileMetering",
+        "asserts": [
+          "ResourceFailed",
+          "provisionEnv"
+        ]
+      },
+      "go_sdk": {
+        "file": "env_test.go",
+        "test": "TestA24_A25_A27_AuthReconcileMetering",
+        "asserts": [
+          "ResourceFailed",
+          "provisionEnv"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers env_terminate",
+        "asserts": [
+          "env_terminate"
+        ]
+      }
+    },
+    "session_memory_get_delete": {
+      "rpcs": [
+        "core.v1.SessionService/GetMemory",
+        "core.v1.SessionService/DeleteMemory"
+      ],
+      "go_functional": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
+        "asserts": [
+          "caps_are_enforced",
+          "concurrent_writes_are_atomic"
+        ]
+      },
+      "go_sdk": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
+        "asserts": [
+          "caps_are_enforced",
+          "concurrent_writes_are_atomic"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers session_memory_get_delete",
+        "asserts": [
+          "session_memory_get_delete"
+        ]
+      }
+    },
+    "e3_tenancy_keys_actor": {
+      "rpcs": [
+        "core.v1.TenantService/CreateTenant",
+        "core.v1.TenantService/CreateAPIKey",
+        "core.v1.TenantService/ListAPIKeys",
+        "core.v1.TenantService/RevokeAPIKey",
+        "core.v1.TenantService/GetTenant",
+        "core.v1.TenantService/ListTenants"
+      ],
+      "go_functional": {
+        "file": "tenancy_test.go",
+        "test": "TestA31_CrossTenantInvisibility",
+        "asserts": [
+          "cross-tenant get session succeeded",
+          "cross-tenant label query leaked",
+          "cross-tenant subscribe succeeded"
+        ]
+      },
+      "go_sdk": {
+        "file": "tenancy_test.go",
+        "test": "TestA31_CrossTenantInvisibility",
+        "asserts": [
+          "cross-tenant get session succeeded",
+          "cross-tenant label query leaked",
+          "cross-tenant subscribe succeeded"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers e3_tenancy_keys_actor",
+        "asserts": [
+          "e3_tenancy_keys_actor"
+        ]
+      }
+    },
+    "e3_key_lifecycle": {
+      "rpcs": [
+        "core.v1.TenantService/CreateAPIKey",
+        "core.v1.TenantService/RevokeAPIKey"
+      ],
+      "go_functional": {
+        "file": "tenancy_test.go",
+        "test": "TestA33_KeyLifecycle",
+        "asserts": [
+          "sessions key created a key",
+          "sessions key created a tenant",
+          "revoked key still authenticated"
+        ]
+      },
+      "go_sdk": {
+        "file": "tenancy_test.go",
+        "test": "TestA33_KeyLifecycle",
+        "asserts": [
+          "sessions key created a key",
+          "sessions key created a tenant",
+          "revoked key still authenticated"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers e3_key_lifecycle",
+        "asserts": [
+          "e3_key_lifecycle"
+        ]
+      }
+    },
+    "e3_actor_attribution": {
+      "rpcs": [
+        "core.v1.EventService/Append"
+      ],
+      "go_functional": {
+        "file": "tenancy_test.go",
+        "test": "TestA34_ActorAttribution",
+        "asserts": [
+          "student/jacob"
+        ]
+      },
+      "go_sdk": {
+        "file": "tenancy_test.go",
+        "test": "TestA34_ActorAttribution",
+        "asserts": [
+          "student/jacob"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers e3_actor_attribution",
+        "asserts": [
+          "e3_actor_attribution"
+        ]
+      }
+    },
+    "e3_labels": {
+      "rpcs": [
+        "core.v1.SessionService/CreateSession",
+        "core.v1.SessionService/ListSessions",
+        "core.v1.SessionService/UpdateSessionLabels"
+      ],
+      "go_functional": {
+        "file": "labels_test.go",
+        "test": "TestA35_LabelsCRUDAndSelectors",
+        "asserts": [
+          "equality:",
+          "in-selector",
+          "SessionLabelsChanged"
+        ]
+      },
+      "go_sdk": {
+        "file": "labels_test.go",
+        "test": "TestA35_LabelsCRUDAndSelectors",
+        "asserts": [
+          "equality:",
+          "in-selector",
+          "SessionLabelsChanged"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers e3_labels",
+        "asserts": [
+          "e3_labels"
+        ]
+      }
+    },
+    "e3_run_policy": {
+      "rpcs": [
+        "core.v1.RunService/StartRun"
+      ],
+      "go_functional": {
+        "file": "policy_test.go",
+        "test": "TestA36_PolicyEnforcement",
+        "asserts": [
+          "permission_denied",
+          "stored policy",
+          "empty ResourceKinds"
+        ]
+      },
+      "go_sdk": {
+        "file": "policy_test.go",
+        "test": "TestA36_PolicyEnforcement",
+        "asserts": [
+          "permission_denied",
+          "stored policy",
+          "empty ResourceKinds"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers e3_run_policy",
+        "asserts": [
+          "e3_run_policy"
+        ]
+      }
+    },
+    "event_get_range": {
+      "rpcs": [
+        "core.v1.EventService/Get"
+      ],
+      "go_functional": {
+        "file": "sdk_resume_test.go",
+        "test": "TestA45_SDKSubscribeResume",
+        "asserts": [
+          "GetEvents",
+          "no gaps",
+          "duplicate"
+        ]
+      },
+      "go_sdk": {
+        "file": "sdk_resume_test.go",
+        "test": "TestA45_SDKSubscribeResume",
+        "asserts": [
+          "GetEvents",
+          "SubscribeResume",
+          "duplicate"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "session roundtrip, append, subscribe",
+        "asserts": [
+          "getEvents"
+        ]
+      }
+    },
+    "provider_get": {
+      "rpcs": [
+        "core.v1.ProviderService/GetProvider"
+      ],
+      "go_functional": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
+        "asserts": [
+          "GetProvider",
+          "RegisterProvider"
+        ]
+      },
+      "go_sdk": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
+        "asserts": [
+          "GetProvider",
+          "RegisterProvider"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers provider_get",
+        "asserts": [
+          "provider_get"
+        ]
+      }
+    },
+    "session_archive": {
+      "rpcs": [
+        "core.v1.SessionService/ArchiveSession"
+      ],
+      "go_functional": {
+        "file": "sdk_resume_test.go",
+        "test": "TestA48_SessionArchive",
+        "asserts": [
+          "ArchiveSession",
+          "archived_at"
+        ]
+      },
+      "go_sdk": {
+        "file": "sdk_resume_test.go",
+        "test": "TestA48_SessionArchive",
+        "asserts": [
+          "ArchiveSession",
+          "archived_at"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers session_archive",
+        "asserts": [
+          "session_archive"
+        ]
+      }
+    },
+    "replay_parity": {
+      "rpcs": [
+        "core.v1.EventService/Subscribe",
+        "core.v1.RunService/StartRun"
+      ],
+      "go_functional": {
+        "file": "replay_parity_test.go",
+        "test": "TestA46_ReplayParityGoVsTS",
+        "asserts": [
+          "parity",
+          "payload"
+        ]
+      },
+      "go_sdk": {
+        "file": "replay_parity_test.go",
+        "test": "TestA46_ReplayParityGoVsTS",
+        "asserts": [
+          "parity",
+          "Go"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers replay_parity",
+        "asserts": [
+          "replay_parity"
         ]
       }
     }
   },
-  "deferred": {
-    "ultra.v1.SessionService/Leave": {
-      "owner": "A12.11",
-      "reason": "Phase 8 proved leave and stale-presence expiry through the Go functional suite, but no first-party client exposes an explicit leave control yet; that ships with the complete client applications."
-    },
-    "ultra.v1.SessionService/GetMemory": {
-      "owner": "A12.11",
-      "reason": "Phase 8 proved single-key reads, caps, and namespace rules through the Go functional suite; the shipped clients list memory rather than reading one key, so client evidence waits for the complete applications."
-    },
-    "ultra.v1.SessionService/DeleteMemory": {
-      "owner": "A12.11",
-      "reason": "Phase 8 proved deletion and replay after deletion through the Go functional suite; no client offers a delete control yet."
-    },
-    "ultra.v1.OrgService/CreateOrg": {
-      "owner": "A12.11",
-      "reason": "Org creation is an admin surface delivered with production auth in Phase 12."
-    },
-    "ultra.v1.OrgService/InviteMember": {
-      "owner": "A12.11",
-      "reason": "Membership management ships with the Phase 12 admin applications."
-    },
-    "ultra.v1.OrgService/ListMembers": {
-      "owner": "A12.11",
-      "reason": "Membership management ships with the Phase 12 admin applications."
-    },
-    "ultra.v1.AutomationService/PutPeriodicPrompt": {
-      "owner": "A11.7",
-      "reason": "Periodic schedules become user-facing once the real firing scheduler lands in Phase 11."
-    },
-    "ultra.v1.AutomationService/ListPeriodicPrompts": {
-      "owner": "A11.7",
-      "reason": "Periodic schedules become user-facing once the real firing scheduler lands in Phase 11."
-    },
-    "ultra.v1.AutomationService/SetPeriodicPromptEnabled": {
-      "owner": "A11.7",
-      "reason": "Enable/disable is proven with observed firings in Phase 11, not as a configuration record."
-    }
-  }
+  "deferred": {}
 }

@@ -1,26 +1,24 @@
 # AGENTS.md
 
-Ultralogical: a durable-session platform for agentic work — multi-tenant,
-event-sourced sessions that humans and agents share. Go backend, ConnectRPC
-API, Postgres, React/gpui UIs. **Phase 9** (versioned flow
-completion) is closed; **Phase 10** (real remote providers) is in progress.
+ultracore: a durable-session substrate for agentic work — multi-tenant,
+event-sourced sessions with an owned agent loop and pluggable per-tenant
+resource providers. Go backend, ConnectRPC API, Postgres. Consumers bring
+their own UI, identity, triggers, and policy.
 
 ## Cheatsheet
 
 ```sh
 task build             # go build ./...
-task lint              # buf lint + go vet + golangci-lint
+task lint              # buf lint + go vet + golangci-lint + extraction fences
 task generate          # regen from protos (commit the output!)
 task test              # unit + store + queue + provider conformance (docker)
 task test:functional   # e2e/ acceptance suite (real stack)
-task cli:test          # cmd/ultra CLI against the real stack
+task cli:test          # cmd/core CLI against the real stack
 task verify:codegen    # fail if generated output is stale
-task verify:coverage   # capability coverage matrix
-task dev               # one-command stack: pg + model + ultrad + worker + web
+task verify:coverage   # capability coverage matrix (v2: go_functional+go_sdk+ts_sdk)
+task sdk:test          # Go SDK + TS SDK smoke against real stack
+task dev               # one-command stack: pg + model + cored + coreworker
 task dev:smoke         # boot, smoke, tear down with leak checks
-task web:build         # typecheck + build React SPA
-task web:test          # Playwright golden on real stack
-task desktop:test      # GPUI golden on real stack
 ```
 
 - Go 1.25+ (toolchain auto-downloads), `buf`, `docker`, `task`, node 22
@@ -29,64 +27,51 @@ task desktop:test      # GPUI golden on real stack
 
 ## Iron rules
 
-1. **No mocks of our own components.** Tests run real Postgres, real ultrad,
-   real queue. The only permitted fake (Phase 1+) is the scripted LLM server.
+1. **No mocks of our own components.** Tests run real Postgres, real cored,
+   real queue. The only permitted fake is the scripted LLM server.
 2. **Tenancy is structural.** All tenant data access goes through
-   `store.Org(id)`. Missing and cross-tenant must be indistinguishable
+   `store.Tenant(id)`. Missing and cross-tenant must be indistinguishable
    (`not found`, same message).
 3. **Package layout is law.** Root package = domain types + interfaces only;
    subpackages grouped by dependency (`postgres/`, `http/`, `jobqueue/*`);
    main packages wire deps. See agent_docs/conventions.md.
 4. **Protos are the source of truth.** Edit `proto/`, run `task generate`,
-   commit generated code in the same change. Schema changes are additive-only.
+   commit generated code in the same change. Schema changes are additive-only
+   after the E4 baseline reset.
 5. **The event log is the contract.** Per-session gapless seq; NOTIFY is a
    wakeup hint, never a data channel; assert against `Subscribe` in tests.
 6. **Seams stay clean.** No river/pgx types past `jobqueue`; handlers depend
    only on root interfaces; new seam impls must pass the conformance suite
    unmodified.
-7. **UI stacks are fixed.** The web application uses React + Vite + Tailwind + shadcn/ui in a dark-mode theme. The Rust desktop application uses GPUI in a dark-mode theme. Shared client/state cores may be headless-testable, but first-party UI evidence must exercise the actual shadcn/GPUI application path.
-8. **Capability coverage is a merge gate.** Any public/API/UI capability added or changed must be exercised through the real Go functional suite and every supported first-party client (currently web Playwright + Rust desktop). Update `e2e/coverage.json` with existing test files; CI must validate references and run them. A filename or smoke test is not evidence—assert observable behavior, failure paths, replay, and tenancy.
-9. **Never claim unimplemented coverage.** Before coding a phase, inventory its acceptance bullets against actual implementation. Mark unbuilt bullets explicitly; do not rename partial work “complete,” map nonexistent tests, or let an omnibus test stand in for capabilities it does not assert.
-10. Follow the phase plan (`plan/`) — don't build ahead of the current phase
-   or invent stopgaps for unbuilt subsystems. A phase closes only when every
-   scoped acceptance test and its independent completion audit pass; groundwork,
-   CRUD, aliases, compilation, and smoke tests are not completion evidence.
+7. **Client evidence is the Go functional suite + SDKs.** There is no
+   first-party web or desktop UI. Public capabilities are proven through
+   `e2e/` Go tests (via `sdk/` through testclient) and TS SDK smoke.
+8. **Capability coverage is a merge gate (v2).** Every public capability maps
+   to `{go_functional, go_sdk, ts_sdk}` evidence in `e2e/coverage.json`.
+   `verify:coverage` validates references; CI runs all three legs. Assert
+   observable behavior, failure paths, replay, and tenancy.
+9. **Never claim unimplemented coverage.** Before coding a phase, inventory its
+   acceptance bullets against actual implementation. Mark unbuilt bullets
+   explicitly; do not rename partial work "complete," map nonexistent tests,
+   or let an omnibus test stand in for capabilities it does not assert.
+10. Follow the extraction plan (`agent_docs/core_extraction_plan/`) — don't
+   build ahead of the current phase or invent stopgaps for unbuilt subsystems.
+   A phase closes only when every scoped acceptance test and its independent
+   completion audit pass.
 
 ## Docs index
 
 | Doc | Read when |
 |---|---|
-| [agent_docs/architecture.md](agent_docs/architecture.md) | touching http, store, eventbus, tenancy, queue, clients/UIs |
+| [agent_docs/architecture.md](agent_docs/architecture.md) | touching http, store, eventbus, tenancy, queue |
 | [agent_docs/agent_loop.md](agent_docs/agent_loop.md) | touching fantasy, step jobs, credentials, modelscript |
-| [agent_docs/dev_environments.md](agent_docs/dev_environments.md) | touching env lifecycle, MCP, metering |
-| [agent_docs/providers.md](agent_docs/providers.md) | touching BYO/hosted provider registration and transport |
-| [agent_docs/multiplayer.md](agent_docs/multiplayer.md) | touching presence, grants, run trees, memory |
-| [agent_docs/flows.md](agent_docs/flows.md) | touching flow definitions, validation, invocation |
-| [agent_docs/phase_6_5_audit.md](agent_docs/phase_6_5_audit.md) | Phase 6 implemented/incomplete capability audit |
-| [agent_docs/phase_6_6.md](agent_docs/phase_6_6.md) | Phase 6.6 implemented/deferred status |
-| [agent_docs/phases_0_6_audit.md](agent_docs/phases_0_6_audit.md) | authoritative incomplete-work audit |
-| [agent_docs/phase_7_inventory.md](agent_docs/phase_7_inventory.md) | Phase 7 behavior-to-test inventory |
-| [agent_docs/phase_7_audit.md](agent_docs/phase_7_audit.md) | Phase 7 independent completion audit |
-| [agent_docs/phase_8_inventory.md](agent_docs/phase_8_inventory.md) | Phase 8 behavior-to-test inventory |
-| [agent_docs/phase_8_audit.md](agent_docs/phase_8_audit.md) | Phase 8 independent completion audit |
-| [agent_docs/phase_9_inventory.md](agent_docs/phase_9_inventory.md) | Phase 9 behavior-to-test inventory |
-| [agent_docs/phase_9_audit.md](agent_docs/phase_9_audit.md) | Phase 9 independent completion audit |
-| [agent_docs/phase_10_inventory.md](agent_docs/phase_10_inventory.md) | Phase 10 behavior-to-test inventory and progress |
-| [agent_docs/phase_10_audit.md](agent_docs/phase_10_audit.md) | Phase 10 independent completion audit and open items |
-| [agent_docs/throughput_baseline.md](agent_docs/throughput_baseline.md) | recording or comparing a throughput regression baseline |
-| [docs/flows.md](docs/flows.md) | flow definition language, lifecycle, CLI, examples |
-| [docs/security.md](docs/security.md) | grant lattice, denial visibility, tenancy, credential scope |
-| [agent_docs/cross_client_testing.md](agent_docs/cross_client_testing.md) | adding public capabilities or client tests |
+| [agent_docs/resources.md](agent_docs/resources.md) | touching resource lifecycle, MCP |
+| [agent_docs/providers.md](agent_docs/providers.md) | touching provider registration and transport |
+| [agent_docs/core_extraction_plan/index.md](agent_docs/core_extraction_plan/index.md) | extraction roadmap and iron rules |
+| [docs/security.md](docs/security.md) | tool allowlists, denial visibility, tenancy, credential scope |
+| [docs/deploy.md](docs/deploy.md) | cored/coreworker deploy, CORE_* config, health |
+| [docs/consumers.md](docs/consumers.md) | embedding SDKs, Actor/labels/policy conventions |
 | [agent_docs/package_layout.md](agent_docs/package_layout.md) | deciding where new code goes |
 | [agent_docs/testing.md](agent_docs/testing.md) | writing/running tests, using the harness |
 | [agent_docs/codegen.md](agent_docs/codegen.md) | changing protos, adding events/RPCs |
 | [agent_docs/conventions.md](agent_docs/conventions.md) | code style, layout rules, errors, migrations, never-do list |
-| [plan/index.md](plan/index.md) | architecture rationale + full roadmap |
-| [plan/phase_6_7.md](plan/phase_6_7.md) | security-critical remediation phase |
-| [plan/phase_7.md](plan/phase_7.md) | Phase 0–2 completion (closed) |
-| [plan/phase_8.md](plan/phase_8.md) | orchestration and distributed-session completion (closed) |
-| [plan/phase_9.md](plan/phase_9.md) | flow completion (closed) |
-| [plan/phase_10.md](plan/phase_10.md) | current phase: real remote providers |
-| [plan/phase_11.md](plan/phase_11.md) | advanced loop and automation completion |
-| [plan/phase_12.md](plan/phase_12.md) | production hardening and billing |
-| [plan/phase_13.md](plan/phase_13.md) | desktop distribution and release proof |

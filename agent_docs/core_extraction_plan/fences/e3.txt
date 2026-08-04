@@ -1,0 +1,15 @@
+# E3 tenancy/identity ban list. Closing E3 makes these CI-enforced.
+# Human identity and org naming must not reappear in live code.
+\bOrgID\b
+\bOrgScope\b
+\bOrgRole\b
+\bOrgMember\b
+\bUserID\b
+\btype User\b
+\bOrgService\b
+InviteMember
+ListMembers
+DevTokenAuthenticator
+ParseDevTokens
+DefaultGrants
+\btype Grants\b

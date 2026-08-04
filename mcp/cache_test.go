@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aleksclark/ultralogical/mcp"
+	"github.com/aleksclark/ultracore/mcp"
 )
 
 // An environment restart rotates its bearer token and bumps its epoch. The

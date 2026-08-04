@@ -1,0 +1,10 @@
+# E4 fences: pre-reshape service names and pre-squash schema identifiers.
+OrgService
+AgentService
+DeleteProviderRequest
+PromptRunRequest
+\bdev_envs\b
+INSERT INTO orgs
+FROM orgs
+INTO orgs
+\borg_id\b

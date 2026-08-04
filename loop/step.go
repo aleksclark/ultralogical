@@ -11,17 +11,17 @@ import (
 
 	"charm.land/fantasy"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/jobqueue"
-	"github.com/aleksclark/ultralogical/secrets"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/jobqueue"
+	"github.com/aleksclark/ultracore/secrets"
 )
 
-// StepJob is one durable step of one agent run. Org and session ride along
+// StepJob is one durable step of one agent run. Tenant and session ride along
 // so redelivered jobs need no directory lookups; they are immutable for the
 // life of the run.
 type StepJob struct {
 	RunID     string `json:"run_id"`
-	OrgID     string `json:"org_id"`
+	TenantID     string `json:"tenant_id"`
 	SessionID string `json:"session_id"`
 	StepIndex int    `json:"step_index"`
 }
@@ -31,7 +31,7 @@ func (StepJob) Kind() string { return "agent.step" }
 
 // StepWorker executes StepJobs.
 type StepWorker struct {
-	Store    ultra.Store
+	Store    uc.Store
 	Keyring  secrets.Keyring
 	Enqueue  jobqueue.TxEnqueuer
 	Registry *Registry
@@ -66,9 +66,9 @@ var errCancelledCommit = errors.New("loop: run cancelled")
 
 // txStale runs fn in a transaction, translating the cancelled-commit
 // sentinel into a committed transaction + errStale result.
-func (w *StepWorker) txStale(ctx context.Context, fn func(ultra.Store) error) error {
+func (w *StepWorker) txStale(ctx context.Context, fn func(uc.Store) error) error {
 	cancelled := false
-	err := w.Store.Tx(ctx, func(txs ultra.Store) error {
+	err := w.Store.Tx(ctx, func(txs uc.Store) error {
 		err := fn(txs)
 		if errors.Is(err, errCancelledCommit) {
 			cancelled = true
@@ -87,9 +87,9 @@ func (w *StepWorker) txStale(ctx context.Context, fn func(ultra.Store) error) er
 
 // Work implements jobqueue.Worker[StepJob].
 func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
-	scope := w.Store.Org(ultra.OrgID(job.OrgID))
-	runID := ultra.RunID(job.RunID)
-	sessionID := ultra.SessionID(job.SessionID)
+	scope := w.Store.Tenant(uc.TenantID(job.TenantID))
+	runID := uc.RunID(job.RunID)
+	sessionID := uc.SessionID(job.SessionID)
 
 	// Phase 1: claim. Validates state, handles cancellation requested while
 	// queued, detects redelivery of already-committed steps, and moves
@@ -109,8 +109,8 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 			w.Log.Error("loop: encode event", "kind", kind, "error", err)
 			return
 		}
-		if _, err := events.Append(ctx, sessionID, ultra.Event{
-			Actor:   ultra.Actor{Type: ultra.ActorAgent, ID: job.RunID},
+		if _, err := events.Append(ctx, sessionID, uc.Event{
+			Actor:   uc.ActorAgent(uc.RunID(job.RunID)),
 			Kind:    kind,
 			Payload: b,
 		}); err != nil {
@@ -118,7 +118,7 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 		}
 	}
 
-	appendEvent(ultra.EventKindStepStarted, ultra.StepStartedPayload{
+	appendEvent(uc.EventKindStepStarted, uc.StepStartedPayload{
 		RunID: runID, StepIndex: job.StepIndex, Attempt: attempt,
 	})
 
@@ -136,12 +136,12 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 
 	def, err := w.Registry.Resolve(run.LoopKind, run.LoopVersion)
 	if err != nil {
-		return w.failRun(ctx, job, ultra.FailureInternal, "unknown loop version — contact support")
+		return w.failRun(ctx, job, uc.FailureInternal, "unknown loop version — contact support")
 	}
 
 	env, err := DecodeEnvelope(run.History)
 	if err != nil {
-		return w.failRun(ctx, job, ultra.FailureInternal, "corrupt run history")
+		return w.failRun(ctx, job, uc.FailureInternal, "corrupt run history")
 	}
 	// Persist a deterministic compaction marker before model execution. Full
 	// history remains stored; the marker is observable and crash-resumable.
@@ -150,7 +150,7 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 		env.Compactions = append(env.Compactions, Compaction{AtStep: job.StepIndex, CoveredMessages: covered, Summary: "Earlier conversation compacted; full history retained."})
 		encoded, _ := env.Encode()
 		_ = scope.Runs().SetHistory(ctx, runID, encoded)
-		appendEvent(ultra.EventKindHistoryCompacted, ultra.HistoryCompactedPayload{RunID: runID, CoveredMessages: covered, SummaryTokens: 8})
+		appendEvent(uc.EventKindHistoryCompacted, uc.HistoryCompactedPayload{RunID: runID, CoveredMessages: covered, SummaryTokens: 8})
 	}
 
 	// Cancellation: poll the run row while the step executes; abort the
@@ -167,10 +167,10 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 	// the human or read the session's shared memory just because those tools
 	// happen to be built in.
 	var tools []fantasy.AgentTool
-	if run.Grants.AllowsTool("ask_user") {
+	if run.Policy.AllowsTool("ask_user") {
 		tools = append(tools, newAskUserTool(rec))
 	}
-	if run.Grants.AllowsTool("post_event") {
+	if run.Policy.AllowsTool("post_event") {
 		tools = append(tools, newPostEventTool(events, sessionID, runID))
 	}
 	tools = append(tools, memoryTools(w.Store, run)...)
@@ -211,7 +211,7 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 			// user perceived: text, then the tool call it led to.
 			batcher.flushAll()
 			rec.toolsCalled++
-			appendEvent(ultra.EventKindToolCallStart, ultra.ToolCallStartedPayload{
+			appendEvent(uc.EventKindToolCallStart, uc.ToolCallStartedPayload{
 				RunID: runID, StepIndex: job.StepIndex,
 				ToolCallID: tc.ToolCallID, Name: tc.ToolName, Input: tc.Input,
 			})
@@ -227,7 +227,7 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 				content = out.Error.Error()
 				isError = true
 			}
-			appendEvent(ultra.EventKindToolResult, ultra.ToolResultPayload{
+			appendEvent(uc.EventKindToolResult, uc.ToolResultPayload{
 				RunID: runID, StepIndex: job.StepIndex,
 				ToolCallID: tr.ToolCallID, Name: tr.ToolName,
 				Content: content, IsError: isError,
@@ -241,7 +241,7 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 		var providerErr *fantasy.ProviderError
 		if errors.As(streamErr, &providerErr) && providerErr.IsRetryable() && len(modelConfig.Fallbacks) > 0 {
 			fallback := modelConfig.Fallbacks[0]
-			appendEvent(ultra.EventKindModelFallback, ultra.ModelFallbackPayload{RunID: runID, From: modelConfig.Provider + "/" + modelConfig.ModelID, To: fallback.Provider + "/" + fallback.ModelID, Reason: "retryable provider error"})
+			appendEvent(uc.EventKindModelFallback, uc.ModelFallbackPayload{RunID: runID, From: modelConfig.Provider + "/" + modelConfig.ModelID, To: fallback.Provider + "/" + fallback.ModelID, Reason: "retryable provider error"})
 			fallbackModel, resolveErr := ResolveModel(ctx, scope, w.Keyring, fallback)
 			if resolveErr == nil {
 				fallbackAgent := fantasy.NewAgent(fallbackModel, fantasy.WithSystemPrompt(def.SystemPrompt), fantasy.WithTools(tools...))
@@ -257,17 +257,17 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 }
 
 // claim validates and transitions the run under a row lock.
-func (w *StepWorker) claim(ctx context.Context, job StepJob) (ultra.AgentRun, int, error) {
-	var run ultra.AgentRun
+func (w *StepWorker) claim(ctx context.Context, job StepJob) (uc.AgentRun, int, error) {
+	var run uc.AgentRun
 	var attempt int
-	err := w.txStale(ctx, func(txs ultra.Store) error {
-		scope := txs.Org(ultra.OrgID(job.OrgID))
+	err := w.txStale(ctx, func(txs uc.Store) error {
+		scope := txs.Tenant(uc.TenantID(job.TenantID))
 		var err error
-		run, err = scope.Runs().GetForUpdate(ctx, ultra.RunID(job.RunID))
+		run, err = scope.Runs().GetForUpdate(ctx, uc.RunID(job.RunID))
 		if err != nil {
 			return err
 		}
-		if run.State != ultra.RunPending && run.State != ultra.RunRunning {
+		if run.State != uc.RunPending && run.State != uc.RunRunning {
 			return errStale
 		}
 		if run.CancelRequestedAt != nil {
@@ -288,15 +288,15 @@ func (w *StepWorker) claim(ctx context.Context, job StepJob) (ultra.AgentRun, in
 			}
 		}
 		attempt = w.countAttempts(ctx, scope, job) + 1
-		if run.State == ultra.RunPending {
-			if err := scope.Runs().SetState(ctx, run.ID, ultra.RunRunning, "", ""); err != nil {
+		if run.State == uc.RunPending {
+			if err := scope.Runs().SetState(ctx, run.ID, uc.RunRunning, "", ""); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		if errors.Is(err, ultra.ErrNotFound) {
+		if errors.Is(err, uc.ErrNotFound) {
 			return run, 0, errStale
 		}
 		return run, 0, err
@@ -306,20 +306,20 @@ func (w *StepWorker) claim(ctx context.Context, job StepJob) (ultra.AgentRun, in
 
 // countAttempts counts prior StepStarted events for this step index by
 // scanning the run's step_started events. Cheap for phase-1 scale.
-func (w *StepWorker) countAttempts(ctx context.Context, scope ultra.OrgScope, job StepJob) int {
+func (w *StepWorker) countAttempts(ctx context.Context, scope uc.TenantScope, job StepJob) int {
 	count := 0
 	var from int64
 	for {
-		batch, err := scope.Events().Range(ctx, ultra.SessionID(job.SessionID), from, 512)
+		batch, err := scope.Events().Range(ctx, uc.SessionID(job.SessionID), from, 512)
 		if err != nil || len(batch) == 0 {
 			return count
 		}
 		for _, e := range batch {
 			from = e.Seq
-			if e.Kind != ultra.EventKindStepStarted {
+			if e.Kind != uc.EventKindStepStarted {
 				continue
 			}
-			var p ultra.StepStartedPayload
+			var p uc.StepStartedPayload
 			if json.Unmarshal(e.Payload, &p) == nil && string(p.RunID) == job.RunID && p.StepIndex == job.StepIndex {
 				count++
 			}
@@ -328,7 +328,7 @@ func (w *StepWorker) countAttempts(ctx context.Context, scope ultra.OrgScope, jo
 }
 
 // pollCancel cancels the step context when a cancel request lands.
-func (w *StepWorker) pollCancel(ctx context.Context, scope ultra.OrgScope, runID ultra.RunID, cancel context.CancelCauseFunc) {
+func (w *StepWorker) pollCancel(ctx context.Context, scope uc.TenantScope, runID uc.RunID, cancel context.CancelCauseFunc) {
 	ticker := time.NewTicker(w.cancelPoll())
 	defer ticker.Stop()
 	for {
@@ -351,7 +351,7 @@ var errCancelRequested = errors.New("loop: cancel requested")
 func (w *StepWorker) handleStreamError(ctx context.Context, job StepJob, stepCtx context.Context, streamErr error) error {
 	// Cancelled by user request → terminal cancelled.
 	if errors.Is(context.Cause(stepCtx), errCancelRequested) {
-		err := w.txStale(ctx, func(txs ultra.Store) error {
+		err := w.txStale(ctx, func(txs uc.Store) error {
 			return w.markCancelledTx(ctx, txs, job)
 		})
 		if errors.Is(err, errStale) {
@@ -372,17 +372,17 @@ func (w *StepWorker) handleStreamError(ctx context.Context, job StepJob, stepCtx
 // markCancelledTx transitions to cancelled and emits the terminal event
 // inside the given transaction-bound store. It returns errCancelledCommit,
 // which txStale translates into a committed transaction + silent ack.
-func (w *StepWorker) markCancelledTx(ctx context.Context, txs ultra.Store, job StepJob) error {
-	org := ultra.OrgID(job.OrgID)
-	runID := ultra.RunID(job.RunID)
-	scope := txs.Org(org)
-	if err := scope.Runs().SetState(ctx, runID, ultra.RunCancelled, "", ""); err != nil {
+func (w *StepWorker) markCancelledTx(ctx context.Context, txs uc.Store, job StepJob) error {
+	org := uc.TenantID(job.TenantID)
+	runID := uc.RunID(job.RunID)
+	scope := txs.Tenant(org)
+	if err := scope.Runs().SetState(ctx, runID, uc.RunCancelled, "", ""); err != nil {
 		return err
 	}
-	payload, _ := json.Marshal(ultra.RunCancelledPayload{RunID: runID})
-	_, err := scope.Events().Append(ctx, ultra.SessionID(job.SessionID), ultra.Event{
-		Actor:   ultra.Actor{Type: ultra.ActorSystem},
-		Kind:    ultra.EventKindRunCancelled,
+	payload, _ := json.Marshal(uc.RunCancelledPayload{RunID: runID})
+	_, err := scope.Events().Append(ctx, uc.SessionID(job.SessionID), uc.Event{
+		Actor:   uc.ActorSystem(),
+		Kind:    uc.EventKindRunCancelled,
 		Payload: payload,
 	})
 	if err != nil {
@@ -398,11 +398,11 @@ func (w *StepWorker) markCancelledTx(ctx context.Context, txs ultra.Store, job S
 // it was holding are abandoned, and waits it is a member of are re-evaluated.
 // Every terminal transition calls it, so cancellation and failure resolve
 // parents exactly like completion does.
-func (w *StepWorker) settleTerminalRun(ctx context.Context, txs ultra.Store, org ultra.OrgID, runID ultra.RunID) error {
+func (w *StepWorker) settleTerminalRun(ctx context.Context, txs uc.Store, org uc.TenantID, runID uc.RunID) error {
 	if err := w.abandonParentWaits(ctx, txs, org, runID); err != nil {
 		return err
 	}
-	run, err := txs.Org(org).Runs().Get(ctx, runID)
+	run, err := txs.Tenant(org).Runs().Get(ctx, runID)
 	if err != nil {
 		return err
 	}
@@ -412,7 +412,7 @@ func (w *StepWorker) settleTerminalRun(ctx context.Context, txs ultra.Store, org
 // waitAwaitingText describes why a run is parked, so clients can tell a
 // human-input await from a child-agent await.
 func waitAwaitingText(rec *stepRecorder) string {
-	if rec.waitKind == ultra.WaitKindCohort {
+	if rec.waitKind == uc.WaitKindCohort {
 		return "Waiting for agent cohort"
 	}
 	return "Waiting for child agents"
@@ -420,26 +420,26 @@ func waitAwaitingText(rec *stepRecorder) string {
 
 // failRun marks a terminal, typed failure.
 func (w *StepWorker) failRun(ctx context.Context, job StepJob, reason, message string) error {
-	return w.Store.Tx(ctx, func(txs ultra.Store) error {
-		scope := txs.Org(ultra.OrgID(job.OrgID))
-		run, err := scope.Runs().GetForUpdate(ctx, ultra.RunID(job.RunID))
+	return w.Store.Tx(ctx, func(txs uc.Store) error {
+		scope := txs.Tenant(uc.TenantID(job.TenantID))
+		run, err := scope.Runs().GetForUpdate(ctx, uc.RunID(job.RunID))
 		if err != nil || run.State.Terminal() {
 			return nil
 		}
-		if err := scope.Runs().SetState(ctx, run.ID, ultra.RunFailed, reason, message); err != nil {
+		if err := scope.Runs().SetState(ctx, run.ID, uc.RunFailed, reason, message); err != nil {
 			return err
 		}
-		payload, _ := json.Marshal(ultra.RunFailedPayload{RunID: run.ID, Reason: reason, Message: message})
-		if _, err := scope.Events().Append(ctx, ultra.SessionID(job.SessionID), ultra.Event{
-			Actor:   ultra.Actor{Type: ultra.ActorSystem},
-			Kind:    ultra.EventKindRunFailed,
+		payload, _ := json.Marshal(uc.RunFailedPayload{RunID: run.ID, Reason: reason, Message: message})
+		if _, err := scope.Events().Append(ctx, uc.SessionID(job.SessionID), uc.Event{
+			Actor:   uc.ActorSystem(),
+			Kind:    uc.EventKindRunFailed,
 			Payload: payload,
 		}); err != nil {
 			return err
 		}
 		// A failed child must resume its parent just as a completed one does,
 		// or one bad child parks the parent until its deadline.
-		return w.settleTerminalRun(ctx, txs, ultra.OrgID(job.OrgID), run.ID)
+		return w.settleTerminalRun(ctx, txs, uc.TenantID(job.TenantID), run.ID)
 	})
 }
 
@@ -447,7 +447,7 @@ func (w *StepWorker) failRun(ctx context.Context, job StepJob, reason, message s
 // one transaction with the next-step enqueue.
 func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int, env Envelope, result *fantasy.AgentResult, rec *stepRecorder) error {
 	if len(result.Steps) == 0 {
-		return w.failRun(ctx, job, ultra.FailureProviderError, "model returned no step")
+		return w.failRun(ctx, job, uc.FailureProviderError, "model returned no step")
 	}
 	step := result.Steps[0]
 	newMessages := step.Messages
@@ -457,16 +457,16 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 		return err
 	}
 
-	runID := ultra.RunID(job.RunID)
-	sessionID := ultra.SessionID(job.SessionID)
+	runID := uc.RunID(job.RunID)
+	sessionID := uc.SessionID(job.SessionID)
 
-	err = w.txStale(ctx, func(txs ultra.Store) error {
-		scope := txs.Org(ultra.OrgID(job.OrgID))
+	err = w.txStale(ctx, func(txs uc.Store) error {
+		scope := txs.Tenant(uc.TenantID(job.TenantID))
 		run, err := scope.Runs().GetForUpdate(ctx, runID)
 		if err != nil {
 			return err
 		}
-		if run.State != ultra.RunRunning {
+		if run.State != uc.RunRunning {
 			return errStale
 		}
 		if run.CancelRequestedAt != nil {
@@ -475,9 +475,9 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 		if err := scope.Runs().SetHistory(ctx, runID, encoded); err != nil {
 			return err
 		}
-		stepRecord := ultra.RunStep{RunID: runID, StepIndex: job.StepIndex, Attempt: attempt, TokensIn: step.Usage.InputTokens, TokensOut: step.Usage.OutputTokens, FinishReason: string(step.FinishReason)}
+		stepRecord := uc.RunStep{RunID: runID, StepIndex: job.StepIndex, Attempt: attempt, TokensIn: step.Usage.InputTokens, TokensOut: step.Usage.OutputTokens, FinishReason: string(step.FinishReason)}
 		if err := scope.Runs().InsertStep(ctx, stepRecord); err != nil {
-			if errors.Is(err, ultra.ErrAlreadyExists) {
+			if errors.Is(err, uc.ErrAlreadyExists) {
 				return errStale
 			}
 			return err
@@ -488,8 +488,8 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 			if err != nil {
 				return err
 			}
-			_, err = scope.Events().Append(ctx, sessionID, ultra.Event{
-				Actor:   ultra.Actor{Type: ultra.ActorAgent, ID: job.RunID},
+			_, err = scope.Events().Append(ctx, sessionID, uc.Event{
+				Actor:   uc.ActorAgent(uc.RunID(job.RunID)),
 				Kind:    kind,
 				Payload: b,
 			})
@@ -497,7 +497,7 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 		}
 
 		_ = AccountStepCost(ctx, txs, run, stepRecord)
-		if err := appendTx(ultra.EventKindStepFinished, ultra.StepFinishedPayload{
+		if err := appendTx(uc.EventKindStepFinished, uc.StepFinishedPayload{
 			RunID: runID, StepIndex: job.StepIndex,
 			TokensIn: step.Usage.InputTokens, TokensOut: step.Usage.OutputTokens,
 			FinishReason: string(step.FinishReason),
@@ -517,26 +517,26 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 			if !park {
 				return nil
 			}
-			if err := scope.Runs().SetState(ctx, runID, ultra.RunAwaiting, "", ""); err != nil {
+			if err := scope.Runs().SetState(ctx, runID, uc.RunAwaiting, "", ""); err != nil {
 				return err
 			}
-			return appendTx(ultra.EventKindRunAwaiting, ultra.RunAwaitingPayload{RunID: runID, Question: ultra.Question{Text: waitAwaitingText(rec)}})
+			return appendTx(uc.EventKindRunAwaiting, uc.RunAwaitingPayload{RunID: runID, Question: uc.Question{Text: waitAwaitingText(rec)}})
 		case rec.question != nil:
 			// Await: no job parked; PromptRun resumes.
-			if err := scope.Runs().SetState(ctx, runID, ultra.RunAwaiting, "", ""); err != nil {
+			if err := scope.Runs().SetState(ctx, runID, uc.RunAwaiting, "", ""); err != nil {
 				return err
 			}
-			return appendTx(ultra.EventKindRunAwaiting, ultra.RunAwaitingPayload{
+			return appendTx(uc.EventKindRunAwaiting, uc.RunAwaitingPayload{
 				RunID: runID, Question: *rec.question,
 			})
 		case step.FinishReason == fantasy.FinishReasonToolCalls:
 			// Continue: next step in the same commit.
 			return w.Enqueue.EnqueueInTx(ctx, txs, StepJob{
-				RunID: job.RunID, OrgID: job.OrgID, SessionID: job.SessionID,
+				RunID: job.RunID, TenantID: job.TenantID, SessionID: job.SessionID,
 				StepIndex: job.StepIndex + 1,
 			})
 		default:
-			if err := scope.Runs().SetState(ctx, runID, ultra.RunCompleted, "", ""); err != nil {
+			if err := scope.Runs().SetState(ctx, runID, uc.RunCompleted, "", ""); err != nil {
 				return err
 			}
 			// Persist the result before resolving waits: a parent reading a
@@ -550,14 +550,14 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 			if err := scope.Runs().SetResult(ctx, runID, resultJSON); err != nil {
 				return err
 			}
-			run.State = ultra.RunCompleted
+			run.State = uc.RunCompleted
 			run.Result = resultJSON
-			if err := appendTx(ultra.EventKindRunCompleted, ultra.RunCompletedPayload{RunID: runID, FinalText: final}); err != nil {
+			if err := appendTx(uc.EventKindRunCompleted, uc.RunCompletedPayload{RunID: runID, FinalText: final}); err != nil {
 				return err
 			}
 			// Both directions of the tree must settle: waits this run is a
 			// member of, and waits it was itself holding.
-			if err := w.abandonParentWaits(ctx, txs, run.OrgID, runID); err != nil {
+			if err := w.abandonParentWaits(ctx, txs, run.TenantID, runID); err != nil {
 				return err
 			}
 			return w.resolveChildWaits(ctx, txs, run)
@@ -583,7 +583,7 @@ func finalText(result *fantasy.AgentResult) string {
 // interval or size so event-log write amplification stays bounded while
 // perceived latency stays low.
 type deltaBatcher struct {
-	runID     ultra.RunID
+	runID     uc.RunID
 	stepIndex int
 	attempt   int
 	interval  time.Duration
@@ -597,7 +597,7 @@ type deltaBatcher struct {
 	timer      *time.Timer
 }
 
-func newDeltaBatcher(runID ultra.RunID, stepIndex, attempt int, interval time.Duration, maxBytes int, emit func(string, any)) *deltaBatcher {
+func newDeltaBatcher(runID uc.RunID, stepIndex, attempt int, interval time.Duration, maxBytes int, emit func(string, any)) *deltaBatcher {
 	if interval <= 0 {
 		interval = 100 * time.Millisecond
 	}
@@ -641,7 +641,7 @@ func (b *deltaBatcher) flushLocked() {
 		b.timer = nil
 	}
 	if len(b.reasonBuf) > 0 {
-		b.emit(ultra.EventKindReasoningDelta, ultra.ReasoningDeltaPayload{
+		b.emit(uc.EventKindReasoningDelta, uc.ReasoningDeltaPayload{
 			RunID: b.runID, StepIndex: b.stepIndex, Attempt: b.attempt,
 			DeltaIndex: b.deltaIndex, Text: string(b.reasonBuf),
 		})
@@ -649,7 +649,7 @@ func (b *deltaBatcher) flushLocked() {
 		b.reasonBuf = nil
 	}
 	if len(b.textBuf) > 0 {
-		b.emit(ultra.EventKindTextDelta, ultra.TextDeltaPayload{
+		b.emit(uc.EventKindTextDelta, uc.TextDeltaPayload{
 			RunID: b.runID, StepIndex: b.stepIndex, Attempt: b.attempt,
 			DeltaIndex: b.deltaIndex, Text: string(b.textBuf),
 		})

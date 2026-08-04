@@ -1,0 +1,84 @@
+syntax = "proto3";
+package core.v1;
+
+import "google/protobuf/timestamp.proto";
+option go_package = "github.com/aleksclark/ultracore/gen/go/core/v1;corev1";
+
+enum ResourceState {
+  RESOURCE_STATE_UNSPECIFIED = 0;
+  RESOURCE_STATE_REQUESTED = 1;
+  RESOURCE_STATE_PROVISIONING = 2;
+  RESOURCE_STATE_READY = 3;
+  RESOURCE_STATE_SUSPENDED = 4;
+  RESOURCE_STATE_TERMINATING = 5;
+  RESOURCE_STATE_TERMINATED = 6;
+  RESOURCE_STATE_FAILED = 7;
+}
+
+// DevEnvSpec is the kind-specific schema for resource kind dev_env.
+message DevEnvSpec {
+  string name = 1;
+  string image = 2;
+  string workdir = 3;
+  map<string,string> env = 4;
+  map<string,string> metadata = 5;
+}
+
+message Resource {
+  string id = 1;
+  string session_id = 2;
+  string provider_instance_id = 3;
+  ResourceState state = 4;
+  // Spec fields for the dev_env kind. Other kinds may leave these empty and
+  // carry kind-specific data only in the control plane.
+  DevEnvSpec spec = 5;
+  string endpoint = 6;
+  int32 epoch = 7;
+  string failure_message = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  google.protobuf.Timestamp ready_at = 11;
+  google.protobuf.Timestamp terminated_at = 12;
+  // Which registration actually hosts this resource. The id alone is not
+  // usable by a person: an operator diagnosing a fault needs to know it is
+  // "the staging cluster" rather than a UUID, and which kind it is.
+  string provider_name = 15;
+  string provider_kind = 16;
+  // The hosting provider's health at the time of the read, so a client can
+  // explain a resource that is failing because its provider is.
+  string provider_state = 17;
+  // Resource kind (e.g. "dev_env"). Empty is treated as dev_env by callers.
+  string kind = 18;
+}
+
+message ProvisionResourceRequest {
+  string session_id = 1;
+  DevEnvSpec spec = 2;
+  string provider_instance = 3;
+  // kind empty defaults to dev_env.
+  string kind = 4;
+}
+message ProvisionResourceResponse { Resource resource = 1; int64 event_seq = 2; }
+message GetResourceRequest { string resource_id = 1; }
+message GetResourceResponse { Resource resource = 1; }
+message ListResourcesRequest { string session_id = 1; string kind = 2; int32 page_size = 3; string page_token = 4; }
+message ListResourcesResponse { repeated Resource resources = 1; string next_page_token = 2; }
+message TerminateResourceRequest { string resource_id = 1; }
+message TerminateResourceResponse {}
+message ExecPreviewRequest { string resource_id = 1; string command = 2; }
+message ExecPreviewResponse { string output = 1; bool is_error = 2; int64 event_seq = 3; }
+// RestartResource replaces the resource's runtime while preserving durable
+// state when the provider claims restart_preserves_state, mints a new bearer
+// token, and increments epoch. The prior token stops working and cached tool
+// clients bound to the old epoch are invalid.
+message RestartResourceRequest { string resource_id = 1; }
+message RestartResourceResponse { Resource resource = 1; int64 event_seq = 2; }
+
+service ResourceService {
+  rpc ProvisionResource(ProvisionResourceRequest) returns (ProvisionResourceResponse);
+  rpc GetResource(GetResourceRequest) returns (GetResourceResponse);
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse);
+  rpc TerminateResource(TerminateResourceRequest) returns (TerminateResourceResponse);
+  rpc ExecPreview(ExecPreviewRequest) returns (ExecPreviewResponse);
+  rpc RestartResource(RestartResourceRequest) returns (RestartResourceResponse);
+}

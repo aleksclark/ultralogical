@@ -1,0 +1,9 @@
+# E2 DevEnv→Resource ban list. Closing E2 makes these CI-enforced.
+# Use word-ish patterns so DevEnvSpec (kind schema) remains allowed.
+\bDevEnv\b
+EnvProvider
+EnvStore
+\benvwork\b
+EnvRequested
+EventKindEnv
+\benvprovider\b

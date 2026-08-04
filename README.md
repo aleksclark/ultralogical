@@ -1,29 +1,79 @@
-# Ultralogical
+# ultracore
 
-A durable-session platform for agentic work. Sessions span applications and
-environments, provide relevant context by default, expose structured data and
-actions, preserve history, and can be driven by software while remaining
-visible and controllable by people.
+Durable-session substrate for agentic work: multi-tenant, event-sourced
+sessions with an owned agent loop and pluggable per-tenant resource providers.
 
-Multi-tenant from day 1: orgs bring their own inference credentials
-(OpenAI/Anthropic/Bedrock) and choose where dev environments run — hosted
-EKS, their own k8s/nomad clusters, or their own machines via a tunneled local
-provider.
+Consumers bring their own UI, identity, triggers, and policy.
 
-## Status
+## What it is
 
-**Phase 6.7 remediation in progress**: the platform includes durable sessions,
-agent loops, development environments, multiplayer, flows, and advanced-loop
-groundwork, but the independent Phase 0–6 audit found material completion gaps.
-`agent_docs/phases_0_6_audit.md` assigns those gaps to completion-scoped
-Phases 7–11; production hardening and release proof follow in Phases 12–13.
+1. **Event-sourced sessions** — append-only, gapless per-session seq, subscribe-from-seq
+2. **Owned agent loop** — durable steps on a queue, spawn/wait/cohort, session memory
+3. **Session resources** — typed resources behind tenant-scoped provider registrations
 
-See [`plan/index.md`](plan/index.md) for the architecture and roadmap, and
-[`AGENTS.md`](AGENTS.md) for the contributor/agent cheatsheet.
+## What it is not
 
-## Quick start
+Billing, hosted EKS product isolation, flows catalog, multiplayer presence UX,
+human user model, first-party web/desktop UI. See
+[agent_docs/core_extraction_plan/index.md](agent_docs/core_extraction_plan/index.md).
+
+## Quickstart
 
 ```sh
-task dev               # local postgres (docker) + ultrad on :8080
-task test:all          # full test suite (requires docker)
+# prerequisites: go 1.25+, docker, task, node 22
+task dev          # pg + model + cored + coreworker
+task dev:smoke    # boot, smoke, tear down
+
+# Go SDK
+import "github.com/aleksclark/ultracore/sdk"
+
+# TS SDK
+cd clients/ts && npm ci && npm test
 ```
+
+## API (proto/core/v1)
+
+| Service | Responsibility |
+|---|---|
+| `TenantService` | tenants + API keys |
+| `CredentialService` | inference credentials |
+| `ProviderService` | provider registrations |
+| `SessionService` | sessions, labels, memory, archive |
+| `RunService` | agent runs (start/answer/cancel/list/tree) |
+| `ResourceService` | resource lifecycle + exec-preview |
+| `EventService` | append, subscribe, get range |
+| `AutomationService` | periodic prompts |
+
+## Layout
+
+```
+cmd/cored        API server
+cmd/coreworker   queue workers
+cmd/core         CLI
+sdk/             Go SDK
+clients/ts       @ultracore/client (TS SDK)
+proto/core/v1    API source of truth
+postgres/        store + 00001_baseline.sql
+e2e/             functional acceptance suite
+```
+
+## Develop
+
+```sh
+task build
+task lint
+task test
+task test:functional
+task cli:test
+task sdk:test
+task verify:codegen
+task verify:coverage
+```
+
+## Deploy
+
+See [docs/deploy.md](docs/deploy.md). Compose: `docker compose up --build`.
+
+## Consumers
+
+See [docs/consumers.md](docs/consumers.md).

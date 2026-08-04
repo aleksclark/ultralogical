@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+package core.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aleksclark/ultracore/gen/go/core/v1;corev1";
+
+// RunState is the agent-run state machine.
+enum RunState {
+  RUN_STATE_UNSPECIFIED = 0;
+  RUN_STATE_PENDING = 1;
+  RUN_STATE_RUNNING = 2;
+  RUN_STATE_AWAITING = 3;
+  RUN_STATE_COMPLETED = 4;
+  RUN_STATE_FAILED = 5;
+  RUN_STATE_CANCELLED = 6;
+}
+
+// ModelConfig names the model a run uses and which tenant credential pays for
+// it. Inference is always on tenant credentials.
+message ModelConfig {
+  string provider = 1;   // openai | anthropic | bedrock
+  string model_id = 2;
+  string credential = 3; // credential name within the tenant; "default" if empty
+  repeated ModelConfig fallbacks = 4;
+}
+
+// RunPolicy is fixed at run creation and immutable thereafter.
+message RunPolicy {
+  repeated string allow_tools = 1;     // "*" or explicit
+  repeated string deny_tools = 2;      // after allow; wins
+  repeated string resource_kinds = 3;  // empty=none, ["*"]=all
+  int32 max_children = 4;              // 0 = no spawning
+  bool child_inherit = 5;              // children get same policy verbatim
+}
+
+// AgentRun is one durable agent loop bound to a session.
+message AgentRun {
+  string id = 1;
+  string session_id = 2;
+  RunState state = 3;
+  string loop_kind = 4;
+  int32 loop_version = 5;
+  ModelConfig model_config = 6;
+  string prompt = 7;
+  string failure_reason = 8;
+  string failure_message = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  string parent_run_id = 12;
+  RunPolicy policy = 13;
+  string result_json = 14;
+  string cohort_id = 15;
+  int32 cohort_ordinal = 16;
+  string actor_kind = 17;
+  string actor_id = 18;
+  string actor_display = 19;
+}
+
+// RunWait is a parent's durable fan-in on child runs.
+message RunWait {
+  string id = 1;
+  string parent_run_id = 2;
+  int32 step_index = 3;
+  string tool_call_id = 4;
+  string kind = 5;
+  string state = 6;
+  string timeout_policy = 7;
+  google.protobuf.Timestamp deadline = 8;
+  string result_json = 9;
+  repeated string member_run_ids = 10;
+}
+
+message RunTreeNode {
+  AgentRun run = 1;
+  repeated RunTreeNode children = 2;
+  repeated RunWait waits = 3;
+}
+
+message GetRunTreeRequest { string session_id = 1; }
+message GetRunTreeResponse { repeated RunTreeNode roots = 1; }
+
+message StartRunRequest {
+  string session_id = 1;
+  string prompt = 2;
+  ModelConfig model_config = 3;
+  RunPolicy policy = 4;
+}
+
+message StartRunResponse {
+  AgentRun run = 1;
+  int64 event_seq = 2;
+}
+
+// AnswerRun wakes an awaiting run with an answer, or starts a new turn on a
+// completed run (ask_user reply path).
+message AnswerRunRequest {
+  string run_id = 1;
+  string message = 2;
+}
+
+message AnswerRunResponse {
+  int64 event_seq = 1;
+}
+
+message CancelRunRequest {
+  string run_id = 1;
+}
+
+message CancelRunResponse {}
+
+message GetRunRequest {
+  string run_id = 1;
+}
+
+message GetRunResponse {
+  AgentRun run = 1;
+}
+
+message ListRunsRequest {
+  string session_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListRunsResponse {
+  repeated AgentRun runs = 1;
+  string next_page_token = 2;
+}
+
+// RunService manages agent runs. Access requires a key belonging to the
+// run's session's tenant.
+service RunService {
+  rpc StartRun(StartRunRequest) returns (StartRunResponse);
+  rpc AnswerRun(AnswerRunRequest) returns (AnswerRunResponse);
+  rpc CancelRun(CancelRunRequest) returns (CancelRunResponse);
+  rpc GetRun(GetRunRequest) returns (GetRunResponse);
+  rpc ListRuns(ListRunsRequest) returns (ListRunsResponse);
+  rpc GetRunTree(GetRunTreeRequest) returns (GetRunTreeResponse);
+}

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"charm.land/fantasy"
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 // maxInlineMemoryValue bounds the value copied into an event. Larger values
@@ -14,24 +14,24 @@ import (
 const maxInlineMemoryValue = 1024
 
 // appendMemoryEvent records a memory change so every subscriber sees it.
-func appendMemoryEvent(ctx context.Context, scope ultra.OrgScope, run ultra.AgentRun, kind, key string, value []byte, actor ultra.Actor) error {
+func appendMemoryEvent(ctx context.Context, scope uc.TenantScope, run uc.AgentRun, kind, key string, value []byte, actor uc.Actor) error {
 	inline := value
 	if len(inline) > maxInlineMemoryValue {
 		inline = nil
 	}
-	payload := ultra.NewMemoryEventPayload(key, actor, inline)
+	payload := uc.NewMemoryEventPayload(key, actor, inline)
 	encoded, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
-	_, err = scope.Events().Append(ctx, run.SessionID, ultra.Event{
+	_, err = scope.Events().Append(ctx, run.SessionID, uc.Event{
 		Actor: actor, Kind: kind, Payload: encoded,
 	})
 	return err
 }
 
-func memoryTools(store ultra.Store, run ultra.AgentRun) []fantasy.AgentTool {
-	scope := store.Org(run.OrgID)
+func memoryTools(store uc.Store, run uc.AgentRun) []fantasy.AgentTool {
+	scope := store.Tenant(run.TenantID)
 	type keyInput struct {
 		Key string `json:"key"`
 	}
@@ -59,17 +59,17 @@ func memoryTools(store ultra.Store, run ultra.AgentRun) []fantasy.AgentTool {
 		if err != nil {
 			return fantasy.NewTextErrorResponse("invalid value"), nil
 		}
-		actor := ultra.Actor{Type: ultra.ActorAgent, ID: string(run.ID)}
-		err = store.Tx(ctx, func(txs ultra.Store) error {
-			scope := txs.Org(run.OrgID)
-			entry := ultra.SessionMemoryEntry{SessionID: run.SessionID, Key: in.Key, Value: b, UpdatedBy: actor}
+		actor := uc.ActorAgent(uc.RunID(string(run.ID)))
+		err = store.Tx(ctx, func(txs uc.Store) error {
+			scope := txs.Tenant(run.TenantID)
+			entry := uc.SessionMemoryEntry{SessionID: run.SessionID, Key: in.Key, Value: b, UpdatedBy: actor}
 			if e := scope.Memory().Set(ctx, entry); e != nil {
 				return e
 			}
 			// The write and its event commit together. Memory is shared with
 			// humans and other agents, so a silent write would leave every
 			// subscriber with a stale view until they happened to re-read.
-			return appendMemoryEvent(ctx, scope, run, ultra.EventKindMemorySet, entry.Key, b, actor)
+			return appendMemoryEvent(ctx, scope, run, uc.EventKindMemorySet, entry.Key, b, actor)
 		})
 		if err != nil {
 			return fantasy.NewTextErrorResponse(err.Error()), nil
@@ -77,13 +77,13 @@ func memoryTools(store ultra.Store, run ultra.AgentRun) []fantasy.AgentTool {
 		return fantasy.NewTextResponse("stored"), nil
 	})
 	del := fantasy.NewAgentTool("session_memory_delete", "Delete session-scoped durable memory.", func(ctx context.Context, in keyInput, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-		actor := ultra.Actor{Type: ultra.ActorAgent, ID: string(run.ID)}
-		err := store.Tx(ctx, func(txs ultra.Store) error {
-			scope := txs.Org(run.OrgID)
+		actor := uc.ActorAgent(uc.RunID(string(run.ID)))
+		err := store.Tx(ctx, func(txs uc.Store) error {
+			scope := txs.Tenant(run.TenantID)
 			if e := scope.Memory().Delete(ctx, run.SessionID, in.Key); e != nil {
 				return e
 			}
-			return appendMemoryEvent(ctx, scope, run, ultra.EventKindMemoryDeleted, in.Key, nil, actor)
+			return appendMemoryEvent(ctx, scope, run, uc.EventKindMemoryDeleted, in.Key, nil, actor)
 		})
 		if err != nil {
 			return fantasy.NewTextErrorResponse("delete failed"), nil
@@ -101,7 +101,7 @@ func memoryTools(store ultra.Store, run ultra.AgentRun) []fantasy.AgentTool {
 	}
 	var granted []fantasy.AgentTool
 	for _, name := range []string{"session_memory_get", "session_memory_list", "session_memory_set", "session_memory_delete"} {
-		if run.Grants.AllowsTool(name) {
+		if run.Policy.AllowsTool(name) {
 			granted = append(granted, byName[name])
 		}
 	}

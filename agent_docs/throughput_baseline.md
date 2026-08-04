@@ -24,7 +24,7 @@ ULTRA_BASELINE_OUT=/tmp/baseline-before.json \
   go test ./e2e/ -run TestA88_ThroughputBaseline -count=1 -timeout 25m
 ```
 
-The artifact schema is `ultralogical.throughput_baseline.v1`
+The artifact schema is `ultracore.throughput_baseline.v1`
 (`e2e/phase8_throughput_test.go`).
 
 ## Workload definition
@@ -37,7 +37,7 @@ artifact, so they live as named constants in the test rather than inline.
 | Sessions | 3 |
 | Runs per session | 4 (12 total, all started concurrently) |
 | Steps per run | 3 — two `post_event` tool steps, then a final answer |
-| ultrad replicas | 2, behind a round-robin ingress |
+| cored replicas | 2, behind a round-robin ingress |
 | Workers | 2 |
 | Queue | river on Postgres, worker defaults |
 | Model | scripted `modelscript` server, no network, no artificial delay |

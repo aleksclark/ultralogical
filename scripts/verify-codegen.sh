@@ -33,10 +33,10 @@ restore_snapshot() {
 
 # buf's remote plugins are rate limited; a throttled run is a tooling failure,
 # not evidence about drift, so wait it out before giving up with code 2.
-# ULTRA_CODEGEN_RETRIES tunes patience for constrained environments.
+# CORE_CODEGEN_RETRIES tunes patience for constrained environments.
 generate_output=""
 generated=0
-retries=${ULTRA_CODEGEN_RETRIES:-8}
+retries=${CORE_CODEGEN_RETRIES:-8}
 for attempt in $(seq 1 "$retries"); do
   generate_output=$(buf generate 2>&1)
   if [ $? -eq 0 ]; then

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aleksclark/ultralogical/secrets"
+	"github.com/aleksclark/ultracore/secrets"
 )
 
 const canary = "sk-canary-redaction-unit-0451"

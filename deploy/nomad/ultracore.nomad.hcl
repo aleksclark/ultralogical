@@ -1,0 +1,100 @@
+# Fleet Nomad job for ultracore (home datacenter).
+# IMAGE_TAG / DATABASE_URL / CORE_MASTER_KEY substituted at deploy time.
+job "ultracore" {
+  datacenters = ["home"]
+  type        = "service"
+
+  group "api" {
+    count = 1
+
+    network {
+      port "http" {}
+    }
+
+    service {
+      name     = "cored"
+      port     = "http"
+      provider = "nomad"
+
+      tags = [
+        "traefik.enable=true",
+        "traefik.http.routers.cored.rule=Host(`core.fleet.clark.team`) || Host(`core.clark.team`)",
+        "traefik.http.routers.cored.entrypoints=websecure",
+        "traefik.http.routers.cored.tls.certresolver=letsencrypt",
+      ]
+
+      check {
+        type     = "http"
+        path     = "/readyz"
+        interval = "10s"
+        timeout  = "3s"
+      }
+    }
+
+    task "cored" {
+      driver = "docker"
+
+      config {
+        image   = "ghcr.io/aleksclark/ultracore:${IMAGE_TAG}"
+        command = "/usr/local/bin/cored"
+        ports   = ["http"]
+      }
+
+      env {
+        DATABASE_URL      = "${DATABASE_URL}"
+        CORE_MASTER_KEY   = "${CORE_MASTER_KEY}"
+        CORE_ADDR         = ":${NOMAD_PORT_http}"
+        CORE_MIGRATE      = "true"
+        CORE_OTLP_ENDPOINT = "http://192.168.0.24:4317"
+      }
+
+      resources {
+        cpu    = 500
+        memory = 512
+      }
+    }
+  }
+
+  group "worker" {
+    count = 1
+
+    network {
+      port "health" {}
+    }
+
+    service {
+      name     = "coreworker"
+      port     = "health"
+      provider = "nomad"
+
+      check {
+        type     = "http"
+        path     = "/readyz"
+        interval = "10s"
+        timeout  = "3s"
+      }
+    }
+
+    task "coreworker" {
+      driver = "docker"
+
+      config {
+        image   = "ghcr.io/aleksclark/ultracore:${IMAGE_TAG}"
+        command = "/usr/local/bin/coreworker"
+        ports   = ["health"]
+      }
+
+      env {
+        DATABASE_URL     = "${DATABASE_URL}"
+        CORE_MASTER_KEY  = "${CORE_MASTER_KEY}"
+        CORE_ADDR        = ":${NOMAD_PORT_health}"
+        CORE_MAX_WORKERS = "10"
+      }
+
+      resources {
+        cpu    = 500
+        memory = 1024
+      }
+    }
+  }
+}

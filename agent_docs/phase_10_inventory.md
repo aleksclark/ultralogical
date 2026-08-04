@@ -8,7 +8,7 @@ yet is marked **unimplemented before Phase 10** so the phase cannot close by
 renaming partial work.
 
 Legend: `go:` real-stack Go test, `conf:` shared provider conformance run,
-`cli:` `cmd/ultra` test, `web:` Playwright against the dark shadcn application,
+`cli:` `cmd/core` test, `web:` Playwright against the dark shadcn application,
 `gpui:` Rust test driving the rendered GPUI window.
 
 ## Progress
@@ -62,7 +62,7 @@ the failure rule 9 describes, and it is recorded here rather than erased.
 `byo_nomad`, and `tunnel_local`. In `loopback` mode every one of them calls
 `localdocker` for `Provision`, `Status`, `Endpoint`, `Restart`, and
 `Terminate`; in `remote` mode every one returns "remote provider control plane
-not connected". `cmd/ultra-env-agent` serves a single authenticated `/health`
+not connected". `cmd/core-env-agent` serves a single authenticated `/health`
 route and provisions nothing.
 
 So the honest starting position is: **four provider kinds exist as names, and
@@ -77,7 +77,7 @@ a row says otherwise.
 | Hosted EKS namespaces, quotas, NetworkPolicy | **unimplemented**; only the `hosted` rate class is real |
 | Credential intake with dry-run validation | partial: JSON shape and a `/health` GET; no control-plane probe |
 | Capability flags | **unimplemented**; conformance is uniform |
-| Provider registry/factory | **unimplemented**; kinds are wired by hand in `cmd/worker` |
+| Provider registry/factory | **unimplemented**; kinds are wired by hand in `cmd/coreworker` |
 | kind / Nomad / tunnel CI legs | **unimplemented** |
 | Provider onboarding surfaces | partial: registration form only |
 | `docs/providers.md` walkthrough | **unimplemented** |
@@ -128,7 +128,7 @@ a row says otherwise.
 
 | Bounded behavior | Production entrypoint | Named test |
 |---|---|---|
-| The agent registers with an org-scoped token | `cmd/ultra-env-agent` (**control API unimplemented**) | `go: e2e TestA105_TunnelLocal` |
+| The agent registers with an org-scoped token | `cmd/core-env-agent` (**control API unimplemented**) | `go: e2e TestA105_TunnelLocal` |
 | Provisioning and tools work through the tunnel endpoint | `envprovider/tunnel` | same test |
 | An unsigned platform request is rejected by the agent | agent request-signature check | same test |
 | Losing the transport suspends rather than fails the environment | tunnel disconnect handling | same test |

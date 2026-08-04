@@ -1,0 +1,245 @@
+syntax = "proto3";
+
+package core.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aleksclark/ultracore/gen/go/core/v1;corev1";
+
+// Actor is opaque attribution the consumer (or the core, for loop-internal
+// events) attaches to an event. The core stores and replays it; it never
+// branches on kind.
+message Actor {
+  string kind = 1;
+  string id = 2;
+  string display = 3;
+}
+
+// UserMessage is a human message into the session.
+message UserMessage {
+  string text = 1;
+}
+
+// Annotation is a free-form note attached to the session log.
+message Annotation {
+  string text = 1;
+}
+
+// RunStarted marks an agent run's creation.
+message RunStarted {
+  string run_id = 1;
+  string prompt = 2;
+}
+
+// StepStarted marks the beginning of a step execution attempt. Attempt > 1
+// supersedes any partial deltas from earlier attempts of the same step.
+message StepStarted {
+  string run_id = 1;
+  int32 step_index = 2;
+  int32 attempt = 3;
+}
+
+// TextDelta is a batched chunk of streamed assistant text.
+message TextDelta {
+  string run_id = 1;
+  int32 step_index = 2;
+  int32 attempt = 3;
+  int32 delta_index = 4;
+  string text = 5;
+}
+
+// ReasoningDelta is a batched chunk of streamed reasoning text.
+message ReasoningDelta {
+  string run_id = 1;
+  int32 step_index = 2;
+  int32 attempt = 3;
+  int32 delta_index = 4;
+  string text = 5;
+}
+
+// ToolCallStarted records a completed tool invocation request.
+message ToolCallStarted {
+  string run_id = 1;
+  int32 step_index = 2;
+  string tool_call_id = 3;
+  string name = 4;
+  string input = 5; // JSON as sent by the model
+}
+
+// ToolResult records a tool execution result.
+message ToolResult {
+  string run_id = 1;
+  int32 step_index = 2;
+  string tool_call_id = 3;
+  string name = 4;
+  string content = 5;
+  bool is_error = 6;
+}
+
+// StepFinished closes a step with its usage audit.
+message StepFinished {
+  string run_id = 1;
+  int32 step_index = 2;
+  int64 tokens_in = 3;
+  int64 tokens_out = 4;
+  string finish_reason = 5;
+}
+
+// Question is a structured question an agent asks a human.
+message Question {
+  string text = 1;
+  repeated string choices = 2;
+}
+
+// RunAwaiting marks a run parked on human input.
+message RunAwaiting {
+  string run_id = 1;
+  Question question = 2;
+}
+
+// RunCompleted is a run's terminal success event.
+message RunCompleted {
+  string run_id = 1;
+  string final_text = 2;
+}
+
+// RunFailed is a run's terminal failure event. Reason is typed and
+// user-actionable; it never contains raw provider errors.
+message RunFailed {
+  string run_id = 1;
+  string reason = 2;
+  string message = 3;
+}
+
+// RunCancelled is a run's terminal cancellation event.
+message RunCancelled {
+  string run_id = 1;
+}
+
+message ResourceLifecycle {
+  string resource_id = 1;
+  string kind = 2;
+  string name = 3;
+  string provider_instance_id = 4;
+  string endpoint = 5;
+  string message = 6;
+  // epoch increments on every resource token rotation, so clients and
+  // tool caches can tell a restarted resource from its earlier identity.
+  int32 epoch = 7;
+}
+
+message ExecPreviewRan {
+  string resource_id = 1;
+  string command = 2;
+  string output = 3;
+  bool is_error = 4;
+}
+message RunSpawned { string parent_run_id=1; string child_run_id=2; }
+message MemoryChanged { string key=1; string updated_by_type=2; string updated_by_id=3; string value_json=4; }
+message HistoryCompacted { string run_id=1; int32 covered_messages=2; int64 summary_tokens=3; }
+message ModelFallback { string run_id=1; string from=2; string to=3; string reason=4; }
+message HookFired { string hook=1; string run_id=2; }
+message PeriodicPromptFired { string run_id=1; string prompt=2; }
+message PermissionDenied { string run_id=1; string tool=2; string resource_id=3; string reason=4; }
+message SessionLabelsChanged { map<string, string> labels = 1; }
+
+
+
+
+// EventPayload is the typed payload of a session event. Every observable
+// thing in a session is one of these variants; later phases add variants
+// (additive only — enforced by breaking-change CI).
+message EventPayload {
+  oneof payload {
+    UserMessage user_message = 10;
+    Annotation annotation = 11;
+    RunStarted run_started = 12;
+    StepStarted step_started = 13;
+    TextDelta text_delta = 14;
+    ReasoningDelta reasoning_delta = 15;
+    ToolCallStarted tool_call_started = 16;
+    ToolResult tool_result = 17;
+    StepFinished step_finished = 18;
+    RunAwaiting run_awaiting = 19;
+    RunCompleted run_completed = 20;
+    RunFailed run_failed = 21;
+    RunCancelled run_cancelled = 22;
+    ResourceLifecycle resource_requested = 23;
+    ResourceLifecycle resource_provisioning = 24;
+    ResourceLifecycle resource_ready = 25;
+    ResourceLifecycle resource_failed = 26;
+    ResourceLifecycle resource_terminating = 27;
+    ResourceLifecycle resource_terminated = 28;
+    ExecPreviewRan exec_preview_ran = 29;
+    RunSpawned run_spawned = 33;
+    MemoryChanged memory_set = 34;
+    MemoryChanged memory_deleted = 35;
+    PermissionDenied permission_denied = 36;
+    HistoryCompacted history_compacted = 37;
+    ModelFallback model_fallback = 38;
+    HookFired hook_fired = 39;
+    PeriodicPromptFired periodic_prompt_fired = 40;
+    // A suspended resource's host is temporarily unreachable. It is
+    // deliberately distinct from resource_failed: durable state still exists.
+    ResourceLifecycle resource_suspended = 44;
+    SessionLabelsChanged session_labels_changed = 45;
+  }
+}
+
+// SessionEvent is one entry in a session's append-only event log. Seq is
+// per-session, gapless, and monotonic; clients resume by seq.
+message SessionEvent {
+  string session_id = 1;
+  int64 seq = 2;
+  google.protobuf.Timestamp ts = 3;
+  Actor actor = 4;
+  EventPayload payload = 5;
+}
+
+message AppendRequest {
+  string session_id = 1;
+  EventPayload payload = 2;
+}
+
+message AppendResponse {
+  // Seq of the event this mutation produced; clients can await consistency
+  // by subscribing past it.
+  int64 seq = 1;
+}
+
+message SubscribeRequest {
+  string session_id = 1;
+  // Deliver events with seq greater than from_seq. Zero replays the full log.
+  int64 from_seq = 2;
+}
+
+message SubscribeResponse {
+  // Unset event is a keepalive: sent immediately on stream establishment
+  // (and periodically later) so clients can distinguish "connected, no
+  // events yet" from a stalled connection. Clients must skip it.
+  SessionEvent event = 1;
+}
+
+message GetRequest {
+  string session_id = 1;
+  // Inclusive lower bound: deliver events with seq > from_seq.
+  int64 from_seq = 2;
+  // Inclusive upper bound when > 0; 0 means no upper bound.
+  int64 to_seq = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message GetResponse {
+  repeated SessionEvent events = 1;
+  string next_page_token = 2;
+}
+
+// EventService is the observation surface: streaming, multiplayer, history
+// replay, and test assertions all use Subscribe. Get is the non-streaming
+// range read for SDKs and offline tooling.
+service EventService {
+  rpc Append(AppendRequest) returns (AppendResponse);
+  rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+}

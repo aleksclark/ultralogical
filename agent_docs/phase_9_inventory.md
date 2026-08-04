@@ -7,7 +7,7 @@ asserts it. Behavior that did not exist before Phase 9 is marked
 **unimplemented before Phase 9** so the phase cannot close by renaming partial
 work.
 
-Legend: `go:` real-stack Go test, `cli:` `cmd/ultra` test against the real
+Legend: `go:` real-stack Go test, `cli:` `cmd/core` test against the real
 stack, `web:` Playwright against the dark shadcn application, `gpui:` Rust test
 driving the rendered GPUI window.
 
@@ -114,13 +114,13 @@ driving the rendered GPUI window.
 
 | Bounded behavior | Production entrypoint | Named test |
 |---|---|---|
-| `ultra flow validate` reports typed errors and exits nonzero | `cmd/ultra` (**unimplemented before Phase 9**) | `cli: TestFlowValidateReportsTypedErrors` |
+| `ultra flow validate` reports typed errors and exits nonzero | `cmd/core` (**unimplemented before Phase 9**) | `cli: TestFlowValidateReportsTypedErrors` |
 | `ultra flow put` stores a version and prints it as JSON | `PutFlow` | `cli: TestFlowPutGetListRoundTrip` |
 | `ultra flow list` and `get` match API state | `ListFlows`, `GetFlow` | `cli: TestFlowPutGetListRoundTrip` |
 | `ultra flow invoke --param k=v` invokes and prints the invocation id | `InvokeFlow` | `cli: TestFlowInvokeStatusAndCancel` |
 | `ultra flow status` prints state, progress, runs, and envs | `GetFlowInvocation` | `cli: TestFlowInvokeStatusAndCancel` |
 | `ultra flow cancel` converges the invocation | `CancelFlowInvocation` | `cli: TestFlowInvokeStatusAndCancel` |
-| The CLI uses only the generated public client, never Postgres | `cmd/ultra` imports | `cli: TestCLIUsesOnlyPublicAPIs` |
+| The CLI uses only the generated public client, never Postgres | `cmd/core` imports | `cli: TestCLIUsesOnlyPublicAPIs` |
 | A typed failure exits nonzero with a machine-readable error | error rendering | `cli: TestFlowValidateReportsTypedErrors` |
 
 ## A9.8 — Application parity

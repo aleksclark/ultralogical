@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aleksclark/ultralogical/jobqueue"
-	"github.com/aleksclark/ultralogical/jobqueue/conformance"
-	riverqueue "github.com/aleksclark/ultralogical/jobqueue/river"
-	"github.com/aleksclark/ultralogical/testkit/pgtest"
+	"github.com/aleksclark/ultracore/jobqueue"
+	"github.com/aleksclark/ultracore/jobqueue/conformance"
+	riverqueue "github.com/aleksclark/ultracore/jobqueue/river"
+	"github.com/aleksclark/ultracore/testkit/pgtest"
 )
 
 func TestConformance(t *testing.T) {

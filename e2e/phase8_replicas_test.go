@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	ultra "github.com/aleksclark/ultralogical"
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/testkit/harness"
-	"github.com/aleksclark/ultralogical/testkit/modelscript"
-	"github.com/aleksclark/ultralogical/testkit/testclient"
+	uc "github.com/aleksclark/ultracore"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/testkit/harness"
+	"github.com/aleksclark/ultracore/testkit/modelscript"
+	"github.com/aleksclark/ultracore/testkit/testclient"
 )
 
 // eventKey identifies an event for cross-subscriber comparison. Two
@@ -23,7 +23,7 @@ type eventKey struct {
 	Body string
 }
 
-func keyOf(ev *ultrav1.SessionEvent) eventKey {
+func keyOf(ev *corev1.SessionEvent) eventKey {
 	body, _ := json.Marshal(ev.GetPayload())
 	return eventKey{Seq: ev.GetSeq(), Kind: testclient.Kind(ev), Body: string(body)}
 }
@@ -56,22 +56,22 @@ func TestA84_CrossReplicaSubscription(t *testing.T) {
 	// The harness must really be running two of each; otherwise this test
 	// proves nothing about distribution.
 	if got := len(stack.ReplicaBaseURLs); got != 2 {
-		t.Fatalf("harness started %d ultrad replicas, want 2", got)
+		t.Fatalf("harness started %d cored replicas, want 2", got)
 	}
 	if got := stack.WorkerCount(); got != 2 {
 		t.Fatalf("harness started %d workers, want 2", got)
 	}
 	for i, base := range stack.ReplicaBaseURLs {
 		if !healthy(base) {
-			t.Fatalf("ultrad replica %d at %s is not healthy", i, base)
+			t.Fatalf("cored replica %d at %s is not healthy", i, base)
 		}
 	}
 
 	ctx := context.Background()
-	replicaA := stack.ReplicaClient(0, harness.TokenAlice)
-	replicaB := stack.ReplicaClient(1, harness.TokenAlice)
-	ingress := stack.IngressClient(harness.TokenAlice)
-	org := stack.OrgA.ID
+	replicaA := stack.ReplicaClient(0, stack.KeyA)
+	replicaB := stack.ReplicaClient(1, stack.KeyA)
+	ingress := stack.IngressClient(stack.KeyA)
+	org := stack.TenantA.ID
 
 	// Created through the ingress, so no client is pinned to a replica.
 	sess := createSession(t, ingress, string(org), "cross replica")
@@ -94,7 +94,7 @@ func TestA84_CrossReplicaSubscription(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	replicaB.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 90*time.Second)
+	replicaB.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 90*time.Second)
 
 	// Replica A's subscriber saw work that only replica B ever handled.
 	live := subA.CollectUntil(t, 90*time.Second, isTerminalRunEvent)
@@ -107,7 +107,7 @@ func TestA84_CrossReplicaSubscription(t *testing.T) {
 	// Restart replica A underneath its subscriber. A fresh client must resume
 	// by seq and rebuild the identical sequence.
 	stack.RestartUltrad(0)
-	resumed := stack.ReplicaClient(0, harness.TokenAlice)
+	resumed := stack.ReplicaClient(0, stack.KeyA)
 	subResumed, err := resumed.Subscribe(ctx, sess.GetId(), 0)
 	if err != nil {
 		t.Fatal(err)
@@ -161,7 +161,7 @@ func TestA84_CrossReplicaSubscription(t *testing.T) {
 	}
 }
 
-// healthy reports whether an ultrad replica answers its health endpoint.
+// healthy reports whether an cored replica answers its health endpoint.
 func healthy(base string) bool {
 	resp, err := harness.Health(base)
 	return err == nil && resp
@@ -175,8 +175,8 @@ func TestA85_WorkerTakeover(t *testing.T) {
 		t.Fatalf("harness started %d workers, want 2", got)
 	}
 	ctx := context.Background()
-	org := stack.OrgA.ID
-	ingress := stack.IngressClient(harness.TokenAlice)
+	org := stack.TenantA.ID
+	ingress := stack.IngressClient(stack.KeyA)
 	sess := createSession(t, ingress, string(org), "worker takeover")
 
 	// Each run takes several steps, so a kill lands mid-workload rather than
@@ -226,7 +226,7 @@ func TestA85_WorkerTakeover(t *testing.T) {
 			if id == "" {
 				continue
 			}
-			steps, err := stack.Store.Org(org).Runs().Steps(ctx, ultra.RunID(id))
+			steps, err := stack.Store.Tenant(org).Runs().Steps(ctx, uc.RunID(id))
 			if err == nil && len(steps) > 0 {
 				progressed++
 			}
@@ -243,13 +243,13 @@ func TestA85_WorkerTakeover(t *testing.T) {
 		if id == "" {
 			t.Fatal("a run was never started")
 		}
-		ingress.AwaitRunState(t, id, ultrav1.RunState_RUN_STATE_COMPLETED, 4*time.Minute)
+		ingress.AwaitRunState(t, id, corev1.RunState_RUN_STATE_COMPLETED, 4*time.Minute)
 	}
 
 	// No run executed a step index twice: redelivery after the kill is
 	// idempotent, enforced by the step table's uniqueness.
 	for _, id := range ids {
-		steps, err := stack.Store.Org(org).Runs().Steps(ctx, ultra.RunID(id))
+		steps, err := stack.Store.Tenant(org).Runs().Steps(ctx, uc.RunID(id))
 		if err != nil {
 			t.Fatal(err)
 		}

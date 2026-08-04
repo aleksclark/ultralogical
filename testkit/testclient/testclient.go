@@ -1,121 +1,80 @@
-// Package testclient wraps the generated Go Connect client — the same
-// artifact real consumers use — with helpers for the functional suite. It is
-// deliberately the only way tests talk to ultrad: if the public API can't do
-// it, the test can't do it.
+// Package testclient wraps the ultracore Go SDK — the same artifact real
+// consumers use — with helpers for the functional suite. It is deliberately
+// the only way tests talk to cored: if the public API can't do it, the test
+// can't do it.
 package testclient
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect"
 
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/gen/go/ultra/v1/ultrav1connect"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/gen/go/core/v1/corev1connect"
+	"github.com/aleksclark/ultracore/sdk"
 )
 
-// Client is an authenticated API client for one user.
+// Client is an authenticated API client for one tenant key. Embedded service
+// clients and helpers come from the SDK so the entire functional suite
+// exercises the consumer surface.
 type Client struct {
-	Orgs       ultrav1connect.OrgServiceClient
-	Sessions   ultrav1connect.SessionServiceClient
-	Events     ultrav1connect.EventServiceClient
-	Agents     ultrav1connect.AgentServiceClient
-	Envs       ultrav1connect.EnvServiceClient
-	Billing    ultrav1connect.BillingServiceClient
-	Flows      ultrav1connect.FlowServiceClient
-	Automation ultrav1connect.AutomationServiceClient
-}
-
-type authTransport struct {
-	token string
-	base  http.RoundTripper
-}
-
-func (t *authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req = req.Clone(req.Context())
-	req.Header.Set("Authorization", "Bearer "+t.token)
-	return t.base.RoundTrip(req)
+	*sdk.Client
+	// Agents is an alias for Runs retained for existing e2e call sites.
+	Agents corev1connect.RunServiceClient
 }
 
 // New builds a Client against baseURL, authenticating every request with the
 // given bearer token.
 func New(baseURL, token string) *Client {
-	httpClient := &http.Client{
-		Transport: &authTransport{token: token, base: http.DefaultTransport},
-	}
-	return &Client{
-		Orgs:       ultrav1connect.NewOrgServiceClient(httpClient, baseURL),
-		Sessions:   ultrav1connect.NewSessionServiceClient(httpClient, baseURL),
-		Events:     ultrav1connect.NewEventServiceClient(httpClient, baseURL),
-		Agents:     ultrav1connect.NewAgentServiceClient(httpClient, baseURL),
-		Envs:       ultrav1connect.NewEnvServiceClient(httpClient, baseURL),
-		Billing:    ultrav1connect.NewBillingServiceClient(httpClient, baseURL),
-		Flows:      ultrav1connect.NewFlowServiceClient(httpClient, baseURL),
-		Automation: ultrav1connect.NewAutomationServiceClient(httpClient, baseURL),
-	}
+	return NewWithActor(baseURL, token, "service/test")
 }
 
-// AppendUserMessage appends a user message and returns its seq.
-func (c *Client) AppendUserMessage(ctx context.Context, sessionID, text string) (int64, error) {
-	resp, err := c.Events.Append(ctx, connect.NewRequest(&ultrav1.AppendRequest{
-		SessionId: sessionID,
-		Payload: &ultrav1.EventPayload{
-			Payload: &ultrav1.EventPayload_UserMessage{UserMessage: &ultrav1.UserMessage{Text: text}},
-		},
-	}))
-	if err != nil {
-		return 0, err
-	}
-	return resp.Msg.GetSeq(), nil
+// NewWithActor builds a Client that sends the given X-Core-Actor header.
+func NewWithActor(baseURL, token, actor string) *Client {
+	c := sdk.New(sdk.Options{BaseURL: baseURL, APIKey: token, Actor: actor})
+	return &Client{Client: c, Agents: c.Runs}
 }
 
 // Subscription is a live event stream with collection helpers.
 type Subscription struct {
-	stream *connect.ServerStreamForClient[ultrav1.SubscribeResponse]
-	cancel context.CancelFunc
+	inner *sdk.Subscription
 }
 
-// Subscribe opens an event stream from fromSeq.
+// Subscribe opens an event stream from fromSeq. Reconnect is disabled so tests
+// can assert mid-stream auth failure (A3.3) without silent resume.
 func (c *Client) Subscribe(ctx context.Context, sessionID string, fromSeq int64) (*Subscription, error) {
-	ctx, cancel := context.WithCancel(ctx)
-	stream, err := c.Events.Subscribe(ctx, connect.NewRequest(&ultrav1.SubscribeRequest{
-		SessionId: sessionID,
-		FromSeq:   fromSeq,
-	}))
+	reconnect := false
+	s, err := c.Client.Subscribe(ctx, sessionID, sdk.SubscribeOptions{FromSeq: fromSeq, Reconnect: &reconnect})
 	if err != nil {
-		cancel()
 		return nil, err
 	}
-	return &Subscription{stream: stream, cancel: cancel}, nil
+	return &Subscription{inner: s}, nil
+}
+
+// SubscribeResume opens a reconnecting subscription (SDK default).
+func (c *Client) SubscribeResume(ctx context.Context, sessionID string, fromSeq int64) (*Subscription, error) {
+	s, err := c.Client.Subscribe(ctx, sessionID, sdk.SubscribeOptions{FromSeq: fromSeq})
+	if err != nil {
+		return nil, err
+	}
+	return &Subscription{inner: s}, nil
 }
 
 // Close terminates the subscription.
-func (s *Subscription) Close() {
-	s.cancel()
-	_ = s.stream.Close()
-}
+func (s *Subscription) Close() { s.inner.Close() }
 
-// Next returns the next event or an error when the stream ends/times out.
-// Keepalive frames (responses without an event) are skipped transparently.
-func (s *Subscription) Next() (*ultrav1.SessionEvent, error) {
-	for s.stream.Receive() {
-		if ev := s.stream.Msg().GetEvent(); ev != nil {
-			return ev, nil
-		}
-	}
-	if err := s.stream.Err(); err != nil {
-		return nil, err
-	}
-	return nil, fmt.Errorf("stream closed")
-}
+// Next returns the next event.
+func (s *Subscription) Next() (*corev1.SessionEvent, error) { return s.inner.Next() }
+
+// LastSeq is the highest seq successfully delivered.
+func (s *Subscription) LastSeq() int64 { return s.inner.LastSeq() }
 
 // Collect receives exactly n events or fails the test after timeout.
-func (s *Subscription) Collect(t *testing.T, n int, timeout time.Duration) []*ultrav1.SessionEvent {
+func (s *Subscription) Collect(t *testing.T, n int, timeout time.Duration) []*corev1.SessionEvent {
 	t.Helper()
-	var out []*ultrav1.SessionEvent
+	var out []*corev1.SessionEvent
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -137,11 +96,10 @@ func (s *Subscription) Collect(t *testing.T, n int, timeout time.Duration) []*ul
 	return out
 }
 
-// CollectUntil receives events until match returns true (inclusive) or the
-// timeout elapses (test failure). Returns everything received.
-func (s *Subscription) CollectUntil(t *testing.T, timeout time.Duration, match func(*ultrav1.SessionEvent) bool) []*ultrav1.SessionEvent {
+// CollectUntil receives events until match returns true (inclusive).
+func (s *Subscription) CollectUntil(t *testing.T, timeout time.Duration, match func(*corev1.SessionEvent) bool) []*corev1.SessionEvent {
 	t.Helper()
-	var out []*ultrav1.SessionEvent
+	var out []*corev1.SessionEvent
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -167,113 +125,32 @@ func (s *Subscription) CollectUntil(t *testing.T, timeout time.Duration, match f
 	return out
 }
 
-// Kind returns a short string naming the payload variant of an event, for
-// compact sequence assertions.
-func Kind(ev *ultrav1.SessionEvent) string {
-	switch ev.GetPayload().GetPayload().(type) {
-	case *ultrav1.EventPayload_UserMessage:
-		return "user_message"
-	case *ultrav1.EventPayload_Annotation:
-		return "annotation"
-	case *ultrav1.EventPayload_RunStarted:
-		return "run_started"
-	case *ultrav1.EventPayload_StepStarted:
-		return "step_started"
-	case *ultrav1.EventPayload_TextDelta:
-		return "text_delta"
-	case *ultrav1.EventPayload_ReasoningDelta:
-		return "reasoning_delta"
-	case *ultrav1.EventPayload_ToolCallStarted:
-		return "tool_call_started"
-	case *ultrav1.EventPayload_ToolResult:
-		return "tool_result"
-	case *ultrav1.EventPayload_StepFinished:
-		return "step_finished"
-	case *ultrav1.EventPayload_RunAwaiting:
-		return "run_awaiting"
-	case *ultrav1.EventPayload_RunCompleted:
-		return "run_completed"
-	case *ultrav1.EventPayload_RunFailed:
-		return "run_failed"
-	case *ultrav1.EventPayload_RunCancelled:
-		return "run_cancelled"
-	case *ultrav1.EventPayload_EnvRequested:
-		return "env_requested"
-	case *ultrav1.EventPayload_EnvProvisioning:
-		return "env_provisioning"
-	case *ultrav1.EventPayload_EnvReady:
-		return "env_ready"
-	case *ultrav1.EventPayload_EnvFailed:
-		return "env_failed"
-	case *ultrav1.EventPayload_EnvSuspended:
-		return "env_suspended"
-	case *ultrav1.EventPayload_EnvTerminating:
-		return "env_terminating"
-	case *ultrav1.EventPayload_EnvTerminated:
-		return "env_terminated"
-	case *ultrav1.EventPayload_ExecPreviewRan:
-		return "exec_preview_ran"
-	case *ultrav1.EventPayload_ParticipantJoined:
-		return "participant_joined"
-	case *ultrav1.EventPayload_ParticipantLeft:
-		return "participant_left"
-	case *ultrav1.EventPayload_ParticipantIdle:
-		return "participant_idle"
-	case *ultrav1.EventPayload_RunSpawned:
-		return "run_spawned"
-	case *ultrav1.EventPayload_MemorySet:
-		return "memory_set"
-	case *ultrav1.EventPayload_MemoryDeleted:
-		return "memory_deleted"
-	case *ultrav1.EventPayload_PermissionDenied:
-		return "permission_denied"
-	case *ultrav1.EventPayload_HistoryCompacted:
-		return "history_compacted"
-	case *ultrav1.EventPayload_ModelFallback:
-		return "model_fallback"
-	case *ultrav1.EventPayload_HookFired:
-		return "hook_fired"
-	case *ultrav1.EventPayload_PeriodicPromptFired:
-		return "periodic_prompt_fired"
-	case *ultrav1.EventPayload_FlowInvoked:
-		return "flow_invoked"
-	case *ultrav1.EventPayload_FlowInvocationProgressed:
-		return "flow_invocation_progressed"
-	case *ultrav1.EventPayload_FlowInvocationTerminal:
-		return "flow_invocation_terminal"
-	default:
-		return "unknown"
-	}
-}
+// Kind returns a short string naming the payload variant of an event.
+func Kind(ev *corev1.SessionEvent) string { return sdk.EventKind(ev) }
 
 // StartRun starts an agent run with the default model config.
-func (c *Client) StartRun(ctx context.Context, sessionID, prompt string) (*ultrav1.AgentRun, int64, error) {
-	resp, err := c.Agents.StartRun(ctx, connect.NewRequest(&ultrav1.StartRunRequest{
-		SessionId: sessionID,
-		Prompt:    prompt,
-	}))
-	if err != nil {
-		return nil, 0, err
-	}
-	return resp.Msg.GetRun(), resp.Msg.GetEventSeq(), nil
+func (c *Client) StartRun(ctx context.Context, sessionID, prompt string) (*corev1.AgentRun, int64, error) {
+	return c.Client.StartRun(ctx, sessionID, prompt, nil, nil)
 }
 
-// AwaitRunState polls GetRun until the run reaches the wanted state or the
-// timeout elapses (test failure).
-func (c *Client) AwaitRunState(t *testing.T, runID string, want ultrav1.RunState, timeout time.Duration) *ultrav1.AgentRun {
+// AwaitRunState polls GetRun until the run reaches the wanted state.
+func (c *Client) AwaitRunState(t *testing.T, runID string, want corev1.RunState, timeout time.Duration) *corev1.AgentRun {
 	t.Helper()
-	deadline := time.Now().Add(timeout)
-	var last *ultrav1.AgentRun
-	for time.Now().Before(deadline) {
-		resp, err := c.Agents.GetRun(context.Background(), connect.NewRequest(&ultrav1.GetRunRequest{RunId: runID}))
-		if err == nil {
-			last = resp.Msg.GetRun()
-			if last.GetState() == want {
-				return last
-			}
-		}
-		time.Sleep(50 * time.Millisecond)
+	run, err := c.AwaitRun(context.Background(), runID, sdk.AwaitRunOptions{
+		Timeout: timeout,
+		States:  []corev1.RunState{want},
+	})
+	if err != nil {
+		t.Fatalf("run %s never reached %v within %s: %v", runID, want, timeout, err)
 	}
-	t.Fatalf("run %s never reached %v within %s (last: %v)", runID, want, timeout, last.GetState())
-	return nil
+	return run
 }
+
+// PromptRun is retained as an alias for AnswerRun for existing e2e call sites
+// that use the helper (not the generated client).
+func (c *Client) PromptRun(ctx context.Context, runID, message string) (int64, error) {
+	return c.AnswerRun(ctx, runID, message)
+}
+
+// Ensure connect is referenced for callers constructing requests directly.
+var _ = connect.CodeOf

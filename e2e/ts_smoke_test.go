@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/aleksclark/ultralogical/testkit/harness"
+	"github.com/aleksclark/ultracore/testkit/harness"
 )
 
 // A0.1 (TS leg) — the generated TypeScript client performs the same
@@ -30,9 +30,9 @@ func TestA01_TSClientSmoke(t *testing.T) {
 	cmd := exec.Command("npx", "vitest", "run", "--reporter=verbose")
 	cmd.Dir = tsDir
 	cmd.Env = append(os.Environ(),
-		"ULTRAD_URL="+stack.BaseURL,
-		"ULTRA_TOKEN="+harness.TokenAlice,
-		"ULTRA_ORG_ID="+string(stack.OrgA.ID),
+		"CORED_URL="+stack.BaseURL,
+		"CORE_TOKEN="+stack.KeyA,
+		"CORE_TENANT_ID="+string(stack.TenantA.ID),
 	)
 	out, err := cmd.CombinedOutput()
 	if err != nil {

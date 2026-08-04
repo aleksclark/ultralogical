@@ -1,23 +1,33 @@
-package ultra
+package core
 
 import (
 	"context"
 	"time"
 )
 
-// ActorType classifies who produced an event.
-type ActorType string
-
+// Well-known Actor.Kind values used by the core itself. Consumers may send
+// any opaque kind; the core never interprets it beyond storage and replay.
 const (
-	ActorUser   ActorType = "user"
-	ActorAgent  ActorType = "agent"
-	ActorSystem ActorType = "system"
+	ActorKindSystem  = "system"
+	ActorKindAgent   = "agent"
+	ActorKindService = "service"
 )
 
-// Actor identifies the producer of an event.
+// Actor is opaque attribution the consumer (or the core, for loop-internal
+// events) attaches to an event, run, or memory write. The core stores and
+// replays it; it never branches on Kind.
 type Actor struct {
-	Type ActorType
-	ID   string
+	Kind    string `json:"kind"`
+	ID      string `json:"id"`
+	Display string `json:"display,omitempty"`
+}
+
+// ActorSystem is the loop/worker attribution for machine-generated events.
+func ActorSystem() Actor { return Actor{Kind: ActorKindSystem, ID: "core"} }
+
+// ActorAgent attributes an event to a specific run.
+func ActorAgent(id RunID) Actor {
+	return Actor{Kind: ActorKindAgent, ID: string(id)}
 }
 
 // Event kinds. Every observable thing in a session is a typed event with a
@@ -37,17 +47,14 @@ const (
 	EventKindRunCompleted        = "run_completed"
 	EventKindRunFailed           = "run_failed"
 	EventKindRunCancelled        = "run_cancelled"
-	EventKindEnvRequested        = "env_requested"
-	EventKindEnvProvisioning     = "env_provisioning"
-	EventKindEnvReady            = "env_ready"
-	EventKindEnvFailed           = "env_failed"
-	EventKindEnvSuspended        = "env_suspended"
-	EventKindEnvTerminating      = "env_terminating"
-	EventKindEnvTerminated       = "env_terminated"
+	EventKindResourceRequested    = "resource_requested"
+	EventKindResourceProvisioning = "resource_provisioning"
+	EventKindResourceReady        = "resource_ready"
+	EventKindResourceFailed       = "resource_failed"
+	EventKindResourceSuspended    = "resource_suspended"
+	EventKindResourceTerminating  = "resource_terminating"
+	EventKindResourceTerminated   = "resource_terminated"
 	EventKindExecPreviewRan      = "exec_preview_ran"
-	EventKindParticipantJoined   = "participant_joined"
-	EventKindParticipantLeft     = "participant_left"
-	EventKindParticipantIdle     = "participant_idle"
 	EventKindRunSpawned          = "run_spawned"
 	EventKindMemorySet           = "memory_set"
 	EventKindMemoryDeleted       = "memory_deleted"
@@ -56,9 +63,7 @@ const (
 	EventKindModelFallback       = "model_fallback"
 	EventKindHookFired           = "hook_fired"
 	EventKindPeriodicPromptFired = "periodic_prompt_fired"
-	EventKindFlowInvoked         = "flow_invoked"
-	EventKindFlowProgressed      = "flow_invocation_progressed"
-	EventKindFlowTerminal        = "flow_invocation_terminal"
+	EventKindSessionLabelsChanged = "session_labels_changed"
 )
 
 // Event is one entry in a session's append-only event log. Payload is the
@@ -183,11 +188,12 @@ type RunCancelledPayload struct {
 	RunID RunID `json:"run_id"`
 }
 
-// EnvEventPayload is shared by environment lifecycle events. Epoch is the
-// environment's token generation: it increments on restart so subscribers and
-// tool caches can distinguish a restarted environment from its predecessor.
-type EnvEventPayload struct {
-	EnvID              EnvID              `json:"env_id"`
+// ResourceEventPayload is shared by resource lifecycle events. Epoch is the
+// resource's token generation: it increments on restart so subscribers and
+// tool caches can distinguish a restarted resource from its predecessor.
+type ResourceEventPayload struct {
+	ResourceID         ResourceID         `json:"resource_id"`
+	Kind               ResourceKind       `json:"kind,omitempty"`
 	Name               string             `json:"name,omitempty"`
 	ProviderInstanceID ProviderInstanceID `json:"provider_instance_id,omitempty"`
 	Endpoint           string             `json:"endpoint,omitempty"`
@@ -197,17 +203,12 @@ type EnvEventPayload struct {
 
 // ExecPreviewRanPayload records a human command and its real output.
 type ExecPreviewRanPayload struct {
-	EnvID   EnvID  `json:"env_id"`
-	Command string `json:"command"`
-	Output  string `json:"output"`
-	IsError bool   `json:"is_error"`
+	ResourceID ResourceID `json:"resource_id"`
+	Command    string     `json:"command"`
+	Output     string     `json:"output"`
+	IsError    bool       `json:"is_error"`
 }
 
-type ParticipantEventPayload struct {
-	Kind          ParticipantKind `json:"kind"`
-	ParticipantID string          `json:"participant_id"`
-	Display       string          `json:"display,omitempty"`
-}
 type RunSpawnedPayload struct {
 	ParentRunID RunID `json:"parent_run_id"`
 	ChildRunID  RunID `json:"child_run_id"`
@@ -230,10 +231,16 @@ type MemoryEventPayload struct {
 func NewMemoryEventPayload(key string, updatedBy Actor, value []byte) MemoryEventPayload {
 	return MemoryEventPayload{
 		Key:           key,
-		UpdatedByType: string(updatedBy.Type),
+		UpdatedByType: updatedBy.Kind,
 		UpdatedByID:   updatedBy.ID,
 		ValueJSON:     string(value),
 	}
+}
+
+// SessionLabelsChangedPayload records a labels mutation. The event log is the
+// source of truth for when consumer taxonomy changed.
+type SessionLabelsChangedPayload struct {
+	Labels map[string]string `json:"labels"`
 }
 
 type HistoryCompactedPayload struct {
@@ -257,45 +264,16 @@ type PeriodicPromptFiredPayload struct {
 }
 
 type PermissionDeniedPayload struct {
-	RunID  RunID  `json:"run_id"`
-	Tool   string `json:"tool"`
-	EnvID  *EnvID `json:"env_id,omitempty"`
-	Reason string `json:"reason"`
-}
-
-// FlowInvokedPayload records a flow invocation's full provenance triple, so a
-// subscriber can attribute every later run and environment in the session
-// without a second request.
-type FlowInvokedPayload struct {
-	InvocationID FlowInvocationID `json:"invocation_id"`
-	FlowID       FlowID           `json:"flow_id"`
-	FlowName     string           `json:"flow_name"`
-	FlowVersion  int              `json:"flow_version"`
-	ParamsJSON   string           `json:"params_json,omitempty"`
-}
-
-// FlowProgressedPayload is one ordered lifecycle step of an invocation. Key is
-// the same idempotency key the persisted progress row uses, so the log and the
-// row set say exactly the same thing.
-type FlowProgressedPayload struct {
-	InvocationID FlowInvocationID `json:"invocation_id"`
-	Stage        string           `json:"stage"`
-	Key          string           `json:"key"`
-	Detail       string           `json:"detail,omitempty"`
-}
-
-// FlowTerminalPayload closes an invocation with its documented reason.
-type FlowTerminalPayload struct {
-	InvocationID   FlowInvocationID `json:"invocation_id"`
-	State          string           `json:"state"`
-	TerminalReason string           `json:"terminal_reason"`
-	Message        string           `json:"message,omitempty"`
+	RunID      RunID       `json:"run_id"`
+	Tool       string      `json:"tool"`
+	ResourceID *ResourceID `json:"resource_id,omitempty"`
+	Reason     string      `json:"reason"`
 }
 
 // EventBus delivers ordered, gapless per-session event streams: a catch-up
 // read from the log followed by live delivery until ctx is cancelled.
-// Authorization must be checked by the caller; the read itself is org-scoped
-// so a wrong org yields nothing.
+// Authorization must be checked by the caller; the read itself is
+// tenant-scoped so a wrong tenant yields nothing.
 type EventBus interface {
-	Subscribe(ctx context.Context, org OrgID, session SessionID, fromSeq int64) (<-chan Event, error)
+	Subscribe(ctx context.Context, tenant TenantID, session SessionID, fromSeq int64) (<-chan Event, error)
 }

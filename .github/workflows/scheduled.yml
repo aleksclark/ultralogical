@@ -35,7 +35,7 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Build the pinned Bezalel image
-        run: docker build -t ultralogical/bezalel:phase2-test https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120
+        run: docker build -t ultracore/bezalel:phase2-test https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120
       - name: Create a kind cluster
         run: |
           cat > /tmp/kind.yaml <<'CLUSTER'
@@ -56,13 +56,13 @@ jobs:
           CLUSTER
           go run sigs.k8s.io/kind@v0.32.0 create cluster --name ultra-test \
             --image ${{ matrix.node }} --config /tmp/kind.yaml --wait 180s
-          go run sigs.k8s.io/kind@v0.32.0 load docker-image ultralogical/bezalel:phase2-test --name ultra-test
+          go run sigs.k8s.io/kind@v0.32.0 load docker-image ultracore/bezalel:phase2-test --name ultra-test
       - name: Conformance and hosted isolation
         env:
-          ULTRA_BEZALEL_IMAGE: ultralogical/bezalel:phase2-test
+          CORE_BEZALEL_IMAGE: ultracore/bezalel:phase2-test
         run: |
           set -o pipefail
-          go test ./envprovider/k8s/... -count=1 -v -timeout 40m 2>&1 | tee /tmp/kubernetes-conformance.txt
+          go test ./provider/k8s/... -count=1 -v -timeout 40m 2>&1 | tee /tmp/kubernetes-conformance.txt
       - name: Publish the conformance record
         if: always()
         uses: actions/upload-artifact@v4
@@ -90,7 +90,7 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Build the pinned Bezalel image
-        run: docker build -t ultralogical/bezalel:phase2-test https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120
+        run: docker build -t ultracore/bezalel:phase2-test https://github.com/aleksclark/bezalel.git#2504ff3152d0ee4e999210641d50ebf5483aa120
       - name: Install Nomad ${{ matrix.nomad }}
         run: |
           curl -fsSLo /tmp/nomad.zip \
@@ -109,10 +109,10 @@ jobs:
           exit 1
       - name: Conformance
         env:
-          ULTRA_BEZALEL_IMAGE: ultralogical/bezalel:phase2-test
+          CORE_BEZALEL_IMAGE: ultracore/bezalel:phase2-test
         run: |
           set -o pipefail
-          go test ./envprovider/nomad/... -count=1 -v -timeout 40m 2>&1 | tee /tmp/nomad-conformance.txt
+          go test ./provider/nomad/... -count=1 -v -timeout 40m 2>&1 | tee /tmp/nomad-conformance.txt
       - name: Publish the conformance record
         if: always()
         uses: actions/upload-artifact@v4

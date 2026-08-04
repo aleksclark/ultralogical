@@ -1,4 +1,4 @@
-// Package postgres implements the ultra.Store interfaces on PostgreSQL using
+// Package postgres implements the uc.Store interfaces on PostgreSQL using
 // pgx. It is the only production store implementation; tests run against a
 // real database, never a mock.
 package postgres
@@ -16,7 +16,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib" // database/sql driver for goose
 	"github.com/pressly/goose/v3"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 )
 
 //go:embed migrations/*.sql
@@ -51,7 +51,7 @@ func gooseProvider(databaseURL string) (*goose.Provider, error) {
 	return provider, nil
 }
 
-// Store implements ultra.Store on a pgx connection pool.
+// Store implements uc.Store on a pgx connection pool.
 type Store struct {
 	pool *pgxpool.Pool
 	tx   pgx.Tx // non-nil when transaction-bound
@@ -89,30 +89,30 @@ func (s *Store) db() db {
 	return s.pool
 }
 
-// Orgs implements ultra.Store.
-func (s *Store) Orgs() ultra.OrgStore { return &orgStore{s} }
+// Tenants implements uc.Store.
+func (s *Store) Tenants() uc.TenantStore { return &tenantStore{s} }
 
-// Users implements ultra.Store.
-func (s *Store) Users() ultra.UserStore { return &userStore{s} }
+// APIKeys implements uc.Store.
+func (s *Store) APIKeys() uc.APIKeyStore { return &apiKeyStore{s} }
 
-// Org implements ultra.Store.
-func (s *Store) Org(id ultra.OrgID) ultra.OrgScope { return &orgScope{s: s, org: id} }
+// Tenant implements uc.Store.
+func (s *Store) Tenant(id uc.TenantID) uc.TenantScope { return &tenantScope{s: s, tenant: id} }
 
-// SessionOrg implements ultra.Store.
-func (s *Store) SessionOrg(ctx context.Context, id ultra.SessionID) (ultra.OrgID, error) {
-	var org ultra.OrgID
-	err := s.db().QueryRow(ctx, `SELECT org_id FROM sessions WHERE id = $1`, string(id)).Scan(&org)
+// SessionTenant implements uc.Store.
+func (s *Store) SessionTenant(ctx context.Context, id uc.SessionID) (uc.TenantID, error) {
+	var tenant uc.TenantID
+	err := s.db().QueryRow(ctx, `SELECT tenant_id FROM sessions WHERE id = $1`, string(id)).Scan(&tenant)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", ultra.ErrNotFound
+		return "", uc.ErrNotFound
 	}
 	if err != nil {
-		return "", fmt.Errorf("postgres: session org: %w", err)
+		return "", fmt.Errorf("postgres: session tenant: %w", err)
 	}
-	return org, nil
+	return tenant, nil
 }
 
-// Tx implements ultra.Store. Nested calls reuse the outer transaction.
-func (s *Store) Tx(ctx context.Context, fn func(ultra.Store) error) error {
+// Tx implements uc.Store. Nested calls reuse the outer transaction.
+func (s *Store) Tx(ctx context.Context, fn func(uc.Store) error) error {
 	if s.tx != nil {
 		return fn(s)
 	}

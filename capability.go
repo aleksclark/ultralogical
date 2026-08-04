@@ -1,4 +1,4 @@
-package ultra
+package core
 
 import "context"
 
@@ -12,32 +12,25 @@ type ProviderCapability string
 
 // Optional provider capabilities.
 const (
-	// CapabilityRestartPreservesWorkspace means Restart keeps the workspace.
-	// A provider without it must still restart and still rotate its token; the
-	// contract simply does not require the files to survive.
-	CapabilityRestartPreservesWorkspace ProviderCapability = "restart_preserves_workspace"
-	// CapabilityToleratesDisconnect means losing transport to the environment
+	// CapabilityRestartPreservesState means Restart keeps the resource's
+	// durable state (workspace for dev_env). A provider without it must still
+	// restart and still rotate its token; the contract simply does not require
+	// the state to survive.
+	CapabilityRestartPreservesState ProviderCapability = "restart_preserves_state"
+	// CapabilityToleratesDisconnect means losing transport to the resource
 	// is a suspension the provider can recover from, rather than a failure.
 	CapabilityToleratesDisconnect ProviderCapability = "tolerates_disconnect"
 	// CapabilityAdoptsOrphans means the provider can find a resource it
-	// already created for an environment, so an interrupted provisioning
-	// adopts it instead of creating a second one.
+	// already created, so an interrupted provisioning adopts it instead of
+	// creating a second one.
 	CapabilityAdoptsOrphans ProviderCapability = "adopts_orphans"
 	// CapabilityEnumeratesResources means the provider can list the concrete
-	// resources it owns for an environment, which is what makes a leak check
-	// a positive statement rather than an absence of evidence.
+	// resources it owns, which is what makes a leak check a positive statement
+	// rather than an absence of evidence.
 	CapabilityEnumeratesResources ProviderCapability = "enumerates_resources"
-	// CapabilityServesToolEndpoint means environments expose the authenticated
-	// tool endpoint that health readiness and setup commands require. A flow
-	// declaring health readiness against a provider without it is rejected at
-	// invoke time rather than hanging on a gate that can never open.
+	// CapabilityServesToolEndpoint means resources expose the authenticated
+	// tool endpoint that health readiness and tool calls require.
 	CapabilityServesToolEndpoint ProviderCapability = "serves_tool_endpoint"
-	// CapabilityNamespaceIsolation means the provider places each org's
-	// environments in a hard boundary of its own.
-	CapabilityNamespaceIsolation ProviderCapability = "namespace_isolation"
-	// CapabilityResourceQuota means the provider enforces a ceiling on
-	// concurrent environments and their resource requests.
-	CapabilityResourceQuota ProviderCapability = "resource_quota"
 )
 
 // OptionalProviderCapabilities is every capability a provider may or may not
@@ -45,24 +38,32 @@ const (
 // than only the ones a given registration happens to support.
 func OptionalProviderCapabilities() []ProviderCapability {
 	return []ProviderCapability{
-		CapabilityRestartPreservesWorkspace,
+		CapabilityRestartPreservesState,
 		CapabilityToleratesDisconnect,
 		CapabilityAdoptsOrphans,
 		CapabilityEnumeratesResources,
 		CapabilityServesToolEndpoint,
-		CapabilityNamespaceIsolation,
-		CapabilityResourceQuota,
 	}
 }
 
-// CoreProviderContract is every behavior no capability may waive. It exists so
-// a manifest can be checked against it: a provider that tried to declare one
-// of these optional would be rejected rather than quietly skipping it.
+// CoreProviderContract is every lifecycle/auth/leak behavior no capability may
+// waive. Tool-surface checks (Discovery, Bash, ExactEdit, LSP, …) live in the
+// tool-surface contract and apply only to kinds that serve a tool endpoint.
+// A manifest that tries to declare a core check optional is itself a failure.
 func CoreProviderContract() []string {
 	return []string{
-		"Provision", "Health", "Discovery", "Bash", "ExactEdit", "LSP",
-		"BackgroundJobAndTimeout", "PerCallDeadline", "TokenRejection",
-		"Terminate", "LeakCheck", "ConcurrentProvisionDistinctEndpoints",
+		"Provision", "Health", "TokenRejection",
+		"RestartRotatesToken", "Terminate", "LeakCheck",
+		"ConcurrentProvisionDistinctEndpoints",
+	}
+}
+
+// ToolSurfaceProviderContract is every tool-surface behavior required of kinds
+// that serve an authenticated tool endpoint (dev_env today).
+func ToolSurfaceProviderContract() []string {
+	return []string{
+		"Discovery", "Bash", "ExactEdit", "LSP",
+		"BackgroundJobAndTimeout", "PerCallDeadline",
 	}
 }
 
@@ -103,8 +104,8 @@ func (c ProviderCapabilities) Reason(capability ProviderCapability) string {
 
 // CapabilityProber is the optional registration seam: a provider that can ask
 // its own control plane what it supports. Registration probes rather than
-// assumes, so a Kubernetes cluster without NetworkPolicy enforcement reports
-// that fact instead of having it inferred from its kind.
+// assumes, so a control plane missing a feature reports that fact instead of
+// having it inferred from its kind.
 type CapabilityProber interface {
 	// Probe performs read-only checks against the control plane. It returns
 	// an error only when the control plane is unreachable or refuses the

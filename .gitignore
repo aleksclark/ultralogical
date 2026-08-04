@@ -12,3 +12,9 @@ target/
 # Editor/OS noise
 .DS_Store
 *.swp
+
+# Local binary builds
+/coreworker
+/cored
+/core
+/devstack

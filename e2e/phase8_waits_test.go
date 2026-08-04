@@ -7,10 +7,10 @@ import (
 
 	"connectrpc.com/connect"
 
-	ultra "github.com/aleksclark/ultralogical"
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/testkit/harness"
-	"github.com/aleksclark/ultralogical/testkit/modelscript"
+	uc "github.com/aleksclark/ultracore"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/testkit/harness"
+	"github.com/aleksclark/ultracore/testkit/modelscript"
 )
 
 // A8.2 — the wait race matrix.
@@ -30,7 +30,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait pre-commit")
 
 		// The parent spawns, then waits in a *later* step. By the time the
@@ -60,14 +60,14 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		parentID := ultra.RunID(parent.GetId())
+		parentID := uc.RunID(parent.GetId())
 		kids := childrenOf(t, stack, org, parentID, 1, 90*time.Second)
 		// Let the child reach a terminal state before the wait can be created.
-		awaitRunOneOf(t, stack, org, kids[0].ID, 90*time.Second, ultra.RunCompleted)
+		awaitRunOneOf(t, stack, org, kids[0].ID, 90*time.Second, uc.RunCompleted)
 		close(spawnDone)
 
-		awaitRunOneOf(t, stack, org, parentID, 2*time.Minute, ultra.RunCompleted)
-		wait := assertSingleCorrelatedResult(t, stack, org, parentID, ultra.WaitResolved)
+		awaitRunOneOf(t, stack, org, parentID, 2*time.Minute, uc.RunCompleted)
+		wait := assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitResolved)
 		outcome := waitOutcome(t, wait)
 		if outcome.Completed != 1 || outcome.Pending != 0 {
 			t.Fatalf("outcome completed=%d pending=%d, want 1/0: %s", outcome.Completed, outcome.Pending, wait.Result)
@@ -79,7 +79,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait post-commit")
 
 		release := make(chan struct{})
@@ -88,12 +88,12 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		parentID := ultra.RunID(parent.GetId())
-		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, ultra.RunAwaiting)
+		parentID := uc.RunID(parent.GetId())
+		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, uc.RunAwaiting)
 		close(release)
 
-		awaitRunOneOf(t, stack, org, parentID, 2*time.Minute, ultra.RunCompleted)
-		assertSingleCorrelatedResult(t, stack, org, parentID, ultra.WaitResolved)
+		awaitRunOneOf(t, stack, org, parentID, 2*time.Minute, uc.RunCompleted)
+		assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitResolved)
 	})
 
 	t.Run("duplicate_child_terminal_delivery", func(t *testing.T) {
@@ -103,7 +103,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait duplicate")
 
 		release := make(chan struct{})
@@ -112,15 +112,15 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		parentID := ultra.RunID(parent.GetId())
-		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, ultra.RunAwaiting)
+		parentID := uc.RunID(parent.GetId())
+		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, uc.RunAwaiting)
 		close(release)
-		awaitRunOneOf(t, stack, org, parentID, 2*time.Minute, ultra.RunCompleted)
+		awaitRunOneOf(t, stack, org, parentID, 2*time.Minute, uc.RunCompleted)
 
-		wait := assertSingleCorrelatedResult(t, stack, org, parentID, ultra.WaitResolved)
+		wait := assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitResolved)
 		// A second close and a second resumption attempt must both be refused.
-		scope := stack.Store.Org(org)
-		if closed, err := scope.Waits().Close(ctx, wait.ID, ultra.WaitResolved, wait.Result); err != nil {
+		scope := stack.Store.Tenant(org)
+		if closed, err := scope.Waits().Close(ctx, wait.ID, uc.WaitResolved, wait.Result); err != nil {
 			t.Fatal(err)
 		} else if closed {
 			t.Fatal("an already-closed wait accepted a second close")
@@ -131,7 +131,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 			t.Fatal("an already-resumed wait accepted a second resumption")
 		}
 		// The parent still holds exactly one outcome.
-		assertSingleCorrelatedResult(t, stack, org, parentID, ultra.WaitResolved)
+		assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitResolved)
 	})
 
 	t.Run("mixed_terminal_states", func(t *testing.T) {
@@ -140,7 +140,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait mixed")
 
 		cancelReady := make(chan struct{})
@@ -168,11 +168,11 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		parentID := ultra.RunID(parent.GetId())
+		parentID := uc.RunID(parent.GetId())
 		kids := childrenOf(t, stack, org, parentID, 3, 90*time.Second)
 
 		// Cancel the held member; the other two settle on their own.
-		var doomed ultra.RunID
+		var doomed uc.RunID
 		for _, kid := range kids {
 			if kid.Prompt == "mixed doomed" {
 				doomed = kid.ID
@@ -181,13 +181,13 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		if doomed == "" {
 			t.Fatal("cohort did not create the member intended for cancellation")
 		}
-		if _, err := alice.Agents.CancelRun(ctx, connect.NewRequest(&ultrav1.CancelRunRequest{RunId: string(doomed)})); err != nil {
+		if _, err := alice.Agents.CancelRun(ctx, connect.NewRequest(&corev1.CancelRunRequest{RunId: string(doomed)})); err != nil {
 			t.Fatal(err)
 		}
 		close(cancelReady)
 
-		awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, ultra.RunCompleted)
-		wait := assertSingleCorrelatedResult(t, stack, org, parentID, ultra.WaitResolved)
+		awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, uc.RunCompleted)
+		wait := assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitResolved)
 		outcome := waitOutcome(t, wait)
 		if len(outcome.Members) != 3 {
 			t.Fatalf("outcome has %d members, want 3: %s", len(outcome.Members), wait.Result)
@@ -204,7 +204,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait timeout")
 
 		neverReleased := make(chan struct{})
@@ -226,13 +226,13 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		parentID := ultra.RunID(parent.GetId())
+		parentID := uc.RunID(parent.GetId())
 
 		// The durable deadline releases the parent even though no child ever
 		// finished, which is the whole point of the timeout being in the
 		// database rather than in the process that created the wait.
-		awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, ultra.RunCompleted)
-		wait := assertSingleCorrelatedResult(t, stack, org, parentID, ultra.WaitTimedOut)
+		awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, uc.RunCompleted)
+		wait := assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitTimedOut)
 		outcome := waitOutcome(t, wait)
 		if !outcome.TimedOut {
 			t.Fatalf("outcome does not report a timeout: %s", wait.Result)
@@ -248,7 +248,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait timeout race")
 
 		release := make(chan struct{})
@@ -268,16 +268,16 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		parentID := ultra.RunID(parent.GetId())
-		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, ultra.RunAwaiting)
+		parentID := uc.RunID(parent.GetId())
+		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, uc.RunAwaiting)
 		// Release the child right at the deadline so the sweeper and the
 		// child's own resolution collide.
 		time.Sleep(2 * time.Second)
 		close(release)
 
-		awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, ultra.RunCompleted)
+		awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, uc.RunCompleted)
 		// Either outcome is legitimate; exactly one of them must have happened.
-		assertSingleCorrelatedResult(t, stack, org, parentID, ultra.WaitResolved, ultra.WaitTimedOut)
+		assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitResolved, uc.WaitTimedOut)
 	})
 
 	t.Run("parent_cancelled", func(t *testing.T) {
@@ -286,7 +286,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait parent cancel")
 
 		release := make(chan struct{})
@@ -295,32 +295,32 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		parentID := ultra.RunID(parent.GetId())
-		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, ultra.RunAwaiting)
+		parentID := uc.RunID(parent.GetId())
+		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, uc.RunAwaiting)
 
-		if _, err := alice.Agents.CancelRun(ctx, connect.NewRequest(&ultrav1.CancelRunRequest{RunId: string(parentID)})); err != nil {
+		if _, err := alice.Agents.CancelRun(ctx, connect.NewRequest(&corev1.CancelRunRequest{RunId: string(parentID)})); err != nil {
 			t.Fatal(err)
 		}
-		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, ultra.RunCancelled)
+		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, uc.RunCancelled)
 
 		// Now let the child finish. It must not revive the cancelled parent.
 		close(release)
 		kids := childrenOf(t, stack, org, parentID, 1, 30*time.Second)
-		awaitRunOneOf(t, stack, org, kids[0].ID, 2*time.Minute, ultra.RunCompleted)
+		awaitRunOneOf(t, stack, org, kids[0].ID, 2*time.Minute, uc.RunCompleted)
 
 		waits := waitsOf(t, stack, org, parentID)
 		if len(waits) != 1 {
 			t.Fatalf("parent holds %d waits, want 1", len(waits))
 		}
-		if waits[0].State == ultra.WaitOpen {
+		if waits[0].State == uc.WaitOpen {
 			t.Fatalf("cancelled parent left an open wait: %+v", waits[0])
 		}
 		// And the parent stays cancelled rather than being resumed.
-		final, err := stack.Store.Org(org).Runs().Get(ctx, parentID)
+		final, err := stack.Store.Tenant(org).Runs().Get(ctx, parentID)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if final.State != ultra.RunCancelled {
+		if final.State != uc.RunCancelled {
 			t.Fatalf("cancelled parent was revived into state %q", final.State)
 		}
 		// Any step job still queued for a cancelled run must be acknowledged
@@ -343,7 +343,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 				depth, stack.DebugRunnableJobs(t, ctx))
 		}
 		// The cancellation is final: no step executed after it.
-		steps, err := stack.Store.Org(org).Runs().Steps(ctx, parentID)
+		steps, err := stack.Store.Tenant(org).Runs().Steps(ctx, parentID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -358,7 +358,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait worker death")
 
 		release := make(chan struct{})
@@ -367,8 +367,8 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		parentID := ultra.RunID(parent.GetId())
-		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, ultra.RunAwaiting)
+		parentID := uc.RunID(parent.GetId())
+		awaitRunOneOf(t, stack, org, parentID, 90*time.Second, uc.RunAwaiting)
 
 		// Kill the worker while the child is mid-step, then bring a new one
 		// up: the child's step is redelivered and resolves the wait.
@@ -376,8 +376,8 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		close(release)
 		stack.StartWorker()
 
-		awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, ultra.RunCompleted)
-		assertSingleCorrelatedResult(t, stack, org, parentID, ultra.WaitResolved)
+		awaitRunOneOf(t, stack, org, parentID, 3*time.Minute, uc.RunCompleted)
+		assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitResolved)
 	})
 }
 

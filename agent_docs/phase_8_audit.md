@@ -97,7 +97,7 @@ being parked on nothing.
 
 | Behavior | Evidence | Verdict |
 |---|---|---|
-| `WithReplicas(2,2)` starts exactly two healthy ultrad and two workers | `TestA84_CrossReplicaSubscription` asserts counts *and* health, not just configuration | closed |
+| `WithReplicas(2,2)` starts exactly two healthy cored and two workers | `TestA84_CrossReplicaSubscription` asserts counts *and* health, not just configuration | closed |
 | Subscribe on replica A, append and start on replica B | same test | closed |
 | Restarting replica A loses nothing; resume-by-seq rebuilds it | same test (`RestartUltrad(0)`, then a fresh client from seq 0) | closed |
 | Direct and load-balanced views are identical | same test compares full `(seq, kind, payload)` keys, not counts | closed |
@@ -154,7 +154,7 @@ claim can be false.
 
 | Behavior | Evidence | Verdict |
 |---|---|---|
-| The documented workload runs on two ultrad and two workers | `TestA88_ThroughputBaseline` asserts the replica and worker counts | closed |
+| The documented workload runs on two cored and two workers | `TestA88_ThroughputBaseline` asserts the replica and worker counts | closed |
 | Machine-readable latency, throughput, retry, and fan-out lag are emitted | the `ultralogical.throughput_baseline.v1` artifact, logged and optionally written to `ULTRA_BASELINE_OUT` | closed |
 | Event lag is measured by subscribers that did not start the work | one subscriber per (replica, session) | closed |
 | Assertions are invariants plus a generous ceiling | every run completed, no duplicate step index, queue drained, subscribers received events; ceilings are 3 min and 45 s at p99 | closed |
@@ -189,7 +189,7 @@ is closed by A8.2 and A8.3.
 
 ## Verdict
 
-Phase 8 is closed. A8.1–A8.9 pass with two ultrad and two workers where the
+Phase 8 is closed. A8.1–A8.9 pass with two cored and two workers where the
 plan specifies; exactly-once wait resolution and at-most-once parent
 resumption are enforced by database predicates rather than process state;
 every terminal child and parent path routes through the same durable

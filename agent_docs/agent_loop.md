@@ -1,6 +1,6 @@
 # Durable agent loop
 
-Implemented in `loop/` and `cmd/worker` (Phase 1). Full rationale:
+Implemented in `loop/` and `cmd/coreworker` (Phase 1). Full rationale:
 `plan/phase_1.md`.
 
 ## One job = one step
@@ -68,5 +68,5 @@ users.
 
 `testkit/modelscript` is a real OpenAI-compatible HTTP/SSE server with
 scripted text/tool calls, chunk pacing, status failures, request capture,
-and strict unmatched-request errors. The harness starts real ultrad + worker
+and strict unmatched-request errors. The harness starts real cored + worker
 processes against real Postgres; only the external LLM vendor is replaced.

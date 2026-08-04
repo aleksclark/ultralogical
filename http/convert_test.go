@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	ultra "github.com/aleksclark/ultralogical"
+	uc "github.com/aleksclark/ultracore"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -23,30 +23,29 @@ func TestDomainPayloadsMatchProtoFields(t *testing.T) {
 		kind    string
 		payload any
 	}{
-		{ultra.EventKindUserMessage, ultra.UserMessagePayload{Text: "hi"}},
-		{ultra.EventKindAnnotation, ultra.AnnotationPayload{Text: "note"}},
-		{ultra.EventKindRunStarted, ultra.RunStartedPayload{RunID: "r", Prompt: "p"}},
-		{ultra.EventKindStepStarted, ultra.StepStartedPayload{RunID: "r", StepIndex: 1, Attempt: 2}},
-		{ultra.EventKindTextDelta, ultra.TextDeltaPayload{RunID: "r", StepIndex: 1, Attempt: 1, DeltaIndex: 2, Text: "t"}},
-		{ultra.EventKindReasoningDelta, ultra.ReasoningDeltaPayload{RunID: "r", Text: "t"}},
-		{ultra.EventKindToolCallStart, ultra.ToolCallStartedPayload{RunID: "r", ToolCallID: "c", Name: "bash", Input: "{}"}},
-		{ultra.EventKindToolResult, ultra.ToolResultPayload{RunID: "r", ToolCallID: "c", Name: "bash", Content: "out", IsError: true}},
-		{ultra.EventKindStepFinished, ultra.StepFinishedPayload{RunID: "r", TokensIn: 1, TokensOut: 2, FinishReason: "stop"}},
-		{ultra.EventKindRunAwaiting, ultra.RunAwaitingPayload{RunID: "r", Question: ultra.Question{Text: "q", Choices: []string{"a"}}}},
-		{ultra.EventKindRunCompleted, ultra.RunCompletedPayload{RunID: "r", FinalText: "done"}},
-		{ultra.EventKindRunFailed, ultra.RunFailedPayload{RunID: "r", Reason: "internal", Message: "m"}},
-		{ultra.EventKindRunCancelled, ultra.RunCancelledPayload{RunID: "r"}},
-		{ultra.EventKindEnvReady, ultra.EnvEventPayload{EnvID: "e", Name: "main", ProviderInstanceID: "p", Endpoint: "http://x", Message: "m", Epoch: 2}},
-		{ultra.EventKindExecPreviewRan, ultra.ExecPreviewRanPayload{EnvID: "e", Command: "echo", Output: "hi", IsError: false}},
-		{ultra.EventKindParticipantJoined, ultra.ParticipantEventPayload{Kind: ultra.ParticipantHuman, ParticipantID: "u", Display: "Alice"}},
-		{ultra.EventKindRunSpawned, ultra.RunSpawnedPayload{ParentRunID: "p", ChildRunID: "c"}},
-		{ultra.EventKindMemorySet, ultra.NewMemoryEventPayload("a.b", ultra.Actor{Type: ultra.ActorAgent, ID: "r"}, []byte(`{"v":1}`))},
-		{ultra.EventKindMemoryDeleted, ultra.NewMemoryEventPayload("a.b", ultra.Actor{Type: ultra.ActorUser, ID: "u"}, nil)},
-		{ultra.EventKindPermissionDenied, ultra.PermissionDeniedPayload{RunID: "r", Tool: "bash", Reason: "denied"}},
-		{ultra.EventKindHistoryCompacted, ultra.HistoryCompactedPayload{RunID: "r", CoveredMessages: 3, SummaryTokens: 9}},
-		{ultra.EventKindModelFallback, ultra.ModelFallbackPayload{RunID: "r", From: "a", To: "b", Reason: "x"}},
-		{ultra.EventKindHookFired, ultra.HookFiredPayload{Hook: "h", RunID: "r"}},
-		{ultra.EventKindPeriodicPromptFired, ultra.PeriodicPromptFiredPayload{RunID: "r", Prompt: "p"}},
+		{uc.EventKindUserMessage, uc.UserMessagePayload{Text: "hi"}},
+		{uc.EventKindAnnotation, uc.AnnotationPayload{Text: "note"}},
+		{uc.EventKindRunStarted, uc.RunStartedPayload{RunID: "r", Prompt: "p"}},
+		{uc.EventKindStepStarted, uc.StepStartedPayload{RunID: "r", StepIndex: 1, Attempt: 2}},
+		{uc.EventKindTextDelta, uc.TextDeltaPayload{RunID: "r", StepIndex: 1, Attempt: 1, DeltaIndex: 2, Text: "t"}},
+		{uc.EventKindReasoningDelta, uc.ReasoningDeltaPayload{RunID: "r", Text: "t"}},
+		{uc.EventKindToolCallStart, uc.ToolCallStartedPayload{RunID: "r", ToolCallID: "c", Name: "bash", Input: "{}"}},
+		{uc.EventKindToolResult, uc.ToolResultPayload{RunID: "r", ToolCallID: "c", Name: "bash", Content: "out", IsError: true}},
+		{uc.EventKindStepFinished, uc.StepFinishedPayload{RunID: "r", TokensIn: 1, TokensOut: 2, FinishReason: "stop"}},
+		{uc.EventKindRunAwaiting, uc.RunAwaitingPayload{RunID: "r", Question: uc.Question{Text: "q", Choices: []string{"a"}}}},
+		{uc.EventKindRunCompleted, uc.RunCompletedPayload{RunID: "r", FinalText: "done"}},
+		{uc.EventKindRunFailed, uc.RunFailedPayload{RunID: "r", Reason: "internal", Message: "m"}},
+		{uc.EventKindRunCancelled, uc.RunCancelledPayload{RunID: "r"}},
+		{uc.EventKindResourceReady, uc.ResourceEventPayload{ResourceID: "e", Name: "main", ProviderInstanceID: "p", Endpoint: "http://x", Message: "m", Epoch: 2}},
+		{uc.EventKindExecPreviewRan, uc.ExecPreviewRanPayload{ResourceID: "e", Command: "echo", Output: "hi", IsError: false}},
+		{uc.EventKindRunSpawned, uc.RunSpawnedPayload{ParentRunID: "p", ChildRunID: "c"}},
+		{uc.EventKindMemorySet, uc.NewMemoryEventPayload("a.b", uc.ActorAgent(uc.RunID("r")), []byte(`{"v":1}`))},
+		{uc.EventKindMemoryDeleted, uc.NewMemoryEventPayload("a.b", uc.Actor{Kind: uc.ActorKindService, ID: "u"}, nil)},
+		{uc.EventKindPermissionDenied, uc.PermissionDeniedPayload{RunID: "r", Tool: "bash", Reason: "denied"}},
+		{uc.EventKindHistoryCompacted, uc.HistoryCompactedPayload{RunID: "r", CoveredMessages: 3, SummaryTokens: 9}},
+		{uc.EventKindModelFallback, uc.ModelFallbackPayload{RunID: "r", From: "a", To: "b", Reason: "x"}},
+		{uc.EventKindHookFired, uc.HookFiredPayload{Hook: "h", RunID: "r"}},
+		{uc.EventKindPeriodicPromptFired, uc.PeriodicPromptFiredPayload{RunID: "r", Prompt: "p"}},
 	}
 
 	for _, tc := range cases {

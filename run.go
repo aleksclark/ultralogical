@@ -1,4 +1,4 @@
-package ultra
+package core
 
 import (
 	"context"
@@ -37,12 +37,12 @@ const (
 	FailureInternal          = "internal"
 )
 
-// ModelConfig names the model a run uses and which org credential pays for
-// it. Inference is always on org credentials; there is no platform fallback.
+// ModelConfig names the model a run uses and which tenant credential pays for
+// it. Inference is always on tenant credentials; there is no platform fallback.
 type ModelConfig struct {
 	Provider   string        `json:"provider"` // openai | anthropic | bedrock
 	ModelID    string        `json:"model_id"`
-	Credential string        `json:"credential"` // credential name within the org
+	Credential string        `json:"credential"` // credential name within the tenant
 	Fallbacks  []ModelConfig `json:"fallbacks,omitempty"`
 }
 
@@ -52,25 +52,21 @@ type ModelConfig struct {
 type AgentRun struct {
 	ID          RunID
 	SessionID   SessionID
-	OrgID       OrgID
+	TenantID    TenantID
 	ParentRunID *RunID
 	// SpawnKey identifies the tool call that created this run, formatted as
-	// "<parent run>:<step index>:<tool call id>". It is unique per org, so a
+	// "<parent run>:<step index>:<tool call id>". It is unique per tenant, so a
 	// redelivered step replaying the same spawn adopts the existing child
 	// rather than creating a second one.
 	SpawnKey string
 	// CohortID and CohortOrdinal link children launched by one
 	// run_agent_cohort call and preserve their declaration order.
-	CohortID      string
-	CohortOrdinal int
-	// FlowInvocationID and FlowAgentName are the run's flow provenance: which
-	// invocation created it and which agent declaration in that flow version it
-	// executes. A run spawned at runtime from a flow's catalog inherits the
-	// invocation id but carries no declaration name, because it is not one of
-	// the invocation's declared launches.
-	FlowInvocationID  *FlowInvocationID
-	FlowAgentName     string
-	Grants            Grants
+	CohortID          string
+	CohortOrdinal     int
+	Policy            RunPolicy
+	// Actor is the opaque attribution captured at run creation (API caller
+	// or parent run). Loop-internal events carry this Actor.
+	Actor             Actor
 	Result            json.RawMessage
 	State             RunState
 	LoopKind          string

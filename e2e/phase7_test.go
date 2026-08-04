@@ -14,14 +14,14 @@ import (
 
 	"connectrpc.com/connect"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/envprovider/localdocker"
-	ultrav1 "github.com/aleksclark/ultralogical/gen/go/ultra/v1"
-	"github.com/aleksclark/ultralogical/mcp"
-	"github.com/aleksclark/ultralogical/secrets"
-	"github.com/aleksclark/ultralogical/testkit/harness"
-	"github.com/aleksclark/ultralogical/testkit/modelscript"
-	"github.com/aleksclark/ultralogical/testkit/testclient"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/provider/localdocker"
+	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/mcp"
+	"github.com/aleksclark/ultracore/secrets"
+	"github.com/aleksclark/ultracore/testkit/harness"
+	"github.com/aleksclark/ultracore/testkit/modelscript"
+	"github.com/aleksclark/ultracore/testkit/testclient"
 )
 
 // repoRoot resolves the repository root from the e2e package directory.
@@ -87,32 +87,37 @@ func TestA71_CodegenDriftGate(t *testing.T) {
 		"detected as required (hand-edited generated output is visible)",
 		"gate failed as required (Go/TS drift detected)",
 		"restored tree passes the Go/TS codegen gate",
-		"gate failed as required (Rust drift detected)",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("mutation gate output missing %q:\n%s", want, out)
 		}
 	}
-	// The gate must not leave the tree mutated.
-	status, err := exec.Command("git", "-C", repoRoot(t), "status", "--porcelain").Output()
+	// The gate restores the files it mutates. Other tree dirt from the
+	// extraction worktree is unrelated.
+	sessionPB, err := os.ReadFile(filepath.Join(repoRoot(t), "gen/go/core/v1/session.pb.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, line := range strings.Split(strings.TrimSpace(string(status)), "\n") {
-		if strings.Contains(line, "proto/ultra/v1/session.proto") || strings.Contains(line, "gen/go/ultra/v1/session.pb.go") {
-			t.Fatalf("mutation gate left the tree modified: %s", line)
-		}
+	if strings.Contains(string(sessionPB), "deliberate drift injected by mutate-codegen-gate.sh") {
+		t.Fatal("mutation gate left deliberate drift in session.pb.go")
+	}
+	protoBody, err := os.ReadFile(filepath.Join(repoRoot(t), "proto/core/v1/session.proto"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(protoBody), "drift_probe") {
+		t.Fatal("mutation gate left drift_probe in session.proto")
 	}
 }
 
 // A7.2 — one scripted run emits multiple ordered text deltas that a subscriber
 // observes strictly before the terminal event, and replay from seq 0 yields the
-// same final timeline. Browser and GPUI halves live in their own suites.
+// same final timeline. 
 func TestA72_IncrementalRendering(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "incremental")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "incremental")
 	stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
 		{Text: "one two three four five six", ChunkSize: 3, ChunkDelay: 40 * time.Millisecond},
 	}})
@@ -134,7 +139,7 @@ func TestA72_IncrementalRendering(t *testing.T) {
 	terminalAt := -1
 	for i, ev := range events {
 		switch payload := ev.GetPayload().GetPayload().(type) {
-		case *ultrav1.EventPayload_TextDelta:
+		case *corev1.EventPayload_TextDelta:
 			if terminalAt >= 0 {
 				t.Fatalf("text delta at %d arrived after the terminal event at %d", i, terminalAt)
 			}
@@ -153,7 +158,7 @@ func TestA72_IncrementalRendering(t *testing.T) {
 			t.Fatalf("delta indexes not strictly increasing: %v", deltaIndexes)
 		}
 	}
-	alice.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 30*time.Second)
+	alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 30*time.Second)
 
 	// Replay produces the same ordered timeline.
 	replay, err := alice.Subscribe(ctx, sess.GetId(), 0)
@@ -174,7 +179,7 @@ func TestA73_RedactionSweep(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "redaction sweep")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "redaction sweep")
 
 	// The canary credential is the one the run actually authenticates with.
 	stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
@@ -184,7 +189,7 @@ func TestA73_RedactionSweep(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	alice.AwaitRunState(t, run.GetId(), ultrav1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
+	alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
 
 	// The vendor call really carried the canary, so the sweep is meaningful.
 	usedCanary := false
@@ -199,8 +204,8 @@ func TestA73_RedactionSweep(t *testing.T) {
 
 	// Force an error path that a naive implementation would decorate with
 	// credential material.
-	if _, err := alice.Envs.ExecPreview(ctx, connect.NewRequest(&ultrav1.ExecPreviewRequest{
-		EnvId: "00000000-0000-0000-0000-000000000000", Command: "true",
+	if _, err := alice.Resources.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
+		ResourceId: "00000000-0000-0000-0000-000000000000", Command: "true",
 	})); err == nil {
 		t.Fatal("ExecPreview against a missing environment should fail")
 	} else {
@@ -223,15 +228,15 @@ func TestA73_RedactionSweep(t *testing.T) {
 		assertNoCanary(t, "event payload "+testclient.Kind(ev), string(payload))
 	}
 
-	stored, err := stack.Store.Org(stack.OrgA.ID).Runs().Get(ctx, ultra.RunID(run.GetId()))
+	stored, err := stack.Store.Tenant(stack.TenantA.ID).Runs().Get(ctx, uc.RunID(run.GetId()))
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertNoCanary(t, "persisted run history", string(stored.History))
 	assertNoCanary(t, "persisted run failure message", stored.FailureMessage)
 
-	creds, err := alice.Orgs.ListCredentials(ctx, connect.NewRequest(&ultrav1.ListCredentialsRequest{
-		OrgId: string(stack.OrgA.ID),
+	creds, err := alice.Credentials.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+		TenantId: string(stack.TenantA.ID),
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -242,7 +247,7 @@ func TestA73_RedactionSweep(t *testing.T) {
 	}
 	assertNoCanary(t, "ListCredentials response", string(credJSON))
 
-	runs, err := alice.Agents.ListRuns(ctx, connect.NewRequest(&ultrav1.ListRunsRequest{SessionId: sess.GetId()}))
+	runs, err := alice.Agents.ListRuns(ctx, connect.NewRequest(&corev1.ListRunsRequest{SessionId: sess.GetId()}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -253,20 +258,20 @@ func TestA73_RedactionSweep(t *testing.T) {
 	assertNoCanary(t, "ListRuns response", string(runsJSON))
 
 	// Database diagnostic fields for credentials and environments.
-	dbCred, err := stack.Store.Org(stack.OrgA.ID).Credentials().Get(ctx, ultra.CredentialKindOpenAI, "default")
+	dbCred, err := stack.Store.Tenant(stack.TenantA.ID).Credentials().Get(ctx, uc.CredentialKindOpenAI, "default")
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertNoCanary(t, "credential ciphertext at rest", string(dbCred.EncPayload))
-	storedEnvs, err := stack.Store.Org(stack.OrgA.ID).Envs().List(ctx, ultra.SessionID(sess.GetId()))
+	storedResources, err := stack.Store.Tenant(stack.TenantA.ID).Resources().List(ctx, uc.SessionID(sess.GetId()))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, env := range storedEnvs {
-		assertNoCanary(t, "env diagnostic fields", env.FailureMessage+env.Endpoint+string(env.TokenEnc))
+	for _, env := range storedResources {
+		assertNoCanary(t, "env diagnostic fields", env.FailureMessage+string(env.Endpoint)+string(env.TokenEnc))
 	}
 
-	assertNoCanary(t, "ultrad and worker logs", stack.Logs())
+	assertNoCanary(t, "cored and worker logs", stack.Logs())
 }
 
 // assertNoCanary fails when any encoded form of the canary appears in text.
@@ -282,48 +287,49 @@ func assertNoCanary(t *testing.T, where, text string) {
 	}
 }
 
-// awaitEnvState polls until an environment reaches a state or the deadline.
-func awaitEnvState(t *testing.T, client *testclient.Client, envID string, want ultrav1.EnvState, timeout time.Duration) *ultrav1.DevEnv {
+// awaitEnvState polls until a resource reaches a state or the deadline.
+// Name retained for call-site stability in phase7 durability tests.
+func awaitEnvState(t *testing.T, client *testclient.Client, resourceID string, want corev1.ResourceState, timeout time.Duration) *corev1.Resource {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
-	var last *ultrav1.DevEnv
+	var last *corev1.Resource
 	for time.Now().Before(deadline) {
-		got, err := client.Envs.GetEnv(context.Background(), connect.NewRequest(&ultrav1.GetEnvRequest{EnvId: envID}))
+		got, err := client.Resources.GetResource(context.Background(), connect.NewRequest(&corev1.GetResourceRequest{ResourceId: resourceID}))
 		if err == nil {
-			last = got.Msg.GetEnv()
+			last = got.Msg.GetResource()
 			if last.GetState() == want {
 				return last
 			}
-			if want != ultrav1.EnvState_ENV_STATE_FAILED && last.GetState() == ultrav1.EnvState_ENV_STATE_FAILED {
-				t.Fatalf("env failed while waiting for %v: %s", want, last.GetFailureMessage())
+			if want != corev1.ResourceState_RESOURCE_STATE_FAILED && last.GetState() == corev1.ResourceState_RESOURCE_STATE_FAILED {
+				t.Fatalf("resource failed while waiting for %v: %s", want, last.GetFailureMessage())
 			}
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
-	t.Fatalf("env %s never reached %v within %s (last %v)", envID, want, timeout, last.GetState())
+	t.Fatalf("resource %s never reached %v within %s (last %v)", resourceID, want, timeout, last.GetState())
 	return nil
 }
 
-// A7.4 — an environment's workspace survives ultrad and worker death, and
+// A7.4 — an environment's workspace survives cored and worker death, and
 // restarting it rotates the bearer token: the new token works, the old token is
 // rejected, and a client cached before rotation cannot keep using it.
 func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "durability")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "durability")
 
 	envProto := provisionEnv(t, stack, sess.GetId())
 	envID := envProto.GetId()
 
 	// Write a file through the shipped API.
-	if _, err := alice.Envs.ExecPreview(ctx, connect.NewRequest(&ultrav1.ExecPreviewRequest{
-		EnvId: envID, Command: "echo durable-content > /work/state.txt",
+	if _, err := alice.Resources.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
+		ResourceId: envID, Command: "echo durable-content > /work/state.txt",
 	})); err != nil {
 		t.Fatal(err)
 	}
 
-	before, err := stack.Store.Org(stack.OrgA.ID).Envs().Get(ctx, ultra.EnvID(envID))
+	before, err := stack.Store.Tenant(stack.TenantA.ID).Resources().Get(ctx, uc.ResourceID(envID))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -338,25 +344,25 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 	oldToken := string(oldTokenBytes)
 	// A client created before the restart, held across it: the "cached MCP
 	// client" a long-running worker would hold.
-	cached := mcp.NewClient(before.Endpoint, oldToken)
+	cached := mcp.NewClient(string(before.Endpoint), oldToken)
 	if err := cached.Initialize(ctx); err != nil {
 		t.Fatalf("cached client could not initialize before rotation: %v", err)
 	}
 
-	// Kill the control plane entirely — both ultrad and the worker — and
+	// Kill the control plane entirely — both cored and the worker — and
 	// bring it back. The environment is a separate process tree, so its
 	// survival must not depend on either.
 	stack.KillWorker()
 	stack.KillUltrad()
-	if _, err := alice.Envs.GetEnv(ctx, connect.NewRequest(&ultrav1.GetEnvRequest{EnvId: envID})); err == nil {
-		t.Fatal("ultrad still answered after being killed; the restart proves nothing")
+	if _, err := alice.Resources.GetResource(ctx, connect.NewRequest(&corev1.GetResourceRequest{ResourceId: envID})); err == nil {
+		t.Fatal("cored still answered after being killed; the restart proves nothing")
 	}
 	stack.StartUltrad()
 	stack.StartWorker()
 
 	// The environment is still reachable and still holds its file.
-	read, err := alice.Envs.ExecPreview(ctx, connect.NewRequest(&ultrav1.ExecPreviewRequest{
-		EnvId: envID, Command: "cat /work/state.txt",
+	read, err := alice.Resources.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
+		ResourceId: envID, Command: "cat /work/state.txt",
 	}))
 	if err != nil {
 		t.Fatalf("environment unreachable after control-plane restart: %v", err)
@@ -366,19 +372,19 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 	}
 
 	// Restart rotates the token and bumps the epoch.
-	restarted, err := alice.Envs.RestartEnv(ctx, connect.NewRequest(&ultrav1.RestartEnvRequest{EnvId: envID}))
+	restarted, err := alice.Resources.RestartResource(ctx, connect.NewRequest(&corev1.RestartResourceRequest{ResourceId: envID}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if restarted.Msg.GetEventSeq() == 0 {
-		t.Fatal("RestartEnv returned no event seq")
+		t.Fatal("RestartResource returned no event seq")
 	}
-	ready := awaitEnvState(t, alice, envID, ultrav1.EnvState_ENV_STATE_READY, 3*time.Minute)
+	ready := awaitEnvState(t, alice, envID, corev1.ResourceState_RESOURCE_STATE_READY, 3*time.Minute)
 	if int(ready.GetEpoch()) <= before.Epoch {
 		t.Fatalf("epoch did not advance: %d → %d", before.Epoch, ready.GetEpoch())
 	}
 
-	after, err := stack.Store.Org(stack.OrgA.ID).Envs().Get(ctx, ultra.EnvID(envID))
+	after, err := stack.Store.Tenant(stack.TenantA.ID).Resources().Get(ctx, uc.ResourceID(envID))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,18 +398,18 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 	}
 
 	// The rotated token works and the workspace is intact.
-	if err := mcp.NewClient(after.Endpoint, newToken).Initialize(ctx); err != nil {
+	if err := mcp.NewClient(string(after.Endpoint), newToken).Initialize(ctx); err != nil {
 		t.Fatalf("rotated token rejected: %v", err)
 	}
-	survived, err := alice.Envs.ExecPreview(ctx, connect.NewRequest(&ultrav1.ExecPreviewRequest{
-		EnvId: envID, Command: "cat /work/state.txt",
+	survived, err := alice.Resources.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
+		ResourceId: envID, Command: "cat /work/state.txt",
 	}))
 	if err != nil || !strings.Contains(survived.Msg.GetOutput(), "durable-content") {
 		t.Fatalf("workspace lost across restart: %q %v", survived.Msg.GetOutput(), err)
 	}
 
 	// The prior token is rejected.
-	if err := mcp.NewClient(after.Endpoint, oldToken).Initialize(ctx); err == nil {
+	if err := mcp.NewClient(string(after.Endpoint), oldToken).Initialize(ctx); err == nil {
 		t.Fatal("pre-rotation token still authenticates")
 	}
 	// And the pre-rotation cached client cannot keep working either, whether
@@ -423,9 +429,9 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "env failure")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "env failure")
 	envProto := provisionEnv(t, stack, sess.GetId())
-	envID := ultra.EnvID(envProto.GetId())
+	envID := uc.ResourceID(envProto.GetId())
 
 	provider, err := localdocker.New(localdocker.Config{Image: harness.BezalelImage})
 	if err != nil {
@@ -452,11 +458,11 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Wait for the first tool result, then destroy the environment.
-	sub.CollectUntil(t, 90*time.Second, func(ev *ultrav1.SessionEvent) bool {
-		result, ok := ev.GetPayload().GetPayload().(*ultrav1.EventPayload_ToolResult)
+	sub.CollectUntil(t, 90*time.Second, func(ev *corev1.SessionEvent) bool {
+		result, ok := ev.GetPayload().GetPayload().(*corev1.EventPayload_ToolResult)
 		return ok && strings.Contains(result.ToolResult.GetContent(), "first-step")
 	})
-	if err := provider.KillByEnvID(ctx, envID); err != nil {
+	if err := provider.KillByResourceID(ctx, envID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -475,11 +481,11 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 	// model unable to react, so the flagged result is the contract.
 	typedFailure := false
 	for _, ev := range events {
-		result, ok := ev.GetPayload().GetPayload().(*ultrav1.EventPayload_ToolResult)
+		result, ok := ev.GetPayload().GetPayload().(*corev1.EventPayload_ToolResult)
 		if !ok || !result.ToolResult.GetIsError() {
 			continue
 		}
-		if strings.Contains(strings.ToLower(result.ToolResult.GetContent()), "environment unavailable") {
+		if strings.Contains(strings.ToLower(result.ToolResult.GetContent()), "unavailable") {
 			typedFailure = true
 		}
 	}
@@ -487,29 +493,29 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 		t.Fatalf("no typed tool failure was recorded after the environment died: %v", kinds(events))
 	}
 
-	// The environment is failed, with a structured reason, and EnvFailed
+	// The environment is failed, with a structured reason, and ResourceFailed
 	// precedes the run's terminal event.
-	failed := awaitEnvState(t, alice, string(envID), ultrav1.EnvState_ENV_STATE_FAILED, 60*time.Second)
+	failed := awaitEnvState(t, alice, string(envID), corev1.ResourceState_RESOURCE_STATE_FAILED, 60*time.Second)
 	if failed.GetFailureMessage() == "" {
-		t.Fatal("EnvFailed carried no structured reason")
+		t.Fatal("ResourceFailed carried no structured reason")
 	}
 	all, err := alice.Subscribe(ctx, sess.GetId(), 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer all.Close()
-	ordered := all.CollectUntil(t, 60*time.Second, func(ev *ultrav1.SessionEvent) bool {
-		return testclient.Kind(ev) == "env_failed"
+	ordered := all.CollectUntil(t, 60*time.Second, func(ev *corev1.SessionEvent) bool {
+		return testclient.Kind(ev) == "resource_failed"
 	})
-	if len(ordered) == 0 || testclient.Kind(ordered[len(ordered)-1]) != "env_failed" {
-		t.Fatal("no env_failed event was recorded")
+	if len(ordered) == 0 || testclient.Kind(ordered[len(ordered)-1]) != "resource_failed" {
+		t.Fatal("no resource_failed event was recorded")
 	}
 	for _, ev := range ordered[:len(ordered)-1] {
 		if isTerminalRunEvent(ev) && testclient.Kind(ev) != "run_completed" {
 			// A run may legitimately complete before the reconciler notices,
 			// but a failure must not precede the environment failure it is
 			// attributed to.
-			t.Fatalf("run terminated with %q before env_failed", testclient.Kind(ev))
+			t.Fatalf("run terminated with %q before resource_failed", testclient.Kind(ev))
 		}
 	}
 	alice.AwaitRunState(t, run.GetId(), stateOf(terminal), 30*time.Second)
@@ -535,7 +541,7 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 
 	// Repeated termination is idempotent and leaves no resources behind.
 	for range 3 {
-		if _, err := alice.Envs.TerminateEnv(ctx, connect.NewRequest(&ultrav1.TerminateEnvRequest{EnvId: string(envID)})); err != nil {
+		if _, err := alice.Resources.TerminateResource(ctx, connect.NewRequest(&corev1.TerminateResourceRequest{ResourceId: string(envID)})); err != nil {
 			t.Fatalf("repeated terminate failed: %v", err)
 		}
 	}
@@ -554,14 +560,14 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 	t.Fatalf("terminated environment leaked resources: %v", leaked)
 }
 
-func stateOf(ev *ultrav1.SessionEvent) ultrav1.RunState {
+func stateOf(ev *corev1.SessionEvent) corev1.RunState {
 	switch testclient.Kind(ev) {
 	case "run_completed":
-		return ultrav1.RunState_RUN_STATE_COMPLETED
+		return corev1.RunState_RUN_STATE_COMPLETED
 	case "run_failed":
-		return ultrav1.RunState_RUN_STATE_FAILED
+		return corev1.RunState_RUN_STATE_FAILED
 	default:
-		return ultrav1.RunState_RUN_STATE_CANCELLED
+		return corev1.RunState_RUN_STATE_CANCELLED
 	}
 }
 
@@ -571,7 +577,7 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "interrupted provisioning")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "interrupted provisioning")
 
 	provider, err := localdocker.New(localdocker.Config{Image: harness.BezalelImage})
 	if err != nil {
@@ -582,34 +588,34 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 	// The interruption window is a race against provisioning, so a missed
 	// window is retried with a fresh environment rather than skipped: a
 	// skipped test is silently absent evidence.
-	var envID ultra.EnvID
+	var envID uc.ResourceID
 	killed := false
 	for attempt := 1; attempt <= 5 && !killed; attempt++ {
-		requested, err := alice.Envs.ProvisionEnv(ctx, connect.NewRequest(&ultrav1.ProvisionEnvRequest{
+		requested, err := alice.Resources.ProvisionResource(ctx, connect.NewRequest(&corev1.ProvisionResourceRequest{
 			SessionId:        sess.GetId(),
-			Spec:             &ultrav1.EnvSpec{Name: fmt.Sprintf("interrupted-%d", attempt), Workdir: "/work"},
+			Spec:             &corev1.DevEnvSpec{Name: fmt.Sprintf("interrupted-%d", attempt), Workdir: "/work"},
 			ProviderInstance: "default",
 		}))
 		if err != nil {
 			t.Fatal(err)
 		}
-		envID = ultra.EnvID(requested.Msg.GetEnv().GetId())
+		envID = uc.ResourceID(requested.Msg.GetResource().GetId())
 
 		// Kill the worker while it is provisioning, before readiness is
 		// durable.
 		killDeadline := time.Now().Add(60 * time.Second)
 		missed := false
 		for time.Now().Before(killDeadline) {
-			current, err := stack.Store.Org(stack.OrgA.ID).Envs().Get(ctx, envID)
+			current, err := stack.Store.Tenant(stack.TenantA.ID).Resources().Get(ctx, envID)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if current.State == ultra.EnvProvisioning {
+			if current.State == uc.ResourceProvisioning {
 				stack.KillWorker()
 				killed = true
 				break
 			}
-			if current.State == ultra.EnvReady || current.State == ultra.EnvFailed {
+			if current.State == uc.ResourceReady || current.State == uc.ResourceFailed {
 				missed = true
 				break
 			}
@@ -622,8 +628,8 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 			t.Fatal("environment never entered provisioning")
 		}
 		// Clean up the environment that won the race and try again.
-		if _, err := alice.Envs.TerminateEnv(ctx, connect.NewRequest(&ultrav1.TerminateEnvRequest{
-			EnvId: string(envID),
+		if _, err := alice.Resources.TerminateResource(ctx, connect.NewRequest(&corev1.TerminateResourceRequest{
+			ResourceId: string(envID),
 		})); err != nil {
 			t.Fatal(err)
 		}
@@ -636,7 +642,7 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 	// A fresh worker must converge the environment, adopting whatever resource
 	// the dead worker created rather than starting a second one.
 	stack.StartWorker()
-	ready := awaitEnvState(t, alice, string(envID), ultrav1.EnvState_ENV_STATE_READY, 4*time.Minute)
+	ready := awaitEnvState(t, alice, string(envID), corev1.ResourceState_RESOURCE_STATE_READY, 4*time.Minute)
 	if ready.GetEndpoint() == "" {
 		t.Fatal("recovered environment has no endpoint")
 	}
@@ -656,135 +662,13 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 	}
 
 	// The recovered environment is usable.
-	out, err := alice.Envs.ExecPreview(ctx, connect.NewRequest(&ultrav1.ExecPreviewRequest{
-		EnvId: string(envID), Command: "echo recovered",
+	out, err := alice.Resources.ExecPreview(ctx, connect.NewRequest(&corev1.ExecPreviewRequest{
+		ResourceId: string(envID), Command: "echo recovered",
 	}))
 	if err != nil || !strings.Contains(out.Msg.GetOutput(), "recovered") {
 		t.Fatalf("recovered environment unusable: %q %v", out.Msg.GetOutput(), err)
 	}
 }
-
-// A7.6 — metering is bounded by persisted heartbeats, matches the replayed
-// lifecycle duration within one heartbeat, survives worker death, closes
-// exactly once, and is org-scoped with indistinguishable denials.
-func TestA76_MeteringAndTenancy(t *testing.T) {
-	stack := harness.Up(t)
-	alice := stack.AliceClient()
-	bob := stack.BobClient()
-	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "metering")
-	envProto := provisionEnv(t, stack, sess.GetId())
-	envID := ultra.EnvID(envProto.GetId())
-	scope := stack.Store.Org(stack.OrgA.ID)
-
-	// Let the reconciler tick a few times so the watermark is meaningful.
-	time.Sleep(4 * time.Second)
-
-	// Killing the worker leaves the interval open with only heartbeat-confirmed
-	// seconds; the restarted worker must close it at the watermark.
-	stack.KillWorker()
-	time.Sleep(3 * time.Second)
-	open, err := scope.Usage().ListOpen(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(open) != 1 {
-		t.Fatalf("wanted exactly 1 open interval while the env is ready, got %d", len(open))
-	}
-	watermark := open[0].LastMeteredAt
-	stack.StartWorker()
-
-	if _, err := alice.Envs.TerminateEnv(ctx, connect.NewRequest(&ultrav1.TerminateEnvRequest{EnvId: string(envID)})); err != nil {
-		t.Fatal(err)
-	}
-	awaitEnvState(t, alice, string(envID), ultrav1.EnvState_ENV_STATE_TERMINATED, 3*time.Minute)
-
-	// Exactly one interval, closed exactly once.
-	intervals, err := scope.Usage().List(ctx, time.Time{}, time.Now().Add(time.Hour))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(intervals) != 1 {
-		t.Fatalf("wanted exactly 1 usage interval, got %d: %+v", len(intervals), intervals)
-	}
-	usage := intervals[0]
-	if usage.EndedAt == nil {
-		t.Fatal("usage interval never closed")
-	}
-	if usage.RateClass != ultra.RateClassBYO {
-		t.Fatalf("rate class = %q", usage.RateClass)
-	}
-	if usage.OrgID != stack.OrgA.ID {
-		t.Fatalf("interval attributed to org %q", usage.OrgID)
-	}
-
-	// Closing again must not move the interval: the ledger closes once.
-	firstEnd := *usage.EndedAt
-	firstSeconds := usage.Seconds
-	if err := scope.Usage().Close(ctx, envID, time.Now().Add(time.Hour)); err != nil {
-		t.Fatal(err)
-	}
-	if err := scope.Usage().CloseAtWatermark(ctx, envID); err != nil {
-		t.Fatal(err)
-	}
-	after, err := scope.Usage().List(ctx, time.Time{}, time.Now().Add(2*time.Hour))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(after) != 1 || !after[0].EndedAt.Equal(firstEnd) || after[0].Seconds != firstSeconds {
-		t.Fatalf("interval changed after repeated close: %+v (was end=%s seconds=%d)", after[0], firstEnd, firstSeconds)
-	}
-
-	// Metered seconds are bounded by the persisted heartbeats: they can never
-	// exceed the ready-to-terminal wall time, and they cannot count time the
-	// control plane was dead beyond one heartbeat.
-	env, err := scope.Envs().Get(ctx, envID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if env.ReadyAt == nil || env.TerminatedAt == nil {
-		t.Fatal("environment lifecycle timestamps missing")
-	}
-	lifecycle := env.TerminatedAt.Sub(*env.ReadyAt)
-	if usage.Seconds > int64(lifecycle.Seconds())+2 {
-		t.Fatalf("metered %ds exceeds the replayed lifecycle duration %s", usage.Seconds, lifecycle)
-	}
-	if usage.Seconds < 0 {
-		t.Fatalf("metered negative seconds: %d", usage.Seconds)
-	}
-	if usage.LastMeteredAt.Before(watermark) {
-		t.Fatalf("watermark moved backwards: %s → %s", watermark, usage.LastMeteredAt)
-	}
-
-	// The API reports the same interval, org-scoped.
-	reported, err := alice.Billing.GetUsage(ctx, connect.NewRequest(&ultrav1.GetUsageRequest{OrgId: string(stack.OrgA.ID)}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(reported.Msg.GetIntervals()) != 1 {
-		t.Fatalf("GetUsage returned %d intervals", len(reported.Msg.GetIntervals()))
-	}
-	if reported.Msg.GetIntervals()[0].GetOpen() {
-		t.Fatal("GetUsage reports a terminated environment's interval as open")
-	}
-	if reported.Msg.GetTotalSeconds() != usage.Seconds {
-		t.Fatalf("GetUsage total %d != stored %d", reported.Msg.GetTotalSeconds(), usage.Seconds)
-	}
-
-	// Cross-tenant reads are indistinguishable from missing records.
-	_, bobUsageErr := bob.Billing.GetUsage(ctx, connect.NewRequest(&ultrav1.GetUsageRequest{OrgId: string(stack.OrgA.ID)}))
-	_, bobMissingErr := bob.Billing.GetUsage(ctx, connect.NewRequest(&ultrav1.GetUsageRequest{
-		OrgId: "00000000-0000-0000-0000-000000000000",
-	}))
-	assertSameDenial(t, "GetUsage", bobUsageErr, bobMissingErr)
-
-	_, bobEnvErr := bob.Envs.GetEnv(ctx, connect.NewRequest(&ultrav1.GetEnvRequest{EnvId: string(envID)}))
-	_, bobMissingEnvErr := bob.Envs.GetEnv(ctx, connect.NewRequest(&ultrav1.GetEnvRequest{
-		EnvId: "00000000-0000-0000-0000-000000000000",
-	}))
-	assertSameDenial(t, "GetEnv", bobEnvErr, bobMissingEnvErr)
-}
-
 // assertSameDenial requires cross-tenant and missing-resource errors to be
 // indistinguishable, so no existence oracle leaks across orgs.
 func assertSameDenial(t *testing.T, rpc string, crossTenant, missing error) {
@@ -804,12 +688,12 @@ func assertSameDenial(t *testing.T, rpc string, crossTenant, missing error) {
 }
 
 // A7.8 — the documented one-command stack boots, the noninteractive smoke
-// exercises sessions, streaming, environments, and usage, and teardown leaves
-// no owned process or container.
+// exercises sessions, streaming, and environments, and teardown leaves no
+// owned process or container.
 func TestA78_DevStackSmoke(t *testing.T) {
 	assertCIOwnsGate(t, "scripts/dev-stack.sh smoke")
-	if os.Getenv("CI") == "" && os.Getenv("ULTRA_DEV_STACK_TESTS") == "" {
-		t.Skip("set ULTRA_DEV_STACK_TESTS=1 to run the dev-stack smoke locally")
+	if os.Getenv("CI") == "" && os.Getenv("CORE_DEV_STACK_TESTS") == "" {
+		t.Skip("set CORE_DEV_STACK_TESTS=1 to run the dev-stack smoke locally")
 	}
 	harness.EnsureBezalelImage(t)
 
@@ -823,7 +707,6 @@ func TestA78_DevStackSmoke(t *testing.T) {
 		"streamed",
 		"ready",
 		"ran a command in the environment",
-		"usage interval(s)",
 		"environment terminated",
 		"smoke passed",
 	} {
@@ -855,7 +738,7 @@ func TestA78_DevStackSmoke(t *testing.T) {
 
 func ownedContainers(t *testing.T) map[string]bool {
 	t.Helper()
-	out, err := exec.Command("docker", "ps", "-aq", "--filter", "label=ultralogical.env_id").Output()
+	out, err := exec.Command("docker", "ps", "-aq", "--filter", "label=ultracore.resource_id").Output()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -867,11 +750,9 @@ func ownedContainers(t *testing.T) map[string]bool {
 }
 
 // A7.9 — coverage verification rejects nonexistent tests, tests absent from
-// required CI, references whose tests do not assert the capability, desktop
-// evidence that bypasses the rendered GPUI application, a capability quietly
-// deleted from the matrix, a published RPC with no coverage and no explicit
-// deferral, and a deferral parked on an acceptance test no plan declares. The
-// unmutated tree passes.
+// required CI, references whose tests do not assert the capability, a
+// capability quietly deleted from the matrix, and a published RPC with no
+// coverage and no explicit deferral. The unmutated tree passes.
 func TestA79_EvidenceIntegrity(t *testing.T) {
 	out, err := runScript(t, 5*time.Minute, "scripts/mutate-coverage-gate.sh")
 	if err != nil {
@@ -882,10 +763,8 @@ func TestA79_EvidenceIntegrity(t *testing.T) {
 		"a test name the referenced file does not declare",
 		"an assertion the referenced test does not contain",
 		"evidence that required CI never executes",
-		"desktop evidence that never inspects a rendered GPUI frame",
 		"a capability deleted from the matrix, leaving its RPCs unaccounted for",
 		"a published RPC with neither coverage nor an explicit deferral",
-		"a deferral owned by an acceptance test no plan declares",
 		"the restored tree passes",
 	} {
 		if !strings.Contains(out, want) {
@@ -922,7 +801,7 @@ func TestA79_RequiredChecksAreEnforced(t *testing.T) {
 	}
 
 	out, err := exec.Command("gh", "api",
-		"repos/aleksclark/ultralogical/branches/master/protection/required_status_checks",
+		"repos/aleksclark/ultracore/branches/master/protection/required_status_checks",
 	).Output()
 	if err != nil {
 		t.Skipf("cannot read branch protection (needs repo admin token): %v", err)

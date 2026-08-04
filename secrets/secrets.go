@@ -26,7 +26,7 @@ type AESKeyring struct {
 }
 
 // NewAESKeyring builds a keyring from a 32-byte hex-encoded master key
-// (e.g. the ULTRA_MASTER_KEY env var).
+// (e.g. the CORE_MASTER_KEY env var).
 func NewAESKeyring(hexKey string) (*AESKeyring, error) {
 	key, err := hex.DecodeString(hexKey)
 	if err != nil {

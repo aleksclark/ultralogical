@@ -1,0 +1,13 @@
+# E1 shed-product-surface ban list. Closing E1 makes these CI-enforced.
+flowdef
+FlowInvocation
+BillingService
+env_usage
+hosted_eks
+Presence
+GPUI
+Playwright
+Org\.Plan
+RootGrants
+SubsetOf
+ultralogical

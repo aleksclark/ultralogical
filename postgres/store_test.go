@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 
-	ultra "github.com/aleksclark/ultralogical"
-	"github.com/aleksclark/ultralogical/postgres"
-	"github.com/aleksclark/ultralogical/testkit/pgtest"
+	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/postgres"
+	"github.com/aleksclark/ultracore/testkit/pgtest"
 )
 
 func newStore(t *testing.T) *postgres.Store {
@@ -22,96 +22,100 @@ func newStore(t *testing.T) *postgres.Store {
 	return postgres.NewStore(pool)
 }
 
-func seedOrgUser(t *testing.T, s *postgres.Store, orgName, email string) (ultra.Org, ultra.User) {
+func seedTenant(t *testing.T, s *postgres.Store, name string) (uc.Tenant, string) {
 	t.Helper()
 	ctx := context.Background()
-	org := ultra.Org{ID: ultra.OrgID(uuid.NewString()), Name: orgName}
-	user := ultra.User{ID: ultra.UserID(uuid.NewString()), Email: email}
-	if err := s.Orgs().Create(ctx, org); err != nil {
+	tenant := uc.Tenant{ID: uc.TenantID(uuid.NewString()), Name: name}
+	if err := s.Tenants().Create(ctx, tenant); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Users().Create(ctx, user); err != nil {
+	raw, prefix, err := uc.GenerateAPIKey()
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Orgs().AddMember(ctx, ultra.OrgMember{OrgID: org.ID, UserID: user.ID, Role: ultra.OrgRoleOwner}); err != nil {
+	// Store without encryption for unit tests that only need hash lookup.
+	if err := s.APIKeys().Create(ctx, uc.APIKey{
+		ID: uc.APIKeyID(uuid.NewString()), TenantID: tenant.ID, Name: "test",
+		Scope: uc.KeyScopeAdmin, Prefix: prefix, KeyHash: uc.HashAPIKey(raw), KeyEnc: []byte("x"),
+	}); err != nil {
 		t.Fatal(err)
 	}
-	return org, user
+	return tenant, raw
 }
 
-func TestOrgMembership(t *testing.T) {
+func TestAPIKeyAuth(t *testing.T) {
 	s := newStore(t)
 	ctx := context.Background()
-	org, user := seedOrgUser(t, s, "acme", "alice@example.com")
-
-	role, err := s.Orgs().MemberRole(ctx, org.ID, user.ID)
-	if err != nil || role != ultra.OrgRoleOwner {
-		t.Fatalf("MemberRole = %q, %v", role, err)
+	tenant, raw := seedTenant(t, s, "acme")
+	auth := uc.NewAPIKeyAuthenticator(s)
+	id, err := auth.Authenticate(ctx, raw)
+	if err != nil || id.TenantID != tenant.ID || id.Scope != uc.KeyScopeAdmin {
+		t.Fatalf("auth = %+v, %v", id, err)
 	}
-	if _, err := s.Orgs().MemberRole(ctx, org.ID, ultra.UserID(uuid.NewString())); !errors.Is(err, ultra.ErrNotFound) {
-		t.Fatalf("non-member role error = %v, want ErrNotFound", err)
+	if _, err := auth.Authenticate(ctx, "uck_nope"); !errors.Is(err, uc.ErrPermissionDenied) {
+		t.Fatalf("bad key: %v", err)
 	}
-	members, err := s.Orgs().ListMembers(ctx, org.ID)
-	if err != nil || len(members) != 1 {
-		t.Fatalf("ListMembers = %v, %v", members, err)
+	// Revoke fails closed.
+	keys, _ := s.APIKeys().List(ctx, tenant.ID)
+	if err := s.APIKeys().Revoke(ctx, tenant.ID, keys[0].ID); err != nil {
+		t.Fatal(err)
 	}
-	got, err := s.Users().GetByEmail(ctx, "alice@example.com")
-	if err != nil || got.ID != user.ID {
-		t.Fatalf("GetByEmail = %v, %v", got, err)
+	if _, err := auth.Authenticate(ctx, raw); !errors.Is(err, uc.ErrPermissionDenied) {
+		t.Fatalf("revoked key: %v", err)
 	}
 }
 
 func TestSessionTenantScoping(t *testing.T) {
 	s := newStore(t)
 	ctx := context.Background()
-	orgA, _ := seedOrgUser(t, s, "org-a", "a@example.com")
-	orgB, _ := seedOrgUser(t, s, "org-b", "b@example.com")
+	orgA, _ := seedTenant(t, s, "org-a")
+	orgB, _ := seedTenant(t, s, "org-b")
 
-	sess := ultra.Session{ID: ultra.SessionID(uuid.NewString()), Title: "work"}
-	if err := s.Org(orgA.ID).Sessions().Create(ctx, sess); err != nil {
+	sess := uc.Session{ID: uc.SessionID(uuid.NewString()), Title: "work"}
+	if err := s.Tenant(orgA.ID).Sessions().Create(ctx, sess); err != nil {
 		t.Fatal(err)
 	}
 
 	// Same-org read works.
-	if _, err := s.Org(orgA.ID).Sessions().Get(ctx, sess.ID); err != nil {
+	if _, err := s.Tenant(orgA.ID).Sessions().Get(ctx, sess.ID); err != nil {
 		t.Fatalf("same-org get: %v", err)
 	}
 	// Cross-org read is structurally not-found.
-	if _, err := s.Org(orgB.ID).Sessions().Get(ctx, sess.ID); !errors.Is(err, ultra.ErrNotFound) {
+	if _, err := s.Tenant(orgB.ID).Sessions().Get(ctx, sess.ID); !errors.Is(err, uc.ErrNotFound) {
 		t.Fatalf("cross-org get error = %v, want ErrNotFound", err)
 	}
 	// Cross-org list is empty.
-	list, err := s.Org(orgB.ID).Sessions().List(ctx)
+	list, err := s.Tenant(orgB.ID).Sessions().List(ctx, nil)
 	if err != nil || len(list) != 0 {
 		t.Fatalf("cross-org list = %v, %v", list, err)
 	}
 	// Cross-org append denied.
-	if _, err := s.Org(orgB.ID).Events().Append(ctx, sess.ID, ultra.Event{
-		Actor: ultra.Actor{Type: ultra.ActorUser}, Kind: ultra.EventKindUserMessage,
-	}); !errors.Is(err, ultra.ErrNotFound) {
+	if _, err := s.Tenant(orgB.ID).Events().Append(ctx, sess.ID, uc.Event{
+		Actor: uc.Actor{Kind: uc.ActorKindService, ID: "t"}, Kind: uc.EventKindUserMessage,
+	}); !errors.Is(err, uc.ErrNotFound) {
 		t.Fatalf("cross-org append error = %v, want ErrNotFound", err)
 	}
 	// Directory lookup.
-	owner, err := s.SessionOrg(ctx, sess.ID)
+	owner, err := s.SessionTenant(ctx, sess.ID)
 	if err != nil || owner != orgA.ID {
-		t.Fatalf("SessionOrg = %v, %v", owner, err)
+		t.Fatalf("SessionTenant = %v, %v", owner, err)
 	}
 }
 
 func TestEventAppendGaplessSeq(t *testing.T) {
 	s := newStore(t)
 	ctx := context.Background()
-	org, _ := seedOrgUser(t, s, "acme", "alice@example.com")
-	sess := ultra.Session{ID: ultra.SessionID(uuid.NewString())}
-	if err := s.Org(org.ID).Sessions().Create(ctx, sess); err != nil {
+	org, _ := seedTenant(t, s, "acme")
+	sess := uc.Session{ID: uc.SessionID(uuid.NewString())}
+	if err := s.Tenant(org.ID).Sessions().Create(ctx, sess); err != nil {
 		t.Fatal(err)
 	}
 
-	events := s.Org(org.ID).Events()
+	events := s.Tenant(org.ID).Events()
 	for i := 1; i <= 5; i++ {
-		seq, err := events.Append(ctx, sess.ID, ultra.Event{
-			Actor:   ultra.Actor{Type: ultra.ActorUser, ID: "u1"},
-			Kind:    ultra.EventKindUserMessage,
+		seq, err := events.Append(ctx, sess.ID, uc.Event{
+			Actor:   uc.Actor{Kind: uc.ActorKindService, ID: "u1"},
+			Kind:    uc.EventKindUserMessage,
 			Payload: []byte(`{"text":"hi"}`),
 		})
 		if err != nil {
@@ -134,12 +138,12 @@ func TestEventAppendGaplessSeq(t *testing.T) {
 func TestTxRollback(t *testing.T) {
 	s := newStore(t)
 	ctx := context.Background()
-	org, _ := seedOrgUser(t, s, "acme", "alice@example.com")
+	org, _ := seedTenant(t, s, "acme")
 
-	sessID := ultra.SessionID(uuid.NewString())
+	sessID := uc.SessionID(uuid.NewString())
 	sentinel := errors.New("boom")
-	err := s.Tx(ctx, func(txs ultra.Store) error {
-		if err := txs.Org(org.ID).Sessions().Create(ctx, ultra.Session{ID: sessID}); err != nil {
+	err := s.Tx(ctx, func(txs uc.Store) error {
+		if err := txs.Tenant(org.ID).Sessions().Create(ctx, uc.Session{ID: sessID}); err != nil {
 			return err
 		}
 		return sentinel
@@ -147,7 +151,7 @@ func TestTxRollback(t *testing.T) {
 	if !errors.Is(err, sentinel) {
 		t.Fatalf("Tx error = %v", err)
 	}
-	if _, err := s.Org(org.ID).Sessions().Get(ctx, sessID); !errors.Is(err, ultra.ErrNotFound) {
+	if _, err := s.Tenant(org.ID).Sessions().Get(ctx, sessID); !errors.Is(err, uc.ErrNotFound) {
 		t.Fatalf("rolled-back session visible: %v", err)
 	}
 }

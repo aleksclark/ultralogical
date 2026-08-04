@@ -16,7 +16,7 @@
 //	--listen   control API listen address (default 127.0.0.1:8099)
 //	--token    org-scoped registration token (required)
 //	--secret   shared signing secret for control requests (required)
-//	--image    Bezalel image to run (default ultralogical/bezalel:local)
+//	--image    Bezalel image to run (default ultracore/bezalel:local)
 //	--advertise
 //	           public base URL environments are reachable at, when the tunnel
 //	           rewrites addresses
@@ -32,9 +32,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aleksclark/ultralogical/envprovider/localdocker"
-	"github.com/aleksclark/ultralogical/envprovider/tunnel"
-	"github.com/aleksclark/ultralogical/secrets"
+	"github.com/aleksclark/ultracore/provider/localdocker"
+	"github.com/aleksclark/ultracore/provider/tunnel"
+	"github.com/aleksclark/ultracore/secrets"
 )
 
 func main() {
@@ -49,7 +49,7 @@ func run(log *slog.Logger) error {
 	listen := flag.String("listen", "127.0.0.1:8099", "control API listen address")
 	token := flag.String("token", "", "org-scoped registration token")
 	secret := flag.String("secret", "", "shared signing secret for control requests")
-	image := flag.String("image", "ultralogical/bezalel:local", "Bezalel image to run")
+	image := flag.String("image", "ultracore/bezalel:local", "Bezalel image to run")
 	advertise := flag.String("advertise", "", "public base URL environments are reachable at")
 	flag.Parse()
 
