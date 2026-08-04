@@ -18,7 +18,6 @@ import (
 )
 
 // handleVersion is the persisted handle schema version.
-const handleVersion = 1
 
 func encodeHandle(d handleData) (json.RawMessage, error) {
 	return handlefmt.EncodeHandle(1, d)

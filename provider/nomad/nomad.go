@@ -25,7 +25,6 @@ import (
 const toolPort = 8080
 
 // handleVersion is the persisted handle schema version.
-const handleVersion = 1
 
 // Config configures the provider.
 type Config struct {

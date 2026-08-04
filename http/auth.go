@@ -93,13 +93,13 @@ func requireTenant(ctx context.Context, tenant uc.TenantID) (authContext, error)
 }
 
 // requireAdmin ensures the caller's key is admin-scoped for the tenant.
-func requireAdmin(ctx context.Context, tenant uc.TenantID) (authContext, error) {
+func requireAdmin(ctx context.Context, tenant uc.TenantID) error {
 	a, err := requireTenant(ctx, tenant)
 	if err != nil {
-		return authContext{}, err
+		return err
 	}
 	if a.Identity.Scope != uc.KeyScopeAdmin {
-		return authContext{}, connect.NewError(connect.CodePermissionDenied, errors.New("requires admin key"))
+		return connect.NewError(connect.CodePermissionDenied, errors.New("requires admin key"))
 	}
-	return a, nil
+	return nil
 }

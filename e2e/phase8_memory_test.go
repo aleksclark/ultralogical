@@ -234,29 +234,3 @@ func TestA86_SessionMemory(t *testing.T) {
 
 // collectEventsIn reads a named session's log until it sees n events of a kind.
 // It differs from collectEvents only in taking the session explicitly.
-func collectEventsIn(t *testing.T, stack *harness.Stack, session, kind string, timeout time.Duration, n int) []uc.Event {
-	t.Helper()
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		var found []uc.Event
-		var from int64
-		for {
-			batch, err := stack.Store.Tenant(stack.TenantA.ID).Events().Range(context.Background(), uc.SessionID(session), from, 512)
-			if err != nil || len(batch) == 0 {
-				break
-			}
-			for _, e := range batch {
-				from = e.Seq
-				if e.Kind == kind {
-					found = append(found, e)
-				}
-			}
-		}
-		if len(found) >= n {
-			return found
-		}
-		time.Sleep(200 * time.Millisecond)
-	}
-	t.Fatalf("session %s never recorded %d %q events within %s", session, n, kind, timeout)
-	return nil
-}

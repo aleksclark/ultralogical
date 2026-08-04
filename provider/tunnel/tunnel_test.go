@@ -267,7 +267,7 @@ func TestA105_DisconnectSuspendsAndReconnectResumes(t *testing.T) {
 	}
 	gone := time.Now().Add(30 * time.Second)
 	for time.Now().Before(gone) {
-		if mcp.Healthy(ctx, string(endpoint)) != nil {
+		if mcp.Healthy(ctx, endpoint) != nil {
 			return
 		}
 		time.Sleep(200 * time.Millisecond)
