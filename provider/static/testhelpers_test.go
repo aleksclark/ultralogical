@@ -2,6 +2,7 @@ package static_test
 
 import (
 	"context"
+
 	uc "github.com/aleksclark/ultracore"
 )
 
