@@ -1,0 +1,9 @@
+version: v2
+clean: true
+plugins:
+  # Public consumer TS client: core.v1 only. Never generate admin here.
+  - remote: buf.build/bufbuild/es
+    out: clients/ts/src/gen
+    opt:
+      - target=ts
+      - import_extension=js

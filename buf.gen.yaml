@@ -7,11 +7,3 @@ plugins:
   - remote: buf.build/connectrpc/go
     out: gen/go
     opt: paths=source_relative
-  - remote: buf.build/bufbuild/es
-    out: clients/ts/src/gen
-    # import_extension is required because the TS client compiles under
-    # NodeNext resolution, which rejects extensionless relative imports. It
-    # only became visible when a proto first imported another proto.
-    opt:
-      - target=ts
-      - import_extension=js

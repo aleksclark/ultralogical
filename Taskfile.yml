@@ -10,9 +10,9 @@ tasks:
       - go build ./...
 
   generate:
-    desc: Regenerate code from protos (Go + TS)
+    desc: Regenerate code from protos (Go + public TS + private admin TS)
     cmds:
-      - buf generate
+      - bash scripts/generate.sh
 
   lint:
     desc: Lint Go and protos
@@ -26,6 +26,7 @@ tasks:
         fi
       - golangci-lint run
       - bash scripts/check-extraction-fences.sh
+      - bash scripts/check-admin-isolation.sh
 
   test:
     desc: Unit + store + queue + provider tests (real Postgres via testcontainers)
@@ -107,3 +108,9 @@ tasks:
     desc: Boot the stack, run the noninteractive smoke, and tear everything down
     cmds:
       - bash scripts/dev-stack.sh smoke
+
+  admin:test:
+    desc: Admin API functional + query conformance (real Postgres)
+    cmds:
+      - go test ./admin/... ./adminhttp/... ./postgres/ -run 'Admin|Query' -count=1 -timeout 30m
+      - go test ./admin/ -count=1 -timeout 30m

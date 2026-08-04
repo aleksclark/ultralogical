@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package admin.v1;
+
+option go_package = "github.com/aleksclark/ultracore/gen/go/admin/v1;adminv1";
+
+// PageRequest is the shared pagination envelope for every admin list/search RPC.
+// Limit defaults to 50 and is capped at 250. Cursor is an opaque signed keyset
+// token bound to the query fingerprint.
+message PageRequest {
+  uint32 limit = 1;
+  string cursor = 2;
+}
+
+// Filter is a typed field/operator/value triple. Fields and operators are
+// allowlisted per collection; unknown values fail before SQL construction.
+message Filter {
+  string field = 1;
+  string op = 2;
+  // value is a single scalar (string form). For IN/NOT_IN use values.
+  string value = 3;
+  repeated string values = 4;
+}
+
+// Sort is one sort key. The engine always appends the collection primary key
+// as a stable final tie-breaker.
+message Sort {
+  string field = 1;
+  bool descending = 2;
+}
+
+// SearchRequest is the shared query envelope for collection list RPCs.
+message SearchRequest {
+  string query = 1;
+  repeated Filter filters = 2;
+  repeated Sort sorts = 3;
+  PageRequest page = 4;
+}
+
+// PageInfo describes the next page of a keyset-paginated result.
+message PageInfo {
+  string next_cursor = 1;
+  bool has_more = 2;
+}
+
+// FilterOp enumerates supported operators for DescribeCollection metadata.
+enum FilterOp {
+  FILTER_OP_UNSPECIFIED = 0;
+  FILTER_OP_EQ = 1;
+  FILTER_OP_NE = 2;
+  FILTER_OP_LT = 3;
+  FILTER_OP_LTE = 4;
+  FILTER_OP_GT = 5;
+  FILTER_OP_GTE = 6;
+  FILTER_OP_IN = 7;
+  FILTER_OP_NOT_IN = 8;
+  FILTER_OP_CONTAINS = 9;
+  FILTER_OP_PREFIX = 10;
+  FILTER_OP_IS_NULL = 11;
+  FILTER_OP_IS_NOT_NULL = 12;
+}
+
+// FieldType is the scalar type of a filterable/sortable field.
+enum FieldType {
+  FIELD_TYPE_UNSPECIFIED = 0;
+  FIELD_TYPE_STRING = 1;
+  FIELD_TYPE_UUID = 2;
+  FIELD_TYPE_INT = 3;
+  FIELD_TYPE_BOOL = 4;
+  FIELD_TYPE_TIMESTAMP = 5;
+  FIELD_TYPE_JSON = 6;
+}
+
+// FieldDescriptor describes one filterable and/or sortable field.
+message FieldDescriptor {
+  string name = 1;
+  FieldType type = 2;
+  repeated FilterOp filter_ops = 3;
+  bool sortable = 4;
+  bool searchable = 5;
+  string description = 6;
+}
+
+// CollectionDescriptor is the self-describing metadata for one admin collection.
+message CollectionDescriptor {
+  string name = 1;
+  string primary_key = 2;
+  repeated FieldDescriptor fields = 3;
+  repeated Sort default_sorts = 4;
+  bool has_detail = 5;
+  bool has_blob = 6;
+  string description = 7;
+}

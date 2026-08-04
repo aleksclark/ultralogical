@@ -99,4 +99,53 @@ job "ultracore" {
       }
     }
   }
+
+  group "admin" {
+    count = 1
+
+    network {
+      port "http" {
+        # Private bind; no Traefik tags — operator network only.
+      }
+    }
+
+    service {
+      name     = "coreadmin"
+      port     = "http"
+      provider = "nomad"
+      # Intentionally no traefik.* tags.
+
+      check {
+        type     = "http"
+        path     = "/readyz"
+        interval = "10s"
+        timeout  = "3s"
+      }
+    }
+
+    task "coreadmin" {
+      driver = "docker"
+
+      config {
+        image      = "ghcr.io/aleksclark/ultracore:${IMAGE_TAG}"
+        entrypoint = ["/usr/local/bin/coreadmin"]
+        ports      = ["http"]
+        force_pull = false
+      }
+
+      env {
+        DATABASE_URL              = "${DATABASE_URL}"
+        CORE_ADMIN_ADDR           = ":${NOMAD_PORT_http}"
+        CORE_ADMIN_TOKEN          = "${CORE_ADMIN_TOKEN}"
+        CORE_ADMIN_CURSOR_SECRET  = "${CORE_ADMIN_CURSOR_SECRET}"
+        CORE_MIGRATE              = "true"
+      }
+
+      resources {
+        cpu    = 250
+        memory = 256
+      }
+    }
+  }
+
 }

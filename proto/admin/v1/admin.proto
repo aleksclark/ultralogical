@@ -1,0 +1,600 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/v1/query.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aleksclark/ultracore/gen/go/admin/v1;adminv1";
+
+// ---------------------------------------------------------------------------
+// Summary messages (bounded list projections)
+// ---------------------------------------------------------------------------
+
+message TenantSummary {
+  string id = 1;
+  string name = 2;
+  google.protobuf.Timestamp created_at = 3;
+  int64 session_count = 4;
+  int64 run_count = 5;
+  int64 api_key_count = 6;
+}
+
+message APIKeySummary {
+  string id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  string scope = 4;
+  string prefix = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp revoked_at = 7;
+  // key_hash_prefix is a short hex prefix of the hash for correlation only.
+  // Never the raw key, full hash, or ciphertext.
+  string key_hash_prefix = 8;
+  bool has_ciphertext = 9;
+}
+
+message SessionSummary {
+  string id = 1;
+  string tenant_id = 2;
+  string title = 3;
+  map<string, string> labels = 4;
+  int64 last_seq = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp archived_at = 7;
+  int64 event_count = 8;
+  int64 run_count = 9;
+  int64 resource_count = 10;
+}
+
+message EventSummary {
+  string session_id = 1;
+  string tenant_id = 2;
+  int64 seq = 3;
+  google.protobuf.Timestamp ts = 4;
+  string actor_kind = 5;
+  string actor_id = 6;
+  string actor_display = 7;
+  string kind = 8;
+  int32 payload_bytes = 9;
+  string payload_preview = 10;
+}
+
+message RunSummary {
+  string id = 1;
+  string session_id = 2;
+  string tenant_id = 3;
+  string state = 4;
+  string loop_kind = 5;
+  int32 loop_version = 6;
+  string parent_run_id = 7;
+  string spawn_key = 8;
+  string cohort_id = 9;
+  int32 cohort_ordinal = 10;
+  string failure_reason = 11;
+  string actor_kind = 12;
+  string actor_id = 13;
+  string actor_display = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+  google.protobuf.Timestamp cancel_requested_at = 17;
+  int32 step_count = 18;
+  int32 prompt_bytes = 19;
+  int32 history_bytes = 20;
+  bool has_result = 21;
+}
+
+message RunStepSummary {
+  string run_id = 1;
+  string tenant_id = 2;
+  string session_id = 3;
+  int32 step_index = 4;
+  int32 attempt = 5;
+  int64 tokens_in = 6;
+  int64 tokens_out = 7;
+  string finish_reason = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+message ResourceSummary {
+  string id = 1;
+  string tenant_id = 2;
+  string session_id = 3;
+  string provider_instance_id = 4;
+  string kind = 5;
+  string state = 6;
+  string endpoint = 7;
+  int32 epoch = 8;
+  string failure_message = 9;
+  string created_by_run_id = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+  google.protobuf.Timestamp ready_at = 13;
+  google.protobuf.Timestamp terminated_at = 14;
+  int32 spec_bytes = 15;
+  int32 handle_bytes = 16;
+  bool has_token = 17;
+}
+
+message ProviderSummary {
+  string id = 1;
+  string tenant_id = 2;
+  string kind = 3;
+  string name = 4;
+  string state = 5;
+  google.protobuf.Timestamp last_healthy_at = 6;
+  google.protobuf.Timestamp created_at = 7;
+  int32 config_bytes = 8;
+  int32 capabilities_bytes = 9;
+  int64 resource_count = 10;
+}
+
+message CredentialSummary {
+  string tenant_id = 1;
+  string kind = 2;
+  string name = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp rotated_at = 5;
+  int32 ciphertext_bytes = 6;
+  // Never plaintext. Metadata only.
+  bool encrypted = 7;
+}
+
+message PeriodicPromptSummary {
+  string id = 1;
+  string tenant_id = 2;
+  string session_id = 3;
+  string run_id = 4;
+  string schedule = 5;
+  bool enabled = 6;
+  google.protobuf.Timestamp next_at = 7;
+  google.protobuf.Timestamp created_at = 8;
+  int32 prompt_bytes = 9;
+  string prompt_preview = 10;
+}
+
+message MemorySummary {
+  string session_id = 1;
+  string tenant_id = 2;
+  string key = 3;
+  string updated_by_kind = 4;
+  string updated_by_id = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  int32 value_bytes = 7;
+}
+
+message WaitSummary {
+  string id = 1;
+  string parent_run_id = 2;
+  string tenant_id = 3;
+  string session_id = 4;
+  int32 step_index = 5;
+  string tool_call_id = 6;
+  string kind = 7;
+  string state = 8;
+  string timeout_policy = 9;
+  google.protobuf.Timestamp deadline = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp resolved_at = 12;
+  google.protobuf.Timestamp resumed_at = 13;
+  int32 member_count = 14;
+  bool has_result = 15;
+}
+
+message JobSummary {
+  int64 id = 1;
+  string kind = 2;
+  string state = 3;
+  int32 attempt = 4;
+  int32 max_attempts = 5;
+  string queue = 6;
+  string priority = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp scheduled_at = 9;
+  google.protobuf.Timestamp attempted_at = 10;
+  google.protobuf.Timestamp finalized_at = 11;
+  string errors_preview = 12;
+  int32 errors_count = 13;
+  string tags = 14;
+}
+
+// ---------------------------------------------------------------------------
+// Detail / blob messages
+// ---------------------------------------------------------------------------
+
+message TenantDetail {
+  TenantSummary summary = 1;
+}
+
+message SessionDetail {
+  SessionSummary summary = 1;
+  repeated string label_keys = 2;
+}
+
+message EventDetail {
+  EventSummary summary = 1;
+  // payload is the stored JSON envelope. May contain large content; use only
+  // via the detail RPC, never in list responses.
+  bytes payload_json = 2;
+}
+
+message RunDetail {
+  RunSummary summary = 1;
+  bytes model_config_json = 2;
+  bytes policy_json = 3;
+  bytes result_json = 4;
+  string failure_message = 5;
+  string prompt = 6;
+}
+
+message RunHistoryBlob {
+  string run_id = 1;
+  bytes history_json = 2;
+}
+
+message ResourceDetail {
+  ResourceSummary summary = 1;
+  bytes spec_json = 2;
+  bytes handle_json = 3;
+  // token metadata only — never plaintext token.
+  string token_hash_prefix = 4;
+  bool has_token_ciphertext = 5;
+}
+
+message ProviderDetail {
+  ProviderSummary summary = 1;
+  bytes config_json = 2;
+  bytes capabilities_json = 3;
+}
+
+message CredentialDetail {
+  CredentialSummary summary = 1;
+  // No plaintext. Ciphertext length already on summary.
+}
+
+message PeriodicPromptDetail {
+  PeriodicPromptSummary summary = 1;
+  string prompt = 2;
+}
+
+message MemoryDetail {
+  MemorySummary summary = 1;
+  bytes value_json = 2;
+}
+
+message WaitDetail {
+  WaitSummary summary = 1;
+  bytes result_json = 2;
+  repeated WaitMember members = 3;
+}
+
+message WaitMember {
+  string run_id = 1;
+  int32 ordinal = 2;
+}
+
+message JobDetail {
+  JobSummary summary = 1;
+  bytes args_json = 2;
+  bytes metadata_json = 3;
+  repeated string errors = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Relationship / timeline
+// ---------------------------------------------------------------------------
+
+message TimelineEntry {
+  google.protobuf.Timestamp ts = 1;
+  string kind = 2; // event | run | step | resource | wait | job
+  string id = 3;
+  string summary = 4;
+  google.protobuf.Struct attrs = 5;
+}
+
+message RelatedRef {
+  string collection = 1;
+  string id = 2;
+  string label = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Runtime health
+// ---------------------------------------------------------------------------
+
+message RuntimeHealth {
+  string build_version = 1;
+  int64 schema_version = 2;
+  bool river_schema_present = 3;
+  int64 queue_available = 4;
+  int64 queue_running = 5;
+  int64 queue_scheduled = 6;
+  int64 queue_retryable = 7;
+  int64 queue_discarded = 8;
+  int64 queue_completed = 9;
+  int64 tenant_count = 10;
+  int64 session_count = 11;
+  int64 event_count = 12;
+  int64 run_count = 13;
+  int64 resource_count = 14;
+  int64 provider_count = 15;
+  int64 open_wait_count = 16;
+  int64 active_subscriber_hint = 17;
+  google.protobuf.Timestamp server_time = 18;
+  map<string, string> diagnostics = 19;
+}
+
+// ---------------------------------------------------------------------------
+// Request / response pairs
+// ---------------------------------------------------------------------------
+
+message DescribeCollectionRequest {
+  // Empty name lists all collections.
+  string name = 1;
+}
+
+message DescribeCollectionResponse {
+  repeated CollectionDescriptor collections = 1;
+}
+
+message ListTenantsRequest {
+  SearchRequest search = 1;
+}
+message ListTenantsResponse {
+  repeated TenantSummary items = 1;
+  PageInfo page = 2;
+}
+message GetTenantRequest {
+  string id = 1;
+}
+message GetTenantResponse {
+  TenantDetail item = 1;
+}
+
+message ListAPIKeysRequest {
+  SearchRequest search = 1;
+}
+message ListAPIKeysResponse {
+  repeated APIKeySummary items = 1;
+  PageInfo page = 2;
+}
+message GetAPIKeyRequest {
+  string id = 1;
+}
+message GetAPIKeyResponse {
+  APIKeySummary item = 1;
+}
+
+message ListSessionsRequest {
+  SearchRequest search = 1;
+}
+message ListSessionsResponse {
+  repeated SessionSummary items = 1;
+  PageInfo page = 2;
+}
+message GetSessionRequest {
+  string id = 1;
+}
+message GetSessionResponse {
+  SessionDetail item = 1;
+}
+
+message ListEventsRequest {
+  SearchRequest search = 1;
+}
+message ListEventsResponse {
+  repeated EventSummary items = 1;
+  PageInfo page = 2;
+}
+message GetEventRequest {
+  string session_id = 1;
+  int64 seq = 2;
+}
+message GetEventResponse {
+  EventDetail item = 1;
+}
+
+message ListRunsRequest {
+  SearchRequest search = 1;
+}
+message ListRunsResponse {
+  repeated RunSummary items = 1;
+  PageInfo page = 2;
+}
+message GetRunRequest {
+  string id = 1;
+}
+message GetRunResponse {
+  RunDetail item = 1;
+}
+message GetRunHistoryRequest {
+  string id = 1;
+}
+message GetRunHistoryResponse {
+  RunHistoryBlob item = 1;
+}
+
+message ListRunStepsRequest {
+  SearchRequest search = 1;
+}
+message ListRunStepsResponse {
+  repeated RunStepSummary items = 1;
+  PageInfo page = 2;
+}
+
+message ListResourcesRequest {
+  SearchRequest search = 1;
+}
+message ListResourcesResponse {
+  repeated ResourceSummary items = 1;
+  PageInfo page = 2;
+}
+message GetResourceRequest {
+  string id = 1;
+}
+message GetResourceResponse {
+  ResourceDetail item = 1;
+}
+
+message ListProvidersRequest {
+  SearchRequest search = 1;
+}
+message ListProvidersResponse {
+  repeated ProviderSummary items = 1;
+  PageInfo page = 2;
+}
+message GetProviderRequest {
+  string id = 1;
+}
+message GetProviderResponse {
+  ProviderDetail item = 1;
+}
+
+message ListCredentialsRequest {
+  SearchRequest search = 1;
+}
+message ListCredentialsResponse {
+  repeated CredentialSummary items = 1;
+  PageInfo page = 2;
+}
+message GetCredentialRequest {
+  string tenant_id = 1;
+  string kind = 2;
+  string name = 3;
+}
+message GetCredentialResponse {
+  CredentialDetail item = 1;
+}
+
+message ListPeriodicPromptsRequest {
+  SearchRequest search = 1;
+}
+message ListPeriodicPromptsResponse {
+  repeated PeriodicPromptSummary items = 1;
+  PageInfo page = 2;
+}
+message GetPeriodicPromptRequest {
+  string id = 1;
+}
+message GetPeriodicPromptResponse {
+  PeriodicPromptDetail item = 1;
+}
+
+message ListMemoryRequest {
+  SearchRequest search = 1;
+}
+message ListMemoryResponse {
+  repeated MemorySummary items = 1;
+  PageInfo page = 2;
+}
+message GetMemoryRequest {
+  string session_id = 1;
+  string key = 2;
+}
+message GetMemoryResponse {
+  MemoryDetail item = 1;
+}
+
+message ListWaitsRequest {
+  SearchRequest search = 1;
+}
+message ListWaitsResponse {
+  repeated WaitSummary items = 1;
+  PageInfo page = 2;
+}
+message GetWaitRequest {
+  string id = 1;
+}
+message GetWaitResponse {
+  WaitDetail item = 1;
+}
+
+message ListJobsRequest {
+  SearchRequest search = 1;
+}
+message ListJobsResponse {
+  repeated JobSummary items = 1;
+  PageInfo page = 2;
+}
+message GetJobRequest {
+  int64 id = 1;
+}
+message GetJobResponse {
+  JobDetail item = 1;
+}
+
+message GetRuntimeHealthRequest {}
+message GetRuntimeHealthResponse {
+  RuntimeHealth health = 1;
+}
+
+message GetSessionTimelineRequest {
+  string session_id = 1;
+  PageRequest page = 2;
+}
+message GetSessionTimelineResponse {
+  repeated TimelineEntry items = 1;
+  PageInfo page = 2;
+}
+
+message ListRelatedRequest {
+  string collection = 1;
+  string id = 2;
+  // Optional relationship name; empty returns all known relations.
+  string relation = 3;
+  PageRequest page = 4;
+}
+message ListRelatedResponse {
+  repeated RelatedRef items = 1;
+  PageInfo page = 2;
+}
+
+// AdminReadService is the private operator read surface. It is never mounted
+// by cored. Tenant scope is never inferred; tenant_id is an explicit filter.
+service AdminReadService {
+  rpc DescribeCollection(DescribeCollectionRequest) returns (DescribeCollectionResponse);
+
+  rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
+  rpc GetTenant(GetTenantRequest) returns (GetTenantResponse);
+
+  rpc ListAPIKeys(ListAPIKeysRequest) returns (ListAPIKeysResponse);
+  rpc GetAPIKey(GetAPIKeyRequest) returns (GetAPIKeyResponse);
+
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+
+  rpc ListEvents(ListEventsRequest) returns (ListEventsResponse);
+  rpc GetEvent(GetEventRequest) returns (GetEventResponse);
+
+  rpc ListRuns(ListRunsRequest) returns (ListRunsResponse);
+  rpc GetRun(GetRunRequest) returns (GetRunResponse);
+  rpc GetRunHistory(GetRunHistoryRequest) returns (GetRunHistoryResponse);
+
+  rpc ListRunSteps(ListRunStepsRequest) returns (ListRunStepsResponse);
+
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse);
+  rpc GetResource(GetResourceRequest) returns (GetResourceResponse);
+
+  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
+  rpc GetProvider(GetProviderRequest) returns (GetProviderResponse);
+
+  rpc ListCredentials(ListCredentialsRequest) returns (ListCredentialsResponse);
+  rpc GetCredential(GetCredentialRequest) returns (GetCredentialResponse);
+
+  rpc ListPeriodicPrompts(ListPeriodicPromptsRequest) returns (ListPeriodicPromptsResponse);
+  rpc GetPeriodicPrompt(GetPeriodicPromptRequest) returns (GetPeriodicPromptResponse);
+
+  rpc ListMemory(ListMemoryRequest) returns (ListMemoryResponse);
+  rpc GetMemory(GetMemoryRequest) returns (GetMemoryResponse);
+
+  rpc ListWaits(ListWaitsRequest) returns (ListWaitsResponse);
+  rpc GetWait(GetWaitRequest) returns (GetWaitResponse);
+
+  rpc ListJobs(ListJobsRequest) returns (ListJobsResponse);
+  rpc GetJob(GetJobRequest) returns (GetJobResponse);
+
+  rpc GetRuntimeHealth(GetRuntimeHealthRequest) returns (GetRuntimeHealthResponse);
+  rpc GetSessionTimeline(GetSessionTimelineRequest) returns (GetSessionTimelineResponse);
+  rpc ListRelated(ListRelatedRequest) returns (ListRelatedResponse);
+}

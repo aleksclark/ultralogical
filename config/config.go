@@ -37,6 +37,12 @@ var known = map[string]bool{
 	"CORE_URL":    true,
 	"CORE_TOKEN":  true,
 	"CORE_TENANT": true,
+	// coreadmin (private operator API)
+	"CORE_ADMIN_ADDR":          true,
+	"CORE_ADMIN_TOKEN":         true,
+	"CORE_ADMIN_DEV_MODE":      true,
+	"CORE_ADMIN_CORS_ORIGIN":   true,
+	"CORE_ADMIN_CURSOR_SECRET": true,
 }
 
 // ErrUnknownEnv is returned when one or more unknown CORE_* vars are set.
