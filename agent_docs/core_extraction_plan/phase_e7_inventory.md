@@ -39,6 +39,13 @@
 ### Tests
 - `admin/command_test.go` — role matrix, stale preview, idempotency, reveal controls, audit, isolation
 
+## Independent review fixes
+- Command engine: stale preview validated pre-mutation only (no post-apply fail)
+- Idempotency keys bind successful outcomes only (failed attempts still audit)
+- Reveal kill switch → `Unimplemented` (RPC treated as absent when disabled)
+- DB triggers reject UPDATE/DELETE on `admin_audit_events`
+- Tests: real stale-state fail-closed + failed-key retry; DB immutability asserts
+
 ## Deferred / honest limits
 - `DisconnectSubscriber` — event bus has no admin disconnect handle; returns FailedPrecondition
 - Full provider capability re-probe (network) — metadata `MarkHealthy` only without provider builders in coreadmin

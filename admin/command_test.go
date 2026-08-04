@@ -350,7 +350,8 @@ func TestE7_RevealKillSwitchRoleAndNoPlaintextLogs(t *testing.T) {
 		Options:    &adminv1.CommandOptions{DryRun: true, Reason: "incident"},
 		SecretKind: "api_key", ApiKeyId: string(keyID),
 	}))
-	if err == nil || connect.CodeOf(err) != connect.CodeFailedPrecondition {
+	// Kill switch treats the RPC as absent (Unimplemented), not a soft deny.
+	if err == nil || connect.CodeOf(err) != connect.CodeUnimplemented {
 		t.Fatalf("kill switch: %v", err)
 	}
 
@@ -524,7 +525,81 @@ func TestE7_AuditImmutableNoDeleteAPI(t *testing.T) {
 	if len(list.Msg.Items) == 0 {
 		t.Fatal("expected dry_run audit")
 	}
+	id := list.Msg.Items[0].Id
+	if id == "" {
+		t.Fatal("missing audit id")
+	}
+	// DB-side immutability: UPDATE/DELETE must fail.
+	ctx := context.Background()
+	if _, err := env.pool.Exec(ctx, `UPDATE admin_audit_events SET reason='tamper' WHERE id=$1`, id); err == nil {
+		t.Fatal("expected UPDATE of admin_audit_events to fail")
+	}
+	if _, err := env.pool.Exec(ctx, `DELETE FROM admin_audit_events WHERE id=$1`, id); err == nil {
+		t.Fatal("expected DELETE of admin_audit_events to fail")
+	}
 	_ = prev
 	// No delete RPC exists on connect surface — reflection smoke via method set.
 	var _ adminv1connect.AdminReadServiceClient
+}
+
+func TestE7_StalePreviewDoesNotMutateAndFailedIdempotencyRetries(t *testing.T) {
+	env := setupE7(t, false)
+	cc := cmdClient(t, env.srv.URL, tokOperator)
+	_, _, run := seedTenantSessionRun(t, env, uc.RunAwaiting)
+
+	prev, err := cc.CancelRun(context.Background(), connect.NewRequest(&adminv1.CancelRunRequest{
+		Options: &adminv1.CommandOptions{DryRun: true, Reason: "preview"},
+		RunId:   string(run.ID),
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	hash := prev.Msg.Outcome.Preview.PreviewHash
+
+	// Concurrent state change: another path cancels the run so the awaiting
+	// before-state no longer matches the operator's confirmed preview.
+	if err := env.store.Tenant(run.TenantID).Runs().RequestCancel(context.Background(), run.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := env.store.Tenant(run.TenantID).Runs().SetState(context.Background(), run.ID, uc.RunCancelled, "", ""); err != nil {
+		t.Fatal(err)
+	}
+
+	// Stale confirmation must fail closed and leave the (already terminal) run alone.
+	_, err = cc.CancelRun(context.Background(), connect.NewRequest(&adminv1.CancelRunRequest{
+		Options: &adminv1.CommandOptions{
+			DryRun: false, PreviewHash: hash, IdempotencyKey: "k-stale-real", Reason: "incident-stale",
+		},
+		RunId: string(run.ID),
+	}))
+	if err == nil || connect.CodeOf(err) != connect.CodeFailedPrecondition {
+		t.Fatalf("expected stale fail-closed, got %v", err)
+	}
+
+	// Failed attempt must not poison the idempotency key: a fresh preview + same
+	// key on a new target should still be allowed to succeed.
+	_, _, run2 := seedTenantSessionRun(t, env, uc.RunAwaiting)
+	prev2, err := cc.CancelRun(context.Background(), connect.NewRequest(&adminv1.CancelRunRequest{
+		Options: &adminv1.CommandOptions{DryRun: true, Reason: "preview2"},
+		RunId:   string(run2.ID),
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ex, err := cc.CancelRun(context.Background(), connect.NewRequest(&adminv1.CancelRunRequest{
+		Options: &adminv1.CommandOptions{
+			DryRun: false, PreviewHash: prev2.Msg.Outcome.Preview.PreviewHash,
+			IdempotencyKey: "k-stale-real", Reason: "incident-retry",
+		},
+		RunId: string(run2.ID),
+	}))
+	if err != nil {
+		t.Fatalf("retry after failed idempotency key: %v", err)
+	}
+	if ex.Msg.Outcome.Result != "ok" && ex.Msg.Outcome.Result != "already_applied" {
+		t.Fatalf("result=%s", ex.Msg.Outcome.Result)
+	}
+	if ex.Msg.Outcome.IdempotentReplay {
+		t.Fatal("failed prior attempt must not count as successful idempotent replay")
+	}
 }

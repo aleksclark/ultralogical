@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -117,8 +118,18 @@ var (
 )
 
 // Run executes one command end-to-end.
+//
+// Safety contract:
+//   - Authorization is deny-by-default via authz.Can.
+//   - Execute always recomputes a live preview hash and refuses to apply when
+//     it does not match opts.preview_hash (stale confirmation fails closed
+//     before any mutation).
+//   - Idempotency keys bind only successful outcomes (ok / already_applied).
+//     Failed/denied/stale attempts still audit, but do not poison the key.
+//   - Plaintext (reveal) never enters audit JSON.
 func (e *Engine) Run(ctx context.Context, meta Meta, command string, opts *adminv1.CommandOptions, targets map[string]any, exec func(ctx context.Context, dryRun bool) (before, after map[string]any, effects []string, extra *extraOut, err error)) (*Result, error) {
 	if !authz.Can(meta.Operator.Role, command) {
+		// Denied attempts are audited without an idempotency binding.
 		_, _ = e.writeAudit(ctx, meta, command, targets, opts, nil, nil, "denied", errDenied.Error(), "")
 		return nil, errDenied
 	}
@@ -147,11 +158,13 @@ func (e *Engine) Run(ctx context.Context, meta Meta, command string, opts *admin
 		defer e.release()
 	}
 
+	// Always probe live state first (dry-run). Execute path uses this to
+	// validate the caller-supplied preview hash before any mutation.
 	before, after, effects, extra, err := exec(ctx, true)
 	if err != nil {
-		if !dry {
-			_, _ = e.writeAudit(ctx, meta, command, targets, opts, before, after, "failed", err.Error(), idem)
-		}
+		// Audit failures without binding the idempotency key so the operator
+		// can retry the same key after fixing preconditions.
+		_, _ = e.writeAudit(ctx, meta, command, targets, opts, before, after, "failed", err.Error(), "")
 		return nil, err
 	}
 	hash := previewHash(command, targets, before)
@@ -165,7 +178,8 @@ func (e *Engine) Run(ctx context.Context, meta Meta, command string, opts *admin
 	}
 	if extra != nil {
 		res.EvidenceJSON = extra.EvidenceJSON
-		res.Plaintext = extra.Plaintext
+		// Never surface plaintext on the dry-run path.
+		res.Plaintext = ""
 		res.RevealExpires = extra.RevealExpires
 	}
 	if dry {
@@ -173,32 +187,33 @@ func (e *Engine) Run(ctx context.Context, meta Meta, command string, opts *admin
 		if aerr == nil {
 			res.AuditID = aid
 		}
-		// Clear plaintext on dry-run.
 		res.Plaintext = ""
 		return res, nil
 	}
 
-	// Execute path: require matching preview hash.
+	// Execute path: require matching preview hash BEFORE applying.
+	// A mismatch means targets changed since the operator confirmed — fail
+	// closed with no side effects.
 	if subtleNeq(opts.GetPreviewHash(), hash) {
-		_, _ = e.writeAudit(ctx, meta, command, targets, opts, before, nil, "failed", errStalePreview.Error(), idem)
+		_, _ = e.writeAudit(ctx, meta, command, targets, opts, before, nil, "failed", errStalePreview.Error(), "")
 		return nil, errStalePreview
 	}
 
 	before2, after2, effects2, extra2, err := exec(ctx, false)
 	if err != nil {
-		_, _ = e.writeAudit(ctx, meta, command, targets, opts, before2, after2, "failed", err.Error(), idem)
+		// Mutation may or may not have partially applied inside the command;
+		// still do not bind the idempotency key on failure.
+		_, _ = e.writeAudit(ctx, meta, command, targets, opts, before2, after2, "failed", err.Error(), "")
 		return nil, err
 	}
-	// Re-check hash against post-lock before state.
-	hash2 := previewHash(command, targets, before2)
-	if subtleNeq(opts.GetPreviewHash(), hash2) {
-		_, _ = e.writeAudit(ctx, meta, command, targets, opts, before2, after2, "failed", errStalePreview.Error(), idem)
-		return nil, errStalePreview
-	}
+	// Note: we intentionally do NOT re-check preview hash after apply.
+	// Commands capture before-state at the start of exec(false); a post-apply
+	// mismatch would mean we already mutated and then lied to the caller with
+	// a stale error. In-command GetForUpdate / state checks handle races.
 	res.Before = before2
 	res.After = after2
 	res.Effects = effects2
-	res.PreviewHash = hash2
+	res.PreviewHash = hash
 	res.Outcome = "ok"
 	if extra2 != nil {
 		res.EvidenceJSON = extra2.EvidenceJSON
@@ -210,6 +225,7 @@ func (e *Engine) Run(ctx context.Context, meta Meta, command string, opts *admin
 			res.Outcome = "already_applied"
 		}
 	}
+	// Bind idempotency only on success so retries after failure remain possible.
 	aid, aerr := e.writeAudit(ctx, meta, command, targets, opts, before2, after2, res.Outcome, "", idem)
 	if aerr != nil {
 		// State may have changed; surface audit failure.
@@ -393,21 +409,22 @@ func (e *Engine) lookupIdempotent(ctx context.Context, key string) (*Result, boo
 		beforeB, afterB              []byte
 		preview                      string
 	)
+	// Only successful outcomes reserve the idempotency key. Failed rows never
+	// bind the key, so a prior failure cannot short-circuit a retry.
 	err := e.deps.Pool.QueryRow(ctx, `
 		SELECT id::text, command, result, error, before_summary, after_summary, preview_hash
 		  FROM admin_audit_events
 		 WHERE idempotency_key = $1
+		   AND result IN ('ok', 'already_applied')
 		 LIMIT 1`, key).Scan(&id, &command, &result, &errText, &beforeB, &afterB, &preview)
-	if errors.Is(err, context.Canceled) {
-		return nil, false, err
-	}
 	if err != nil {
-		// not found
-		if err.Error() == "no rows in result set" || strings.Contains(err.Error(), "no rows") {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, false, nil
 		}
-		// pgx.ErrNoRows
-		return nil, false, nil
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return nil, false, err
+		}
+		return nil, false, err
 	}
 	before := map[string]any{}
 	after := map[string]any{}

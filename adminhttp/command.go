@@ -285,8 +285,10 @@ func (s *commandService) ExportIncidentEvidence(ctx context.Context, req *connec
 }
 
 func (s *commandService) RevealSecret(ctx context.Context, req *connect.Request[adminv1.RevealSecretRequest]) (*connect.Response[adminv1.RevealSecretResponse], error) {
+	// Kill switch: when CORE_ADMIN_REVEAL_ENABLED is off the RPC is treated as
+	// absent (Unimplemented) rather than a soft precondition failure.
 	if !s.revealEnabled {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("secret reveal is disabled"))
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("secret reveal is disabled"))
 	}
 	meta, err := s.meta(ctx)
 	if err != nil {

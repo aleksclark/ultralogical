@@ -36,5 +36,32 @@ CREATE INDEX admin_audit_events_operator_ts_idx
 CREATE INDEX admin_audit_events_result_ts_idx
     ON admin_audit_events (result, ts DESC);
 
+-- Immutability: operators (and the application role) cannot edit or delete
+-- audit rows. Enforcement is DB-side so a compromised coreadmin binary still
+-- cannot rewrite history through SQL it issues.
+-- +goose StatementBegin
+CREATE OR REPLACE FUNCTION admin_audit_events_immutability()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'admin_audit_events is append-only';
+END;
+$$;
+-- +goose StatementEnd
+
+CREATE TRIGGER admin_audit_events_no_update
+    BEFORE UPDATE ON admin_audit_events
+    FOR EACH ROW
+    EXECUTE FUNCTION admin_audit_events_immutability();
+
+CREATE TRIGGER admin_audit_events_no_delete
+    BEFORE DELETE ON admin_audit_events
+    FOR EACH ROW
+    EXECUTE FUNCTION admin_audit_events_immutability();
+
 -- +goose Down
+DROP TRIGGER IF EXISTS admin_audit_events_no_delete ON admin_audit_events;
+DROP TRIGGER IF EXISTS admin_audit_events_no_update ON admin_audit_events;
+DROP FUNCTION IF EXISTS admin_audit_events_immutability();
 DROP TABLE IF EXISTS admin_audit_events;
