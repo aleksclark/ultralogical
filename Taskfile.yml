@@ -119,3 +119,27 @@ tasks:
     desc: Boot Postgres+coreadmin (and cored), run Playwright admin API e2e
     cmds:
       - bash scripts/admin-e2e-stack.sh test
+
+  admin:web:install:
+    desc: Install admin-web npm deps
+    dir: admin-web
+    cmds:
+      - npm install
+
+  admin:web:build:
+    desc: Typecheck and build the private admin SPA
+    dir: admin-web
+    cmds:
+      - node scripts/check-import-gates.mjs
+      - npm run build
+
+  admin:web:gate:
+    desc: Import isolation + direct list-RPC gates for admin-web
+    dir: admin-web
+    cmds:
+      - node scripts/check-import-gates.mjs
+
+  admin:web:test:
+    desc: Boot real coreadmin+Postgres, serve SPA via Vite proxy, run Playwright golden paths
+    cmds:
+      - bash scripts/admin-e2e-stack.sh spa

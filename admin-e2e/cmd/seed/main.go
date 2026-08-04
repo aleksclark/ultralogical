@@ -85,7 +85,18 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("credential: %w", err)
 	}
 
-	// A few sessions, events, and runs for list smokes.
+	// Provider for resource correlation workflows.
+	providerID := uuid.NewString()
+	if _, err := pool.Exec(ctx, `
+		INSERT INTO provider_instances (id, tenant_id, kind, name, config, state, capabilities, last_healthy_at)
+		VALUES ($1, $2, 'static', 'admin-e2e-provider', '{}'::jsonb, 'ready', '{}'::jsonb, now())`,
+		providerID, firstTenant,
+	); err != nil {
+		return fmt.Errorf("provider: %w", err)
+	}
+
+	// A few sessions, events, runs, steps, resources, memory, prompts for SPA workflows.
+	var firstSession, failedRunID, stuckResourceID string
 	for i := 0; i < 5; i++ {
 		sessID := uuid.NewString()
 		title := fmt.Sprintf("admin-e2e-session-%02d", i)
@@ -95,6 +106,9 @@ func run(ctx context.Context) error {
 			sessID, firstTenant, title,
 		); err != nil {
 			return fmt.Errorf("session: %w", err)
+		}
+		if i == 0 {
+			firstSession = sessID
 		}
 		for seq := 1; seq <= 2; seq++ {
 			if _, err := pool.Exec(ctx, `
@@ -107,21 +121,76 @@ func run(ctx context.Context) error {
 			}
 		}
 		runID := uuid.NewString()
+		state := "completed"
+		failure := ""
+		if i == 0 {
+			state = "failed"
+			failure = "seeded failure for golden workflow"
+			failedRunID = runID
+		}
 		if _, err := pool.Exec(ctx, `
 			INSERT INTO agent_runs
 				(id, session_id, tenant_id, state, loop_kind, loop_version,
-				 model_config, prompt, history, grants, actor_kind, actor_id)
+				 model_config, prompt, history, grants, actor_kind, actor_id, failure_reason)
 			VALUES
-				($1, $2, $3, 'completed', 'default', 1,
+				($1, $2, $3, $4, 'default', 1,
 				 '{}'::jsonb, 'seed', '{"v":1,"messages":[]}'::jsonb,
-				 '{}'::jsonb, 'service', 'seed')`,
-			runID, sessID, firstTenant,
+				 '{}'::jsonb, 'service', 'seed', $5)`,
+			runID, sessID, firstTenant, state, failure,
 		); err != nil {
 			return fmt.Errorf("run: %w", err)
 		}
+		if _, err := pool.Exec(ctx, `
+			INSERT INTO agent_run_steps (agent_run_id, step_index, attempt, tokens_in, tokens_out, finish_reason)
+			VALUES ($1, 0, 1, 10, 20, $2)`,
+			runID, map[bool]string{true: "error", false: "stop"}[i == 0],
+		); err != nil {
+			return fmt.Errorf("run step: %w", err)
+		}
+
+		resState := "ready"
+		resFail := ""
+		if i == 0 {
+			resState = "failed"
+			resFail = "seeded stuck resource"
+		}
+		resID := uuid.NewString()
+		if i == 0 {
+			stuckResourceID = resID
+		}
+		tokenHash := sha256.Sum256([]byte("resource-token-" + resID))
+		if _, err := pool.Exec(ctx, `
+			INSERT INTO resources
+				(id, tenant_id, session_id, provider_instance_id, kind, state, spec, handle,
+				 endpoint, token_hash, token_enc, epoch, failure_message, created_by_run_id)
+			VALUES
+				($1, $2, $3, $4, 'dev_env', $5, '{}'::jsonb, '{"version":0}'::jsonb,
+				 'http://127.0.0.1:9', $6, $7, 1, $8, $9)`,
+			resID, firstTenant, sessID, providerID, resState,
+			tokenHash[:], []byte("enc-token"), resFail, runID,
+		); err != nil {
+			return fmt.Errorf("resource: %w", err)
+		}
+
+		if _, err := pool.Exec(ctx, `
+			INSERT INTO session_memory (session_id, key, value, updated_by_type, updated_by_id)
+			VALUES ($1, 'seed_key', '{"v":1}'::jsonb, 'service', 'seed')`,
+			sessID,
+		); err != nil {
+			return fmt.Errorf("memory: %w", err)
+		}
 	}
 
-	fmt.Printf("seeded %d tenants; primary=%s canary_hash=%s\n",
-		n, firstTenant, hex.EncodeToString(keyHash[:8]))
+	promptID := uuid.NewString()
+	if _, err := pool.Exec(ctx, `
+		INSERT INTO periodic_prompts (id, tenant_id, session_id, run_id, schedule, prompt, enabled, next_at)
+		VALUES ($1, $2, $3, $4, '0 * * * *', 'seed periodic prompt', true, now() + interval '1 hour')`,
+		promptID, firstTenant, firstSession, failedRunID,
+	); err != nil {
+		return fmt.Errorf("periodic prompt: %w", err)
+	}
+
+	fmt.Printf("seeded %d tenants; primary=%s canary_hash=%s failed_run=%s stuck_resource=%s provider=%s\n",
+		n, firstTenant, hex.EncodeToString(keyHash[:8]), failedRunID, stuckResourceID, providerID)
 	return nil
 }
