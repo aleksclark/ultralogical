@@ -1,4 +1,4 @@
-package postgres
+package store
 
 import (
 	"context"
@@ -78,7 +78,7 @@ func (a *AdminStore) list(ctx context.Context, name string, req query.Request, n
 	defer cancel()
 	rows, err := a.pool.Query(qctx, sql, compiled.Args...)
 	if err != nil {
-		return query.PageInfo{}, fmt.Errorf("postgres/admin: list %s: %w", name, err)
+		return query.PageInfo{}, fmt.Errorf("admin/store: list %s: %w", name, err)
 	}
 	defer rows.Close()
 
@@ -90,7 +90,7 @@ func (a *AdminStore) list(ctx context.Context, name string, req query.Request, n
 			return query.PageInfo{}, err
 		}
 		if len(vals) < nDataCols+nSort {
-			return query.PageInfo{}, fmt.Errorf("postgres/admin: list %s: got %d cols, want >= %d", name, len(vals), nDataCols+nSort)
+			return query.PageInfo{}, fmt.Errorf("admin/store: list %s: got %d cols, want >= %d", name, len(vals), nDataCols+nSort)
 		}
 		data := vals[:nDataCols]
 		sortRaw := vals[len(vals)-nSort:]
@@ -383,7 +383,7 @@ func (a *AdminStore) GetEvent(ctx context.Context, sessionID string, seq int64) 
 		return nil, uc.ErrNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("postgres/admin: get event: %w", err)
+		return nil, fmt.Errorf("admin/store: get event: %w", err)
 	}
 	preview := string(payload)
 	if len(preview) > query.MaxPreviewBytes {
@@ -443,7 +443,7 @@ func (a *AdminStore) GetRun(ctx context.Context, id string) (*adminv1.RunDetail,
 		return nil, uc.ErrNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("postgres/admin: get run: %w", err)
+		return nil, fmt.Errorf("admin/store: get run: %w", err)
 	}
 	return &adminv1.RunDetail{
 		Summary: &adminv1.RunSummary{
@@ -468,7 +468,7 @@ func (a *AdminStore) GetRunHistory(ctx context.Context, id string) (*adminv1.Run
 		return nil, uc.ErrNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("postgres/admin: get run history: %w", err)
+		return nil, fmt.Errorf("admin/store: get run history: %w", err)
 	}
 	return &adminv1.RunHistoryBlob{RunId: id, HistoryJson: history}, nil
 }
@@ -530,7 +530,7 @@ func (a *AdminStore) GetResource(ctx context.Context, id string) (*adminv1.Resou
 		return nil, uc.ErrNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("postgres/admin: get resource: %w", err)
+		return nil, fmt.Errorf("admin/store: get resource: %w", err)
 	}
 	return &adminv1.ResourceDetail{
 		Summary: &adminv1.ResourceSummary{
@@ -577,7 +577,7 @@ func (a *AdminStore) GetProvider(ctx context.Context, id string) (*adminv1.Provi
 		return nil, uc.ErrNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("postgres/admin: get provider: %w", err)
+		return nil, fmt.Errorf("admin/store: get provider: %w", err)
 	}
 	return &adminv1.ProviderDetail{
 		Summary: &adminv1.ProviderSummary{
@@ -654,7 +654,7 @@ func (a *AdminStore) GetPeriodicPrompt(ctx context.Context, id string) (*adminv1
 		return nil, uc.ErrNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("postgres/admin: get periodic prompt: %w", err)
+		return nil, fmt.Errorf("admin/store: get periodic prompt: %w", err)
 	}
 	preview := prompt
 	if len(preview) > query.MaxPreviewBytes {
@@ -701,7 +701,7 @@ func (a *AdminStore) GetMemory(ctx context.Context, sessionID, key string) (*adm
 		return nil, uc.ErrNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("postgres/admin: get memory: %w", err)
+		return nil, fmt.Errorf("admin/store: get memory: %w", err)
 	}
 	return &adminv1.MemoryDetail{
 		Summary: &adminv1.MemorySummary{
@@ -749,7 +749,7 @@ func (a *AdminStore) GetWait(ctx context.Context, id string) (*adminv1.WaitDetai
 	_ = a.pool.QueryRow(qctx, `SELECT result FROM run_waits WHERE id = $1`, id).Scan(&result)
 	mrows, err := a.pool.Query(qctx, `SELECT run_id::text, ordinal FROM run_wait_members WHERE wait_id = $1 ORDER BY ordinal`, id)
 	if err != nil {
-		return nil, fmt.Errorf("postgres/admin: wait members: %w", err)
+		return nil, fmt.Errorf("admin/store: wait members: %w", err)
 	}
 	defer mrows.Close()
 	var members []*adminv1.WaitMember
@@ -810,7 +810,7 @@ func (a *AdminStore) GetJob(ctx context.Context, id int64) (*adminv1.JobDetail, 
 		return nil, uc.ErrNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("postgres/admin: get job: %w", err)
+		return nil, fmt.Errorf("admin/store: get job: %w", err)
 	}
 	var errStrs []string
 	for _, e := range errorsRaw {
@@ -938,7 +938,7 @@ func (a *AdminStore) GetSessionTimeline(ctx context.Context, sessionID string, p
 
 	rows, err := a.pool.Query(qctx, sql, args...)
 	if err != nil {
-		return nil, query.PageInfo{}, fmt.Errorf("postgres/admin: timeline: %w", err)
+		return nil, query.PageInfo{}, fmt.Errorf("admin/store: timeline: %w", err)
 	}
 	defer rows.Close()
 	var items []*adminv1.TimelineEntry
@@ -980,6 +980,16 @@ func (a *AdminStore) ListRelated(ctx context.Context, collection, id, relation s
 	if limit > query.MaxLimit {
 		return nil, query.PageInfo{}, query.ErrInvalidLimit
 	}
+	// ListRelated is a first-page navigation aid. Full collection traversal uses
+	// the corresponding List* RPC with an allowlisted filter (e.g. tenant_id /
+	// session_id). Cursors are rejected here so callers do not assume keyset
+	// semantics that the multi-edge fan-out cannot provide.
+	if page.Cursor != "" {
+		return nil, query.PageInfo{}, &query.ValidationError{
+			Err: query.ErrBadCursor,
+			Msg: "ListRelated does not support cursors; use the filtered List* RPC for the target collection",
+		}
+	}
 	qctx, cancel := a.withTimeout(ctx)
 	defer cancel()
 
@@ -991,40 +1001,40 @@ func (a *AdminStore) ListRelated(ctx context.Context, collection, id, relation s
 	switch collection {
 	case "tenants":
 		if relation == "" || relation == "sessions" {
-			edges = append(edges, edge{`SELECT 'sessions', id::text, title FROM sessions WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2`, []any{id, limit + 1}})
+			edges = append(edges, edge{`SELECT 'sessions', id::text, title FROM sessions WHERE tenant_id = $1 ORDER BY created_at DESC, id DESC LIMIT $2`, []any{id, limit + 1}})
 		}
 		if relation == "" || relation == "api_keys" {
-			edges = append(edges, edge{`SELECT 'api_keys', id::text, name FROM api_keys WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2`, []any{id, limit + 1}})
+			edges = append(edges, edge{`SELECT 'api_keys', id::text, name FROM api_keys WHERE tenant_id = $1 ORDER BY created_at DESC, id DESC LIMIT $2`, []any{id, limit + 1}})
 		}
 		if relation == "" || relation == "providers" {
-			edges = append(edges, edge{`SELECT 'providers', id::text, name FROM provider_instances WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2`, []any{id, limit + 1}})
+			edges = append(edges, edge{`SELECT 'providers', id::text, name FROM provider_instances WHERE tenant_id = $1 ORDER BY created_at DESC, id DESC LIMIT $2`, []any{id, limit + 1}})
 		}
 	case "sessions":
 		if relation == "" || relation == "runs" {
-			edges = append(edges, edge{`SELECT 'runs', id::text, state || ' ' || loop_kind FROM agent_runs WHERE session_id = $1 ORDER BY created_at DESC LIMIT $2`, []any{id, limit + 1}})
+			edges = append(edges, edge{`SELECT 'runs', id::text, state || ' ' || loop_kind FROM agent_runs WHERE session_id = $1 ORDER BY created_at DESC, id DESC LIMIT $2`, []any{id, limit + 1}})
 		}
 		if relation == "" || relation == "resources" {
-			edges = append(edges, edge{`SELECT 'resources', id::text, kind || ' ' || state FROM resources WHERE session_id = $1 ORDER BY created_at DESC LIMIT $2`, []any{id, limit + 1}})
+			edges = append(edges, edge{`SELECT 'resources', id::text, kind || ' ' || state FROM resources WHERE session_id = $1 ORDER BY created_at DESC, id DESC LIMIT $2`, []any{id, limit + 1}})
 		}
 		if relation == "" || relation == "events" {
 			edges = append(edges, edge{`SELECT 'events', session_id::text || ':' || seq::text, kind FROM session_events WHERE session_id = $1 ORDER BY seq DESC LIMIT $2`, []any{id, limit + 1}})
 		}
 		if relation == "" || relation == "memory" {
-			edges = append(edges, edge{`SELECT 'memory', session_id::text || ':' || key, key FROM session_memory WHERE session_id = $1 ORDER BY updated_at DESC LIMIT $2`, []any{id, limit + 1}})
+			edges = append(edges, edge{`SELECT 'memory', session_id::text || ':' || key, key FROM session_memory WHERE session_id = $1 ORDER BY updated_at DESC, key ASC LIMIT $2`, []any{id, limit + 1}})
 		}
 	case "runs":
 		if relation == "" || relation == "steps" {
 			edges = append(edges, edge{`SELECT 'run_steps', agent_run_id::text || ':' || step_index::text, 'step ' || step_index::text FROM agent_run_steps WHERE agent_run_id = $1 ORDER BY step_index LIMIT $2`, []any{id, limit + 1}})
 		}
 		if relation == "" || relation == "children" {
-			edges = append(edges, edge{`SELECT 'runs', id::text, state FROM agent_runs WHERE parent_run_id = $1 ORDER BY created_at LIMIT $2`, []any{id, limit + 1}})
+			edges = append(edges, edge{`SELECT 'runs', id::text, state FROM agent_runs WHERE parent_run_id = $1 ORDER BY created_at ASC, id ASC LIMIT $2`, []any{id, limit + 1}})
 		}
 		if relation == "" || relation == "waits" {
-			edges = append(edges, edge{`SELECT 'waits', id::text, state FROM run_waits WHERE parent_run_id = $1 ORDER BY created_at DESC LIMIT $2`, []any{id, limit + 1}})
+			edges = append(edges, edge{`SELECT 'waits', id::text, state FROM run_waits WHERE parent_run_id = $1 ORDER BY created_at DESC, id DESC LIMIT $2`, []any{id, limit + 1}})
 		}
 	case "providers":
 		if relation == "" || relation == "resources" {
-			edges = append(edges, edge{`SELECT 'resources', id::text, kind || ' ' || state FROM resources WHERE provider_instance_id = $1 ORDER BY created_at DESC LIMIT $2`, []any{id, limit + 1}})
+			edges = append(edges, edge{`SELECT 'resources', id::text, kind || ' ' || state FROM resources WHERE provider_instance_id = $1 ORDER BY created_at DESC, id DESC LIMIT $2`, []any{id, limit + 1}})
 		}
 	case "resources":
 		if relation == "" || relation == "provider" {
@@ -1033,12 +1043,18 @@ func (a *AdminStore) ListRelated(ctx context.Context, collection, id, relation s
 	default:
 		return nil, query.PageInfo{}, fmt.Errorf("%w: %s", query.ErrUnknownCollection, collection)
 	}
+	if len(edges) == 0 {
+		return nil, query.PageInfo{}, &query.ValidationError{
+			Err: query.ErrInvalidField,
+			Msg: fmt.Sprintf("unknown relation %q for collection %q", relation, collection),
+		}
+	}
 
 	var items []*adminv1.RelatedRef
 	for _, e := range edges {
 		rows, err := a.pool.Query(qctx, e.sql, e.args...)
 		if err != nil {
-			return nil, query.PageInfo{}, fmt.Errorf("postgres/admin: related: %w", err)
+			return nil, query.PageInfo{}, fmt.Errorf("admin/store: related: %w", err)
 		}
 		for rows.Next() {
 			var col, rid, label string
@@ -1057,6 +1073,7 @@ func (a *AdminStore) ListRelated(ctx context.Context, collection, id, relation s
 	if len(items) > limit {
 		items = items[:limit]
 		info.HasMore = true
+		// No next_cursor: callers continue via filtered List* RPCs.
 	}
 	return items, info, nil
 }

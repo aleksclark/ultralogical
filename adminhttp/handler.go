@@ -8,12 +8,12 @@ import (
 
 	uc "github.com/aleksclark/ultracore"
 	"github.com/aleksclark/ultracore/admin/query"
+	adminstore "github.com/aleksclark/ultracore/admin/store"
 	adminv1 "github.com/aleksclark/ultracore/gen/go/admin/v1"
-	"github.com/aleksclark/ultracore/postgres"
 )
 
 type readService struct {
-	store *postgres.AdminStore
+	store *adminstore.AdminStore
 }
 
 func (s *readService) DescribeCollection(ctx context.Context, req *connect.Request[adminv1.DescribeCollectionRequest]) (*connect.Response[adminv1.DescribeCollectionResponse], error) {

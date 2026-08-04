@@ -11,13 +11,13 @@ import (
 
 	"connectrpc.com/connect"
 
+	adminstore "github.com/aleksclark/ultracore/admin/store"
 	"github.com/aleksclark/ultracore/gen/go/admin/v1/adminv1connect"
-	"github.com/aleksclark/ultracore/postgres"
 )
 
 // Config carries admin handler dependencies.
 type Config struct {
-	Store *postgres.AdminStore
+	Store *adminstore.AdminStore
 	// Token is the required bearer operator token. Empty is only allowed when
 	// DevMode is true (local development).
 	Token string

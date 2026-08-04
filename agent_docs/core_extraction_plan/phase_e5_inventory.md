@@ -28,10 +28,11 @@
 | Compile / allowlist | `admin/query/compile.go` |
 | Signed cursors | `admin/query/cursor.go` |
 | Unit rejection tests | `admin/query/query_test.go` |
-| Store reads | `postgres/admin.go` |
+| Store reads | `admin/store/` (separate from `postgres/` so `cored` never links admin) |
 | HTTP + auth | `adminhttp/` |
 | Binary | `cmd/coreadmin` |
 | Functional tests | `admin/admin_test.go` |
+| Isolation gate | `scripts/check-admin-isolation.sh` (TS + import + `go list -deps ./cmd/cored`) |
 
 ## Deferred with justification
 
@@ -39,5 +40,8 @@
 |---|---|
 | `hook_cursors` dedicated list | Internal progress markers; recoverable from session event seq + health |
 | Full 100k-event CI seed | 5k bulk path in CI for runtime; same test scales locally |
+| Full 100k/20k/10k latency bench in CI | A5.6 partial: first-page guard on 5k events; raise locally for index benches |
 | mTLS operator auth | Token auth shipped; mTLS/short-lived deployment tokens in E7 |
 | Break-glass secret reveal | Explicitly E7 |
+| `ListRelated` keyset cursors | First-page navigation only; deep traversal uses filtered `List*` RPCs |
+| Response-byte hard reject on summaries | Previews/`MaxPreviewBytes` + detail/blob split enforce A5.7; `MaxSummaryBytes` reserved |

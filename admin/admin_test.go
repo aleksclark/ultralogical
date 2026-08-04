@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"strings"
 	"sync"
 	"testing"
@@ -16,6 +17,7 @@ import (
 
 	uc "github.com/aleksclark/ultracore"
 	"github.com/aleksclark/ultracore/admin/query"
+	adminstore "github.com/aleksclark/ultracore/admin/store"
 	"github.com/aleksclark/ultracore/adminhttp"
 	adminv1 "github.com/aleksclark/ultracore/gen/go/admin/v1"
 	"github.com/aleksclark/ultracore/gen/go/admin/v1/adminv1connect"
@@ -29,7 +31,7 @@ import (
 
 const adminToken = "test-operator-token-not-a-tenant-key"
 
-func setupAdmin(t *testing.T) (*postgres.AdminStore, *pgxpool.Pool, adminv1connect.AdminReadServiceClient, *httptest.Server) {
+func setupAdmin(t *testing.T) (*adminstore.AdminStore, *pgxpool.Pool, adminv1connect.AdminReadServiceClient, *httptest.Server) {
 	t.Helper()
 	ctx := context.Background()
 	pool, url := pgtest.NewPool(t)
@@ -40,7 +42,7 @@ func setupAdmin(t *testing.T) (*postgres.AdminStore, *pgxpool.Pool, adminv1conne
 		t.Fatal(err)
 	}
 	signer := &query.Signer{Secret: []byte("admin-test-cursor-secret-0123456")}
-	store := postgres.NewAdminStore(pool, signer, "test")
+	store := adminstore.NewAdminStore(pool, signer, "test")
 	srv := httptest.NewServer(adminhttp.NewHandler(adminhttp.Config{
 		Store: store, Token: adminToken, Log: nil,
 	}))
@@ -133,10 +135,43 @@ func TestCoredHasNoAdminRoutes(t *testing.T) {
 				t.Fatalf("cored served admin path %s", p)
 			}
 		}
-		// Stronger: ensure AdminReadService is not registered by probing connect path.
 	}
-	// Also ensure public package has no AdminReadService symbol import path used by cored.
-	_ = corev1connect.TenantServiceName
+	// Public core connect surface is distinct from admin.
+	if corev1connect.TenantServiceName == "" {
+		t.Fatal("missing core tenant service name")
+	}
+}
+
+func TestCoredPackageDepsExcludeAdmin(t *testing.T) {
+	// A5.1 binary dependency fence: cored must not import admin packages.
+	// Mirrors scripts/check-admin-isolation.sh go list -deps check.
+	cmd := exec.Command("go", "list", "-deps", "./cmd/cored")
+	cmd.Dir = ".."
+	// When running as package admin_test under ./admin, module root is parent.
+	// Prefer module root via go env.
+	if root, err := exec.Command("go", "env", "GOMOD").Output(); err == nil {
+		mod := strings.TrimSpace(string(root))
+		if strings.HasSuffix(mod, "/go.mod") {
+			cmd.Dir = strings.TrimSuffix(mod, "/go.mod")
+		}
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("go list -deps ./cmd/cored: %v\n%s", err, out)
+	}
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if strings.Contains(line, "/admin") || strings.Contains(line, "/gen/go/admin") {
+			// Allow nothing under ultracore admin surfaces.
+			if strings.Contains(line, "github.com/aleksclark/ultracore/admin") ||
+				strings.Contains(line, "github.com/aleksclark/ultracore/gen/go/admin") {
+				t.Fatalf("cored depends on admin package: %s", line)
+			}
+		}
+	}
 }
 
 func TestAdminListTenantsPaginationAndSearch(t *testing.T) {

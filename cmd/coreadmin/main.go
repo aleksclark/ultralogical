@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/aleksclark/ultracore/admin/query"
+	adminstore "github.com/aleksclark/ultracore/admin/store"
 	"github.com/aleksclark/ultracore/adminhttp"
 	"github.com/aleksclark/ultracore/config"
 	riverqueue "github.com/aleksclark/ultracore/jobqueue/river"
@@ -90,7 +91,7 @@ func run(log *slog.Logger) error {
 		return fmt.Errorf("river migrate: %w", err)
 	}
 
-	adminStore := postgres.NewAdminStore(pool, &query.Signer{Secret: []byte(cursorSecret)}, BuildVersion)
+	adminStore := adminstore.NewAdminStore(pool, &query.Signer{Secret: []byte(cursorSecret)}, BuildVersion)
 	handler := adminhttp.NewHandler(adminhttp.Config{
 		Store:      adminStore,
 		Token:      token,

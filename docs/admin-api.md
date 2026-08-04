@@ -73,7 +73,10 @@ Rules:
 - `ListJobs` / `GetJob` (River)
 - `GetRuntimeHealth`
 - `GetSessionTimeline`
-- `ListRelated`
+- `ListRelated` (first-page relationship navigation; deep lists use filtered `List*`)
+
+Admin store code lives in `admin/store` (not `postgres/`) so the `cored`
+binary never links admin protos or the query engine.
 
 ## Secrets
 
