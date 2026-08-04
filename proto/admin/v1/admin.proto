@@ -597,4 +597,283 @@ service AdminReadService {
   rpc GetRuntimeHealth(GetRuntimeHealthRequest) returns (GetRuntimeHealthResponse);
   rpc GetSessionTimeline(GetSessionTimelineRequest) returns (GetSessionTimelineResponse);
   rpc ListRelated(ListRelatedRequest) returns (ListRelatedResponse);
+
+  rpc WhoAmI(WhoAmIRequest) returns (WhoAmIResponse);
+  rpc ListAuditEvents(ListAuditEventsRequest) returns (ListAuditEventsResponse);
+  rpc GetAuditEvent(GetAuditEventRequest) returns (GetAuditEventResponse);
+}
+
+// ---------------------------------------------------------------------------
+// Operator identity / audit (E7)
+// ---------------------------------------------------------------------------
+
+message OperatorIdentity {
+  string id = 1;
+  string name = 2;
+  string role = 3; // viewer | operator | security | admin
+  repeated string permissions = 4;
+  bool reveal_enabled = 5;
+}
+
+message WhoAmIRequest {}
+message WhoAmIResponse {
+  OperatorIdentity operator = 1;
+}
+
+message AuditEventSummary {
+  string id = 1;
+  google.protobuf.Timestamp ts = 2;
+  string operator_id = 3;
+  string operator_role = 4;
+  string request_id = 5;
+  string command = 6;
+  google.protobuf.Struct targets = 7;
+  string reason = 8;
+  string preview_hash = 9;
+  google.protobuf.Struct before_summary = 10;
+  google.protobuf.Struct after_summary = 11;
+  string result = 12; // ok | dry_run | already_applied | failed | denied
+  string error = 13;
+  string source_ip = 14;
+  string build_version = 15;
+  string idempotency_key = 16;
+}
+
+message ListAuditEventsRequest {
+  SearchRequest search = 1;
+}
+message ListAuditEventsResponse {
+  repeated AuditEventSummary items = 1;
+  PageInfo page = 2;
+}
+message GetAuditEventRequest {
+  string id = 1;
+}
+message GetAuditEventResponse {
+  AuditEventSummary item = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Admin commands (E7) — typed, dry-runnable, idempotent mutations
+// ---------------------------------------------------------------------------
+
+// CommandOptions is shared by every AdminCommandService RPC.
+message CommandOptions {
+  // When true, validate and return preview only. No state change, no durable
+  // side effects (audit may still record dry_run).
+  bool dry_run = 1;
+  // Required when dry_run=false. Must match the hash returned by a fresh preview
+  // of the same targets; stale hashes fail closed.
+  string preview_hash = 2;
+  // Required for execute. Unique per logical operation; replays return the
+  // original result without re-applying effects.
+  string idempotency_key = 3;
+  // Required human reason for the action (incident/ticket context).
+  string reason = 4;
+}
+
+message CommandPreview {
+  string preview_hash = 1;
+  google.protobuf.Struct before_summary = 2;
+  repeated string expected_effects = 3;
+  google.protobuf.Timestamp computed_at = 4;
+}
+
+message CommandOutcome {
+  bool dry_run = 1;
+  CommandPreview preview = 2;
+  // ok | already_applied | failed
+  string result = 3;
+  google.protobuf.Struct after_summary = 4;
+  string audit_event_id = 5;
+  bool idempotent_replay = 6;
+  string message = 7;
+}
+
+message RetryQueueJobRequest {
+  CommandOptions options = 1;
+  int64 job_id = 2;
+}
+message RetryQueueJobResponse {
+  CommandOutcome outcome = 1;
+}
+
+message CancelQueueJobRequest {
+  CommandOptions options = 1;
+  int64 job_id = 2;
+}
+message CancelQueueJobResponse {
+  CommandOutcome outcome = 1;
+}
+
+message CancelRunRequest {
+  CommandOptions options = 1;
+  string run_id = 2;
+}
+message CancelRunResponse {
+  CommandOutcome outcome = 1;
+}
+
+message AnswerAwaitRequest {
+  CommandOptions options = 1;
+  string run_id = 2;
+  string message = 3;
+}
+message AnswerAwaitResponse {
+  CommandOutcome outcome = 1;
+}
+
+message ExpireAwaitRequest {
+  CommandOptions options = 1;
+  string run_id = 2;
+}
+message ExpireAwaitResponse {
+  CommandOutcome outcome = 1;
+}
+
+message ResourceReconcileRequest {
+  CommandOptions options = 1;
+  string resource_id = 2;
+}
+message ResourceReconcileResponse {
+  CommandOutcome outcome = 1;
+}
+
+message ResourceRestartRequest {
+  CommandOptions options = 1;
+  string resource_id = 2;
+}
+message ResourceRestartResponse {
+  CommandOutcome outcome = 1;
+}
+
+message ResourceSuspendRequest {
+  CommandOptions options = 1;
+  string resource_id = 2;
+  string message = 3;
+}
+message ResourceSuspendResponse {
+  CommandOutcome outcome = 1;
+}
+
+message ResourceTerminateRequest {
+  CommandOptions options = 1;
+  string resource_id = 2;
+}
+message ResourceTerminateResponse {
+  CommandOutcome outcome = 1;
+}
+
+message ResourceAdoptionProbeRequest {
+  CommandOptions options = 1;
+  string resource_id = 2;
+}
+message ResourceAdoptionProbeResponse {
+  CommandOutcome outcome = 1;
+}
+
+message ReprobeProviderRequest {
+  CommandOptions options = 1;
+  string provider_id = 2;
+}
+message ReprobeProviderResponse {
+  CommandOutcome outcome = 1;
+}
+
+message RevokeAPIKeyRequest {
+  CommandOptions options = 1;
+  string api_key_id = 2;
+}
+message RevokeAPIKeyResponse {
+  CommandOutcome outcome = 1;
+}
+
+message DisableCredentialRequest {
+  CommandOptions options = 1;
+  string tenant_id = 2;
+  string kind = 3;
+  string name = 4;
+}
+message DisableCredentialResponse {
+  CommandOutcome outcome = 1;
+}
+
+message PausePeriodicPromptRequest {
+  CommandOptions options = 1;
+  string periodic_prompt_id = 2;
+}
+message PausePeriodicPromptResponse {
+  CommandOutcome outcome = 1;
+}
+
+message ResumePeriodicPromptRequest {
+  CommandOptions options = 1;
+  string periodic_prompt_id = 2;
+}
+message ResumePeriodicPromptResponse {
+  CommandOutcome outcome = 1;
+}
+
+message DisconnectSubscriberRequest {
+  CommandOptions options = 1;
+  string session_id = 2;
+  string subscriber_id = 3;
+}
+message DisconnectSubscriberResponse {
+  CommandOutcome outcome = 1;
+}
+
+message ExportIncidentEvidenceRequest {
+  CommandOptions options = 1;
+  string session_id = 2;
+  string run_id = 3;
+  string resource_id = 4;
+  int32 max_events = 5;
+}
+message ExportIncidentEvidenceResponse {
+  CommandOutcome outcome = 1;
+  // Bounded JSON evidence bundle (never secret plaintext).
+  bytes evidence_json = 2;
+}
+
+// Break-glass secret reveal. Kill-switched via CORE_ADMIN_REVEAL_ENABLED.
+// Requires security|admin role, X-Admin-Reauth header, reason, single target.
+message RevealSecretRequest {
+  CommandOptions options = 1;
+  // api_key | credential
+  string secret_kind = 2;
+  string api_key_id = 3;
+  string tenant_id = 4;
+  string credential_kind = 5;
+  string credential_name = 6;
+}
+message RevealSecretResponse {
+  CommandOutcome outcome = 1;
+  // Plaintext only on successful execute. Never logged. Short-lived client use.
+  string plaintext = 2;
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+// AdminCommandService is the private operator mutation surface. Every RPC is
+// individually typed, permissioned, dry-runnable, idempotent, and audited.
+// Never mounted on cored. No generic SQL/shell/HTTP proxy.
+service AdminCommandService {
+  rpc RetryQueueJob(RetryQueueJobRequest) returns (RetryQueueJobResponse);
+  rpc CancelQueueJob(CancelQueueJobRequest) returns (CancelQueueJobResponse);
+  rpc CancelRun(CancelRunRequest) returns (CancelRunResponse);
+  rpc AnswerAwait(AnswerAwaitRequest) returns (AnswerAwaitResponse);
+  rpc ExpireAwait(ExpireAwaitRequest) returns (ExpireAwaitResponse);
+  rpc ResourceReconcile(ResourceReconcileRequest) returns (ResourceReconcileResponse);
+  rpc ResourceRestart(ResourceRestartRequest) returns (ResourceRestartResponse);
+  rpc ResourceSuspend(ResourceSuspendRequest) returns (ResourceSuspendResponse);
+  rpc ResourceTerminate(ResourceTerminateRequest) returns (ResourceTerminateResponse);
+  rpc ResourceAdoptionProbe(ResourceAdoptionProbeRequest) returns (ResourceAdoptionProbeResponse);
+  rpc ReprobeProvider(ReprobeProviderRequest) returns (ReprobeProviderResponse);
+  rpc RevokeAPIKey(RevokeAPIKeyRequest) returns (RevokeAPIKeyResponse);
+  rpc DisableCredential(DisableCredentialRequest) returns (DisableCredentialResponse);
+  rpc PausePeriodicPrompt(PausePeriodicPromptRequest) returns (PausePeriodicPromptResponse);
+  rpc ResumePeriodicPrompt(ResumePeriodicPromptRequest) returns (ResumePeriodicPromptResponse);
+  rpc DisconnectSubscriber(DisconnectSubscriberRequest) returns (DisconnectSubscriberResponse);
+  rpc ExportIncidentEvidence(ExportIncidentEvidenceRequest) returns (ExportIncidentEvidenceResponse);
+  rpc RevealSecret(RevealSecretRequest) returns (RevealSecretResponse);
 }

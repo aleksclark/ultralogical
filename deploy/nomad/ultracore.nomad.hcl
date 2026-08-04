@@ -137,7 +137,13 @@ job "ultracore" {
         DATABASE_URL              = "${DATABASE_URL}"
         CORE_ADMIN_ADDR           = ":${NOMAD_PORT_http}"
         CORE_ADMIN_TOKEN          = "${CORE_ADMIN_TOKEN}"
+        CORE_ADMIN_TOKEN_ROLE     = "${CORE_ADMIN_TOKEN_ROLE}"
+        CORE_ADMIN_TOKENS         = "${CORE_ADMIN_TOKENS}"
         CORE_ADMIN_CURSOR_SECRET  = "${CORE_ADMIN_CURSOR_SECRET}"
+        CORE_ADMIN_REVEAL_ENABLED = "false"
+        CORE_ADMIN_ENABLE_TERMINATE = "false"
+        CORE_ADMIN_ENABLE_SUSPEND   = "false"
+        CORE_MASTER_KEY           = "${CORE_MASTER_KEY}"
         CORE_MIGRATE              = "true"
       }
 

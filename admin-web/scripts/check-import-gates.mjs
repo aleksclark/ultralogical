@@ -14,7 +14,7 @@ const root = path.resolve(__dirname, "..");
 const srcRoot = path.join(root, "src");
 
 const LIST_RPC_RE =
-  /\.(listTenants|listAPIKeys|listSessions|listEvents|listRuns|listRunSteps|listResources|listProviders|listCredentials|listPeriodicPrompts|listMemory|listWaits|listJobs)\s*\(/g;
+  /\.(listTenants|listAPIKeys|listSessions|listEvents|listRuns|listRunSteps|listResources|listProviders|listCredentials|listPeriodicPrompts|listMemory|listWaits|listJobs|listAuditEvents)\s*\(/g;
 
 const FORBIDDEN_IMPORT_RE =
   /@ultracore\/client|from\s+['"][^'"]*core\/v1|gen\/core\/v1|@ultracore\/client/g;

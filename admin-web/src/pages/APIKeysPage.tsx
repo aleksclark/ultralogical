@@ -1,10 +1,12 @@
+import { CommandConfirmModal } from "@/components/CommandConfirmModal";
+import { useOperator } from "@/lib/operator";
 import { useEffect, useState } from "react";
 import type { ColumnDef } from "@/components/AdminDataTable";
 import { CollectionPage } from "@/components/CollectionPage";
 import { EntityLink } from "@/components/EntityLink";
 import type { FilterFieldMeta } from "@/components/FilterBuilder";
 import { JsonViewer } from "@/components/JsonViewer";
-import { Badge, Skeleton } from "@/components/ui";
+import { Badge, Button, Skeleton } from "@/components/ui";
 import { fetchAPIKey } from "@/data/details";
 import { useAdminClient } from "@/lib/client";
 import { formatTs } from "@/lib/format";
@@ -99,16 +101,31 @@ function KeyDetail({ id }: { id: string }) {
 }
 
 export function APIKeysPage() {
+  const { can } = useOperator();
+  const [revokeId, setRevokeId] = useState<string | null>(null);
+
   return (
-    <CollectionPage<APIKeySummary>
+    <>
+      {revokeId && (
+        <CommandConfirmModal open onClose={() => setRevokeId(null)} command="RevokeAPIKey"
+          args={{ apiKeyId: revokeId }} title="Revoke API key" />
+      )}
+      <CollectionPage<APIKeySummary>
       title="API keys"
       description="Tenant API key metadata and revocation status. Raw keys are never shown."
       collection="api_keys"
+      toolbarExtra={can("RevokeAPIKey") ? (
+        <Button size="sm" variant="outline" data-testid="action-revoke-key" onClick={() => {
+          const id = window.prompt("API key id to revoke");
+          if (id?.trim()) setRevokeId(id.trim());
+        }}>Revoke key…</Button>
+      ) : null}
       columns={columns}
       filterFields={filters}
       rowKey={(r) => r.id}
       detailTitle={(id) => `API key ${id.slice(0, 8)}…`}
       renderDetail={(id) => <KeyDetail id={id} />}
     />
+    </>
   );
 }

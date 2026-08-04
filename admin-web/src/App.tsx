@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { Shell } from "@/components/Shell";
 import { useAuth } from "@/lib/auth";
 import { APIKeysPage } from "@/pages/APIKeysPage";
+import { AuditPage } from "@/pages/AuditPage";
 import { AutomationPage } from "@/pages/AutomationPage";
 import { CredentialsPage } from "@/pages/CredentialsPage";
 import { EventsPage } from "@/pages/EventsPage";
@@ -62,6 +63,7 @@ export function App() {
         <Route path="credentials" element={<CredentialsPage />} />
         <Route path="api-keys" element={<APIKeysPage />} />
         <Route path="security" element={<SecurityPage />} />
+        <Route path="audit" element={<AuditPage />} />
         <Route path="internals" element={<InternalsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

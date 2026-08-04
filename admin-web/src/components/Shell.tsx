@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { useOperator } from "@/lib/operator";
 import { cn } from "@/lib/cn";
 import { Button } from "./ui";
 
@@ -18,6 +19,7 @@ const NAV: { to: string; label: string; end?: boolean }[] = [
   { to: "/credentials", label: "Credentials" },
   { to: "/api-keys", label: "API keys" },
   { to: "/security", label: "Security" },
+  { to: "/audit", label: "Audit" },
   { to: "/internals", label: "Internals" },
 ];
 
@@ -26,6 +28,7 @@ const BUILD_SHA =
 
 export function Shell() {
   const { clear } = useAuth();
+  const { operator } = useOperator();
   const navigate = useNavigate();
 
   return (
@@ -36,6 +39,11 @@ export function Shell() {
             ultracore
           </div>
           <div className="text-sm font-semibold">Admin</div>
+          {operator && (
+            <div className="mt-1 text-[10px] text-muted-foreground" data-testid="operator-role">
+              {operator.name} · {operator.role}
+            </div>
+          )}
           <div className="mt-1 font-mono text-[10px] text-muted-foreground">build {BUILD_SHA}</div>
         </div>
         <nav className="flex-1 space-y-0.5 overflow-auto p-2" aria-label="Primary">

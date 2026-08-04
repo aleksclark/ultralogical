@@ -1,10 +1,12 @@
+import { CommandConfirmModal } from "@/components/CommandConfirmModal";
+import { useOperator } from "@/lib/operator";
 import { useEffect, useState } from "react";
 import type { ColumnDef } from "@/components/AdminDataTable";
 import { CollectionPage } from "@/components/CollectionPage";
 import { EntityLink } from "@/components/EntityLink";
 import type { FilterFieldMeta } from "@/components/FilterBuilder";
 import { JsonViewer } from "@/components/JsonViewer";
-import { Badge, Skeleton } from "@/components/ui";
+import { Badge, Button, Skeleton } from "@/components/ui";
 import { fetchPeriodicPrompt } from "@/data/details";
 import { useAdminClient } from "@/lib/client";
 import { formatBytes, formatTs } from "@/lib/format";
@@ -95,16 +97,39 @@ function PromptDetail({ id }: { id: string }) {
 }
 
 export function AutomationPage() {
+  const { can } = useOperator();
+  const [cmd, setCmd] = useState<{ name: "PausePeriodicPrompt" | "ResumePeriodicPrompt"; id: string } | null>(null);
+
   return (
-    <CollectionPage<PeriodicPromptSummary>
+    <>
+      {cmd && (
+        <CommandConfirmModal open onClose={() => setCmd(null)} command={cmd.name}
+          args={{ periodicPromptId: cmd.id }} title={cmd.name} />
+      )}
+      <CollectionPage<PeriodicPromptSummary>
       title="Automation"
       description="Periodic prompts, next fire times, and linked runs."
       collection="periodic_prompts"
+      toolbarExtra={<div className="flex gap-2">
+        {can("PausePeriodicPrompt") && (
+          <Button size="sm" variant="outline" data-testid="action-pause-prompt" onClick={() => {
+            const id = window.prompt("Periodic prompt id to pause");
+            if (id?.trim()) setCmd({ name: "PausePeriodicPrompt", id: id.trim() });
+          }}>Pause…</Button>
+        )}
+        {can("ResumePeriodicPrompt") && (
+          <Button size="sm" variant="outline" data-testid="action-resume-prompt" onClick={() => {
+            const id = window.prompt("Periodic prompt id to resume");
+            if (id?.trim()) setCmd({ name: "ResumePeriodicPrompt", id: id.trim() });
+          }}>Resume…</Button>
+        )}
+      </div>}
       columns={columns}
       filterFields={filters}
       rowKey={(r) => r.id}
       detailTitle={(id) => `Periodic prompt ${id.slice(0, 8)}…`}
       renderDetail={(id) => <PromptDetail id={id} />}
     />
+    </>
   );
 }

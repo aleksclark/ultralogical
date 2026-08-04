@@ -5547,6 +5547,2600 @@ func (x *ListRelatedResponse) GetPage() *PageInfo {
 	return nil
 }
 
+type OperatorIdentity struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"` // viewer | operator | security | admin
+	Permissions   []string               `protobuf:"bytes,4,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	RevealEnabled bool                   `protobuf:"varint,5,opt,name=reveal_enabled,json=revealEnabled,proto3" json:"reveal_enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OperatorIdentity) Reset() {
+	*x = OperatorIdentity{}
+	mi := &file_admin_v1_admin_proto_msgTypes[89]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OperatorIdentity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OperatorIdentity) ProtoMessage() {}
+
+func (x *OperatorIdentity) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[89]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OperatorIdentity.ProtoReflect.Descriptor instead.
+func (*OperatorIdentity) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{89}
+}
+
+func (x *OperatorIdentity) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *OperatorIdentity) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *OperatorIdentity) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *OperatorIdentity) GetPermissions() []string {
+	if x != nil {
+		return x.Permissions
+	}
+	return nil
+}
+
+func (x *OperatorIdentity) GetRevealEnabled() bool {
+	if x != nil {
+		return x.RevealEnabled
+	}
+	return false
+}
+
+type WhoAmIRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WhoAmIRequest) Reset() {
+	*x = WhoAmIRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[90]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WhoAmIRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WhoAmIRequest) ProtoMessage() {}
+
+func (x *WhoAmIRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[90]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WhoAmIRequest.ProtoReflect.Descriptor instead.
+func (*WhoAmIRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{90}
+}
+
+type WhoAmIResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Operator      *OperatorIdentity      `protobuf:"bytes,1,opt,name=operator,proto3" json:"operator,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WhoAmIResponse) Reset() {
+	*x = WhoAmIResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[91]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WhoAmIResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WhoAmIResponse) ProtoMessage() {}
+
+func (x *WhoAmIResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[91]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WhoAmIResponse.ProtoReflect.Descriptor instead.
+func (*WhoAmIResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{91}
+}
+
+func (x *WhoAmIResponse) GetOperator() *OperatorIdentity {
+	if x != nil {
+		return x.Operator
+	}
+	return nil
+}
+
+type AuditEventSummary struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Ts             *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=ts,proto3" json:"ts,omitempty"`
+	OperatorId     string                 `protobuf:"bytes,3,opt,name=operator_id,json=operatorId,proto3" json:"operator_id,omitempty"`
+	OperatorRole   string                 `protobuf:"bytes,4,opt,name=operator_role,json=operatorRole,proto3" json:"operator_role,omitempty"`
+	RequestId      string                 `protobuf:"bytes,5,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Command        string                 `protobuf:"bytes,6,opt,name=command,proto3" json:"command,omitempty"`
+	Targets        *structpb.Struct       `protobuf:"bytes,7,opt,name=targets,proto3" json:"targets,omitempty"`
+	Reason         string                 `protobuf:"bytes,8,opt,name=reason,proto3" json:"reason,omitempty"`
+	PreviewHash    string                 `protobuf:"bytes,9,opt,name=preview_hash,json=previewHash,proto3" json:"preview_hash,omitempty"`
+	BeforeSummary  *structpb.Struct       `protobuf:"bytes,10,opt,name=before_summary,json=beforeSummary,proto3" json:"before_summary,omitempty"`
+	AfterSummary   *structpb.Struct       `protobuf:"bytes,11,opt,name=after_summary,json=afterSummary,proto3" json:"after_summary,omitempty"`
+	Result         string                 `protobuf:"bytes,12,opt,name=result,proto3" json:"result,omitempty"` // ok | dry_run | already_applied | failed | denied
+	Error          string                 `protobuf:"bytes,13,opt,name=error,proto3" json:"error,omitempty"`
+	SourceIp       string                 `protobuf:"bytes,14,opt,name=source_ip,json=sourceIp,proto3" json:"source_ip,omitempty"`
+	BuildVersion   string                 `protobuf:"bytes,15,opt,name=build_version,json=buildVersion,proto3" json:"build_version,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,16,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *AuditEventSummary) Reset() {
+	*x = AuditEventSummary{}
+	mi := &file_admin_v1_admin_proto_msgTypes[92]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuditEventSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuditEventSummary) ProtoMessage() {}
+
+func (x *AuditEventSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[92]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuditEventSummary.ProtoReflect.Descriptor instead.
+func (*AuditEventSummary) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{92}
+}
+
+func (x *AuditEventSummary) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AuditEventSummary) GetTs() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Ts
+	}
+	return nil
+}
+
+func (x *AuditEventSummary) GetOperatorId() string {
+	if x != nil {
+		return x.OperatorId
+	}
+	return ""
+}
+
+func (x *AuditEventSummary) GetOperatorRole() string {
+	if x != nil {
+		return x.OperatorRole
+	}
+	return ""
+}
+
+func (x *AuditEventSummary) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *AuditEventSummary) GetCommand() string {
+	if x != nil {
+		return x.Command
+	}
+	return ""
+}
+
+func (x *AuditEventSummary) GetTargets() *structpb.Struct {
+	if x != nil {
+		return x.Targets
+	}
+	return nil
+}
+
+func (x *AuditEventSummary) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *AuditEventSummary) GetPreviewHash() string {
+	if x != nil {
+		return x.PreviewHash
+	}
+	return ""
+}
+
+func (x *AuditEventSummary) GetBeforeSummary() *structpb.Struct {
+	if x != nil {
+		return x.BeforeSummary
+	}
+	return nil
+}
+
+func (x *AuditEventSummary) GetAfterSummary() *structpb.Struct {
+	if x != nil {
+		return x.AfterSummary
+	}
+	return nil
+}
+
+func (x *AuditEventSummary) GetResult() string {
+	if x != nil {
+		return x.Result
+	}
+	return ""
+}
+
+func (x *AuditEventSummary) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *AuditEventSummary) GetSourceIp() string {
+	if x != nil {
+		return x.SourceIp
+	}
+	return ""
+}
+
+func (x *AuditEventSummary) GetBuildVersion() string {
+	if x != nil {
+		return x.BuildVersion
+	}
+	return ""
+}
+
+func (x *AuditEventSummary) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+type ListAuditEventsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Search        *SearchRequest         `protobuf:"bytes,1,opt,name=search,proto3" json:"search,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAuditEventsRequest) Reset() {
+	*x = ListAuditEventsRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[93]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAuditEventsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAuditEventsRequest) ProtoMessage() {}
+
+func (x *ListAuditEventsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[93]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAuditEventsRequest.ProtoReflect.Descriptor instead.
+func (*ListAuditEventsRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{93}
+}
+
+func (x *ListAuditEventsRequest) GetSearch() *SearchRequest {
+	if x != nil {
+		return x.Search
+	}
+	return nil
+}
+
+type ListAuditEventsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*AuditEventSummary   `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Page          *PageInfo              `protobuf:"bytes,2,opt,name=page,proto3" json:"page,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAuditEventsResponse) Reset() {
+	*x = ListAuditEventsResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[94]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAuditEventsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAuditEventsResponse) ProtoMessage() {}
+
+func (x *ListAuditEventsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[94]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAuditEventsResponse.ProtoReflect.Descriptor instead.
+func (*ListAuditEventsResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{94}
+}
+
+func (x *ListAuditEventsResponse) GetItems() []*AuditEventSummary {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *ListAuditEventsResponse) GetPage() *PageInfo {
+	if x != nil {
+		return x.Page
+	}
+	return nil
+}
+
+type GetAuditEventRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAuditEventRequest) Reset() {
+	*x = GetAuditEventRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[95]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAuditEventRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAuditEventRequest) ProtoMessage() {}
+
+func (x *GetAuditEventRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[95]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAuditEventRequest.ProtoReflect.Descriptor instead.
+func (*GetAuditEventRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{95}
+}
+
+func (x *GetAuditEventRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type GetAuditEventResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Item          *AuditEventSummary     `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAuditEventResponse) Reset() {
+	*x = GetAuditEventResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[96]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAuditEventResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAuditEventResponse) ProtoMessage() {}
+
+func (x *GetAuditEventResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[96]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAuditEventResponse.ProtoReflect.Descriptor instead.
+func (*GetAuditEventResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{96}
+}
+
+func (x *GetAuditEventResponse) GetItem() *AuditEventSummary {
+	if x != nil {
+		return x.Item
+	}
+	return nil
+}
+
+// CommandOptions is shared by every AdminCommandService RPC.
+type CommandOptions struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// When true, validate and return preview only. No state change, no durable
+	// side effects (audit may still record dry_run).
+	DryRun bool `protobuf:"varint,1,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
+	// Required when dry_run=false. Must match the hash returned by a fresh preview
+	// of the same targets; stale hashes fail closed.
+	PreviewHash string `protobuf:"bytes,2,opt,name=preview_hash,json=previewHash,proto3" json:"preview_hash,omitempty"`
+	// Required for execute. Unique per logical operation; replays return the
+	// original result without re-applying effects.
+	IdempotencyKey string `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	// Required human reason for the action (incident/ticket context).
+	Reason        string `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommandOptions) Reset() {
+	*x = CommandOptions{}
+	mi := &file_admin_v1_admin_proto_msgTypes[97]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommandOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommandOptions) ProtoMessage() {}
+
+func (x *CommandOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[97]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommandOptions.ProtoReflect.Descriptor instead.
+func (*CommandOptions) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{97}
+}
+
+func (x *CommandOptions) GetDryRun() bool {
+	if x != nil {
+		return x.DryRun
+	}
+	return false
+}
+
+func (x *CommandOptions) GetPreviewHash() string {
+	if x != nil {
+		return x.PreviewHash
+	}
+	return ""
+}
+
+func (x *CommandOptions) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *CommandOptions) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type CommandPreview struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	PreviewHash     string                 `protobuf:"bytes,1,opt,name=preview_hash,json=previewHash,proto3" json:"preview_hash,omitempty"`
+	BeforeSummary   *structpb.Struct       `protobuf:"bytes,2,opt,name=before_summary,json=beforeSummary,proto3" json:"before_summary,omitempty"`
+	ExpectedEffects []string               `protobuf:"bytes,3,rep,name=expected_effects,json=expectedEffects,proto3" json:"expected_effects,omitempty"`
+	ComputedAt      *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=computed_at,json=computedAt,proto3" json:"computed_at,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CommandPreview) Reset() {
+	*x = CommandPreview{}
+	mi := &file_admin_v1_admin_proto_msgTypes[98]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommandPreview) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommandPreview) ProtoMessage() {}
+
+func (x *CommandPreview) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[98]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommandPreview.ProtoReflect.Descriptor instead.
+func (*CommandPreview) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{98}
+}
+
+func (x *CommandPreview) GetPreviewHash() string {
+	if x != nil {
+		return x.PreviewHash
+	}
+	return ""
+}
+
+func (x *CommandPreview) GetBeforeSummary() *structpb.Struct {
+	if x != nil {
+		return x.BeforeSummary
+	}
+	return nil
+}
+
+func (x *CommandPreview) GetExpectedEffects() []string {
+	if x != nil {
+		return x.ExpectedEffects
+	}
+	return nil
+}
+
+func (x *CommandPreview) GetComputedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ComputedAt
+	}
+	return nil
+}
+
+type CommandOutcome struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	DryRun  bool                   `protobuf:"varint,1,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
+	Preview *CommandPreview        `protobuf:"bytes,2,opt,name=preview,proto3" json:"preview,omitempty"`
+	// ok | already_applied | failed
+	Result           string           `protobuf:"bytes,3,opt,name=result,proto3" json:"result,omitempty"`
+	AfterSummary     *structpb.Struct `protobuf:"bytes,4,opt,name=after_summary,json=afterSummary,proto3" json:"after_summary,omitempty"`
+	AuditEventId     string           `protobuf:"bytes,5,opt,name=audit_event_id,json=auditEventId,proto3" json:"audit_event_id,omitempty"`
+	IdempotentReplay bool             `protobuf:"varint,6,opt,name=idempotent_replay,json=idempotentReplay,proto3" json:"idempotent_replay,omitempty"`
+	Message          string           `protobuf:"bytes,7,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *CommandOutcome) Reset() {
+	*x = CommandOutcome{}
+	mi := &file_admin_v1_admin_proto_msgTypes[99]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommandOutcome) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommandOutcome) ProtoMessage() {}
+
+func (x *CommandOutcome) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[99]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommandOutcome.ProtoReflect.Descriptor instead.
+func (*CommandOutcome) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{99}
+}
+
+func (x *CommandOutcome) GetDryRun() bool {
+	if x != nil {
+		return x.DryRun
+	}
+	return false
+}
+
+func (x *CommandOutcome) GetPreview() *CommandPreview {
+	if x != nil {
+		return x.Preview
+	}
+	return nil
+}
+
+func (x *CommandOutcome) GetResult() string {
+	if x != nil {
+		return x.Result
+	}
+	return ""
+}
+
+func (x *CommandOutcome) GetAfterSummary() *structpb.Struct {
+	if x != nil {
+		return x.AfterSummary
+	}
+	return nil
+}
+
+func (x *CommandOutcome) GetAuditEventId() string {
+	if x != nil {
+		return x.AuditEventId
+	}
+	return ""
+}
+
+func (x *CommandOutcome) GetIdempotentReplay() bool {
+	if x != nil {
+		return x.IdempotentReplay
+	}
+	return false
+}
+
+func (x *CommandOutcome) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type RetryQueueJobRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	JobId         int64                  `protobuf:"varint,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RetryQueueJobRequest) Reset() {
+	*x = RetryQueueJobRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[100]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetryQueueJobRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetryQueueJobRequest) ProtoMessage() {}
+
+func (x *RetryQueueJobRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[100]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetryQueueJobRequest.ProtoReflect.Descriptor instead.
+func (*RetryQueueJobRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{100}
+}
+
+func (x *RetryQueueJobRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *RetryQueueJobRequest) GetJobId() int64 {
+	if x != nil {
+		return x.JobId
+	}
+	return 0
+}
+
+type RetryQueueJobResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RetryQueueJobResponse) Reset() {
+	*x = RetryQueueJobResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[101]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetryQueueJobResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetryQueueJobResponse) ProtoMessage() {}
+
+func (x *RetryQueueJobResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[101]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetryQueueJobResponse.ProtoReflect.Descriptor instead.
+func (*RetryQueueJobResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{101}
+}
+
+func (x *RetryQueueJobResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type CancelQueueJobRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	JobId         int64                  `protobuf:"varint,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelQueueJobRequest) Reset() {
+	*x = CancelQueueJobRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[102]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelQueueJobRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelQueueJobRequest) ProtoMessage() {}
+
+func (x *CancelQueueJobRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[102]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelQueueJobRequest.ProtoReflect.Descriptor instead.
+func (*CancelQueueJobRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{102}
+}
+
+func (x *CancelQueueJobRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *CancelQueueJobRequest) GetJobId() int64 {
+	if x != nil {
+		return x.JobId
+	}
+	return 0
+}
+
+type CancelQueueJobResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelQueueJobResponse) Reset() {
+	*x = CancelQueueJobResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[103]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelQueueJobResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelQueueJobResponse) ProtoMessage() {}
+
+func (x *CancelQueueJobResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[103]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelQueueJobResponse.ProtoReflect.Descriptor instead.
+func (*CancelQueueJobResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{103}
+}
+
+func (x *CancelQueueJobResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type CancelRunRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelRunRequest) Reset() {
+	*x = CancelRunRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[104]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelRunRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelRunRequest) ProtoMessage() {}
+
+func (x *CancelRunRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[104]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelRunRequest.ProtoReflect.Descriptor instead.
+func (*CancelRunRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{104}
+}
+
+func (x *CancelRunRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *CancelRunRequest) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+type CancelRunResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelRunResponse) Reset() {
+	*x = CancelRunResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[105]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelRunResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelRunResponse) ProtoMessage() {}
+
+func (x *CancelRunResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[105]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelRunResponse.ProtoReflect.Descriptor instead.
+func (*CancelRunResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{105}
+}
+
+func (x *CancelRunResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type AnswerAwaitRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AnswerAwaitRequest) Reset() {
+	*x = AnswerAwaitRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[106]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnswerAwaitRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnswerAwaitRequest) ProtoMessage() {}
+
+func (x *AnswerAwaitRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[106]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AnswerAwaitRequest.ProtoReflect.Descriptor instead.
+func (*AnswerAwaitRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{106}
+}
+
+func (x *AnswerAwaitRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *AnswerAwaitRequest) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *AnswerAwaitRequest) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type AnswerAwaitResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AnswerAwaitResponse) Reset() {
+	*x = AnswerAwaitResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[107]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnswerAwaitResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnswerAwaitResponse) ProtoMessage() {}
+
+func (x *AnswerAwaitResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[107]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AnswerAwaitResponse.ProtoReflect.Descriptor instead.
+func (*AnswerAwaitResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{107}
+}
+
+func (x *AnswerAwaitResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type ExpireAwaitRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExpireAwaitRequest) Reset() {
+	*x = ExpireAwaitRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[108]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExpireAwaitRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExpireAwaitRequest) ProtoMessage() {}
+
+func (x *ExpireAwaitRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[108]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExpireAwaitRequest.ProtoReflect.Descriptor instead.
+func (*ExpireAwaitRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{108}
+}
+
+func (x *ExpireAwaitRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *ExpireAwaitRequest) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+type ExpireAwaitResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExpireAwaitResponse) Reset() {
+	*x = ExpireAwaitResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[109]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExpireAwaitResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExpireAwaitResponse) ProtoMessage() {}
+
+func (x *ExpireAwaitResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[109]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExpireAwaitResponse.ProtoReflect.Descriptor instead.
+func (*ExpireAwaitResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{109}
+}
+
+func (x *ExpireAwaitResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type ResourceReconcileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceReconcileRequest) Reset() {
+	*x = ResourceReconcileRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[110]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceReconcileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceReconcileRequest) ProtoMessage() {}
+
+func (x *ResourceReconcileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[110]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceReconcileRequest.ProtoReflect.Descriptor instead.
+func (*ResourceReconcileRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{110}
+}
+
+func (x *ResourceReconcileRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *ResourceReconcileRequest) GetResourceId() string {
+	if x != nil {
+		return x.ResourceId
+	}
+	return ""
+}
+
+type ResourceReconcileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceReconcileResponse) Reset() {
+	*x = ResourceReconcileResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[111]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceReconcileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceReconcileResponse) ProtoMessage() {}
+
+func (x *ResourceReconcileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[111]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceReconcileResponse.ProtoReflect.Descriptor instead.
+func (*ResourceReconcileResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{111}
+}
+
+func (x *ResourceReconcileResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type ResourceRestartRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceRestartRequest) Reset() {
+	*x = ResourceRestartRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[112]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceRestartRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceRestartRequest) ProtoMessage() {}
+
+func (x *ResourceRestartRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[112]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceRestartRequest.ProtoReflect.Descriptor instead.
+func (*ResourceRestartRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{112}
+}
+
+func (x *ResourceRestartRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *ResourceRestartRequest) GetResourceId() string {
+	if x != nil {
+		return x.ResourceId
+	}
+	return ""
+}
+
+type ResourceRestartResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceRestartResponse) Reset() {
+	*x = ResourceRestartResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[113]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceRestartResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceRestartResponse) ProtoMessage() {}
+
+func (x *ResourceRestartResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[113]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceRestartResponse.ProtoReflect.Descriptor instead.
+func (*ResourceRestartResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{113}
+}
+
+func (x *ResourceRestartResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type ResourceSuspendRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceSuspendRequest) Reset() {
+	*x = ResourceSuspendRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[114]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceSuspendRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceSuspendRequest) ProtoMessage() {}
+
+func (x *ResourceSuspendRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[114]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceSuspendRequest.ProtoReflect.Descriptor instead.
+func (*ResourceSuspendRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{114}
+}
+
+func (x *ResourceSuspendRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *ResourceSuspendRequest) GetResourceId() string {
+	if x != nil {
+		return x.ResourceId
+	}
+	return ""
+}
+
+func (x *ResourceSuspendRequest) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type ResourceSuspendResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceSuspendResponse) Reset() {
+	*x = ResourceSuspendResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[115]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceSuspendResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceSuspendResponse) ProtoMessage() {}
+
+func (x *ResourceSuspendResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[115]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceSuspendResponse.ProtoReflect.Descriptor instead.
+func (*ResourceSuspendResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{115}
+}
+
+func (x *ResourceSuspendResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type ResourceTerminateRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceTerminateRequest) Reset() {
+	*x = ResourceTerminateRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[116]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceTerminateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceTerminateRequest) ProtoMessage() {}
+
+func (x *ResourceTerminateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[116]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceTerminateRequest.ProtoReflect.Descriptor instead.
+func (*ResourceTerminateRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{116}
+}
+
+func (x *ResourceTerminateRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *ResourceTerminateRequest) GetResourceId() string {
+	if x != nil {
+		return x.ResourceId
+	}
+	return ""
+}
+
+type ResourceTerminateResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceTerminateResponse) Reset() {
+	*x = ResourceTerminateResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[117]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceTerminateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceTerminateResponse) ProtoMessage() {}
+
+func (x *ResourceTerminateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[117]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceTerminateResponse.ProtoReflect.Descriptor instead.
+func (*ResourceTerminateResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{117}
+}
+
+func (x *ResourceTerminateResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type ResourceAdoptionProbeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceAdoptionProbeRequest) Reset() {
+	*x = ResourceAdoptionProbeRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[118]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceAdoptionProbeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceAdoptionProbeRequest) ProtoMessage() {}
+
+func (x *ResourceAdoptionProbeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[118]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceAdoptionProbeRequest.ProtoReflect.Descriptor instead.
+func (*ResourceAdoptionProbeRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{118}
+}
+
+func (x *ResourceAdoptionProbeRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *ResourceAdoptionProbeRequest) GetResourceId() string {
+	if x != nil {
+		return x.ResourceId
+	}
+	return ""
+}
+
+type ResourceAdoptionProbeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceAdoptionProbeResponse) Reset() {
+	*x = ResourceAdoptionProbeResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[119]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceAdoptionProbeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceAdoptionProbeResponse) ProtoMessage() {}
+
+func (x *ResourceAdoptionProbeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[119]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceAdoptionProbeResponse.ProtoReflect.Descriptor instead.
+func (*ResourceAdoptionProbeResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{119}
+}
+
+func (x *ResourceAdoptionProbeResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type ReprobeProviderRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	ProviderId    string                 `protobuf:"bytes,2,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReprobeProviderRequest) Reset() {
+	*x = ReprobeProviderRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[120]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReprobeProviderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReprobeProviderRequest) ProtoMessage() {}
+
+func (x *ReprobeProviderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[120]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReprobeProviderRequest.ProtoReflect.Descriptor instead.
+func (*ReprobeProviderRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{120}
+}
+
+func (x *ReprobeProviderRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *ReprobeProviderRequest) GetProviderId() string {
+	if x != nil {
+		return x.ProviderId
+	}
+	return ""
+}
+
+type ReprobeProviderResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReprobeProviderResponse) Reset() {
+	*x = ReprobeProviderResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[121]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReprobeProviderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReprobeProviderResponse) ProtoMessage() {}
+
+func (x *ReprobeProviderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[121]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReprobeProviderResponse.ProtoReflect.Descriptor instead.
+func (*ReprobeProviderResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{121}
+}
+
+func (x *ReprobeProviderResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type RevokeAPIKeyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	ApiKeyId      string                 `protobuf:"bytes,2,opt,name=api_key_id,json=apiKeyId,proto3" json:"api_key_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeAPIKeyRequest) Reset() {
+	*x = RevokeAPIKeyRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[122]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAPIKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAPIKeyRequest) ProtoMessage() {}
+
+func (x *RevokeAPIKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[122]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAPIKeyRequest.ProtoReflect.Descriptor instead.
+func (*RevokeAPIKeyRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{122}
+}
+
+func (x *RevokeAPIKeyRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *RevokeAPIKeyRequest) GetApiKeyId() string {
+	if x != nil {
+		return x.ApiKeyId
+	}
+	return ""
+}
+
+type RevokeAPIKeyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeAPIKeyResponse) Reset() {
+	*x = RevokeAPIKeyResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[123]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAPIKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAPIKeyResponse) ProtoMessage() {}
+
+func (x *RevokeAPIKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[123]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAPIKeyResponse.ProtoReflect.Descriptor instead.
+func (*RevokeAPIKeyResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{123}
+}
+
+func (x *RevokeAPIKeyResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type DisableCredentialRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	TenantId      string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	Name          string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DisableCredentialRequest) Reset() {
+	*x = DisableCredentialRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[124]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DisableCredentialRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DisableCredentialRequest) ProtoMessage() {}
+
+func (x *DisableCredentialRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[124]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DisableCredentialRequest.ProtoReflect.Descriptor instead.
+func (*DisableCredentialRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{124}
+}
+
+func (x *DisableCredentialRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *DisableCredentialRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *DisableCredentialRequest) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *DisableCredentialRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type DisableCredentialResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DisableCredentialResponse) Reset() {
+	*x = DisableCredentialResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[125]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DisableCredentialResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DisableCredentialResponse) ProtoMessage() {}
+
+func (x *DisableCredentialResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[125]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DisableCredentialResponse.ProtoReflect.Descriptor instead.
+func (*DisableCredentialResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{125}
+}
+
+func (x *DisableCredentialResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type PausePeriodicPromptRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Options          *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	PeriodicPromptId string                 `protobuf:"bytes,2,opt,name=periodic_prompt_id,json=periodicPromptId,proto3" json:"periodic_prompt_id,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PausePeriodicPromptRequest) Reset() {
+	*x = PausePeriodicPromptRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[126]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PausePeriodicPromptRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PausePeriodicPromptRequest) ProtoMessage() {}
+
+func (x *PausePeriodicPromptRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[126]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PausePeriodicPromptRequest.ProtoReflect.Descriptor instead.
+func (*PausePeriodicPromptRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{126}
+}
+
+func (x *PausePeriodicPromptRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *PausePeriodicPromptRequest) GetPeriodicPromptId() string {
+	if x != nil {
+		return x.PeriodicPromptId
+	}
+	return ""
+}
+
+type PausePeriodicPromptResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PausePeriodicPromptResponse) Reset() {
+	*x = PausePeriodicPromptResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[127]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PausePeriodicPromptResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PausePeriodicPromptResponse) ProtoMessage() {}
+
+func (x *PausePeriodicPromptResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[127]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PausePeriodicPromptResponse.ProtoReflect.Descriptor instead.
+func (*PausePeriodicPromptResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{127}
+}
+
+func (x *PausePeriodicPromptResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type ResumePeriodicPromptRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Options          *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	PeriodicPromptId string                 `protobuf:"bytes,2,opt,name=periodic_prompt_id,json=periodicPromptId,proto3" json:"periodic_prompt_id,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ResumePeriodicPromptRequest) Reset() {
+	*x = ResumePeriodicPromptRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[128]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResumePeriodicPromptRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResumePeriodicPromptRequest) ProtoMessage() {}
+
+func (x *ResumePeriodicPromptRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[128]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResumePeriodicPromptRequest.ProtoReflect.Descriptor instead.
+func (*ResumePeriodicPromptRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{128}
+}
+
+func (x *ResumePeriodicPromptRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *ResumePeriodicPromptRequest) GetPeriodicPromptId() string {
+	if x != nil {
+		return x.PeriodicPromptId
+	}
+	return ""
+}
+
+type ResumePeriodicPromptResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResumePeriodicPromptResponse) Reset() {
+	*x = ResumePeriodicPromptResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[129]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResumePeriodicPromptResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResumePeriodicPromptResponse) ProtoMessage() {}
+
+func (x *ResumePeriodicPromptResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[129]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResumePeriodicPromptResponse.ProtoReflect.Descriptor instead.
+func (*ResumePeriodicPromptResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{129}
+}
+
+func (x *ResumePeriodicPromptResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type DisconnectSubscriberRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	SubscriberId  string                 `protobuf:"bytes,3,opt,name=subscriber_id,json=subscriberId,proto3" json:"subscriber_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DisconnectSubscriberRequest) Reset() {
+	*x = DisconnectSubscriberRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[130]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DisconnectSubscriberRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DisconnectSubscriberRequest) ProtoMessage() {}
+
+func (x *DisconnectSubscriberRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[130]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DisconnectSubscriberRequest.ProtoReflect.Descriptor instead.
+func (*DisconnectSubscriberRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{130}
+}
+
+func (x *DisconnectSubscriberRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *DisconnectSubscriberRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *DisconnectSubscriberRequest) GetSubscriberId() string {
+	if x != nil {
+		return x.SubscriberId
+	}
+	return ""
+}
+
+type DisconnectSubscriberResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DisconnectSubscriberResponse) Reset() {
+	*x = DisconnectSubscriberResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[131]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DisconnectSubscriberResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DisconnectSubscriberResponse) ProtoMessage() {}
+
+func (x *DisconnectSubscriberResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[131]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DisconnectSubscriberResponse.ProtoReflect.Descriptor instead.
+func (*DisconnectSubscriberResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{131}
+}
+
+func (x *DisconnectSubscriberResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type ExportIncidentEvidenceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Options       *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	RunId         string                 `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,4,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	MaxEvents     int32                  `protobuf:"varint,5,opt,name=max_events,json=maxEvents,proto3" json:"max_events,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExportIncidentEvidenceRequest) Reset() {
+	*x = ExportIncidentEvidenceRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[132]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportIncidentEvidenceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportIncidentEvidenceRequest) ProtoMessage() {}
+
+func (x *ExportIncidentEvidenceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[132]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportIncidentEvidenceRequest.ProtoReflect.Descriptor instead.
+func (*ExportIncidentEvidenceRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{132}
+}
+
+func (x *ExportIncidentEvidenceRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *ExportIncidentEvidenceRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *ExportIncidentEvidenceRequest) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *ExportIncidentEvidenceRequest) GetResourceId() string {
+	if x != nil {
+		return x.ResourceId
+	}
+	return ""
+}
+
+func (x *ExportIncidentEvidenceRequest) GetMaxEvents() int32 {
+	if x != nil {
+		return x.MaxEvents
+	}
+	return 0
+}
+
+type ExportIncidentEvidenceResponse struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Outcome *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	// Bounded JSON evidence bundle (never secret plaintext).
+	EvidenceJson  []byte `protobuf:"bytes,2,opt,name=evidence_json,json=evidenceJson,proto3" json:"evidence_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExportIncidentEvidenceResponse) Reset() {
+	*x = ExportIncidentEvidenceResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[133]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportIncidentEvidenceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportIncidentEvidenceResponse) ProtoMessage() {}
+
+func (x *ExportIncidentEvidenceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[133]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportIncidentEvidenceResponse.ProtoReflect.Descriptor instead.
+func (*ExportIncidentEvidenceResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{133}
+}
+
+func (x *ExportIncidentEvidenceResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+func (x *ExportIncidentEvidenceResponse) GetEvidenceJson() []byte {
+	if x != nil {
+		return x.EvidenceJson
+	}
+	return nil
+}
+
+// Break-glass secret reveal. Kill-switched via CORE_ADMIN_REVEAL_ENABLED.
+// Requires security|admin role, X-Admin-Reauth header, reason, single target.
+type RevealSecretRequest struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Options *CommandOptions        `protobuf:"bytes,1,opt,name=options,proto3" json:"options,omitempty"`
+	// api_key | credential
+	SecretKind     string `protobuf:"bytes,2,opt,name=secret_kind,json=secretKind,proto3" json:"secret_kind,omitempty"`
+	ApiKeyId       string `protobuf:"bytes,3,opt,name=api_key_id,json=apiKeyId,proto3" json:"api_key_id,omitempty"`
+	TenantId       string `protobuf:"bytes,4,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	CredentialKind string `protobuf:"bytes,5,opt,name=credential_kind,json=credentialKind,proto3" json:"credential_kind,omitempty"`
+	CredentialName string `protobuf:"bytes,6,opt,name=credential_name,json=credentialName,proto3" json:"credential_name,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *RevealSecretRequest) Reset() {
+	*x = RevealSecretRequest{}
+	mi := &file_admin_v1_admin_proto_msgTypes[134]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevealSecretRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevealSecretRequest) ProtoMessage() {}
+
+func (x *RevealSecretRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[134]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevealSecretRequest.ProtoReflect.Descriptor instead.
+func (*RevealSecretRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{134}
+}
+
+func (x *RevealSecretRequest) GetOptions() *CommandOptions {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+func (x *RevealSecretRequest) GetSecretKind() string {
+	if x != nil {
+		return x.SecretKind
+	}
+	return ""
+}
+
+func (x *RevealSecretRequest) GetApiKeyId() string {
+	if x != nil {
+		return x.ApiKeyId
+	}
+	return ""
+}
+
+func (x *RevealSecretRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *RevealSecretRequest) GetCredentialKind() string {
+	if x != nil {
+		return x.CredentialKind
+	}
+	return ""
+}
+
+func (x *RevealSecretRequest) GetCredentialName() string {
+	if x != nil {
+		return x.CredentialName
+	}
+	return ""
+}
+
+type RevealSecretResponse struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Outcome *CommandOutcome        `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	// Plaintext only on successful execute. Never logged. Short-lived client use.
+	Plaintext     string                 `protobuf:"bytes,2,opt,name=plaintext,proto3" json:"plaintext,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevealSecretResponse) Reset() {
+	*x = RevealSecretResponse{}
+	mi := &file_admin_v1_admin_proto_msgTypes[135]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevealSecretResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevealSecretResponse) ProtoMessage() {}
+
+func (x *RevealSecretResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_admin_proto_msgTypes[135]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevealSecretResponse.ProtoReflect.Descriptor instead.
+func (*RevealSecretResponse) Descriptor() ([]byte, []int) {
+	return file_admin_v1_admin_proto_rawDescGZIP(), []int{135}
+}
+
+func (x *RevealSecretResponse) GetOutcome() *CommandOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+func (x *RevealSecretResponse) GetPlaintext() string {
+	if x != nil {
+		return x.Plaintext
+	}
+	return ""
+}
+
+func (x *RevealSecretResponse) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
 var File_admin_v1_admin_proto protoreflect.FileDescriptor
 
 const file_admin_v1_admin_proto_rawDesc = "" +
@@ -6003,7 +8597,183 @@ const file_admin_v1_admin_proto_rawDesc = "" +
 	"\x04page\x18\x04 \x01(\v2\x15.admin.v1.PageRequestR\x04page\"i\n" +
 	"\x13ListRelatedResponse\x12*\n" +
 	"\x05items\x18\x01 \x03(\v2\x14.admin.v1.RelatedRefR\x05items\x12&\n" +
-	"\x04page\x18\x02 \x01(\v2\x12.admin.v1.PageInfoR\x04page2\xa1\x12\n" +
+	"\x04page\x18\x02 \x01(\v2\x12.admin.v1.PageInfoR\x04page\"\x93\x01\n" +
+	"\x10OperatorIdentity\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
+	"\x04role\x18\x03 \x01(\tR\x04role\x12 \n" +
+	"\vpermissions\x18\x04 \x03(\tR\vpermissions\x12%\n" +
+	"\x0ereveal_enabled\x18\x05 \x01(\bR\rrevealEnabled\"\x0f\n" +
+	"\rWhoAmIRequest\"H\n" +
+	"\x0eWhoAmIResponse\x126\n" +
+	"\boperator\x18\x01 \x01(\v2\x1a.admin.v1.OperatorIdentityR\boperator\"\xd3\x04\n" +
+	"\x11AuditEventSummary\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
+	"\x02ts\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x02ts\x12\x1f\n" +
+	"\voperator_id\x18\x03 \x01(\tR\n" +
+	"operatorId\x12#\n" +
+	"\roperator_role\x18\x04 \x01(\tR\foperatorRole\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x05 \x01(\tR\trequestId\x12\x18\n" +
+	"\acommand\x18\x06 \x01(\tR\acommand\x121\n" +
+	"\atargets\x18\a \x01(\v2\x17.google.protobuf.StructR\atargets\x12\x16\n" +
+	"\x06reason\x18\b \x01(\tR\x06reason\x12!\n" +
+	"\fpreview_hash\x18\t \x01(\tR\vpreviewHash\x12>\n" +
+	"\x0ebefore_summary\x18\n" +
+	" \x01(\v2\x17.google.protobuf.StructR\rbeforeSummary\x12<\n" +
+	"\rafter_summary\x18\v \x01(\v2\x17.google.protobuf.StructR\fafterSummary\x12\x16\n" +
+	"\x06result\x18\f \x01(\tR\x06result\x12\x14\n" +
+	"\x05error\x18\r \x01(\tR\x05error\x12\x1b\n" +
+	"\tsource_ip\x18\x0e \x01(\tR\bsourceIp\x12#\n" +
+	"\rbuild_version\x18\x0f \x01(\tR\fbuildVersion\x12'\n" +
+	"\x0fidempotency_key\x18\x10 \x01(\tR\x0eidempotencyKey\"I\n" +
+	"\x16ListAuditEventsRequest\x12/\n" +
+	"\x06search\x18\x01 \x01(\v2\x17.admin.v1.SearchRequestR\x06search\"t\n" +
+	"\x17ListAuditEventsResponse\x121\n" +
+	"\x05items\x18\x01 \x03(\v2\x1b.admin.v1.AuditEventSummaryR\x05items\x12&\n" +
+	"\x04page\x18\x02 \x01(\v2\x12.admin.v1.PageInfoR\x04page\"&\n" +
+	"\x14GetAuditEventRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"H\n" +
+	"\x15GetAuditEventResponse\x12/\n" +
+	"\x04item\x18\x01 \x01(\v2\x1b.admin.v1.AuditEventSummaryR\x04item\"\x8d\x01\n" +
+	"\x0eCommandOptions\x12\x17\n" +
+	"\adry_run\x18\x01 \x01(\bR\x06dryRun\x12!\n" +
+	"\fpreview_hash\x18\x02 \x01(\tR\vpreviewHash\x12'\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\x12\x16\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\"\xdb\x01\n" +
+	"\x0eCommandPreview\x12!\n" +
+	"\fpreview_hash\x18\x01 \x01(\tR\vpreviewHash\x12>\n" +
+	"\x0ebefore_summary\x18\x02 \x01(\v2\x17.google.protobuf.StructR\rbeforeSummary\x12)\n" +
+	"\x10expected_effects\x18\x03 \x03(\tR\x0fexpectedEffects\x12;\n" +
+	"\vcomputed_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"computedAt\"\xa0\x02\n" +
+	"\x0eCommandOutcome\x12\x17\n" +
+	"\adry_run\x18\x01 \x01(\bR\x06dryRun\x122\n" +
+	"\apreview\x18\x02 \x01(\v2\x18.admin.v1.CommandPreviewR\apreview\x12\x16\n" +
+	"\x06result\x18\x03 \x01(\tR\x06result\x12<\n" +
+	"\rafter_summary\x18\x04 \x01(\v2\x17.google.protobuf.StructR\fafterSummary\x12$\n" +
+	"\x0eaudit_event_id\x18\x05 \x01(\tR\fauditEventId\x12+\n" +
+	"\x11idempotent_replay\x18\x06 \x01(\bR\x10idempotentReplay\x12\x18\n" +
+	"\amessage\x18\a \x01(\tR\amessage\"a\n" +
+	"\x14RetryQueueJobRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x15\n" +
+	"\x06job_id\x18\x02 \x01(\x03R\x05jobId\"K\n" +
+	"\x15RetryQueueJobResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"b\n" +
+	"\x15CancelQueueJobRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x15\n" +
+	"\x06job_id\x18\x02 \x01(\x03R\x05jobId\"L\n" +
+	"\x16CancelQueueJobResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"]\n" +
+	"\x10CancelRunRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x15\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\"G\n" +
+	"\x11CancelRunResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"y\n" +
+	"\x12AnswerAwaitRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x15\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"I\n" +
+	"\x13AnswerAwaitResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"_\n" +
+	"\x12ExpireAwaitRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x15\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\"I\n" +
+	"\x13ExpireAwaitResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"o\n" +
+	"\x18ResourceReconcileRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x1f\n" +
+	"\vresource_id\x18\x02 \x01(\tR\n" +
+	"resourceId\"O\n" +
+	"\x19ResourceReconcileResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"m\n" +
+	"\x16ResourceRestartRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x1f\n" +
+	"\vresource_id\x18\x02 \x01(\tR\n" +
+	"resourceId\"M\n" +
+	"\x17ResourceRestartResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"\x87\x01\n" +
+	"\x16ResourceSuspendRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x1f\n" +
+	"\vresource_id\x18\x02 \x01(\tR\n" +
+	"resourceId\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"M\n" +
+	"\x17ResourceSuspendResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"o\n" +
+	"\x18ResourceTerminateRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x1f\n" +
+	"\vresource_id\x18\x02 \x01(\tR\n" +
+	"resourceId\"O\n" +
+	"\x19ResourceTerminateResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"s\n" +
+	"\x1cResourceAdoptionProbeRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x1f\n" +
+	"\vresource_id\x18\x02 \x01(\tR\n" +
+	"resourceId\"S\n" +
+	"\x1dResourceAdoptionProbeResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"m\n" +
+	"\x16ReprobeProviderRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x1f\n" +
+	"\vprovider_id\x18\x02 \x01(\tR\n" +
+	"providerId\"M\n" +
+	"\x17ReprobeProviderResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"g\n" +
+	"\x13RevokeAPIKeyRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x1c\n" +
+	"\n" +
+	"api_key_id\x18\x02 \x01(\tR\bapiKeyId\"J\n" +
+	"\x14RevokeAPIKeyResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"\x93\x01\n" +
+	"\x18DisableCredentialRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x1b\n" +
+	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x12\n" +
+	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x12\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\"O\n" +
+	"\x19DisableCredentialResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"~\n" +
+	"\x1aPausePeriodicPromptRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12,\n" +
+	"\x12periodic_prompt_id\x18\x02 \x01(\tR\x10periodicPromptId\"Q\n" +
+	"\x1bPausePeriodicPromptResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"\x7f\n" +
+	"\x1bResumePeriodicPromptRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12,\n" +
+	"\x12periodic_prompt_id\x18\x02 \x01(\tR\x10periodicPromptId\"R\n" +
+	"\x1cResumePeriodicPromptResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"\x95\x01\n" +
+	"\x1bDisconnectSubscriberRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12#\n" +
+	"\rsubscriber_id\x18\x03 \x01(\tR\fsubscriberId\"R\n" +
+	"\x1cDisconnectSubscriberResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\"\xc9\x01\n" +
+	"\x1dExportIncidentEvidenceRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12\x15\n" +
+	"\x06run_id\x18\x03 \x01(\tR\x05runId\x12\x1f\n" +
+	"\vresource_id\x18\x04 \x01(\tR\n" +
+	"resourceId\x12\x1d\n" +
+	"\n" +
+	"max_events\x18\x05 \x01(\x05R\tmaxEvents\"y\n" +
+	"\x1eExportIncidentEvidenceResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\x12#\n" +
+	"\revidence_json\x18\x02 \x01(\fR\fevidenceJson\"\xf7\x01\n" +
+	"\x13RevealSecretRequest\x122\n" +
+	"\aoptions\x18\x01 \x01(\v2\x18.admin.v1.CommandOptionsR\aoptions\x12\x1f\n" +
+	"\vsecret_kind\x18\x02 \x01(\tR\n" +
+	"secretKind\x12\x1c\n" +
+	"\n" +
+	"api_key_id\x18\x03 \x01(\tR\bapiKeyId\x12\x1b\n" +
+	"\ttenant_id\x18\x04 \x01(\tR\btenantId\x12'\n" +
+	"\x0fcredential_kind\x18\x05 \x01(\tR\x0ecredentialKind\x12'\n" +
+	"\x0fcredential_name\x18\x06 \x01(\tR\x0ecredentialName\"\xa3\x01\n" +
+	"\x14RevealSecretResponse\x122\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x18.admin.v1.CommandOutcomeR\aoutcome\x12\x1c\n" +
+	"\tplaintext\x18\x02 \x01(\tR\tplaintext\x129\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt2\x88\x14\n" +
 	"\x10AdminReadService\x12_\n" +
 	"\x12DescribeCollection\x12#.admin.v1.DescribeCollectionRequest\x1a$.admin.v1.DescribeCollectionResponse\x12J\n" +
 	"\vListTenants\x12\x1c.admin.v1.ListTenantsRequest\x1a\x1d.admin.v1.ListTenantsResponse\x12D\n" +
@@ -6037,7 +8807,29 @@ const file_admin_v1_admin_proto_rawDesc = "" +
 	"\x06GetJob\x12\x17.admin.v1.GetJobRequest\x1a\x18.admin.v1.GetJobResponse\x12Y\n" +
 	"\x10GetRuntimeHealth\x12!.admin.v1.GetRuntimeHealthRequest\x1a\".admin.v1.GetRuntimeHealthResponse\x12_\n" +
 	"\x12GetSessionTimeline\x12#.admin.v1.GetSessionTimelineRequest\x1a$.admin.v1.GetSessionTimelineResponse\x12J\n" +
-	"\vListRelated\x12\x1c.admin.v1.ListRelatedRequest\x1a\x1d.admin.v1.ListRelatedResponseB9Z7github.com/aleksclark/ultracore/gen/go/admin/v1;adminv1b\x06proto3"
+	"\vListRelated\x12\x1c.admin.v1.ListRelatedRequest\x1a\x1d.admin.v1.ListRelatedResponse\x12;\n" +
+	"\x06WhoAmI\x12\x17.admin.v1.WhoAmIRequest\x1a\x18.admin.v1.WhoAmIResponse\x12V\n" +
+	"\x0fListAuditEvents\x12 .admin.v1.ListAuditEventsRequest\x1a!.admin.v1.ListAuditEventsResponse\x12P\n" +
+	"\rGetAuditEvent\x12\x1e.admin.v1.GetAuditEventRequest\x1a\x1f.admin.v1.GetAuditEventResponse2\xe3\f\n" +
+	"\x13AdminCommandService\x12P\n" +
+	"\rRetryQueueJob\x12\x1e.admin.v1.RetryQueueJobRequest\x1a\x1f.admin.v1.RetryQueueJobResponse\x12S\n" +
+	"\x0eCancelQueueJob\x12\x1f.admin.v1.CancelQueueJobRequest\x1a .admin.v1.CancelQueueJobResponse\x12D\n" +
+	"\tCancelRun\x12\x1a.admin.v1.CancelRunRequest\x1a\x1b.admin.v1.CancelRunResponse\x12J\n" +
+	"\vAnswerAwait\x12\x1c.admin.v1.AnswerAwaitRequest\x1a\x1d.admin.v1.AnswerAwaitResponse\x12J\n" +
+	"\vExpireAwait\x12\x1c.admin.v1.ExpireAwaitRequest\x1a\x1d.admin.v1.ExpireAwaitResponse\x12\\\n" +
+	"\x11ResourceReconcile\x12\".admin.v1.ResourceReconcileRequest\x1a#.admin.v1.ResourceReconcileResponse\x12V\n" +
+	"\x0fResourceRestart\x12 .admin.v1.ResourceRestartRequest\x1a!.admin.v1.ResourceRestartResponse\x12V\n" +
+	"\x0fResourceSuspend\x12 .admin.v1.ResourceSuspendRequest\x1a!.admin.v1.ResourceSuspendResponse\x12\\\n" +
+	"\x11ResourceTerminate\x12\".admin.v1.ResourceTerminateRequest\x1a#.admin.v1.ResourceTerminateResponse\x12h\n" +
+	"\x15ResourceAdoptionProbe\x12&.admin.v1.ResourceAdoptionProbeRequest\x1a'.admin.v1.ResourceAdoptionProbeResponse\x12V\n" +
+	"\x0fReprobeProvider\x12 .admin.v1.ReprobeProviderRequest\x1a!.admin.v1.ReprobeProviderResponse\x12M\n" +
+	"\fRevokeAPIKey\x12\x1d.admin.v1.RevokeAPIKeyRequest\x1a\x1e.admin.v1.RevokeAPIKeyResponse\x12\\\n" +
+	"\x11DisableCredential\x12\".admin.v1.DisableCredentialRequest\x1a#.admin.v1.DisableCredentialResponse\x12b\n" +
+	"\x13PausePeriodicPrompt\x12$.admin.v1.PausePeriodicPromptRequest\x1a%.admin.v1.PausePeriodicPromptResponse\x12e\n" +
+	"\x14ResumePeriodicPrompt\x12%.admin.v1.ResumePeriodicPromptRequest\x1a&.admin.v1.ResumePeriodicPromptResponse\x12e\n" +
+	"\x14DisconnectSubscriber\x12%.admin.v1.DisconnectSubscriberRequest\x1a&.admin.v1.DisconnectSubscriberResponse\x12k\n" +
+	"\x16ExportIncidentEvidence\x12'.admin.v1.ExportIncidentEvidenceRequest\x1a(.admin.v1.ExportIncidentEvidenceResponse\x12M\n" +
+	"\fRevealSecret\x12\x1d.admin.v1.RevealSecretRequest\x1a\x1e.admin.v1.RevealSecretResponseB9Z7github.com/aleksclark/ultracore/gen/go/admin/v1;adminv1b\x06proto3"
 
 var (
 	file_admin_v1_admin_proto_rawDescOnce sync.Once
@@ -6051,137 +8843,184 @@ func file_admin_v1_admin_proto_rawDescGZIP() []byte {
 	return file_admin_v1_admin_proto_rawDescData
 }
 
-var file_admin_v1_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 91)
+var file_admin_v1_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 138)
 var file_admin_v1_admin_proto_goTypes = []any{
-	(*TenantSummary)(nil),               // 0: admin.v1.TenantSummary
-	(*APIKeySummary)(nil),               // 1: admin.v1.APIKeySummary
-	(*SessionSummary)(nil),              // 2: admin.v1.SessionSummary
-	(*EventSummary)(nil),                // 3: admin.v1.EventSummary
-	(*RunSummary)(nil),                  // 4: admin.v1.RunSummary
-	(*RunStepSummary)(nil),              // 5: admin.v1.RunStepSummary
-	(*ResourceSummary)(nil),             // 6: admin.v1.ResourceSummary
-	(*ProviderSummary)(nil),             // 7: admin.v1.ProviderSummary
-	(*CredentialSummary)(nil),           // 8: admin.v1.CredentialSummary
-	(*PeriodicPromptSummary)(nil),       // 9: admin.v1.PeriodicPromptSummary
-	(*MemorySummary)(nil),               // 10: admin.v1.MemorySummary
-	(*WaitSummary)(nil),                 // 11: admin.v1.WaitSummary
-	(*JobSummary)(nil),                  // 12: admin.v1.JobSummary
-	(*TenantDetail)(nil),                // 13: admin.v1.TenantDetail
-	(*SessionDetail)(nil),               // 14: admin.v1.SessionDetail
-	(*EventDetail)(nil),                 // 15: admin.v1.EventDetail
-	(*RunDetail)(nil),                   // 16: admin.v1.RunDetail
-	(*RunHistoryBlob)(nil),              // 17: admin.v1.RunHistoryBlob
-	(*ResourceDetail)(nil),              // 18: admin.v1.ResourceDetail
-	(*ProviderDetail)(nil),              // 19: admin.v1.ProviderDetail
-	(*CredentialDetail)(nil),            // 20: admin.v1.CredentialDetail
-	(*PeriodicPromptDetail)(nil),        // 21: admin.v1.PeriodicPromptDetail
-	(*MemoryDetail)(nil),                // 22: admin.v1.MemoryDetail
-	(*WaitDetail)(nil),                  // 23: admin.v1.WaitDetail
-	(*WaitMember)(nil),                  // 24: admin.v1.WaitMember
-	(*JobDetail)(nil),                   // 25: admin.v1.JobDetail
-	(*TimelineEntry)(nil),               // 26: admin.v1.TimelineEntry
-	(*RelatedRef)(nil),                  // 27: admin.v1.RelatedRef
-	(*RuntimeHealth)(nil),               // 28: admin.v1.RuntimeHealth
-	(*DescribeCollectionRequest)(nil),   // 29: admin.v1.DescribeCollectionRequest
-	(*DescribeCollectionResponse)(nil),  // 30: admin.v1.DescribeCollectionResponse
-	(*ListTenantsRequest)(nil),          // 31: admin.v1.ListTenantsRequest
-	(*ListTenantsResponse)(nil),         // 32: admin.v1.ListTenantsResponse
-	(*GetTenantRequest)(nil),            // 33: admin.v1.GetTenantRequest
-	(*GetTenantResponse)(nil),           // 34: admin.v1.GetTenantResponse
-	(*ListAPIKeysRequest)(nil),          // 35: admin.v1.ListAPIKeysRequest
-	(*ListAPIKeysResponse)(nil),         // 36: admin.v1.ListAPIKeysResponse
-	(*GetAPIKeyRequest)(nil),            // 37: admin.v1.GetAPIKeyRequest
-	(*GetAPIKeyResponse)(nil),           // 38: admin.v1.GetAPIKeyResponse
-	(*ListSessionsRequest)(nil),         // 39: admin.v1.ListSessionsRequest
-	(*ListSessionsResponse)(nil),        // 40: admin.v1.ListSessionsResponse
-	(*GetSessionRequest)(nil),           // 41: admin.v1.GetSessionRequest
-	(*GetSessionResponse)(nil),          // 42: admin.v1.GetSessionResponse
-	(*ListEventsRequest)(nil),           // 43: admin.v1.ListEventsRequest
-	(*ListEventsResponse)(nil),          // 44: admin.v1.ListEventsResponse
-	(*GetEventRequest)(nil),             // 45: admin.v1.GetEventRequest
-	(*GetEventResponse)(nil),            // 46: admin.v1.GetEventResponse
-	(*ListRunsRequest)(nil),             // 47: admin.v1.ListRunsRequest
-	(*ListRunsResponse)(nil),            // 48: admin.v1.ListRunsResponse
-	(*GetRunRequest)(nil),               // 49: admin.v1.GetRunRequest
-	(*GetRunResponse)(nil),              // 50: admin.v1.GetRunResponse
-	(*GetRunHistoryRequest)(nil),        // 51: admin.v1.GetRunHistoryRequest
-	(*GetRunHistoryResponse)(nil),       // 52: admin.v1.GetRunHistoryResponse
-	(*ListRunStepsRequest)(nil),         // 53: admin.v1.ListRunStepsRequest
-	(*ListRunStepsResponse)(nil),        // 54: admin.v1.ListRunStepsResponse
-	(*ListResourcesRequest)(nil),        // 55: admin.v1.ListResourcesRequest
-	(*ListResourcesResponse)(nil),       // 56: admin.v1.ListResourcesResponse
-	(*GetResourceRequest)(nil),          // 57: admin.v1.GetResourceRequest
-	(*GetResourceResponse)(nil),         // 58: admin.v1.GetResourceResponse
-	(*ListProvidersRequest)(nil),        // 59: admin.v1.ListProvidersRequest
-	(*ListProvidersResponse)(nil),       // 60: admin.v1.ListProvidersResponse
-	(*GetProviderRequest)(nil),          // 61: admin.v1.GetProviderRequest
-	(*GetProviderResponse)(nil),         // 62: admin.v1.GetProviderResponse
-	(*ListCredentialsRequest)(nil),      // 63: admin.v1.ListCredentialsRequest
-	(*ListCredentialsResponse)(nil),     // 64: admin.v1.ListCredentialsResponse
-	(*GetCredentialRequest)(nil),        // 65: admin.v1.GetCredentialRequest
-	(*GetCredentialResponse)(nil),       // 66: admin.v1.GetCredentialResponse
-	(*ListPeriodicPromptsRequest)(nil),  // 67: admin.v1.ListPeriodicPromptsRequest
-	(*ListPeriodicPromptsResponse)(nil), // 68: admin.v1.ListPeriodicPromptsResponse
-	(*GetPeriodicPromptRequest)(nil),    // 69: admin.v1.GetPeriodicPromptRequest
-	(*GetPeriodicPromptResponse)(nil),   // 70: admin.v1.GetPeriodicPromptResponse
-	(*ListMemoryRequest)(nil),           // 71: admin.v1.ListMemoryRequest
-	(*ListMemoryResponse)(nil),          // 72: admin.v1.ListMemoryResponse
-	(*GetMemoryRequest)(nil),            // 73: admin.v1.GetMemoryRequest
-	(*GetMemoryResponse)(nil),           // 74: admin.v1.GetMemoryResponse
-	(*ListWaitsRequest)(nil),            // 75: admin.v1.ListWaitsRequest
-	(*ListWaitsResponse)(nil),           // 76: admin.v1.ListWaitsResponse
-	(*GetWaitRequest)(nil),              // 77: admin.v1.GetWaitRequest
-	(*GetWaitResponse)(nil),             // 78: admin.v1.GetWaitResponse
-	(*ListJobsRequest)(nil),             // 79: admin.v1.ListJobsRequest
-	(*ListJobsResponse)(nil),            // 80: admin.v1.ListJobsResponse
-	(*GetJobRequest)(nil),               // 81: admin.v1.GetJobRequest
-	(*GetJobResponse)(nil),              // 82: admin.v1.GetJobResponse
-	(*GetRuntimeHealthRequest)(nil),     // 83: admin.v1.GetRuntimeHealthRequest
-	(*GetRuntimeHealthResponse)(nil),    // 84: admin.v1.GetRuntimeHealthResponse
-	(*GetSessionTimelineRequest)(nil),   // 85: admin.v1.GetSessionTimelineRequest
-	(*GetSessionTimelineResponse)(nil),  // 86: admin.v1.GetSessionTimelineResponse
-	(*ListRelatedRequest)(nil),          // 87: admin.v1.ListRelatedRequest
-	(*ListRelatedResponse)(nil),         // 88: admin.v1.ListRelatedResponse
-	nil,                                 // 89: admin.v1.SessionSummary.LabelsEntry
-	nil,                                 // 90: admin.v1.RuntimeHealth.DiagnosticsEntry
-	(*timestamppb.Timestamp)(nil),       // 91: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),             // 92: google.protobuf.Struct
-	(*CollectionDescriptor)(nil),        // 93: admin.v1.CollectionDescriptor
-	(*SearchRequest)(nil),               // 94: admin.v1.SearchRequest
-	(*PageInfo)(nil),                    // 95: admin.v1.PageInfo
-	(*PageRequest)(nil),                 // 96: admin.v1.PageRequest
+	(*TenantSummary)(nil),                  // 0: admin.v1.TenantSummary
+	(*APIKeySummary)(nil),                  // 1: admin.v1.APIKeySummary
+	(*SessionSummary)(nil),                 // 2: admin.v1.SessionSummary
+	(*EventSummary)(nil),                   // 3: admin.v1.EventSummary
+	(*RunSummary)(nil),                     // 4: admin.v1.RunSummary
+	(*RunStepSummary)(nil),                 // 5: admin.v1.RunStepSummary
+	(*ResourceSummary)(nil),                // 6: admin.v1.ResourceSummary
+	(*ProviderSummary)(nil),                // 7: admin.v1.ProviderSummary
+	(*CredentialSummary)(nil),              // 8: admin.v1.CredentialSummary
+	(*PeriodicPromptSummary)(nil),          // 9: admin.v1.PeriodicPromptSummary
+	(*MemorySummary)(nil),                  // 10: admin.v1.MemorySummary
+	(*WaitSummary)(nil),                    // 11: admin.v1.WaitSummary
+	(*JobSummary)(nil),                     // 12: admin.v1.JobSummary
+	(*TenantDetail)(nil),                   // 13: admin.v1.TenantDetail
+	(*SessionDetail)(nil),                  // 14: admin.v1.SessionDetail
+	(*EventDetail)(nil),                    // 15: admin.v1.EventDetail
+	(*RunDetail)(nil),                      // 16: admin.v1.RunDetail
+	(*RunHistoryBlob)(nil),                 // 17: admin.v1.RunHistoryBlob
+	(*ResourceDetail)(nil),                 // 18: admin.v1.ResourceDetail
+	(*ProviderDetail)(nil),                 // 19: admin.v1.ProviderDetail
+	(*CredentialDetail)(nil),               // 20: admin.v1.CredentialDetail
+	(*PeriodicPromptDetail)(nil),           // 21: admin.v1.PeriodicPromptDetail
+	(*MemoryDetail)(nil),                   // 22: admin.v1.MemoryDetail
+	(*WaitDetail)(nil),                     // 23: admin.v1.WaitDetail
+	(*WaitMember)(nil),                     // 24: admin.v1.WaitMember
+	(*JobDetail)(nil),                      // 25: admin.v1.JobDetail
+	(*TimelineEntry)(nil),                  // 26: admin.v1.TimelineEntry
+	(*RelatedRef)(nil),                     // 27: admin.v1.RelatedRef
+	(*RuntimeHealth)(nil),                  // 28: admin.v1.RuntimeHealth
+	(*DescribeCollectionRequest)(nil),      // 29: admin.v1.DescribeCollectionRequest
+	(*DescribeCollectionResponse)(nil),     // 30: admin.v1.DescribeCollectionResponse
+	(*ListTenantsRequest)(nil),             // 31: admin.v1.ListTenantsRequest
+	(*ListTenantsResponse)(nil),            // 32: admin.v1.ListTenantsResponse
+	(*GetTenantRequest)(nil),               // 33: admin.v1.GetTenantRequest
+	(*GetTenantResponse)(nil),              // 34: admin.v1.GetTenantResponse
+	(*ListAPIKeysRequest)(nil),             // 35: admin.v1.ListAPIKeysRequest
+	(*ListAPIKeysResponse)(nil),            // 36: admin.v1.ListAPIKeysResponse
+	(*GetAPIKeyRequest)(nil),               // 37: admin.v1.GetAPIKeyRequest
+	(*GetAPIKeyResponse)(nil),              // 38: admin.v1.GetAPIKeyResponse
+	(*ListSessionsRequest)(nil),            // 39: admin.v1.ListSessionsRequest
+	(*ListSessionsResponse)(nil),           // 40: admin.v1.ListSessionsResponse
+	(*GetSessionRequest)(nil),              // 41: admin.v1.GetSessionRequest
+	(*GetSessionResponse)(nil),             // 42: admin.v1.GetSessionResponse
+	(*ListEventsRequest)(nil),              // 43: admin.v1.ListEventsRequest
+	(*ListEventsResponse)(nil),             // 44: admin.v1.ListEventsResponse
+	(*GetEventRequest)(nil),                // 45: admin.v1.GetEventRequest
+	(*GetEventResponse)(nil),               // 46: admin.v1.GetEventResponse
+	(*ListRunsRequest)(nil),                // 47: admin.v1.ListRunsRequest
+	(*ListRunsResponse)(nil),               // 48: admin.v1.ListRunsResponse
+	(*GetRunRequest)(nil),                  // 49: admin.v1.GetRunRequest
+	(*GetRunResponse)(nil),                 // 50: admin.v1.GetRunResponse
+	(*GetRunHistoryRequest)(nil),           // 51: admin.v1.GetRunHistoryRequest
+	(*GetRunHistoryResponse)(nil),          // 52: admin.v1.GetRunHistoryResponse
+	(*ListRunStepsRequest)(nil),            // 53: admin.v1.ListRunStepsRequest
+	(*ListRunStepsResponse)(nil),           // 54: admin.v1.ListRunStepsResponse
+	(*ListResourcesRequest)(nil),           // 55: admin.v1.ListResourcesRequest
+	(*ListResourcesResponse)(nil),          // 56: admin.v1.ListResourcesResponse
+	(*GetResourceRequest)(nil),             // 57: admin.v1.GetResourceRequest
+	(*GetResourceResponse)(nil),            // 58: admin.v1.GetResourceResponse
+	(*ListProvidersRequest)(nil),           // 59: admin.v1.ListProvidersRequest
+	(*ListProvidersResponse)(nil),          // 60: admin.v1.ListProvidersResponse
+	(*GetProviderRequest)(nil),             // 61: admin.v1.GetProviderRequest
+	(*GetProviderResponse)(nil),            // 62: admin.v1.GetProviderResponse
+	(*ListCredentialsRequest)(nil),         // 63: admin.v1.ListCredentialsRequest
+	(*ListCredentialsResponse)(nil),        // 64: admin.v1.ListCredentialsResponse
+	(*GetCredentialRequest)(nil),           // 65: admin.v1.GetCredentialRequest
+	(*GetCredentialResponse)(nil),          // 66: admin.v1.GetCredentialResponse
+	(*ListPeriodicPromptsRequest)(nil),     // 67: admin.v1.ListPeriodicPromptsRequest
+	(*ListPeriodicPromptsResponse)(nil),    // 68: admin.v1.ListPeriodicPromptsResponse
+	(*GetPeriodicPromptRequest)(nil),       // 69: admin.v1.GetPeriodicPromptRequest
+	(*GetPeriodicPromptResponse)(nil),      // 70: admin.v1.GetPeriodicPromptResponse
+	(*ListMemoryRequest)(nil),              // 71: admin.v1.ListMemoryRequest
+	(*ListMemoryResponse)(nil),             // 72: admin.v1.ListMemoryResponse
+	(*GetMemoryRequest)(nil),               // 73: admin.v1.GetMemoryRequest
+	(*GetMemoryResponse)(nil),              // 74: admin.v1.GetMemoryResponse
+	(*ListWaitsRequest)(nil),               // 75: admin.v1.ListWaitsRequest
+	(*ListWaitsResponse)(nil),              // 76: admin.v1.ListWaitsResponse
+	(*GetWaitRequest)(nil),                 // 77: admin.v1.GetWaitRequest
+	(*GetWaitResponse)(nil),                // 78: admin.v1.GetWaitResponse
+	(*ListJobsRequest)(nil),                // 79: admin.v1.ListJobsRequest
+	(*ListJobsResponse)(nil),               // 80: admin.v1.ListJobsResponse
+	(*GetJobRequest)(nil),                  // 81: admin.v1.GetJobRequest
+	(*GetJobResponse)(nil),                 // 82: admin.v1.GetJobResponse
+	(*GetRuntimeHealthRequest)(nil),        // 83: admin.v1.GetRuntimeHealthRequest
+	(*GetRuntimeHealthResponse)(nil),       // 84: admin.v1.GetRuntimeHealthResponse
+	(*GetSessionTimelineRequest)(nil),      // 85: admin.v1.GetSessionTimelineRequest
+	(*GetSessionTimelineResponse)(nil),     // 86: admin.v1.GetSessionTimelineResponse
+	(*ListRelatedRequest)(nil),             // 87: admin.v1.ListRelatedRequest
+	(*ListRelatedResponse)(nil),            // 88: admin.v1.ListRelatedResponse
+	(*OperatorIdentity)(nil),               // 89: admin.v1.OperatorIdentity
+	(*WhoAmIRequest)(nil),                  // 90: admin.v1.WhoAmIRequest
+	(*WhoAmIResponse)(nil),                 // 91: admin.v1.WhoAmIResponse
+	(*AuditEventSummary)(nil),              // 92: admin.v1.AuditEventSummary
+	(*ListAuditEventsRequest)(nil),         // 93: admin.v1.ListAuditEventsRequest
+	(*ListAuditEventsResponse)(nil),        // 94: admin.v1.ListAuditEventsResponse
+	(*GetAuditEventRequest)(nil),           // 95: admin.v1.GetAuditEventRequest
+	(*GetAuditEventResponse)(nil),          // 96: admin.v1.GetAuditEventResponse
+	(*CommandOptions)(nil),                 // 97: admin.v1.CommandOptions
+	(*CommandPreview)(nil),                 // 98: admin.v1.CommandPreview
+	(*CommandOutcome)(nil),                 // 99: admin.v1.CommandOutcome
+	(*RetryQueueJobRequest)(nil),           // 100: admin.v1.RetryQueueJobRequest
+	(*RetryQueueJobResponse)(nil),          // 101: admin.v1.RetryQueueJobResponse
+	(*CancelQueueJobRequest)(nil),          // 102: admin.v1.CancelQueueJobRequest
+	(*CancelQueueJobResponse)(nil),         // 103: admin.v1.CancelQueueJobResponse
+	(*CancelRunRequest)(nil),               // 104: admin.v1.CancelRunRequest
+	(*CancelRunResponse)(nil),              // 105: admin.v1.CancelRunResponse
+	(*AnswerAwaitRequest)(nil),             // 106: admin.v1.AnswerAwaitRequest
+	(*AnswerAwaitResponse)(nil),            // 107: admin.v1.AnswerAwaitResponse
+	(*ExpireAwaitRequest)(nil),             // 108: admin.v1.ExpireAwaitRequest
+	(*ExpireAwaitResponse)(nil),            // 109: admin.v1.ExpireAwaitResponse
+	(*ResourceReconcileRequest)(nil),       // 110: admin.v1.ResourceReconcileRequest
+	(*ResourceReconcileResponse)(nil),      // 111: admin.v1.ResourceReconcileResponse
+	(*ResourceRestartRequest)(nil),         // 112: admin.v1.ResourceRestartRequest
+	(*ResourceRestartResponse)(nil),        // 113: admin.v1.ResourceRestartResponse
+	(*ResourceSuspendRequest)(nil),         // 114: admin.v1.ResourceSuspendRequest
+	(*ResourceSuspendResponse)(nil),        // 115: admin.v1.ResourceSuspendResponse
+	(*ResourceTerminateRequest)(nil),       // 116: admin.v1.ResourceTerminateRequest
+	(*ResourceTerminateResponse)(nil),      // 117: admin.v1.ResourceTerminateResponse
+	(*ResourceAdoptionProbeRequest)(nil),   // 118: admin.v1.ResourceAdoptionProbeRequest
+	(*ResourceAdoptionProbeResponse)(nil),  // 119: admin.v1.ResourceAdoptionProbeResponse
+	(*ReprobeProviderRequest)(nil),         // 120: admin.v1.ReprobeProviderRequest
+	(*ReprobeProviderResponse)(nil),        // 121: admin.v1.ReprobeProviderResponse
+	(*RevokeAPIKeyRequest)(nil),            // 122: admin.v1.RevokeAPIKeyRequest
+	(*RevokeAPIKeyResponse)(nil),           // 123: admin.v1.RevokeAPIKeyResponse
+	(*DisableCredentialRequest)(nil),       // 124: admin.v1.DisableCredentialRequest
+	(*DisableCredentialResponse)(nil),      // 125: admin.v1.DisableCredentialResponse
+	(*PausePeriodicPromptRequest)(nil),     // 126: admin.v1.PausePeriodicPromptRequest
+	(*PausePeriodicPromptResponse)(nil),    // 127: admin.v1.PausePeriodicPromptResponse
+	(*ResumePeriodicPromptRequest)(nil),    // 128: admin.v1.ResumePeriodicPromptRequest
+	(*ResumePeriodicPromptResponse)(nil),   // 129: admin.v1.ResumePeriodicPromptResponse
+	(*DisconnectSubscriberRequest)(nil),    // 130: admin.v1.DisconnectSubscriberRequest
+	(*DisconnectSubscriberResponse)(nil),   // 131: admin.v1.DisconnectSubscriberResponse
+	(*ExportIncidentEvidenceRequest)(nil),  // 132: admin.v1.ExportIncidentEvidenceRequest
+	(*ExportIncidentEvidenceResponse)(nil), // 133: admin.v1.ExportIncidentEvidenceResponse
+	(*RevealSecretRequest)(nil),            // 134: admin.v1.RevealSecretRequest
+	(*RevealSecretResponse)(nil),           // 135: admin.v1.RevealSecretResponse
+	nil,                                    // 136: admin.v1.SessionSummary.LabelsEntry
+	nil,                                    // 137: admin.v1.RuntimeHealth.DiagnosticsEntry
+	(*timestamppb.Timestamp)(nil),          // 138: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),                // 139: google.protobuf.Struct
+	(*CollectionDescriptor)(nil),           // 140: admin.v1.CollectionDescriptor
+	(*SearchRequest)(nil),                  // 141: admin.v1.SearchRequest
+	(*PageInfo)(nil),                       // 142: admin.v1.PageInfo
+	(*PageRequest)(nil),                    // 143: admin.v1.PageRequest
 }
 var file_admin_v1_admin_proto_depIdxs = []int32{
-	91,  // 0: admin.v1.TenantSummary.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 1: admin.v1.APIKeySummary.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 2: admin.v1.APIKeySummary.revoked_at:type_name -> google.protobuf.Timestamp
-	89,  // 3: admin.v1.SessionSummary.labels:type_name -> admin.v1.SessionSummary.LabelsEntry
-	91,  // 4: admin.v1.SessionSummary.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 5: admin.v1.SessionSummary.archived_at:type_name -> google.protobuf.Timestamp
-	91,  // 6: admin.v1.EventSummary.ts:type_name -> google.protobuf.Timestamp
-	91,  // 7: admin.v1.RunSummary.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 8: admin.v1.RunSummary.updated_at:type_name -> google.protobuf.Timestamp
-	91,  // 9: admin.v1.RunSummary.cancel_requested_at:type_name -> google.protobuf.Timestamp
-	91,  // 10: admin.v1.RunStepSummary.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 11: admin.v1.ResourceSummary.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 12: admin.v1.ResourceSummary.updated_at:type_name -> google.protobuf.Timestamp
-	91,  // 13: admin.v1.ResourceSummary.ready_at:type_name -> google.protobuf.Timestamp
-	91,  // 14: admin.v1.ResourceSummary.terminated_at:type_name -> google.protobuf.Timestamp
-	91,  // 15: admin.v1.ProviderSummary.last_healthy_at:type_name -> google.protobuf.Timestamp
-	91,  // 16: admin.v1.ProviderSummary.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 17: admin.v1.CredentialSummary.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 18: admin.v1.CredentialSummary.rotated_at:type_name -> google.protobuf.Timestamp
-	91,  // 19: admin.v1.PeriodicPromptSummary.next_at:type_name -> google.protobuf.Timestamp
-	91,  // 20: admin.v1.PeriodicPromptSummary.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 21: admin.v1.MemorySummary.updated_at:type_name -> google.protobuf.Timestamp
-	91,  // 22: admin.v1.WaitSummary.deadline:type_name -> google.protobuf.Timestamp
-	91,  // 23: admin.v1.WaitSummary.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 24: admin.v1.WaitSummary.resolved_at:type_name -> google.protobuf.Timestamp
-	91,  // 25: admin.v1.WaitSummary.resumed_at:type_name -> google.protobuf.Timestamp
-	91,  // 26: admin.v1.JobSummary.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 27: admin.v1.JobSummary.scheduled_at:type_name -> google.protobuf.Timestamp
-	91,  // 28: admin.v1.JobSummary.attempted_at:type_name -> google.protobuf.Timestamp
-	91,  // 29: admin.v1.JobSummary.finalized_at:type_name -> google.protobuf.Timestamp
+	138, // 0: admin.v1.TenantSummary.created_at:type_name -> google.protobuf.Timestamp
+	138, // 1: admin.v1.APIKeySummary.created_at:type_name -> google.protobuf.Timestamp
+	138, // 2: admin.v1.APIKeySummary.revoked_at:type_name -> google.protobuf.Timestamp
+	136, // 3: admin.v1.SessionSummary.labels:type_name -> admin.v1.SessionSummary.LabelsEntry
+	138, // 4: admin.v1.SessionSummary.created_at:type_name -> google.protobuf.Timestamp
+	138, // 5: admin.v1.SessionSummary.archived_at:type_name -> google.protobuf.Timestamp
+	138, // 6: admin.v1.EventSummary.ts:type_name -> google.protobuf.Timestamp
+	138, // 7: admin.v1.RunSummary.created_at:type_name -> google.protobuf.Timestamp
+	138, // 8: admin.v1.RunSummary.updated_at:type_name -> google.protobuf.Timestamp
+	138, // 9: admin.v1.RunSummary.cancel_requested_at:type_name -> google.protobuf.Timestamp
+	138, // 10: admin.v1.RunStepSummary.created_at:type_name -> google.protobuf.Timestamp
+	138, // 11: admin.v1.ResourceSummary.created_at:type_name -> google.protobuf.Timestamp
+	138, // 12: admin.v1.ResourceSummary.updated_at:type_name -> google.protobuf.Timestamp
+	138, // 13: admin.v1.ResourceSummary.ready_at:type_name -> google.protobuf.Timestamp
+	138, // 14: admin.v1.ResourceSummary.terminated_at:type_name -> google.protobuf.Timestamp
+	138, // 15: admin.v1.ProviderSummary.last_healthy_at:type_name -> google.protobuf.Timestamp
+	138, // 16: admin.v1.ProviderSummary.created_at:type_name -> google.protobuf.Timestamp
+	138, // 17: admin.v1.CredentialSummary.created_at:type_name -> google.protobuf.Timestamp
+	138, // 18: admin.v1.CredentialSummary.rotated_at:type_name -> google.protobuf.Timestamp
+	138, // 19: admin.v1.PeriodicPromptSummary.next_at:type_name -> google.protobuf.Timestamp
+	138, // 20: admin.v1.PeriodicPromptSummary.created_at:type_name -> google.protobuf.Timestamp
+	138, // 21: admin.v1.MemorySummary.updated_at:type_name -> google.protobuf.Timestamp
+	138, // 22: admin.v1.WaitSummary.deadline:type_name -> google.protobuf.Timestamp
+	138, // 23: admin.v1.WaitSummary.created_at:type_name -> google.protobuf.Timestamp
+	138, // 24: admin.v1.WaitSummary.resolved_at:type_name -> google.protobuf.Timestamp
+	138, // 25: admin.v1.WaitSummary.resumed_at:type_name -> google.protobuf.Timestamp
+	138, // 26: admin.v1.JobSummary.created_at:type_name -> google.protobuf.Timestamp
+	138, // 27: admin.v1.JobSummary.scheduled_at:type_name -> google.protobuf.Timestamp
+	138, // 28: admin.v1.JobSummary.attempted_at:type_name -> google.protobuf.Timestamp
+	138, // 29: admin.v1.JobSummary.finalized_at:type_name -> google.protobuf.Timestamp
 	0,   // 30: admin.v1.TenantDetail.summary:type_name -> admin.v1.TenantSummary
 	2,   // 31: admin.v1.SessionDetail.summary:type_name -> admin.v1.SessionSummary
 	3,   // 32: admin.v1.EventDetail.summary:type_name -> admin.v1.EventSummary
@@ -6194,135 +9033,227 @@ var file_admin_v1_admin_proto_depIdxs = []int32{
 	11,  // 39: admin.v1.WaitDetail.summary:type_name -> admin.v1.WaitSummary
 	24,  // 40: admin.v1.WaitDetail.members:type_name -> admin.v1.WaitMember
 	12,  // 41: admin.v1.JobDetail.summary:type_name -> admin.v1.JobSummary
-	91,  // 42: admin.v1.TimelineEntry.ts:type_name -> google.protobuf.Timestamp
-	92,  // 43: admin.v1.TimelineEntry.attrs:type_name -> google.protobuf.Struct
-	91,  // 44: admin.v1.RuntimeHealth.server_time:type_name -> google.protobuf.Timestamp
-	90,  // 45: admin.v1.RuntimeHealth.diagnostics:type_name -> admin.v1.RuntimeHealth.DiagnosticsEntry
-	93,  // 46: admin.v1.DescribeCollectionResponse.collections:type_name -> admin.v1.CollectionDescriptor
-	94,  // 47: admin.v1.ListTenantsRequest.search:type_name -> admin.v1.SearchRequest
+	138, // 42: admin.v1.TimelineEntry.ts:type_name -> google.protobuf.Timestamp
+	139, // 43: admin.v1.TimelineEntry.attrs:type_name -> google.protobuf.Struct
+	138, // 44: admin.v1.RuntimeHealth.server_time:type_name -> google.protobuf.Timestamp
+	137, // 45: admin.v1.RuntimeHealth.diagnostics:type_name -> admin.v1.RuntimeHealth.DiagnosticsEntry
+	140, // 46: admin.v1.DescribeCollectionResponse.collections:type_name -> admin.v1.CollectionDescriptor
+	141, // 47: admin.v1.ListTenantsRequest.search:type_name -> admin.v1.SearchRequest
 	0,   // 48: admin.v1.ListTenantsResponse.items:type_name -> admin.v1.TenantSummary
-	95,  // 49: admin.v1.ListTenantsResponse.page:type_name -> admin.v1.PageInfo
+	142, // 49: admin.v1.ListTenantsResponse.page:type_name -> admin.v1.PageInfo
 	13,  // 50: admin.v1.GetTenantResponse.item:type_name -> admin.v1.TenantDetail
-	94,  // 51: admin.v1.ListAPIKeysRequest.search:type_name -> admin.v1.SearchRequest
+	141, // 51: admin.v1.ListAPIKeysRequest.search:type_name -> admin.v1.SearchRequest
 	1,   // 52: admin.v1.ListAPIKeysResponse.items:type_name -> admin.v1.APIKeySummary
-	95,  // 53: admin.v1.ListAPIKeysResponse.page:type_name -> admin.v1.PageInfo
+	142, // 53: admin.v1.ListAPIKeysResponse.page:type_name -> admin.v1.PageInfo
 	1,   // 54: admin.v1.GetAPIKeyResponse.item:type_name -> admin.v1.APIKeySummary
-	94,  // 55: admin.v1.ListSessionsRequest.search:type_name -> admin.v1.SearchRequest
+	141, // 55: admin.v1.ListSessionsRequest.search:type_name -> admin.v1.SearchRequest
 	2,   // 56: admin.v1.ListSessionsResponse.items:type_name -> admin.v1.SessionSummary
-	95,  // 57: admin.v1.ListSessionsResponse.page:type_name -> admin.v1.PageInfo
+	142, // 57: admin.v1.ListSessionsResponse.page:type_name -> admin.v1.PageInfo
 	14,  // 58: admin.v1.GetSessionResponse.item:type_name -> admin.v1.SessionDetail
-	94,  // 59: admin.v1.ListEventsRequest.search:type_name -> admin.v1.SearchRequest
+	141, // 59: admin.v1.ListEventsRequest.search:type_name -> admin.v1.SearchRequest
 	3,   // 60: admin.v1.ListEventsResponse.items:type_name -> admin.v1.EventSummary
-	95,  // 61: admin.v1.ListEventsResponse.page:type_name -> admin.v1.PageInfo
+	142, // 61: admin.v1.ListEventsResponse.page:type_name -> admin.v1.PageInfo
 	15,  // 62: admin.v1.GetEventResponse.item:type_name -> admin.v1.EventDetail
-	94,  // 63: admin.v1.ListRunsRequest.search:type_name -> admin.v1.SearchRequest
+	141, // 63: admin.v1.ListRunsRequest.search:type_name -> admin.v1.SearchRequest
 	4,   // 64: admin.v1.ListRunsResponse.items:type_name -> admin.v1.RunSummary
-	95,  // 65: admin.v1.ListRunsResponse.page:type_name -> admin.v1.PageInfo
+	142, // 65: admin.v1.ListRunsResponse.page:type_name -> admin.v1.PageInfo
 	16,  // 66: admin.v1.GetRunResponse.item:type_name -> admin.v1.RunDetail
 	17,  // 67: admin.v1.GetRunHistoryResponse.item:type_name -> admin.v1.RunHistoryBlob
-	94,  // 68: admin.v1.ListRunStepsRequest.search:type_name -> admin.v1.SearchRequest
+	141, // 68: admin.v1.ListRunStepsRequest.search:type_name -> admin.v1.SearchRequest
 	5,   // 69: admin.v1.ListRunStepsResponse.items:type_name -> admin.v1.RunStepSummary
-	95,  // 70: admin.v1.ListRunStepsResponse.page:type_name -> admin.v1.PageInfo
-	94,  // 71: admin.v1.ListResourcesRequest.search:type_name -> admin.v1.SearchRequest
+	142, // 70: admin.v1.ListRunStepsResponse.page:type_name -> admin.v1.PageInfo
+	141, // 71: admin.v1.ListResourcesRequest.search:type_name -> admin.v1.SearchRequest
 	6,   // 72: admin.v1.ListResourcesResponse.items:type_name -> admin.v1.ResourceSummary
-	95,  // 73: admin.v1.ListResourcesResponse.page:type_name -> admin.v1.PageInfo
+	142, // 73: admin.v1.ListResourcesResponse.page:type_name -> admin.v1.PageInfo
 	18,  // 74: admin.v1.GetResourceResponse.item:type_name -> admin.v1.ResourceDetail
-	94,  // 75: admin.v1.ListProvidersRequest.search:type_name -> admin.v1.SearchRequest
+	141, // 75: admin.v1.ListProvidersRequest.search:type_name -> admin.v1.SearchRequest
 	7,   // 76: admin.v1.ListProvidersResponse.items:type_name -> admin.v1.ProviderSummary
-	95,  // 77: admin.v1.ListProvidersResponse.page:type_name -> admin.v1.PageInfo
+	142, // 77: admin.v1.ListProvidersResponse.page:type_name -> admin.v1.PageInfo
 	19,  // 78: admin.v1.GetProviderResponse.item:type_name -> admin.v1.ProviderDetail
-	94,  // 79: admin.v1.ListCredentialsRequest.search:type_name -> admin.v1.SearchRequest
+	141, // 79: admin.v1.ListCredentialsRequest.search:type_name -> admin.v1.SearchRequest
 	8,   // 80: admin.v1.ListCredentialsResponse.items:type_name -> admin.v1.CredentialSummary
-	95,  // 81: admin.v1.ListCredentialsResponse.page:type_name -> admin.v1.PageInfo
+	142, // 81: admin.v1.ListCredentialsResponse.page:type_name -> admin.v1.PageInfo
 	20,  // 82: admin.v1.GetCredentialResponse.item:type_name -> admin.v1.CredentialDetail
-	94,  // 83: admin.v1.ListPeriodicPromptsRequest.search:type_name -> admin.v1.SearchRequest
+	141, // 83: admin.v1.ListPeriodicPromptsRequest.search:type_name -> admin.v1.SearchRequest
 	9,   // 84: admin.v1.ListPeriodicPromptsResponse.items:type_name -> admin.v1.PeriodicPromptSummary
-	95,  // 85: admin.v1.ListPeriodicPromptsResponse.page:type_name -> admin.v1.PageInfo
+	142, // 85: admin.v1.ListPeriodicPromptsResponse.page:type_name -> admin.v1.PageInfo
 	21,  // 86: admin.v1.GetPeriodicPromptResponse.item:type_name -> admin.v1.PeriodicPromptDetail
-	94,  // 87: admin.v1.ListMemoryRequest.search:type_name -> admin.v1.SearchRequest
+	141, // 87: admin.v1.ListMemoryRequest.search:type_name -> admin.v1.SearchRequest
 	10,  // 88: admin.v1.ListMemoryResponse.items:type_name -> admin.v1.MemorySummary
-	95,  // 89: admin.v1.ListMemoryResponse.page:type_name -> admin.v1.PageInfo
+	142, // 89: admin.v1.ListMemoryResponse.page:type_name -> admin.v1.PageInfo
 	22,  // 90: admin.v1.GetMemoryResponse.item:type_name -> admin.v1.MemoryDetail
-	94,  // 91: admin.v1.ListWaitsRequest.search:type_name -> admin.v1.SearchRequest
+	141, // 91: admin.v1.ListWaitsRequest.search:type_name -> admin.v1.SearchRequest
 	11,  // 92: admin.v1.ListWaitsResponse.items:type_name -> admin.v1.WaitSummary
-	95,  // 93: admin.v1.ListWaitsResponse.page:type_name -> admin.v1.PageInfo
+	142, // 93: admin.v1.ListWaitsResponse.page:type_name -> admin.v1.PageInfo
 	23,  // 94: admin.v1.GetWaitResponse.item:type_name -> admin.v1.WaitDetail
-	94,  // 95: admin.v1.ListJobsRequest.search:type_name -> admin.v1.SearchRequest
+	141, // 95: admin.v1.ListJobsRequest.search:type_name -> admin.v1.SearchRequest
 	12,  // 96: admin.v1.ListJobsResponse.items:type_name -> admin.v1.JobSummary
-	95,  // 97: admin.v1.ListJobsResponse.page:type_name -> admin.v1.PageInfo
+	142, // 97: admin.v1.ListJobsResponse.page:type_name -> admin.v1.PageInfo
 	25,  // 98: admin.v1.GetJobResponse.item:type_name -> admin.v1.JobDetail
 	28,  // 99: admin.v1.GetRuntimeHealthResponse.health:type_name -> admin.v1.RuntimeHealth
-	96,  // 100: admin.v1.GetSessionTimelineRequest.page:type_name -> admin.v1.PageRequest
+	143, // 100: admin.v1.GetSessionTimelineRequest.page:type_name -> admin.v1.PageRequest
 	26,  // 101: admin.v1.GetSessionTimelineResponse.items:type_name -> admin.v1.TimelineEntry
-	95,  // 102: admin.v1.GetSessionTimelineResponse.page:type_name -> admin.v1.PageInfo
-	96,  // 103: admin.v1.ListRelatedRequest.page:type_name -> admin.v1.PageRequest
+	142, // 102: admin.v1.GetSessionTimelineResponse.page:type_name -> admin.v1.PageInfo
+	143, // 103: admin.v1.ListRelatedRequest.page:type_name -> admin.v1.PageRequest
 	27,  // 104: admin.v1.ListRelatedResponse.items:type_name -> admin.v1.RelatedRef
-	95,  // 105: admin.v1.ListRelatedResponse.page:type_name -> admin.v1.PageInfo
-	29,  // 106: admin.v1.AdminReadService.DescribeCollection:input_type -> admin.v1.DescribeCollectionRequest
-	31,  // 107: admin.v1.AdminReadService.ListTenants:input_type -> admin.v1.ListTenantsRequest
-	33,  // 108: admin.v1.AdminReadService.GetTenant:input_type -> admin.v1.GetTenantRequest
-	35,  // 109: admin.v1.AdminReadService.ListAPIKeys:input_type -> admin.v1.ListAPIKeysRequest
-	37,  // 110: admin.v1.AdminReadService.GetAPIKey:input_type -> admin.v1.GetAPIKeyRequest
-	39,  // 111: admin.v1.AdminReadService.ListSessions:input_type -> admin.v1.ListSessionsRequest
-	41,  // 112: admin.v1.AdminReadService.GetSession:input_type -> admin.v1.GetSessionRequest
-	43,  // 113: admin.v1.AdminReadService.ListEvents:input_type -> admin.v1.ListEventsRequest
-	45,  // 114: admin.v1.AdminReadService.GetEvent:input_type -> admin.v1.GetEventRequest
-	47,  // 115: admin.v1.AdminReadService.ListRuns:input_type -> admin.v1.ListRunsRequest
-	49,  // 116: admin.v1.AdminReadService.GetRun:input_type -> admin.v1.GetRunRequest
-	51,  // 117: admin.v1.AdminReadService.GetRunHistory:input_type -> admin.v1.GetRunHistoryRequest
-	53,  // 118: admin.v1.AdminReadService.ListRunSteps:input_type -> admin.v1.ListRunStepsRequest
-	55,  // 119: admin.v1.AdminReadService.ListResources:input_type -> admin.v1.ListResourcesRequest
-	57,  // 120: admin.v1.AdminReadService.GetResource:input_type -> admin.v1.GetResourceRequest
-	59,  // 121: admin.v1.AdminReadService.ListProviders:input_type -> admin.v1.ListProvidersRequest
-	61,  // 122: admin.v1.AdminReadService.GetProvider:input_type -> admin.v1.GetProviderRequest
-	63,  // 123: admin.v1.AdminReadService.ListCredentials:input_type -> admin.v1.ListCredentialsRequest
-	65,  // 124: admin.v1.AdminReadService.GetCredential:input_type -> admin.v1.GetCredentialRequest
-	67,  // 125: admin.v1.AdminReadService.ListPeriodicPrompts:input_type -> admin.v1.ListPeriodicPromptsRequest
-	69,  // 126: admin.v1.AdminReadService.GetPeriodicPrompt:input_type -> admin.v1.GetPeriodicPromptRequest
-	71,  // 127: admin.v1.AdminReadService.ListMemory:input_type -> admin.v1.ListMemoryRequest
-	73,  // 128: admin.v1.AdminReadService.GetMemory:input_type -> admin.v1.GetMemoryRequest
-	75,  // 129: admin.v1.AdminReadService.ListWaits:input_type -> admin.v1.ListWaitsRequest
-	77,  // 130: admin.v1.AdminReadService.GetWait:input_type -> admin.v1.GetWaitRequest
-	79,  // 131: admin.v1.AdminReadService.ListJobs:input_type -> admin.v1.ListJobsRequest
-	81,  // 132: admin.v1.AdminReadService.GetJob:input_type -> admin.v1.GetJobRequest
-	83,  // 133: admin.v1.AdminReadService.GetRuntimeHealth:input_type -> admin.v1.GetRuntimeHealthRequest
-	85,  // 134: admin.v1.AdminReadService.GetSessionTimeline:input_type -> admin.v1.GetSessionTimelineRequest
-	87,  // 135: admin.v1.AdminReadService.ListRelated:input_type -> admin.v1.ListRelatedRequest
-	30,  // 136: admin.v1.AdminReadService.DescribeCollection:output_type -> admin.v1.DescribeCollectionResponse
-	32,  // 137: admin.v1.AdminReadService.ListTenants:output_type -> admin.v1.ListTenantsResponse
-	34,  // 138: admin.v1.AdminReadService.GetTenant:output_type -> admin.v1.GetTenantResponse
-	36,  // 139: admin.v1.AdminReadService.ListAPIKeys:output_type -> admin.v1.ListAPIKeysResponse
-	38,  // 140: admin.v1.AdminReadService.GetAPIKey:output_type -> admin.v1.GetAPIKeyResponse
-	40,  // 141: admin.v1.AdminReadService.ListSessions:output_type -> admin.v1.ListSessionsResponse
-	42,  // 142: admin.v1.AdminReadService.GetSession:output_type -> admin.v1.GetSessionResponse
-	44,  // 143: admin.v1.AdminReadService.ListEvents:output_type -> admin.v1.ListEventsResponse
-	46,  // 144: admin.v1.AdminReadService.GetEvent:output_type -> admin.v1.GetEventResponse
-	48,  // 145: admin.v1.AdminReadService.ListRuns:output_type -> admin.v1.ListRunsResponse
-	50,  // 146: admin.v1.AdminReadService.GetRun:output_type -> admin.v1.GetRunResponse
-	52,  // 147: admin.v1.AdminReadService.GetRunHistory:output_type -> admin.v1.GetRunHistoryResponse
-	54,  // 148: admin.v1.AdminReadService.ListRunSteps:output_type -> admin.v1.ListRunStepsResponse
-	56,  // 149: admin.v1.AdminReadService.ListResources:output_type -> admin.v1.ListResourcesResponse
-	58,  // 150: admin.v1.AdminReadService.GetResource:output_type -> admin.v1.GetResourceResponse
-	60,  // 151: admin.v1.AdminReadService.ListProviders:output_type -> admin.v1.ListProvidersResponse
-	62,  // 152: admin.v1.AdminReadService.GetProvider:output_type -> admin.v1.GetProviderResponse
-	64,  // 153: admin.v1.AdminReadService.ListCredentials:output_type -> admin.v1.ListCredentialsResponse
-	66,  // 154: admin.v1.AdminReadService.GetCredential:output_type -> admin.v1.GetCredentialResponse
-	68,  // 155: admin.v1.AdminReadService.ListPeriodicPrompts:output_type -> admin.v1.ListPeriodicPromptsResponse
-	70,  // 156: admin.v1.AdminReadService.GetPeriodicPrompt:output_type -> admin.v1.GetPeriodicPromptResponse
-	72,  // 157: admin.v1.AdminReadService.ListMemory:output_type -> admin.v1.ListMemoryResponse
-	74,  // 158: admin.v1.AdminReadService.GetMemory:output_type -> admin.v1.GetMemoryResponse
-	76,  // 159: admin.v1.AdminReadService.ListWaits:output_type -> admin.v1.ListWaitsResponse
-	78,  // 160: admin.v1.AdminReadService.GetWait:output_type -> admin.v1.GetWaitResponse
-	80,  // 161: admin.v1.AdminReadService.ListJobs:output_type -> admin.v1.ListJobsResponse
-	82,  // 162: admin.v1.AdminReadService.GetJob:output_type -> admin.v1.GetJobResponse
-	84,  // 163: admin.v1.AdminReadService.GetRuntimeHealth:output_type -> admin.v1.GetRuntimeHealthResponse
-	86,  // 164: admin.v1.AdminReadService.GetSessionTimeline:output_type -> admin.v1.GetSessionTimelineResponse
-	88,  // 165: admin.v1.AdminReadService.ListRelated:output_type -> admin.v1.ListRelatedResponse
-	136, // [136:166] is the sub-list for method output_type
-	106, // [106:136] is the sub-list for method input_type
-	106, // [106:106] is the sub-list for extension type_name
-	106, // [106:106] is the sub-list for extension extendee
-	0,   // [0:106] is the sub-list for field type_name
+	142, // 105: admin.v1.ListRelatedResponse.page:type_name -> admin.v1.PageInfo
+	89,  // 106: admin.v1.WhoAmIResponse.operator:type_name -> admin.v1.OperatorIdentity
+	138, // 107: admin.v1.AuditEventSummary.ts:type_name -> google.protobuf.Timestamp
+	139, // 108: admin.v1.AuditEventSummary.targets:type_name -> google.protobuf.Struct
+	139, // 109: admin.v1.AuditEventSummary.before_summary:type_name -> google.protobuf.Struct
+	139, // 110: admin.v1.AuditEventSummary.after_summary:type_name -> google.protobuf.Struct
+	141, // 111: admin.v1.ListAuditEventsRequest.search:type_name -> admin.v1.SearchRequest
+	92,  // 112: admin.v1.ListAuditEventsResponse.items:type_name -> admin.v1.AuditEventSummary
+	142, // 113: admin.v1.ListAuditEventsResponse.page:type_name -> admin.v1.PageInfo
+	92,  // 114: admin.v1.GetAuditEventResponse.item:type_name -> admin.v1.AuditEventSummary
+	139, // 115: admin.v1.CommandPreview.before_summary:type_name -> google.protobuf.Struct
+	138, // 116: admin.v1.CommandPreview.computed_at:type_name -> google.protobuf.Timestamp
+	98,  // 117: admin.v1.CommandOutcome.preview:type_name -> admin.v1.CommandPreview
+	139, // 118: admin.v1.CommandOutcome.after_summary:type_name -> google.protobuf.Struct
+	97,  // 119: admin.v1.RetryQueueJobRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 120: admin.v1.RetryQueueJobResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 121: admin.v1.CancelQueueJobRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 122: admin.v1.CancelQueueJobResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 123: admin.v1.CancelRunRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 124: admin.v1.CancelRunResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 125: admin.v1.AnswerAwaitRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 126: admin.v1.AnswerAwaitResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 127: admin.v1.ExpireAwaitRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 128: admin.v1.ExpireAwaitResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 129: admin.v1.ResourceReconcileRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 130: admin.v1.ResourceReconcileResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 131: admin.v1.ResourceRestartRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 132: admin.v1.ResourceRestartResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 133: admin.v1.ResourceSuspendRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 134: admin.v1.ResourceSuspendResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 135: admin.v1.ResourceTerminateRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 136: admin.v1.ResourceTerminateResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 137: admin.v1.ResourceAdoptionProbeRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 138: admin.v1.ResourceAdoptionProbeResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 139: admin.v1.ReprobeProviderRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 140: admin.v1.ReprobeProviderResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 141: admin.v1.RevokeAPIKeyRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 142: admin.v1.RevokeAPIKeyResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 143: admin.v1.DisableCredentialRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 144: admin.v1.DisableCredentialResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 145: admin.v1.PausePeriodicPromptRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 146: admin.v1.PausePeriodicPromptResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 147: admin.v1.ResumePeriodicPromptRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 148: admin.v1.ResumePeriodicPromptResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 149: admin.v1.DisconnectSubscriberRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 150: admin.v1.DisconnectSubscriberResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 151: admin.v1.ExportIncidentEvidenceRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 152: admin.v1.ExportIncidentEvidenceResponse.outcome:type_name -> admin.v1.CommandOutcome
+	97,  // 153: admin.v1.RevealSecretRequest.options:type_name -> admin.v1.CommandOptions
+	99,  // 154: admin.v1.RevealSecretResponse.outcome:type_name -> admin.v1.CommandOutcome
+	138, // 155: admin.v1.RevealSecretResponse.expires_at:type_name -> google.protobuf.Timestamp
+	29,  // 156: admin.v1.AdminReadService.DescribeCollection:input_type -> admin.v1.DescribeCollectionRequest
+	31,  // 157: admin.v1.AdminReadService.ListTenants:input_type -> admin.v1.ListTenantsRequest
+	33,  // 158: admin.v1.AdminReadService.GetTenant:input_type -> admin.v1.GetTenantRequest
+	35,  // 159: admin.v1.AdminReadService.ListAPIKeys:input_type -> admin.v1.ListAPIKeysRequest
+	37,  // 160: admin.v1.AdminReadService.GetAPIKey:input_type -> admin.v1.GetAPIKeyRequest
+	39,  // 161: admin.v1.AdminReadService.ListSessions:input_type -> admin.v1.ListSessionsRequest
+	41,  // 162: admin.v1.AdminReadService.GetSession:input_type -> admin.v1.GetSessionRequest
+	43,  // 163: admin.v1.AdminReadService.ListEvents:input_type -> admin.v1.ListEventsRequest
+	45,  // 164: admin.v1.AdminReadService.GetEvent:input_type -> admin.v1.GetEventRequest
+	47,  // 165: admin.v1.AdminReadService.ListRuns:input_type -> admin.v1.ListRunsRequest
+	49,  // 166: admin.v1.AdminReadService.GetRun:input_type -> admin.v1.GetRunRequest
+	51,  // 167: admin.v1.AdminReadService.GetRunHistory:input_type -> admin.v1.GetRunHistoryRequest
+	53,  // 168: admin.v1.AdminReadService.ListRunSteps:input_type -> admin.v1.ListRunStepsRequest
+	55,  // 169: admin.v1.AdminReadService.ListResources:input_type -> admin.v1.ListResourcesRequest
+	57,  // 170: admin.v1.AdminReadService.GetResource:input_type -> admin.v1.GetResourceRequest
+	59,  // 171: admin.v1.AdminReadService.ListProviders:input_type -> admin.v1.ListProvidersRequest
+	61,  // 172: admin.v1.AdminReadService.GetProvider:input_type -> admin.v1.GetProviderRequest
+	63,  // 173: admin.v1.AdminReadService.ListCredentials:input_type -> admin.v1.ListCredentialsRequest
+	65,  // 174: admin.v1.AdminReadService.GetCredential:input_type -> admin.v1.GetCredentialRequest
+	67,  // 175: admin.v1.AdminReadService.ListPeriodicPrompts:input_type -> admin.v1.ListPeriodicPromptsRequest
+	69,  // 176: admin.v1.AdminReadService.GetPeriodicPrompt:input_type -> admin.v1.GetPeriodicPromptRequest
+	71,  // 177: admin.v1.AdminReadService.ListMemory:input_type -> admin.v1.ListMemoryRequest
+	73,  // 178: admin.v1.AdminReadService.GetMemory:input_type -> admin.v1.GetMemoryRequest
+	75,  // 179: admin.v1.AdminReadService.ListWaits:input_type -> admin.v1.ListWaitsRequest
+	77,  // 180: admin.v1.AdminReadService.GetWait:input_type -> admin.v1.GetWaitRequest
+	79,  // 181: admin.v1.AdminReadService.ListJobs:input_type -> admin.v1.ListJobsRequest
+	81,  // 182: admin.v1.AdminReadService.GetJob:input_type -> admin.v1.GetJobRequest
+	83,  // 183: admin.v1.AdminReadService.GetRuntimeHealth:input_type -> admin.v1.GetRuntimeHealthRequest
+	85,  // 184: admin.v1.AdminReadService.GetSessionTimeline:input_type -> admin.v1.GetSessionTimelineRequest
+	87,  // 185: admin.v1.AdminReadService.ListRelated:input_type -> admin.v1.ListRelatedRequest
+	90,  // 186: admin.v1.AdminReadService.WhoAmI:input_type -> admin.v1.WhoAmIRequest
+	93,  // 187: admin.v1.AdminReadService.ListAuditEvents:input_type -> admin.v1.ListAuditEventsRequest
+	95,  // 188: admin.v1.AdminReadService.GetAuditEvent:input_type -> admin.v1.GetAuditEventRequest
+	100, // 189: admin.v1.AdminCommandService.RetryQueueJob:input_type -> admin.v1.RetryQueueJobRequest
+	102, // 190: admin.v1.AdminCommandService.CancelQueueJob:input_type -> admin.v1.CancelQueueJobRequest
+	104, // 191: admin.v1.AdminCommandService.CancelRun:input_type -> admin.v1.CancelRunRequest
+	106, // 192: admin.v1.AdminCommandService.AnswerAwait:input_type -> admin.v1.AnswerAwaitRequest
+	108, // 193: admin.v1.AdminCommandService.ExpireAwait:input_type -> admin.v1.ExpireAwaitRequest
+	110, // 194: admin.v1.AdminCommandService.ResourceReconcile:input_type -> admin.v1.ResourceReconcileRequest
+	112, // 195: admin.v1.AdminCommandService.ResourceRestart:input_type -> admin.v1.ResourceRestartRequest
+	114, // 196: admin.v1.AdminCommandService.ResourceSuspend:input_type -> admin.v1.ResourceSuspendRequest
+	116, // 197: admin.v1.AdminCommandService.ResourceTerminate:input_type -> admin.v1.ResourceTerminateRequest
+	118, // 198: admin.v1.AdminCommandService.ResourceAdoptionProbe:input_type -> admin.v1.ResourceAdoptionProbeRequest
+	120, // 199: admin.v1.AdminCommandService.ReprobeProvider:input_type -> admin.v1.ReprobeProviderRequest
+	122, // 200: admin.v1.AdminCommandService.RevokeAPIKey:input_type -> admin.v1.RevokeAPIKeyRequest
+	124, // 201: admin.v1.AdminCommandService.DisableCredential:input_type -> admin.v1.DisableCredentialRequest
+	126, // 202: admin.v1.AdminCommandService.PausePeriodicPrompt:input_type -> admin.v1.PausePeriodicPromptRequest
+	128, // 203: admin.v1.AdminCommandService.ResumePeriodicPrompt:input_type -> admin.v1.ResumePeriodicPromptRequest
+	130, // 204: admin.v1.AdminCommandService.DisconnectSubscriber:input_type -> admin.v1.DisconnectSubscriberRequest
+	132, // 205: admin.v1.AdminCommandService.ExportIncidentEvidence:input_type -> admin.v1.ExportIncidentEvidenceRequest
+	134, // 206: admin.v1.AdminCommandService.RevealSecret:input_type -> admin.v1.RevealSecretRequest
+	30,  // 207: admin.v1.AdminReadService.DescribeCollection:output_type -> admin.v1.DescribeCollectionResponse
+	32,  // 208: admin.v1.AdminReadService.ListTenants:output_type -> admin.v1.ListTenantsResponse
+	34,  // 209: admin.v1.AdminReadService.GetTenant:output_type -> admin.v1.GetTenantResponse
+	36,  // 210: admin.v1.AdminReadService.ListAPIKeys:output_type -> admin.v1.ListAPIKeysResponse
+	38,  // 211: admin.v1.AdminReadService.GetAPIKey:output_type -> admin.v1.GetAPIKeyResponse
+	40,  // 212: admin.v1.AdminReadService.ListSessions:output_type -> admin.v1.ListSessionsResponse
+	42,  // 213: admin.v1.AdminReadService.GetSession:output_type -> admin.v1.GetSessionResponse
+	44,  // 214: admin.v1.AdminReadService.ListEvents:output_type -> admin.v1.ListEventsResponse
+	46,  // 215: admin.v1.AdminReadService.GetEvent:output_type -> admin.v1.GetEventResponse
+	48,  // 216: admin.v1.AdminReadService.ListRuns:output_type -> admin.v1.ListRunsResponse
+	50,  // 217: admin.v1.AdminReadService.GetRun:output_type -> admin.v1.GetRunResponse
+	52,  // 218: admin.v1.AdminReadService.GetRunHistory:output_type -> admin.v1.GetRunHistoryResponse
+	54,  // 219: admin.v1.AdminReadService.ListRunSteps:output_type -> admin.v1.ListRunStepsResponse
+	56,  // 220: admin.v1.AdminReadService.ListResources:output_type -> admin.v1.ListResourcesResponse
+	58,  // 221: admin.v1.AdminReadService.GetResource:output_type -> admin.v1.GetResourceResponse
+	60,  // 222: admin.v1.AdminReadService.ListProviders:output_type -> admin.v1.ListProvidersResponse
+	62,  // 223: admin.v1.AdminReadService.GetProvider:output_type -> admin.v1.GetProviderResponse
+	64,  // 224: admin.v1.AdminReadService.ListCredentials:output_type -> admin.v1.ListCredentialsResponse
+	66,  // 225: admin.v1.AdminReadService.GetCredential:output_type -> admin.v1.GetCredentialResponse
+	68,  // 226: admin.v1.AdminReadService.ListPeriodicPrompts:output_type -> admin.v1.ListPeriodicPromptsResponse
+	70,  // 227: admin.v1.AdminReadService.GetPeriodicPrompt:output_type -> admin.v1.GetPeriodicPromptResponse
+	72,  // 228: admin.v1.AdminReadService.ListMemory:output_type -> admin.v1.ListMemoryResponse
+	74,  // 229: admin.v1.AdminReadService.GetMemory:output_type -> admin.v1.GetMemoryResponse
+	76,  // 230: admin.v1.AdminReadService.ListWaits:output_type -> admin.v1.ListWaitsResponse
+	78,  // 231: admin.v1.AdminReadService.GetWait:output_type -> admin.v1.GetWaitResponse
+	80,  // 232: admin.v1.AdminReadService.ListJobs:output_type -> admin.v1.ListJobsResponse
+	82,  // 233: admin.v1.AdminReadService.GetJob:output_type -> admin.v1.GetJobResponse
+	84,  // 234: admin.v1.AdminReadService.GetRuntimeHealth:output_type -> admin.v1.GetRuntimeHealthResponse
+	86,  // 235: admin.v1.AdminReadService.GetSessionTimeline:output_type -> admin.v1.GetSessionTimelineResponse
+	88,  // 236: admin.v1.AdminReadService.ListRelated:output_type -> admin.v1.ListRelatedResponse
+	91,  // 237: admin.v1.AdminReadService.WhoAmI:output_type -> admin.v1.WhoAmIResponse
+	94,  // 238: admin.v1.AdminReadService.ListAuditEvents:output_type -> admin.v1.ListAuditEventsResponse
+	96,  // 239: admin.v1.AdminReadService.GetAuditEvent:output_type -> admin.v1.GetAuditEventResponse
+	101, // 240: admin.v1.AdminCommandService.RetryQueueJob:output_type -> admin.v1.RetryQueueJobResponse
+	103, // 241: admin.v1.AdminCommandService.CancelQueueJob:output_type -> admin.v1.CancelQueueJobResponse
+	105, // 242: admin.v1.AdminCommandService.CancelRun:output_type -> admin.v1.CancelRunResponse
+	107, // 243: admin.v1.AdminCommandService.AnswerAwait:output_type -> admin.v1.AnswerAwaitResponse
+	109, // 244: admin.v1.AdminCommandService.ExpireAwait:output_type -> admin.v1.ExpireAwaitResponse
+	111, // 245: admin.v1.AdminCommandService.ResourceReconcile:output_type -> admin.v1.ResourceReconcileResponse
+	113, // 246: admin.v1.AdminCommandService.ResourceRestart:output_type -> admin.v1.ResourceRestartResponse
+	115, // 247: admin.v1.AdminCommandService.ResourceSuspend:output_type -> admin.v1.ResourceSuspendResponse
+	117, // 248: admin.v1.AdminCommandService.ResourceTerminate:output_type -> admin.v1.ResourceTerminateResponse
+	119, // 249: admin.v1.AdminCommandService.ResourceAdoptionProbe:output_type -> admin.v1.ResourceAdoptionProbeResponse
+	121, // 250: admin.v1.AdminCommandService.ReprobeProvider:output_type -> admin.v1.ReprobeProviderResponse
+	123, // 251: admin.v1.AdminCommandService.RevokeAPIKey:output_type -> admin.v1.RevokeAPIKeyResponse
+	125, // 252: admin.v1.AdminCommandService.DisableCredential:output_type -> admin.v1.DisableCredentialResponse
+	127, // 253: admin.v1.AdminCommandService.PausePeriodicPrompt:output_type -> admin.v1.PausePeriodicPromptResponse
+	129, // 254: admin.v1.AdminCommandService.ResumePeriodicPrompt:output_type -> admin.v1.ResumePeriodicPromptResponse
+	131, // 255: admin.v1.AdminCommandService.DisconnectSubscriber:output_type -> admin.v1.DisconnectSubscriberResponse
+	133, // 256: admin.v1.AdminCommandService.ExportIncidentEvidence:output_type -> admin.v1.ExportIncidentEvidenceResponse
+	135, // 257: admin.v1.AdminCommandService.RevealSecret:output_type -> admin.v1.RevealSecretResponse
+	207, // [207:258] is the sub-list for method output_type
+	156, // [156:207] is the sub-list for method input_type
+	156, // [156:156] is the sub-list for extension type_name
+	156, // [156:156] is the sub-list for extension extendee
+	0,   // [0:156] is the sub-list for field type_name
 }
 
 func init() { file_admin_v1_admin_proto_init() }
@@ -6337,9 +9268,9 @@ func file_admin_v1_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_v1_admin_proto_rawDesc), len(file_admin_v1_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   91,
+			NumMessages:   138,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_admin_v1_admin_proto_goTypes,
 		DependencyIndexes: file_admin_v1_admin_proto_depIdxs,

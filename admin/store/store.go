@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	uc "github.com/aleksclark/ultracore"
@@ -234,6 +236,34 @@ func asBool(v any) bool {
 		return t
 	default:
 		return false
+	}
+}
+
+func asStruct(v any) *structpb.Struct {
+	switch t := v.(type) {
+	case nil:
+		s, _ := structpb.NewStruct(map[string]any{})
+		return s
+	case []byte:
+		var m map[string]any
+		if err := json.Unmarshal(t, &m); err != nil {
+			s, _ := structpb.NewStruct(map[string]any{})
+			return s
+		}
+		s, err := structpb.NewStruct(m)
+		if err != nil {
+			s, _ = structpb.NewStruct(map[string]any{})
+		}
+		return s
+	case map[string]any:
+		s, err := structpb.NewStruct(t)
+		if err != nil {
+			s, _ = structpb.NewStruct(map[string]any{})
+		}
+		return s
+	default:
+		s, _ := structpb.NewStruct(map[string]any{})
+		return s
 	}
 }
 
@@ -1076,4 +1106,59 @@ func (a *AdminStore) ListRelated(ctx context.Context, collection, id, relation s
 		// No next_cursor: callers continue via filtered List* RPCs.
 	}
 	return items, info, nil
+}
+
+func (a *AdminStore) ListAuditEvents(ctx context.Context, req query.Request) ([]*adminv1.AuditEventSummary, query.PageInfo, error) {
+	var items []*adminv1.AuditEventSummary
+	info, err := a.list(ctx, "audit_events", req, 16, func(vals []any, keep bool) error {
+		if !keep {
+			return nil
+		}
+		items = append(items, auditFromVals(vals))
+		return nil
+	})
+	return items, info, err
+}
+
+func (a *AdminStore) GetAuditEvent(ctx context.Context, id string) (*adminv1.AuditEventSummary, error) {
+	qctx, cancel := a.withTimeout(ctx)
+	defer cancel()
+	row := a.pool.QueryRow(qctx, `
+		SELECT id::text, ts, operator_id, operator_role, request_id, command,
+		       targets, reason, preview_hash, before_summary, after_summary,
+		       result, error, source_ip, build_version, COALESCE(idempotency_key,'')
+		  FROM admin_audit_events WHERE id=$1`, id)
+	vals := make([]any, 16)
+	ptrs := make([]any, 16)
+	for i := range vals {
+		ptrs[i] = &vals[i]
+	}
+	if err := row.Scan(ptrs...); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, uc.ErrNotFound
+		}
+		return nil, err
+	}
+	return auditFromVals(vals), nil
+}
+
+func auditFromVals(vals []any) *adminv1.AuditEventSummary {
+	return &adminv1.AuditEventSummary{
+		Id:             asString(vals[0]),
+		Ts:             ts(asTime(vals[1])),
+		OperatorId:     asString(vals[2]),
+		OperatorRole:   asString(vals[3]),
+		RequestId:      asString(vals[4]),
+		Command:        asString(vals[5]),
+		Targets:        asStruct(vals[6]),
+		Reason:         asString(vals[7]),
+		PreviewHash:    asString(vals[8]),
+		BeforeSummary:  asStruct(vals[9]),
+		AfterSummary:   asStruct(vals[10]),
+		Result:         asString(vals[11]),
+		Error:          asString(vals[12]),
+		SourceIp:       asString(vals[13]),
+		BuildVersion:   asString(vals[14]),
+		IdempotencyKey: asString(vals[15]),
+	}
 }

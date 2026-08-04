@@ -22,6 +22,7 @@ func NewRegistry() *Registry {
 		memoryCollection(),
 		waitsCollection(),
 		jobsCollection(),
+		auditEventsCollection(),
 	}
 	r := &Registry{byName: make(map[string]Collection, len(cols))}
 	for _, c := range cols {
@@ -358,6 +359,30 @@ func jobsCollection() Collection {
 			{Name: "finalized_at", Column: "j.finalized_at", Type: TypeTimestamp, FilterOps: stdTSOps(), Sortable: true},
 		},
 		DefaultSorts: []Sort{{Field: "created_at", Descending: true}},
+		HasDetail:    true,
+	}
+}
+
+func auditEventsCollection() Collection {
+	return Collection{
+		Name:        "audit_events",
+		Description: "Immutable operator admin audit events",
+		From:        `admin_audit_events a`,
+		Select: `a.id::text, a.ts, a.operator_id, a.operator_role, a.request_id, a.command,
+			a.targets, a.reason, a.preview_hash, a.before_summary, a.after_summary,
+			a.result, a.error, a.source_ip, a.build_version, COALESCE(a.idempotency_key,'')`,
+		Fields: []Field{
+			{Name: "id", Column: "a.id", Type: TypeUUID, FilterOps: stdUUIDOps(), Sortable: true, PK: true},
+			{Name: "ts", Column: "a.ts", Type: TypeTimestamp, FilterOps: stdTSOps(), Sortable: true},
+			{Name: "operator_id", Column: "a.operator_id", Type: TypeString, FilterOps: stdStringOps(), Sortable: true, Searchable: true},
+			{Name: "operator_role", Column: "a.operator_role", Type: TypeString, FilterOps: stdStringOps(), Sortable: true},
+			{Name: "command", Column: "a.command", Type: TypeString, FilterOps: stdStringOps(), Sortable: true, Searchable: true},
+			{Name: "result", Column: "a.result", Type: TypeString, FilterOps: stdStringOps(), Sortable: true},
+			{Name: "request_id", Column: "a.request_id", Type: TypeString, FilterOps: stdStringOps(), Sortable: true},
+			{Name: "idempotency_key", Column: "a.idempotency_key", Type: TypeString, FilterOps: stdStringOps(), Sortable: true},
+			{Name: "reason", Column: "a.reason", Type: TypeString, FilterOps: stdStringOps(), Searchable: true},
+		},
+		DefaultSorts: []Sort{{Field: "ts", Descending: true}},
 		HasDetail:    true,
 	}
 }
