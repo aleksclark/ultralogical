@@ -8,12 +8,29 @@
         "core.v1.SessionService/GetSession",
         "core.v1.TenantService/GetTenant"
       ],
-      "go": {
+      "go_functional": {
         "file": "functional_test.go",
         "test": "TestA01_SessionRoundtrip",
         "asserts": [
           "created session malformed",
           "ListSessions"
+        ]
+      },
+      "go_sdk": {
+        "file": "functional_test.go",
+        "test": "TestA01_SessionRoundtrip",
+        "asserts": [
+          "created session malformed",
+          "ListSessions"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "session roundtrip, append, subscribe",
+        "asserts": [
+          "createSession",
+          "getSession",
+          "subscribe"
         ]
       }
     },
@@ -21,25 +38,57 @@
       "rpcs": [
         "core.v1.EventService/Subscribe"
       ],
-      "go": {
+      "go_functional": {
         "file": "functional_test.go",
         "test": "TestA02_AppendFanout",
         "asserts": [
           "append seq = %d, want 1",
           "subscriber"
         ]
+      },
+      "go_sdk": {
+        "file": "functional_test.go",
+        "test": "TestA02_AppendFanout",
+        "asserts": [
+          "append seq = %d, want 1",
+          "subscriber"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "session roundtrip, append, subscribe",
+        "asserts": [
+          "subscribe",
+          "user_message"
+        ]
       }
     },
     "incremental_streaming": {
       "rpcs": [
-        "core.v1.AgentService/StartRun"
+        "core.v1.RunService/StartRun"
       ],
-      "go": {
+      "go_functional": {
         "file": "agent_test.go",
         "test": "TestA15_TrueStreaming",
         "asserts": [
           "GetTextDelta",
           "stream it"
+        ]
+      },
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestA15_TrueStreaming",
+        "asserts": [
+          "GetTextDelta",
+          "stream it"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "start run against modelscript and stream deltas",
+        "asserts": [
+          "startRun",
+          "run_started"
         ]
       }
     },
@@ -47,53 +96,115 @@
       "rpcs": [
         "core.v1.EventService/Append"
       ],
-      "go": {
+      "go_functional": {
         "file": "functional_test.go",
         "test": "TestA03_ResumeContract",
         "asserts": [
           "AppendUserMessage",
           "events[0].GetSeq() != 2"
         ]
+      },
+      "go_sdk": {
+        "file": "functional_test.go",
+        "test": "TestA03_ResumeContract",
+        "asserts": [
+          "AppendUserMessage",
+          "events[0].GetSeq() != 2"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "session roundtrip, append, subscribe",
+        "asserts": [
+          "getEvents",
+          "user_message"
+        ]
       }
     },
     "agent_stream_and_await": {
       "rpcs": [
-        "core.v1.AgentService/PromptRun",
-        "core.v1.AgentService/GetRun"
+        "core.v1.RunService/AnswerRun",
+        "core.v1.RunService/GetRun"
       ],
-      "go": {
+      "go_functional": {
         "file": "agent_test.go",
         "test": "TestA13_AwaitingWithoutParkedWorkers",
         "asserts": [
           "GetRunAwaiting",
           "Which color?"
         ]
+      },
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestA13_AwaitingWithoutParkedWorkers",
+        "asserts": [
+          "GetRunAwaiting",
+          "Which color?"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "start run against modelscript and stream deltas",
+        "asserts": [
+          "awaitRun",
+          "RunState"
+        ]
       }
     },
     "credential_gateway_fields": {
       "rpcs": [
-        "core.v1.TenantService/PutCredential",
-        "core.v1.TenantService/ListCredentials"
+        "core.v1.CredentialService/PutCredential",
+        "core.v1.CredentialService/ListCredentials"
       ],
-      "go": {
+      "go_functional": {
         "file": "agent_test.go",
         "test": "TestCredentialRPCs",
         "asserts": [
           "GetCredential().GetName()",
           "json.Unmarshal(plaintext"
         ]
+      },
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestCredentialRPCs",
+        "asserts": [
+          "GetCredential().GetName()",
+          "json.Unmarshal(plaintext"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers credential_gateway_fields",
+        "asserts": [
+          "credential_gateway_fields"
+        ]
       }
     },
     "credential_redaction": {
       "rpcs": [
-        "core.v1.TenantService/DeleteCredential"
+        "core.v1.CredentialService/DeleteCredential"
       ],
-      "go": {
+      "go_functional": {
         "file": "agent_test.go",
         "test": "TestA17_ByoCredentials",
         "asserts": [
           "credential_missing",
           "failure reason"
+        ]
+      },
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestA17_ByoCredentials",
+        "asserts": [
+          "credential_missing",
+          "failure reason"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers credential_redaction",
+        "asserts": [
+          "credential_redaction"
         ]
       }
     },
@@ -103,12 +214,27 @@
         "core.v1.ResourceService/ListResources",
         "core.v1.ResourceService/ExecPreview"
       ],
-      "go": {
+      "go_functional": {
         "file": "env_test.go",
         "test": "TestA22_A23_AgentEnvPersistence",
         "asserts": [
           "provisionEnv",
           "create README"
+        ]
+      },
+      "go_sdk": {
+        "file": "env_test.go",
+        "test": "TestA22_A23_AgentEnvPersistence",
+        "asserts": [
+          "provisionEnv",
+          "create README"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers dev_env_exec_usage",
+        "asserts": [
+          "dev_env_exec_usage"
         ]
       }
     },
@@ -117,39 +243,85 @@
         "core.v1.ResourceService/RestartResource",
         "core.v1.ResourceService/GetResource"
       ],
-      "go": {
+      "go_functional": {
         "file": "phase7_test.go",
         "test": "TestA74_EnvDurabilityAndRotation",
         "asserts": [
           "ExecPreview",
           "cached client"
         ]
+      },
+      "go_sdk": {
+        "file": "phase7_test.go",
+        "test": "TestA74_EnvDurabilityAndRotation",
+        "asserts": [
+          "ExecPreview",
+          "cached client"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers dev_env_restart_rotation",
+        "asserts": [
+          "dev_env_restart_rotation"
+        ]
       }
     },
     "prompt_input": {
       "rpcs": [
-        "core.v1.AgentService/ListRuns"
+        "core.v1.RunService/ListRuns"
       ],
-      "go": {
+      "go_functional": {
         "file": "agent_test.go",
         "test": "TestA11_HappyPathSequence",
         "asserts": [
           "event_seq",
           "RunStarted"
         ]
+      },
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestA11_HappyPathSequence",
+        "asserts": [
+          "event_seq",
+          "RunStarted"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "start run against modelscript and stream deltas",
+        "asserts": [
+          "startRun",
+          "say hello"
+        ]
       }
     },
     "provider_registration_kinds": {
       "rpcs": [
-        "core.v1.TenantService/RegisterProvider",
-        "core.v1.TenantService/ListProviders"
+        "core.v1.ProviderService/RegisterProvider",
+        "core.v1.ProviderService/ListProviders"
       ],
-      "go": {
+      "go_functional": {
         "file": "provider_test.go",
         "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
         "asserts": [
           "ProviderKindBYOKubernetes",
           "reachable cluster"
+        ]
+      },
+      "go_sdk": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
+        "asserts": [
+          "ProviderKindBYOKubernetes",
+          "reachable cluster"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers provider_registration_kinds",
+        "asserts": [
+          "provider_registration_kinds"
         ]
       }
     },
@@ -157,12 +329,27 @@
       "rpcs": [
         "core.v1.ResourceService/GetResource"
       ],
-      "go": {
+      "go_functional": {
         "file": "provider_test.go",
         "test": "TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing",
         "asserts": [
           "unusable registration was accepted",
           "invalid_argument"
+        ]
+      },
+      "go_sdk": {
+        "file": "provider_test.go",
+        "test": "TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing",
+        "asserts": [
+          "unusable registration was accepted",
+          "invalid_argument"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers provider_failure_validation",
+        "asserts": [
+          "provider_failure_validation"
         ]
       }
     },
@@ -171,52 +358,112 @@
         "core.v1.SessionService/SetMemory",
         "core.v1.SessionService/ListMemory"
       ],
-      "go": {
+      "go_functional": {
         "file": "phase8_memory_test.go",
         "test": "TestA86_SessionMemory",
         "asserts": [
           "concurrent_writes_are_atomic",
           "caps_are_enforced"
         ]
+      },
+      "go_sdk": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
+        "asserts": [
+          "concurrent_writes_are_atomic",
+          "caps_are_enforced"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers session_memory",
+        "asserts": [
+          "session_memory"
+        ]
       }
     },
     "run_tree_linkage": {
       "rpcs": [
-        "core.v1.AgentService/GetRunTree"
+        "core.v1.RunService/GetRunTree"
       ],
-      "go": {
+      "go_functional": {
         "file": "phase8_orchestration_test.go",
         "test": "TestA81_SpawnDurabilityAndGrants",
         "asserts": [
           "spawn key",
           "grandchild"
         ]
+      },
+      "go_sdk": {
+        "file": "phase8_orchestration_test.go",
+        "test": "TestA81_SpawnDurabilityAndGrants",
+        "asserts": [
+          "spawn key",
+          "grandchild"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers run_tree_linkage",
+        "asserts": [
+          "run_tree_linkage"
+        ]
       }
     },
     "run_lane_filter": {
       "rpcs": [
-        "core.v1.AgentService/ListRuns"
+        "core.v1.RunService/ListRuns"
       ],
-      "go": {
+      "go_functional": {
         "file": "phase8_orchestration_test.go",
         "test": "TestA83_CohortFanOutFanIn",
         "asserts": [
           "cohort created",
           "cohort id"
         ]
+      },
+      "go_sdk": {
+        "file": "phase8_orchestration_test.go",
+        "test": "TestA83_CohortFanOutFanIn",
+        "asserts": [
+          "cohort created",
+          "cohort id"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers run_lane_filter",
+        "asserts": [
+          "run_lane_filter"
+        ]
       }
     },
     "wait_transitions": {
       "rpcs": [
-        "core.v1.AgentService/GetRun",
-        "core.v1.AgentService/CancelRun"
+        "core.v1.RunService/GetRun",
+        "core.v1.RunService/CancelRun"
       ],
-      "go": {
+      "go_functional": {
         "file": "phase8_waits_test.go",
         "test": "TestA82_WaitRaceMatrix",
         "asserts": [
           "awaitRunOneOf",
           "outcome.Completed"
+        ]
+      },
+      "go_sdk": {
+        "file": "phase8_waits_test.go",
+        "test": "TestA82_WaitRaceMatrix",
+        "asserts": [
+          "awaitRunOneOf",
+          "outcome.Completed"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers wait_transitions",
+        "asserts": [
+          "wait_transitions"
         ]
       }
     },
@@ -224,12 +471,27 @@
       "rpcs": [
         "core.v1.SessionService/ListMemory"
       ],
-      "go": {
+      "go_functional": {
         "file": "phase8_memory_test.go",
         "test": "TestA86_SessionMemory",
         "asserts": [
           "agent_written_memory_survives_run_boundaries",
           "key_namespace_is_enforced"
+        ]
+      },
+      "go_sdk": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
+        "asserts": [
+          "agent_written_memory_survives_run_boundaries",
+          "key_namespace_is_enforced"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers agent_memory_inspection",
+        "asserts": [
+          "agent_memory_inspection"
         ]
       }
     },
@@ -237,38 +499,84 @@
       "rpcs": [
         "core.v1.EventService/Subscribe"
       ],
-      "go": {
+      "go_functional": {
         "file": "phase8_replicas_test.go",
         "test": "TestA84_CrossReplicaSubscription",
         "asserts": [
           "ReplicaBaseURLs",
           "WorkerCount"
         ]
+      },
+      "go_sdk": {
+        "file": "phase8_replicas_test.go",
+        "test": "TestA84_CrossReplicaSubscription",
+        "asserts": [
+          "ReplicaBaseURLs",
+          "WorkerCount"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "subscribe resume has no gaps after disconnect",
+        "asserts": [
+          "fromSeq",
+          "all[i]"
+        ]
       }
     },
     "provider_ownership_and_hosting": {
       "rpcs": [
-        "core.v1.TenantService/DeleteProvider"
+        "core.v1.ProviderService/DeregisterProvider"
       ],
-      "go": {
+      "go_functional": {
         "file": "provider_test.go",
         "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
         "asserts": [
           "RegisterProvider",
           "ListProviders"
         ]
+      },
+      "go_sdk": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
+        "asserts": [
+          "RegisterProvider",
+          "ListProviders"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers provider_ownership_and_hosting",
+        "asserts": [
+          "provider_ownership_and_hosting"
+        ]
       }
     },
     "flat_allowlist_denial": {
       "rpcs": [
-        "core.v1.AgentService/StartRun"
+        "core.v1.RunService/StartRun"
       ],
-      "go": {
+      "go_functional": {
         "file": "agent_test.go",
         "test": "TestE1_FlatAllowlistDenialVisibility",
         "asserts": [
           "expected a tool result for the denied call",
           "PermissionDenied"
+        ]
+      },
+      "go_sdk": {
+        "file": "agent_test.go",
+        "test": "TestE1_FlatAllowlistDenialVisibility",
+        "asserts": [
+          "expected a tool result for the denied call",
+          "PermissionDenied"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers flat_allowlist_denial",
+        "asserts": [
+          "flat_allowlist_denial"
         ]
       }
     },
@@ -278,12 +586,27 @@
         "core.v1.AutomationService/ListPeriodicPrompts",
         "core.v1.AutomationService/SetPeriodicPromptEnabled"
       ],
-      "go": {
+      "go_functional": {
         "file": "automation_test.go",
         "test": "TestA66_PeriodicPromptAPI",
         "asserts": [
           "GetPeriodicPrompts",
           "list="
+        ]
+      },
+      "go_sdk": {
+        "file": "automation_test.go",
+        "test": "TestA66_PeriodicPromptAPI",
+        "asserts": [
+          "GetPeriodicPrompts",
+          "list="
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers periodic_prompts",
+        "asserts": [
+          "periodic_prompts"
         ]
       }
     },
@@ -296,12 +619,27 @@
         "core.v1.TenantService/RevokeAPIKey",
         "core.v1.SessionService/UpdateSessionLabels"
       ],
-      "go": {
+      "go_functional": {
         "file": "functional_test.go",
         "test": "TestA06_TenantIsolation",
         "asserts": [
           "cross-tenant access succeeded",
           "not_found"
+        ]
+      },
+      "go_sdk": {
+        "file": "functional_test.go",
+        "test": "TestA06_TenantIsolation",
+        "asserts": [
+          "cross-tenant access succeeded",
+          "not_found"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers tenant_isolation",
+        "asserts": [
+          "tenant_isolation"
         ]
       }
     },
@@ -309,12 +647,27 @@
       "rpcs": [
         "core.v1.ResourceService/TerminateResource"
       ],
-      "go": {
+      "go_functional": {
         "file": "env_test.go",
         "test": "TestA24_A25_A27_AuthReconcileMetering",
         "asserts": [
           "ResourceFailed",
           "provisionEnv"
+        ]
+      },
+      "go_sdk": {
+        "file": "env_test.go",
+        "test": "TestA24_A25_A27_AuthReconcileMetering",
+        "asserts": [
+          "ResourceFailed",
+          "provisionEnv"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers env_terminate",
+        "asserts": [
+          "env_terminate"
         ]
       }
     },
@@ -323,12 +676,27 @@
         "core.v1.SessionService/GetMemory",
         "core.v1.SessionService/DeleteMemory"
       ],
-      "go": {
+      "go_functional": {
         "file": "phase8_memory_test.go",
         "test": "TestA86_SessionMemory",
         "asserts": [
           "caps_are_enforced",
           "concurrent_writes_are_atomic"
+        ]
+      },
+      "go_sdk": {
+        "file": "phase8_memory_test.go",
+        "test": "TestA86_SessionMemory",
+        "asserts": [
+          "caps_are_enforced",
+          "concurrent_writes_are_atomic"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers session_memory_get_delete",
+        "asserts": [
+          "session_memory_get_delete"
         ]
       }
     },
@@ -341,13 +709,29 @@
         "core.v1.TenantService/GetTenant",
         "core.v1.TenantService/ListTenants"
       ],
-      "go": {
+      "go_functional": {
         "file": "tenancy_test.go",
         "test": "TestA31_CrossTenantInvisibility",
         "asserts": [
           "cross-tenant get session succeeded",
           "cross-tenant label query leaked",
           "cross-tenant subscribe succeeded"
+        ]
+      },
+      "go_sdk": {
+        "file": "tenancy_test.go",
+        "test": "TestA31_CrossTenantInvisibility",
+        "asserts": [
+          "cross-tenant get session succeeded",
+          "cross-tenant label query leaked",
+          "cross-tenant subscribe succeeded"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers e3_tenancy_keys_actor",
+        "asserts": [
+          "e3_tenancy_keys_actor"
         ]
       }
     },
@@ -356,7 +740,7 @@
         "core.v1.TenantService/CreateAPIKey",
         "core.v1.TenantService/RevokeAPIKey"
       ],
-      "go": {
+      "go_functional": {
         "file": "tenancy_test.go",
         "test": "TestA33_KeyLifecycle",
         "asserts": [
@@ -364,17 +748,47 @@
           "sessions key created a tenant",
           "revoked key still authenticated"
         ]
+      },
+      "go_sdk": {
+        "file": "tenancy_test.go",
+        "test": "TestA33_KeyLifecycle",
+        "asserts": [
+          "sessions key created a key",
+          "sessions key created a tenant",
+          "revoked key still authenticated"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers e3_key_lifecycle",
+        "asserts": [
+          "e3_key_lifecycle"
+        ]
       }
     },
     "e3_actor_attribution": {
       "rpcs": [
         "core.v1.EventService/Append"
       ],
-      "go": {
+      "go_functional": {
         "file": "tenancy_test.go",
         "test": "TestA34_ActorAttribution",
         "asserts": [
           "student/jacob"
+        ]
+      },
+      "go_sdk": {
+        "file": "tenancy_test.go",
+        "test": "TestA34_ActorAttribution",
+        "asserts": [
+          "student/jacob"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers e3_actor_attribution",
+        "asserts": [
+          "e3_actor_attribution"
         ]
       }
     },
@@ -384,7 +798,7 @@
         "core.v1.SessionService/ListSessions",
         "core.v1.SessionService/UpdateSessionLabels"
       ],
-      "go": {
+      "go_functional": {
         "file": "labels_test.go",
         "test": "TestA35_LabelsCRUDAndSelectors",
         "asserts": [
@@ -392,19 +806,166 @@
           "in-selector",
           "SessionLabelsChanged"
         ]
+      },
+      "go_sdk": {
+        "file": "labels_test.go",
+        "test": "TestA35_LabelsCRUDAndSelectors",
+        "asserts": [
+          "equality:",
+          "in-selector",
+          "SessionLabelsChanged"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers e3_labels",
+        "asserts": [
+          "e3_labels"
+        ]
       }
     },
     "e3_run_policy": {
       "rpcs": [
-        "core.v1.AgentService/StartRun"
+        "core.v1.RunService/StartRun"
       ],
-      "go": {
+      "go_functional": {
         "file": "policy_test.go",
         "test": "TestA36_PolicyEnforcement",
         "asserts": [
           "permission_denied",
           "stored policy",
           "empty ResourceKinds"
+        ]
+      },
+      "go_sdk": {
+        "file": "policy_test.go",
+        "test": "TestA36_PolicyEnforcement",
+        "asserts": [
+          "permission_denied",
+          "stored policy",
+          "empty ResourceKinds"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers e3_run_policy",
+        "asserts": [
+          "e3_run_policy"
+        ]
+      }
+    },
+    "event_get_range": {
+      "rpcs": [
+        "core.v1.EventService/Get"
+      ],
+      "go_functional": {
+        "file": "sdk_resume_test.go",
+        "test": "TestA45_SDKSubscribeResume",
+        "asserts": [
+          "GetEvents",
+          "no gaps",
+          "duplicate"
+        ]
+      },
+      "go_sdk": {
+        "file": "sdk_resume_test.go",
+        "test": "TestA45_SDKSubscribeResume",
+        "asserts": [
+          "GetEvents",
+          "SubscribeResume",
+          "duplicate"
+        ]
+      },
+      "ts_sdk": {
+        "file": "smoke.test.ts",
+        "test": "session roundtrip, append, subscribe",
+        "asserts": [
+          "getEvents"
+        ]
+      }
+    },
+    "provider_get": {
+      "rpcs": [
+        "core.v1.ProviderService/GetProvider"
+      ],
+      "go_functional": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
+        "asserts": [
+          "GetProvider",
+          "RegisterProvider"
+        ]
+      },
+      "go_sdk": {
+        "file": "provider_test.go",
+        "test": "TestA51_A106_ProviderRegistrationProbesTheControlPlane",
+        "asserts": [
+          "GetProvider",
+          "RegisterProvider"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers provider_get",
+        "asserts": [
+          "provider_get"
+        ]
+      }
+    },
+    "session_archive": {
+      "rpcs": [
+        "core.v1.SessionService/ArchiveSession"
+      ],
+      "go_functional": {
+        "file": "sdk_resume_test.go",
+        "test": "TestA48_SessionArchive",
+        "asserts": [
+          "ArchiveSession",
+          "archived_at"
+        ]
+      },
+      "go_sdk": {
+        "file": "sdk_resume_test.go",
+        "test": "TestA48_SessionArchive",
+        "asserts": [
+          "ArchiveSession",
+          "archived_at"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers session_archive",
+        "asserts": [
+          "session_archive"
+        ]
+      }
+    },
+    "replay_parity": {
+      "rpcs": [
+        "core.v1.EventService/Subscribe",
+        "core.v1.RunService/StartRun"
+      ],
+      "go_functional": {
+        "file": "replay_parity_test.go",
+        "test": "TestA46_ReplayParityGoVsTS",
+        "asserts": [
+          "parity",
+          "payload"
+        ]
+      },
+      "go_sdk": {
+        "file": "replay_parity_test.go",
+        "test": "TestA46_ReplayParityGoVsTS",
+        "asserts": [
+          "parity",
+          "Go"
+        ]
+      },
+      "ts_sdk": {
+        "file": "sdk_surface.test.ts",
+        "test": "covers replay_parity",
+        "asserts": [
+          "replay_parity"
         ]
       }
     }

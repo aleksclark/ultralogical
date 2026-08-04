@@ -366,6 +366,8 @@ type ListSessionsRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	TenantId       string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	LabelSelectors []*LabelSelector       `protobuf:"bytes,2,rep,name=label_selectors,json=labelSelectors,proto3" json:"label_selectors,omitempty"`
+	PageSize       int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken      string                 `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -414,9 +416,24 @@ func (x *ListSessionsRequest) GetLabelSelectors() []*LabelSelector {
 	return nil
 }
 
+func (x *ListSessionsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListSessionsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListSessionsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sessions      []*Session             `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -456,6 +473,13 @@ func (x *ListSessionsResponse) GetSessions() []*Session {
 		return x.Sessions
 	}
 	return nil
+}
+
+func (x *ListSessionsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type UpdateSessionLabelsRequest struct {
@@ -562,6 +586,94 @@ func (x *UpdateSessionLabelsResponse) GetEventSeq() int64 {
 	return 0
 }
 
+type ArchiveSessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ArchiveSessionRequest) Reset() {
+	*x = ArchiveSessionRequest{}
+	mi := &file_core_v1_session_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ArchiveSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArchiveSessionRequest) ProtoMessage() {}
+
+func (x *ArchiveSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_session_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArchiveSessionRequest.ProtoReflect.Descriptor instead.
+func (*ArchiveSessionRequest) Descriptor() ([]byte, []int) {
+	return file_core_v1_session_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ArchiveSessionRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type ArchiveSessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Session       *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ArchiveSessionResponse) Reset() {
+	*x = ArchiveSessionResponse{}
+	mi := &file_core_v1_session_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ArchiveSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArchiveSessionResponse) ProtoMessage() {}
+
+func (x *ArchiveSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_session_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArchiveSessionResponse.ProtoReflect.Descriptor instead.
+func (*ArchiveSessionResponse) Descriptor() ([]byte, []int) {
+	return file_core_v1_session_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ArchiveSessionResponse) GetSession() *Session {
+	if x != nil {
+		return x.Session
+	}
+	return nil
+}
+
 type MemoryEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -575,7 +687,7 @@ type MemoryEntry struct {
 
 func (x *MemoryEntry) Reset() {
 	*x = MemoryEntry{}
-	mi := &file_core_v1_session_proto_msgTypes[10]
+	mi := &file_core_v1_session_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -587,7 +699,7 @@ func (x *MemoryEntry) String() string {
 func (*MemoryEntry) ProtoMessage() {}
 
 func (x *MemoryEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_session_proto_msgTypes[10]
+	mi := &file_core_v1_session_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -600,7 +712,7 @@ func (x *MemoryEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryEntry.ProtoReflect.Descriptor instead.
 func (*MemoryEntry) Descriptor() ([]byte, []int) {
-	return file_core_v1_session_proto_rawDescGZIP(), []int{10}
+	return file_core_v1_session_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *MemoryEntry) GetKey() string {
@@ -649,7 +761,7 @@ type SetMemoryRequest struct {
 
 func (x *SetMemoryRequest) Reset() {
 	*x = SetMemoryRequest{}
-	mi := &file_core_v1_session_proto_msgTypes[11]
+	mi := &file_core_v1_session_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -661,7 +773,7 @@ func (x *SetMemoryRequest) String() string {
 func (*SetMemoryRequest) ProtoMessage() {}
 
 func (x *SetMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_session_proto_msgTypes[11]
+	mi := &file_core_v1_session_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -674,7 +786,7 @@ func (x *SetMemoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetMemoryRequest.ProtoReflect.Descriptor instead.
 func (*SetMemoryRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_session_proto_rawDescGZIP(), []int{11}
+	return file_core_v1_session_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SetMemoryRequest) GetSessionId() string {
@@ -707,7 +819,7 @@ type SetMemoryResponse struct {
 
 func (x *SetMemoryResponse) Reset() {
 	*x = SetMemoryResponse{}
-	mi := &file_core_v1_session_proto_msgTypes[12]
+	mi := &file_core_v1_session_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -719,7 +831,7 @@ func (x *SetMemoryResponse) String() string {
 func (*SetMemoryResponse) ProtoMessage() {}
 
 func (x *SetMemoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_session_proto_msgTypes[12]
+	mi := &file_core_v1_session_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -732,7 +844,7 @@ func (x *SetMemoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetMemoryResponse.ProtoReflect.Descriptor instead.
 func (*SetMemoryResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_session_proto_rawDescGZIP(), []int{12}
+	return file_core_v1_session_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SetMemoryResponse) GetEventSeq() int64 {
@@ -752,7 +864,7 @@ type GetMemoryRequest struct {
 
 func (x *GetMemoryRequest) Reset() {
 	*x = GetMemoryRequest{}
-	mi := &file_core_v1_session_proto_msgTypes[13]
+	mi := &file_core_v1_session_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -764,7 +876,7 @@ func (x *GetMemoryRequest) String() string {
 func (*GetMemoryRequest) ProtoMessage() {}
 
 func (x *GetMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_session_proto_msgTypes[13]
+	mi := &file_core_v1_session_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -777,7 +889,7 @@ func (x *GetMemoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMemoryRequest.ProtoReflect.Descriptor instead.
 func (*GetMemoryRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_session_proto_rawDescGZIP(), []int{13}
+	return file_core_v1_session_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetMemoryRequest) GetSessionId() string {
@@ -803,7 +915,7 @@ type GetMemoryResponse struct {
 
 func (x *GetMemoryResponse) Reset() {
 	*x = GetMemoryResponse{}
-	mi := &file_core_v1_session_proto_msgTypes[14]
+	mi := &file_core_v1_session_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -815,7 +927,7 @@ func (x *GetMemoryResponse) String() string {
 func (*GetMemoryResponse) ProtoMessage() {}
 
 func (x *GetMemoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_session_proto_msgTypes[14]
+	mi := &file_core_v1_session_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -828,7 +940,7 @@ func (x *GetMemoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMemoryResponse.ProtoReflect.Descriptor instead.
 func (*GetMemoryResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_session_proto_rawDescGZIP(), []int{14}
+	return file_core_v1_session_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetMemoryResponse) GetEntry() *MemoryEntry {
@@ -841,13 +953,15 @@ func (x *GetMemoryResponse) GetEntry() *MemoryEntry {
 type ListMemoryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string                 `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListMemoryRequest) Reset() {
 	*x = ListMemoryRequest{}
-	mi := &file_core_v1_session_proto_msgTypes[15]
+	mi := &file_core_v1_session_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -859,7 +973,7 @@ func (x *ListMemoryRequest) String() string {
 func (*ListMemoryRequest) ProtoMessage() {}
 
 func (x *ListMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_session_proto_msgTypes[15]
+	mi := &file_core_v1_session_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -872,7 +986,7 @@ func (x *ListMemoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMemoryRequest.ProtoReflect.Descriptor instead.
 func (*ListMemoryRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_session_proto_rawDescGZIP(), []int{15}
+	return file_core_v1_session_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ListMemoryRequest) GetSessionId() string {
@@ -882,16 +996,31 @@ func (x *ListMemoryRequest) GetSessionId() string {
 	return ""
 }
 
+func (x *ListMemoryRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListMemoryRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListMemoryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Entries       []*MemoryEntry         `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListMemoryResponse) Reset() {
 	*x = ListMemoryResponse{}
-	mi := &file_core_v1_session_proto_msgTypes[16]
+	mi := &file_core_v1_session_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -903,7 +1032,7 @@ func (x *ListMemoryResponse) String() string {
 func (*ListMemoryResponse) ProtoMessage() {}
 
 func (x *ListMemoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_session_proto_msgTypes[16]
+	mi := &file_core_v1_session_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -916,7 +1045,7 @@ func (x *ListMemoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMemoryResponse.ProtoReflect.Descriptor instead.
 func (*ListMemoryResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_session_proto_rawDescGZIP(), []int{16}
+	return file_core_v1_session_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ListMemoryResponse) GetEntries() []*MemoryEntry {
@@ -924,6 +1053,13 @@ func (x *ListMemoryResponse) GetEntries() []*MemoryEntry {
 		return x.Entries
 	}
 	return nil
+}
+
+func (x *ListMemoryResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type DeleteMemoryRequest struct {
@@ -936,7 +1072,7 @@ type DeleteMemoryRequest struct {
 
 func (x *DeleteMemoryRequest) Reset() {
 	*x = DeleteMemoryRequest{}
-	mi := &file_core_v1_session_proto_msgTypes[17]
+	mi := &file_core_v1_session_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -948,7 +1084,7 @@ func (x *DeleteMemoryRequest) String() string {
 func (*DeleteMemoryRequest) ProtoMessage() {}
 
 func (x *DeleteMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_session_proto_msgTypes[17]
+	mi := &file_core_v1_session_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -961,7 +1097,7 @@ func (x *DeleteMemoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteMemoryRequest.ProtoReflect.Descriptor instead.
 func (*DeleteMemoryRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_session_proto_rawDescGZIP(), []int{17}
+	return file_core_v1_session_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *DeleteMemoryRequest) GetSessionId() string {
@@ -987,7 +1123,7 @@ type DeleteMemoryResponse struct {
 
 func (x *DeleteMemoryResponse) Reset() {
 	*x = DeleteMemoryResponse{}
-	mi := &file_core_v1_session_proto_msgTypes[18]
+	mi := &file_core_v1_session_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -999,7 +1135,7 @@ func (x *DeleteMemoryResponse) String() string {
 func (*DeleteMemoryResponse) ProtoMessage() {}
 
 func (x *DeleteMemoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_session_proto_msgTypes[18]
+	mi := &file_core_v1_session_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1012,7 +1148,7 @@ func (x *DeleteMemoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteMemoryResponse.ProtoReflect.Descriptor instead.
 func (*DeleteMemoryResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_session_proto_rawDescGZIP(), []int{18}
+	return file_core_v1_session_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *DeleteMemoryResponse) GetEventSeq() int64 {
@@ -1056,12 +1192,16 @@ const file_core_v1_session_proto_rawDesc = "" +
 	"\rLabelSelector\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x0e\n" +
 	"\x02op\x18\x02 \x01(\tR\x02op\x12\x16\n" +
-	"\x06values\x18\x03 \x03(\tR\x06values\"s\n" +
+	"\x06values\x18\x03 \x03(\tR\x06values\"\xaf\x01\n" +
 	"\x13ListSessionsRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12?\n" +
-	"\x0flabel_selectors\x18\x02 \x03(\v2\x16.core.v1.LabelSelectorR\x0elabelSelectors\"D\n" +
+	"\x0flabel_selectors\x18\x02 \x03(\v2\x16.core.v1.LabelSelectorR\x0elabelSelectors\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\"l\n" +
 	"\x14ListSessionsResponse\x12,\n" +
-	"\bsessions\x18\x01 \x03(\v2\x10.core.v1.SessionR\bsessions\"\xbf\x01\n" +
+	"\bsessions\x18\x01 \x03(\v2\x10.core.v1.SessionR\bsessions\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xbf\x01\n" +
 	"\x1aUpdateSessionLabelsRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12G\n" +
@@ -1071,7 +1211,12 @@ const file_core_v1_session_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"f\n" +
 	"\x1bUpdateSessionLabelsResponse\x12*\n" +
 	"\asession\x18\x01 \x01(\v2\x10.core.v1.SessionR\asession\x12\x1b\n" +
-	"\tevent_seq\x18\x02 \x01(\x03R\beventSeq\"\xc5\x01\n" +
+	"\tevent_seq\x18\x02 \x01(\x03R\beventSeq\"6\n" +
+	"\x15ArchiveSessionRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"D\n" +
+	"\x16ArchiveSessionResponse\x12*\n" +
+	"\asession\x18\x01 \x01(\v2\x10.core.v1.SessionR\asession\"\xc5\x01\n" +
 	"\vMemoryEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1d\n" +
 	"\n" +
@@ -1093,24 +1238,29 @@ const file_core_v1_session_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\"?\n" +
 	"\x11GetMemoryResponse\x12*\n" +
-	"\x05entry\x18\x01 \x01(\v2\x14.core.v1.MemoryEntryR\x05entry\"2\n" +
+	"\x05entry\x18\x01 \x01(\v2\x14.core.v1.MemoryEntryR\x05entry\"n\n" +
 	"\x11ListMemoryRequest\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"D\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\"l\n" +
 	"\x12ListMemoryResponse\x12.\n" +
-	"\aentries\x18\x01 \x03(\v2\x14.core.v1.MemoryEntryR\aentries\"F\n" +
+	"\aentries\x18\x01 \x03(\v2\x14.core.v1.MemoryEntryR\aentries\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"F\n" +
 	"\x13DeleteMemoryRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\"3\n" +
 	"\x14DeleteMemoryResponse\x12\x1b\n" +
-	"\tevent_seq\x18\x01 \x01(\x03R\beventSeq2\xf2\x04\n" +
+	"\tevent_seq\x18\x01 \x01(\x03R\beventSeq2\xc5\x05\n" +
 	"\x0eSessionService\x12N\n" +
 	"\rCreateSession\x12\x1d.core.v1.CreateSessionRequest\x1a\x1e.core.v1.CreateSessionResponse\x12E\n" +
 	"\n" +
 	"GetSession\x12\x1a.core.v1.GetSessionRequest\x1a\x1b.core.v1.GetSessionResponse\x12K\n" +
 	"\fListSessions\x12\x1c.core.v1.ListSessionsRequest\x1a\x1d.core.v1.ListSessionsResponse\x12`\n" +
-	"\x13UpdateSessionLabels\x12#.core.v1.UpdateSessionLabelsRequest\x1a$.core.v1.UpdateSessionLabelsResponse\x12B\n" +
+	"\x13UpdateSessionLabels\x12#.core.v1.UpdateSessionLabelsRequest\x1a$.core.v1.UpdateSessionLabelsResponse\x12Q\n" +
+	"\x0eArchiveSession\x12\x1e.core.v1.ArchiveSessionRequest\x1a\x1f.core.v1.ArchiveSessionResponse\x12B\n" +
 	"\tSetMemory\x12\x19.core.v1.SetMemoryRequest\x1a\x1a.core.v1.SetMemoryResponse\x12B\n" +
 	"\tGetMemory\x12\x19.core.v1.GetMemoryRequest\x1a\x1a.core.v1.GetMemoryResponse\x12E\n" +
 	"\n" +
@@ -1129,7 +1279,7 @@ func file_core_v1_session_proto_rawDescGZIP() []byte {
 	return file_core_v1_session_proto_rawDescData
 }
 
-var file_core_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_core_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_core_v1_session_proto_goTypes = []any{
 	(*Session)(nil),                     // 0: core.v1.Session
 	(*CreateSessionRequest)(nil),        // 1: core.v1.CreateSessionRequest
@@ -1141,55 +1291,60 @@ var file_core_v1_session_proto_goTypes = []any{
 	(*ListSessionsResponse)(nil),        // 7: core.v1.ListSessionsResponse
 	(*UpdateSessionLabelsRequest)(nil),  // 8: core.v1.UpdateSessionLabelsRequest
 	(*UpdateSessionLabelsResponse)(nil), // 9: core.v1.UpdateSessionLabelsResponse
-	(*MemoryEntry)(nil),                 // 10: core.v1.MemoryEntry
-	(*SetMemoryRequest)(nil),            // 11: core.v1.SetMemoryRequest
-	(*SetMemoryResponse)(nil),           // 12: core.v1.SetMemoryResponse
-	(*GetMemoryRequest)(nil),            // 13: core.v1.GetMemoryRequest
-	(*GetMemoryResponse)(nil),           // 14: core.v1.GetMemoryResponse
-	(*ListMemoryRequest)(nil),           // 15: core.v1.ListMemoryRequest
-	(*ListMemoryResponse)(nil),          // 16: core.v1.ListMemoryResponse
-	(*DeleteMemoryRequest)(nil),         // 17: core.v1.DeleteMemoryRequest
-	(*DeleteMemoryResponse)(nil),        // 18: core.v1.DeleteMemoryResponse
-	nil,                                 // 19: core.v1.Session.LabelsEntry
-	nil,                                 // 20: core.v1.CreateSessionRequest.LabelsEntry
-	nil,                                 // 21: core.v1.UpdateSessionLabelsRequest.LabelsEntry
-	(*timestamppb.Timestamp)(nil),       // 22: google.protobuf.Timestamp
+	(*ArchiveSessionRequest)(nil),       // 10: core.v1.ArchiveSessionRequest
+	(*ArchiveSessionResponse)(nil),      // 11: core.v1.ArchiveSessionResponse
+	(*MemoryEntry)(nil),                 // 12: core.v1.MemoryEntry
+	(*SetMemoryRequest)(nil),            // 13: core.v1.SetMemoryRequest
+	(*SetMemoryResponse)(nil),           // 14: core.v1.SetMemoryResponse
+	(*GetMemoryRequest)(nil),            // 15: core.v1.GetMemoryRequest
+	(*GetMemoryResponse)(nil),           // 16: core.v1.GetMemoryResponse
+	(*ListMemoryRequest)(nil),           // 17: core.v1.ListMemoryRequest
+	(*ListMemoryResponse)(nil),          // 18: core.v1.ListMemoryResponse
+	(*DeleteMemoryRequest)(nil),         // 19: core.v1.DeleteMemoryRequest
+	(*DeleteMemoryResponse)(nil),        // 20: core.v1.DeleteMemoryResponse
+	nil,                                 // 21: core.v1.Session.LabelsEntry
+	nil,                                 // 22: core.v1.CreateSessionRequest.LabelsEntry
+	nil,                                 // 23: core.v1.UpdateSessionLabelsRequest.LabelsEntry
+	(*timestamppb.Timestamp)(nil),       // 24: google.protobuf.Timestamp
 }
 var file_core_v1_session_proto_depIdxs = []int32{
-	22, // 0: core.v1.Session.created_at:type_name -> google.protobuf.Timestamp
-	22, // 1: core.v1.Session.archived_at:type_name -> google.protobuf.Timestamp
-	19, // 2: core.v1.Session.labels:type_name -> core.v1.Session.LabelsEntry
-	20, // 3: core.v1.CreateSessionRequest.labels:type_name -> core.v1.CreateSessionRequest.LabelsEntry
+	24, // 0: core.v1.Session.created_at:type_name -> google.protobuf.Timestamp
+	24, // 1: core.v1.Session.archived_at:type_name -> google.protobuf.Timestamp
+	21, // 2: core.v1.Session.labels:type_name -> core.v1.Session.LabelsEntry
+	22, // 3: core.v1.CreateSessionRequest.labels:type_name -> core.v1.CreateSessionRequest.LabelsEntry
 	0,  // 4: core.v1.CreateSessionResponse.session:type_name -> core.v1.Session
 	0,  // 5: core.v1.GetSessionResponse.session:type_name -> core.v1.Session
 	5,  // 6: core.v1.ListSessionsRequest.label_selectors:type_name -> core.v1.LabelSelector
 	0,  // 7: core.v1.ListSessionsResponse.sessions:type_name -> core.v1.Session
-	21, // 8: core.v1.UpdateSessionLabelsRequest.labels:type_name -> core.v1.UpdateSessionLabelsRequest.LabelsEntry
+	23, // 8: core.v1.UpdateSessionLabelsRequest.labels:type_name -> core.v1.UpdateSessionLabelsRequest.LabelsEntry
 	0,  // 9: core.v1.UpdateSessionLabelsResponse.session:type_name -> core.v1.Session
-	22, // 10: core.v1.MemoryEntry.updated_at:type_name -> google.protobuf.Timestamp
-	10, // 11: core.v1.GetMemoryResponse.entry:type_name -> core.v1.MemoryEntry
-	10, // 12: core.v1.ListMemoryResponse.entries:type_name -> core.v1.MemoryEntry
-	1,  // 13: core.v1.SessionService.CreateSession:input_type -> core.v1.CreateSessionRequest
-	3,  // 14: core.v1.SessionService.GetSession:input_type -> core.v1.GetSessionRequest
-	6,  // 15: core.v1.SessionService.ListSessions:input_type -> core.v1.ListSessionsRequest
-	8,  // 16: core.v1.SessionService.UpdateSessionLabels:input_type -> core.v1.UpdateSessionLabelsRequest
-	11, // 17: core.v1.SessionService.SetMemory:input_type -> core.v1.SetMemoryRequest
-	13, // 18: core.v1.SessionService.GetMemory:input_type -> core.v1.GetMemoryRequest
-	15, // 19: core.v1.SessionService.ListMemory:input_type -> core.v1.ListMemoryRequest
-	17, // 20: core.v1.SessionService.DeleteMemory:input_type -> core.v1.DeleteMemoryRequest
-	2,  // 21: core.v1.SessionService.CreateSession:output_type -> core.v1.CreateSessionResponse
-	4,  // 22: core.v1.SessionService.GetSession:output_type -> core.v1.GetSessionResponse
-	7,  // 23: core.v1.SessionService.ListSessions:output_type -> core.v1.ListSessionsResponse
-	9,  // 24: core.v1.SessionService.UpdateSessionLabels:output_type -> core.v1.UpdateSessionLabelsResponse
-	12, // 25: core.v1.SessionService.SetMemory:output_type -> core.v1.SetMemoryResponse
-	14, // 26: core.v1.SessionService.GetMemory:output_type -> core.v1.GetMemoryResponse
-	16, // 27: core.v1.SessionService.ListMemory:output_type -> core.v1.ListMemoryResponse
-	18, // 28: core.v1.SessionService.DeleteMemory:output_type -> core.v1.DeleteMemoryResponse
-	21, // [21:29] is the sub-list for method output_type
-	13, // [13:21] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	0,  // 10: core.v1.ArchiveSessionResponse.session:type_name -> core.v1.Session
+	24, // 11: core.v1.MemoryEntry.updated_at:type_name -> google.protobuf.Timestamp
+	12, // 12: core.v1.GetMemoryResponse.entry:type_name -> core.v1.MemoryEntry
+	12, // 13: core.v1.ListMemoryResponse.entries:type_name -> core.v1.MemoryEntry
+	1,  // 14: core.v1.SessionService.CreateSession:input_type -> core.v1.CreateSessionRequest
+	3,  // 15: core.v1.SessionService.GetSession:input_type -> core.v1.GetSessionRequest
+	6,  // 16: core.v1.SessionService.ListSessions:input_type -> core.v1.ListSessionsRequest
+	8,  // 17: core.v1.SessionService.UpdateSessionLabels:input_type -> core.v1.UpdateSessionLabelsRequest
+	10, // 18: core.v1.SessionService.ArchiveSession:input_type -> core.v1.ArchiveSessionRequest
+	13, // 19: core.v1.SessionService.SetMemory:input_type -> core.v1.SetMemoryRequest
+	15, // 20: core.v1.SessionService.GetMemory:input_type -> core.v1.GetMemoryRequest
+	17, // 21: core.v1.SessionService.ListMemory:input_type -> core.v1.ListMemoryRequest
+	19, // 22: core.v1.SessionService.DeleteMemory:input_type -> core.v1.DeleteMemoryRequest
+	2,  // 23: core.v1.SessionService.CreateSession:output_type -> core.v1.CreateSessionResponse
+	4,  // 24: core.v1.SessionService.GetSession:output_type -> core.v1.GetSessionResponse
+	7,  // 25: core.v1.SessionService.ListSessions:output_type -> core.v1.ListSessionsResponse
+	9,  // 26: core.v1.SessionService.UpdateSessionLabels:output_type -> core.v1.UpdateSessionLabelsResponse
+	11, // 27: core.v1.SessionService.ArchiveSession:output_type -> core.v1.ArchiveSessionResponse
+	14, // 28: core.v1.SessionService.SetMemory:output_type -> core.v1.SetMemoryResponse
+	16, // 29: core.v1.SessionService.GetMemory:output_type -> core.v1.GetMemoryResponse
+	18, // 30: core.v1.SessionService.ListMemory:output_type -> core.v1.ListMemoryResponse
+	20, // 31: core.v1.SessionService.DeleteMemory:output_type -> core.v1.DeleteMemoryResponse
+	23, // [23:32] is the sub-list for method output_type
+	14, // [14:23] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_core_v1_session_proto_init() }
@@ -1203,7 +1358,7 @@ func file_core_v1_session_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_core_v1_session_proto_rawDesc), len(file_core_v1_session_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   22,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

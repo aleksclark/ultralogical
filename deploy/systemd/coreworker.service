@@ -1,0 +1,21 @@
+[Unit]
+Description=ultracore worker (coreworker)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=core
+Group=core
+EnvironmentFile=/etc/ultracore/coreworker.env
+ExecStart=/usr/local/bin/coreworker
+Restart=on-failure
+RestartSec=2
+LimitNOFILE=65536
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

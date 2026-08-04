@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prove the coverage-evidence gate rejects false claims.
+# Prove the coverage-evidence gate rejects false claims (v2 schema).
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
@@ -40,6 +40,7 @@ expect_rejected() {
   note "  rejected as required: $reason"
   restore
   verify || fail "restored tree does not pass coverage verification"
+  note "  the restored tree passes"
 }
 
 note "mutation 1: nonexistent evidence file"
@@ -49,7 +50,9 @@ p = pathlib.Path("e2e/coverage.json")
 d = json.loads(p.read_text())
 d["capabilities"]["fabricated_capability"] = {
     "rpcs": ["core.v1.SessionService/GetSession"],
-    "go": {"file": "does-not-exist_test.go", "test": "TestImaginary", "asserts": ["nothing"]},
+    "go_functional": {"file": "does-not-exist_test.go", "test": "TestImaginary", "asserts": ["nothing"]},
+    "go_sdk": {"file": "does-not-exist_test.go", "test": "TestImaginary", "asserts": ["nothing"]},
+    "ts_sdk": {"file": "missing.test.ts", "test": "nope", "asserts": ["x"]},
 }
 p.write_text(json.dumps(d, indent=2) + "\n")
 PY
@@ -60,7 +63,7 @@ python3 - <<'PY'
 import json, pathlib
 p = pathlib.Path("e2e/coverage.json")
 d = json.loads(p.read_text())
-d["capabilities"]["incremental_streaming"]["go"]["test"] = "TestThatWasNeverWritten"
+d["capabilities"]["incremental_streaming"]["go_functional"]["test"] = "TestThatWasNeverWritten"
 p.write_text(json.dumps(d, indent=2) + "\n")
 PY
 expect_rejected "a test name the referenced file does not declare"
@@ -70,45 +73,49 @@ python3 - <<'PY'
 import json, pathlib
 p = pathlib.Path("e2e/coverage.json")
 d = json.loads(p.read_text())
-d["capabilities"]["flat_allowlist_denial"]["go"]["asserts"] = ["asserts a behavior this test never checks"]
+d["capabilities"]["flat_allowlist_denial"]["go_functional"]["asserts"] = ["asserts a behavior this test never checks"]
 p.write_text(json.dumps(d, indent=2) + "\n")
 PY
 expect_rejected "an assertion the referenced test does not contain"
 
 note "mutation 4: evidence not executed by required CI"
 python3 - <<'PY'
-import pathlib, re
-p = pathlib.Path(".github/workflows/ci.yml")
-text = p.read_text()
-mutated = re.sub(
-    r"go test \./e2e/ -count=1 -v -timeout \d+m",
-    "go test ./e2e/ -count=1 -run 'TestA01' -v -timeout 20m",
-    text,
-)
-assert mutated != text, "ci.yml shape changed; update the mutation script"
-p.write_text(mutated)
+import pathlib
+ci = pathlib.Path(".github/workflows/ci.yml")
+text = ci.read_text()
+# Force every go test ./e2e invocation to a filter that matches nothing.
+text2 = text.replace("go test ./e2e/", "go test ./e2e/ -run 'TestDoesNotMatchAnything' ")
+if text2 == text:
+    raise SystemExit("could not find go test ./e2e/ in ci.yml")
+ci.write_text(text2)
 PY
 expect_rejected "evidence that required CI never executes"
 
-note "mutation 5: a covered capability deleted from the matrix"
+note "mutation 5: capability deleted from the matrix"
 python3 - <<'PY'
 import json, pathlib
 p = pathlib.Path("e2e/coverage.json")
 d = json.loads(p.read_text())
-del d["capabilities"]["session_memory"]
+# Delete a capability that uniquely owns some RPCs so they become unaccounted.
+del d["capabilities"]["periodic_prompts"]
 p.write_text(json.dumps(d, indent=2) + "\n")
 PY
 expect_rejected "a capability deleted from the matrix, leaving its RPCs unaccounted for"
 
-note "mutation 6: a new RPC with neither coverage nor a deferral"
+note "mutation 6: published RPC with neither coverage nor deferral"
 python3 - <<'PY'
-import pathlib
-p = pathlib.Path("proto/core/v1/session.proto")
+from pathlib import Path
+# Add a throwaway RPC to a proto so the verifier sees an uncovered published RPC.
+p = Path("proto/core/v1/session.proto")
 text = p.read_text()
-target = "  rpc DeleteMemory(DeleteMemoryRequest) returns (DeleteMemoryResponse);"
-assert target in text, "session.proto shape changed; update the mutation script"
-p.write_text(text.replace(target, target + "\n  rpc PurgeSession(GetSessionRequest) returns (GetSessionResponse);"))
+if "rpc MutationProbe" not in text:
+    text = text.replace(
+        "rpc DeleteMemory(DeleteMemoryRequest) returns (DeleteMemoryResponse);",
+        "rpc DeleteMemory(DeleteMemoryRequest) returns (DeleteMemoryResponse);\n  rpc MutationProbe(GetSessionRequest) returns (GetSessionResponse);",
+    )
+    p.write_text(text)
 PY
 expect_rejected "a published RPC with neither coverage nor an explicit deferral"
 
-note "every false coverage claim was rejected and the restored tree passes"
+note "all coverage mutations rejected as required"
+note "the restored tree passes"

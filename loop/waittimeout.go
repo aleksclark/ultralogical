@@ -16,7 +16,7 @@ import (
 // the deadline lives in the database and any worker can enforce it. The job
 // reschedules itself, which makes it self-healing after a crash.
 type WaitTimeoutJob struct {
-	TenantID string `json:"org_id"`
+	TenantID string `json:"tenant_id"`
 }
 
 // Kind implements jobqueue.Job.

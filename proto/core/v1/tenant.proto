@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package core.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aleksclark/ultracore/gen/go/core/v1;corev1";
+
+// Tenant is the tenancy boundary.
+message Tenant {
+  string id = 1;
+  string name = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+// KeyScope is the authority granted by one API key.
+enum KeyScope {
+  KEY_SCOPE_UNSPECIFIED = 0;
+  KEY_SCOPE_ADMIN = 1;
+  KEY_SCOPE_SESSIONS = 2;
+}
+
+// APIKeyInfo is the listable, secret-free view of a tenant API key.
+message APIKeyInfo {
+  string id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  KeyScope scope = 4;
+  string prefix = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp revoked_at = 7;
+}
+
+message CreateTenantRequest {
+  string name = 1;
+}
+
+message CreateTenantResponse {
+  Tenant tenant = 1;
+  // Raw key returned once at creation. Never stored or logged.
+  string admin_key = 2;
+}
+
+message GetTenantRequest {
+  string tenant_id = 1;
+}
+
+message GetTenantResponse {
+  Tenant tenant = 1;
+}
+
+message ListTenantsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListTenantsResponse {
+  // Tenants the caller's key can see (its own tenant).
+  repeated Tenant tenants = 1;
+  string next_page_token = 2;
+}
+
+message CreateAPIKeyRequest {
+  string tenant_id = 1;
+  string name = 2;
+  KeyScope scope = 3;
+}
+
+message CreateAPIKeyResponse {
+  APIKeyInfo key = 1;
+  // Raw key returned once. Never stored or logged.
+  string raw_key = 2;
+}
+
+message ListAPIKeysRequest {
+  string tenant_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListAPIKeysResponse {
+  repeated APIKeyInfo keys = 1;
+  string next_page_token = 2;
+}
+
+message RevokeAPIKeyRequest {
+  string tenant_id = 1;
+  string key_id = 2;
+}
+
+message RevokeAPIKeyResponse {}
+
+// TenantService manages tenants and API keys. CreateTenant is bootstrap-only
+// (any authenticated admin key may create additional tenants). Raw API keys
+// are returned once at creation.
+service TenantService {
+  rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse);
+  rpc GetTenant(GetTenantRequest) returns (GetTenantResponse);
+  rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
+  rpc CreateAPIKey(CreateAPIKeyRequest) returns (CreateAPIKeyResponse);
+  rpc ListAPIKeys(ListAPIKeysRequest) returns (ListAPIKeysResponse);
+  rpc RevokeAPIKey(RevokeAPIKeyRequest) returns (RevokeAPIKeyResponse);
+}

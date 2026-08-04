@@ -2,9 +2,9 @@
 //
 // Subcommands:
 //
-//	seed   Create the dev org, user, membership, local provider instance, and
+//	seed   Create the dev tenant, admin API key, local provider instance, and
 //	       an inference credential pointing at a local model endpoint. Prints
-//	       JSON describing what it created.
+//	       JSON describing what it created (tenant_id + api_key).
 //	smoke  Drive the running stack through the shipped API: create a session,
 //	       stream an agent run, provision a development environment, run a
 //	       command in it, and terminate. Exits nonzero on any
@@ -12,16 +12,15 @@
 //	model  Serve a minimal OpenAI-compatible streaming endpoint so the local
 //	       stack can run agents without a vendor account.
 //
-// Configuration:
+// Configuration (dev tooling only — not accepted by cored/coreworker):
 //
-//	DATABASE_URL      Postgres connection string (seed)
-//	CORE_MASTER_KEY  credential master key (seed)
-//	CORE_DEV_EMAIL   dev user "dev@example.com" (seed, default dev@example.com)
-//	CORE_MODEL_URL   base URL of the local model endpoint (seed)
-//	CORE_SMOKE_API   cored base URL (smoke)
-//	CORE_SMOKE_TOKEN dev bearer token (smoke)
-//	CORE_SMOKE_ORG   org id to work in (smoke)
-//	CORE_MODEL_ADDR  listen address for the model endpoint (model)
+//	DATABASE_URL       Postgres connection string (seed)
+//	CORE_MASTER_KEY    credential master key (seed)
+//	CORE_MODEL_URL     base URL of the local model endpoint (seed)
+//	CORE_SMOKE_API     cored base URL (smoke)
+//	CORE_SMOKE_TOKEN   tenant API key bearer token (smoke)
+//	CORE_SMOKE_TENANT  tenant id to work in (smoke)
+//	CORE_MODEL_ADDR    listen address for the model endpoint (model)
 package main
 
 import (
@@ -73,9 +72,10 @@ func envOr(name, def string) string {
 	return def
 }
 
-// seed makes the local stack usable: an org, a user with membership, a local
-// Docker provider instance named "default", and an inference credential
-// pointing at the local model endpoint. It is idempotent.
+// seed makes the local stack usable: a tenant, admin API key, a local Docker
+// provider instance named "default", and an inference credential pointing at
+// the local model endpoint. It is idempotent and always prints tenant_id +
+// api_key JSON on stdout so scripts can drive the stack without sticky tokens.
 func seed(ctx context.Context) error {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
@@ -94,55 +94,30 @@ func seed(ctx context.Context) error {
 	}
 	defer pool.Close()
 
-	// Seed a dev tenant + admin API key when missing.
-	var org uc.Tenant
+	var tenant uc.Tenant
 	tenants, err := store.Tenants().List(ctx)
 	if err != nil {
 		return err
 	}
 	if len(tenants) > 0 {
-		org = tenants[0]
+		tenant = tenants[0]
 	} else {
-		org = uc.Tenant{ID: uc.TenantID(uuid.NewString()), Name: "dev"}
-		if err := store.Tenants().Create(ctx, org); err != nil {
+		tenant = uc.Tenant{ID: uc.TenantID(uuid.NewString()), Name: "dev"}
+		if err := store.Tenants().Create(ctx, tenant); err != nil {
 			return err
 		}
 	}
-	// Ensure at least one admin key exists; print it once for the operator.
-	keys, err := store.APIKeys().List(ctx, org.ID)
+
+	apiKey, err := ensureAdminAPIKey(ctx, store, keyring, tenant.ID)
 	if err != nil {
 		return err
 	}
-	hasLive := false
-	for _, k := range keys {
-		if k.RevokedAt == nil && k.Scope == uc.KeyScopeAdmin {
-			hasLive = true
-			break
-		}
-	}
-	if !hasLive {
-		raw, prefix, err := uc.GenerateAPIKey()
-		if err != nil {
-			return err
-		}
-		secrets.DefaultRedactor.Register(raw)
-		enc, err := keyring.Encrypt([]byte(raw))
-		if err != nil {
-			return err
-		}
-		if err := store.APIKeys().Create(ctx, uc.APIKey{
-			ID: uc.APIKeyID(uuid.NewString()), TenantID: org.ID, Name: "dev",
-			Scope: uc.KeyScopeAdmin, Prefix: prefix, KeyHash: uc.HashAPIKey(raw), KeyEnc: enc,
-		}); err != nil {
-			return err
-		}
-		fmt.Fprintln(os.Stderr, "devstack: admin API key (save now):", raw)
-		fmt.Fprintln(os.Stderr, "devstack: tenant id:", org.ID)
-	}
-	scope := store.Tenant(org.ID)
+	secrets.DefaultRedactor.Register(apiKey)
+
+	scope := store.Tenant(tenant.ID)
 	if _, err := scope.Providers().GetByName(ctx, "default"); errors.Is(err, uc.ErrNotFound) {
 		if err := scope.Providers().Create(ctx, uc.ProviderInstance{
-			ID: uc.ProviderInstanceID(uuid.NewString()), TenantID: org.ID,
+			ID: uc.ProviderInstanceID(uuid.NewString()), TenantID: tenant.ID,
 			Kind: uc.ProviderKindLocalDocker, Name: "default",
 			State: "ready",
 		}); err != nil {
@@ -169,14 +144,58 @@ func seed(ctx context.Context) error {
 	}
 
 	return json.NewEncoder(os.Stdout).Encode(map[string]string{
-		"tenant_id": string(org.ID),
+		"tenant_id": string(tenant.ID),
+		"api_key":   apiKey,
 	})
+}
+
+// ensureAdminAPIKey returns a live admin key for the tenant, minting one when
+// none exists. Existing keys are decrypted from key_enc so re-seed stays stable.
+func ensureAdminAPIKey(ctx context.Context, store uc.Store, keyring secrets.Keyring, tenant uc.TenantID) (string, error) {
+	keys, err := store.APIKeys().List(ctx, tenant)
+	if err != nil {
+		return "", err
+	}
+	for _, info := range keys {
+		if info.RevokedAt != nil || info.Scope != uc.KeyScopeAdmin {
+			continue
+		}
+		full, err := store.APIKeys().Get(ctx, info.ID)
+		if err != nil {
+			return "", err
+		}
+		if len(full.KeyEnc) == 0 {
+			continue
+		}
+		raw, err := keyring.Decrypt(full.KeyEnc)
+		if err != nil {
+			return "", fmt.Errorf("decrypt existing admin api key: %w", err)
+		}
+		return string(raw), nil
+	}
+
+	raw, prefix, err := uc.GenerateAPIKey()
+	if err != nil {
+		return "", err
+	}
+	enc, err := keyring.Encrypt([]byte(raw))
+	if err != nil {
+		return "", err
+	}
+	if err := store.APIKeys().Create(ctx, uc.APIKey{
+		ID: uc.APIKeyID(uuid.NewString()), TenantID: tenant, Name: "dev",
+		Scope: uc.KeyScopeAdmin, Prefix: prefix, KeyHash: uc.HashAPIKey(raw), KeyEnc: enc,
+	}); err != nil {
+		return "", err
+	}
+	fmt.Fprintln(os.Stderr, "devstack: minted admin API key for tenant", tenant)
+	return raw, nil
 }
 
 type smokeClient struct {
 	sessions corev1connect.SessionServiceClient
 	events   corev1connect.EventServiceClient
-	agents   corev1connect.AgentServiceClient
+	agents   corev1connect.RunServiceClient
 	resources     corev1connect.ResourceServiceClient
 }
 
@@ -195,21 +214,28 @@ func (b *bearer) RoundTrip(req *http.Request) (*http.Response, error) {
 // the "is the documented stack actually usable" check, not a unit test.
 func smoke(ctx context.Context) error {
 	api := envOr("CORE_SMOKE_API", "http://127.0.0.1:8080")
-	token := envOr("CORE_SMOKE_TOKEN", "dev-token")
-	org := os.Getenv("CORE_SMOKE_ORG")
-	if org == "" {
-		return errors.New("CORE_SMOKE_ORG is required")
+	token := os.Getenv("CORE_SMOKE_TOKEN")
+	if token == "" {
+		return errors.New("CORE_SMOKE_TOKEN is required (seeded tenant API key)")
+	}
+	tenant := os.Getenv("CORE_SMOKE_TENANT")
+	if tenant == "" {
+		// Backward-compatible alias during the org→tenant rename window.
+		tenant = os.Getenv("CORE_SMOKE_ORG")
+	}
+	if tenant == "" {
+		return errors.New("CORE_SMOKE_TENANT is required")
 	}
 	httpClient := &http.Client{Transport: &bearer{token: token, base: http.DefaultTransport}, Timeout: 2 * time.Minute}
 	client := smokeClient{
-		sessions: corev1connect.NewSessionServiceClient(httpClient, api),
-		events:   corev1connect.NewEventServiceClient(httpClient, api),
-		agents:   corev1connect.NewAgentServiceClient(httpClient, api),
-		resources:     corev1connect.NewResourceServiceClient(httpClient, api),
-		}
+		sessions:  corev1connect.NewSessionServiceClient(httpClient, api),
+		events:    corev1connect.NewEventServiceClient(httpClient, api),
+		agents:    corev1connect.NewRunServiceClient(httpClient, api),
+		resources: corev1connect.NewResourceServiceClient(httpClient, api),
+	}
 
 	created, err := client.sessions.CreateSession(ctx, connect.NewRequest(&corev1.CreateSessionRequest{
-		TenantId: org, Title: "dev stack smoke",
+		TenantId: tenant, Title: "dev stack smoke",
 	}))
 	if err != nil {
 		return fmt.Errorf("create session: %w", err)

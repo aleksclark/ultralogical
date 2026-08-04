@@ -66,7 +66,7 @@ func (b *EventBus) Stop() {
 }
 
 // Subscribe implements uc.EventBus.
-func (b *EventBus) Subscribe(ctx context.Context, org uc.TenantID, session uc.SessionID, fromSeq int64) (<-chan uc.Event, error) {
+func (b *EventBus) Subscribe(ctx context.Context, tenant uc.TenantID, session uc.SessionID, fromSeq int64) (<-chan uc.Event, error) {
 	wake := make(chan struct{}, 1)
 	b.addWaiter(session, wake)
 
@@ -77,7 +77,7 @@ func (b *EventBus) Subscribe(ctx context.Context, org uc.TenantID, session uc.Se
 		next := fromSeq
 		ticker := time.NewTicker(b.pollTick)
 		defer ticker.Stop()
-		events := b.store.Tenant(org).Events()
+		events := b.store.Tenant(tenant).Events()
 		for {
 			// Drain everything currently visible.
 			for {

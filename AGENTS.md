@@ -15,7 +15,8 @@ task test              # unit + store + queue + provider conformance (docker)
 task test:functional   # e2e/ acceptance suite (real stack)
 task cli:test          # cmd/core CLI against the real stack
 task verify:codegen    # fail if generated output is stale
-task verify:coverage   # capability coverage matrix
+task verify:coverage   # capability coverage matrix (v2: go_functional+go_sdk+ts_sdk)
+task sdk:test          # Go SDK + TS SDK smoke against real stack
 task dev               # one-command stack: pg + model + cored + coreworker
 task dev:smoke         # boot, smoke, tear down with leak checks
 ```
@@ -42,14 +43,13 @@ task dev:smoke         # boot, smoke, tear down with leak checks
 6. **Seams stay clean.** No river/pgx types past `jobqueue`; handlers depend
    only on root interfaces; new seam impls must pass the conformance suite
    unmodified.
-7. **Client evidence is the Go functional suite + SDK smoke.** There is no
+7. **Client evidence is the Go functional suite + SDKs.** There is no
    first-party web or desktop UI. Public capabilities are proven through
-   `e2e/` Go tests and (from E4) Go/TS SDK smoke tests.
-8. **Capability coverage is a merge gate.** Any public/API capability added or
-   changed must be exercised through the real Go functional suite. Update
-   `e2e/coverage.json` with existing test files; CI must validate references
-   and run them. A filename or smoke test is not evidence—assert observable
-   behavior, failure paths, replay, and tenancy.
+   `e2e/` Go tests (via `sdk/` through testclient) and TS SDK smoke.
+8. **Capability coverage is a merge gate (v2).** Every public capability maps
+   to `{go_functional, go_sdk, ts_sdk}` evidence in `e2e/coverage.json`.
+   `verify:coverage` validates references; CI runs all three legs. Assert
+   observable behavior, failure paths, replay, and tenancy.
 9. **Never claim unimplemented coverage.** Before coding a phase, inventory its
    acceptance bullets against actual implementation. Mark unbuilt bullets
    explicitly; do not rename partial work "complete," map nonexistent tests,
@@ -69,6 +69,8 @@ task dev:smoke         # boot, smoke, tear down with leak checks
 | [agent_docs/providers.md](agent_docs/providers.md) | touching provider registration and transport |
 | [agent_docs/core_extraction_plan/index.md](agent_docs/core_extraction_plan/index.md) | extraction roadmap and iron rules |
 | [docs/security.md](docs/security.md) | tool allowlists, denial visibility, tenancy, credential scope |
+| [docs/deploy.md](docs/deploy.md) | cored/coreworker deploy, CORE_* config, health |
+| [docs/consumers.md](docs/consumers.md) | embedding SDKs, Actor/labels/policy conventions |
 | [agent_docs/package_layout.md](agent_docs/package_layout.md) | deciding where new code goes |
 | [agent_docs/testing.md](agent_docs/testing.md) | writing/running tests, using the harness |
 | [agent_docs/codegen.md](agent_docs/codegen.md) | changing protos, adding events/RPCs |

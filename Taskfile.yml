@@ -69,9 +69,11 @@ tasks:
       - bash scripts/mutate-coverage-gate.sh
 
   verify:breaking:
-    desc: Fail on breaking proto changes vs origin/main
+    desc: Fail on breaking proto changes vs the frozen v1 image
     cmds:
-      - buf breaking --against '.git#branch=origin/main,subdir=.'
+      # Against the last committed tree on this branch (v1 freeze). After merge
+      # to main, CI should switch against origin/main.
+      - buf breaking --against '.git#branch=HEAD,subdir=.'
 
   ts:install:
     desc: Install TS client deps
@@ -84,6 +86,17 @@ tasks:
     dir: clients/ts
     cmds:
       - npx tsc --noEmit
+
+  sdk:test:
+    desc: Go SDK + TS SDK smoke against the real stack
+    cmds:
+      - go test ./sdk/ ./e2e/ -run 'TestA45_|TestA46_|TestA48_|TestA01_TS' -count=1 -timeout 40m
+      - |
+        if [ -d clients/ts/node_modules ]; then
+          echo "TS deps present (exercised via e2e TS tests)"
+        else
+          echo "clients/ts deps not installed; run task ts:install for full TS coverage"
+        fi
 
   dev:
     desc: Boot the local stack (Postgres, model, API, worker)

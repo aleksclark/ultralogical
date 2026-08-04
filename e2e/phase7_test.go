@@ -235,7 +235,7 @@ func TestA73_RedactionSweep(t *testing.T) {
 	assertNoCanary(t, "persisted run history", string(stored.History))
 	assertNoCanary(t, "persisted run failure message", stored.FailureMessage)
 
-	creds, err := alice.Tenants.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+	creds, err := alice.Credentials.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
 		TenantId: string(stack.TenantA.ID),
 	}))
 	if err != nil {

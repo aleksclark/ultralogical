@@ -96,19 +96,19 @@ func (s *Store) Tenants() uc.TenantStore { return &tenantStore{s} }
 func (s *Store) APIKeys() uc.APIKeyStore { return &apiKeyStore{s} }
 
 // Tenant implements uc.Store.
-func (s *Store) Tenant(id uc.TenantID) uc.TenantScope { return &tenantScope{s: s, org: id} }
+func (s *Store) Tenant(id uc.TenantID) uc.TenantScope { return &tenantScope{s: s, tenant: id} }
 
 // SessionTenant implements uc.Store.
 func (s *Store) SessionTenant(ctx context.Context, id uc.SessionID) (uc.TenantID, error) {
-	var org uc.TenantID
-	err := s.db().QueryRow(ctx, `SELECT org_id FROM sessions WHERE id = $1`, string(id)).Scan(&org)
+	var tenant uc.TenantID
+	err := s.db().QueryRow(ctx, `SELECT tenant_id FROM sessions WHERE id = $1`, string(id)).Scan(&tenant)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", uc.ErrNotFound
 	}
 	if err != nil {
 		return "", fmt.Errorf("postgres: session tenant: %w", err)
 	}
-	return org, nil
+	return tenant, nil
 }
 
 // Tx implements uc.Store. Nested calls reuse the outer transaction.

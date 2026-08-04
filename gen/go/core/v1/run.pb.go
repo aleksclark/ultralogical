@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: core/v1/agent.proto
+// source: core/v1/run.proto
 
 package corev1
 
@@ -68,11 +68,11 @@ func (x RunState) String() string {
 }
 
 func (RunState) Descriptor() protoreflect.EnumDescriptor {
-	return file_core_v1_agent_proto_enumTypes[0].Descriptor()
+	return file_core_v1_run_proto_enumTypes[0].Descriptor()
 }
 
 func (RunState) Type() protoreflect.EnumType {
-	return &file_core_v1_agent_proto_enumTypes[0]
+	return &file_core_v1_run_proto_enumTypes[0]
 }
 
 func (x RunState) Number() protoreflect.EnumNumber {
@@ -81,7 +81,7 @@ func (x RunState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RunState.Descriptor instead.
 func (RunState) EnumDescriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{0}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{0}
 }
 
 // ModelConfig names the model a run uses and which tenant credential pays for
@@ -98,7 +98,7 @@ type ModelConfig struct {
 
 func (x *ModelConfig) Reset() {
 	*x = ModelConfig{}
-	mi := &file_core_v1_agent_proto_msgTypes[0]
+	mi := &file_core_v1_run_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -110,7 +110,7 @@ func (x *ModelConfig) String() string {
 func (*ModelConfig) ProtoMessage() {}
 
 func (x *ModelConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[0]
+	mi := &file_core_v1_run_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -123,7 +123,7 @@ func (x *ModelConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ModelConfig.ProtoReflect.Descriptor instead.
 func (*ModelConfig) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{0}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ModelConfig) GetProvider() string {
@@ -168,7 +168,7 @@ type RunPolicy struct {
 
 func (x *RunPolicy) Reset() {
 	*x = RunPolicy{}
-	mi := &file_core_v1_agent_proto_msgTypes[1]
+	mi := &file_core_v1_run_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -180,7 +180,7 @@ func (x *RunPolicy) String() string {
 func (*RunPolicy) ProtoMessage() {}
 
 func (x *RunPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[1]
+	mi := &file_core_v1_run_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -193,7 +193,7 @@ func (x *RunPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunPolicy.ProtoReflect.Descriptor instead.
 func (*RunPolicy) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{1}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *RunPolicy) GetAllowTools() []string {
@@ -241,30 +241,25 @@ type AgentRun struct {
 	LoopVersion    int32                  `protobuf:"varint,5,opt,name=loop_version,json=loopVersion,proto3" json:"loop_version,omitempty"`
 	ModelConfig    *ModelConfig           `protobuf:"bytes,6,opt,name=model_config,json=modelConfig,proto3" json:"model_config,omitempty"`
 	Prompt         string                 `protobuf:"bytes,7,opt,name=prompt,proto3" json:"prompt,omitempty"`
-	FailureReason  string                 `protobuf:"bytes,8,opt,name=failure_reason,json=failureReason,proto3" json:"failure_reason,omitempty"`    // typed: credential_missing | credential_invalid | provider_error | internal
-	FailureMessage string                 `protobuf:"bytes,9,opt,name=failure_message,json=failureMessage,proto3" json:"failure_message,omitempty"` // user-actionable, never raw provider errors
+	FailureReason  string                 `protobuf:"bytes,8,opt,name=failure_reason,json=failureReason,proto3" json:"failure_reason,omitempty"`
+	FailureMessage string                 `protobuf:"bytes,9,opt,name=failure_message,json=failureMessage,proto3" json:"failure_message,omitempty"`
 	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt      *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ParentRunId    string                 `protobuf:"bytes,12,opt,name=parent_run_id,json=parentRunId,proto3" json:"parent_run_id,omitempty"`
 	Policy         *RunPolicy             `protobuf:"bytes,13,opt,name=policy,proto3" json:"policy,omitempty"`
-	// Result is the run's final output, persisted at terminal transition so a
-	// parent (or a client) can read what a child produced after it is gone.
-	ResultJson string `protobuf:"bytes,14,opt,name=result_json,json=resultJson,proto3" json:"result_json,omitempty"`
-	// Cohort linkage for children launched by one run_agent_cohort call.
-	// cohort_ordinal preserves their declaration order.
-	CohortId      string `protobuf:"bytes,15,opt,name=cohort_id,json=cohortId,proto3" json:"cohort_id,omitempty"`
-	CohortOrdinal int32  `protobuf:"varint,16,opt,name=cohort_ordinal,json=cohortOrdinal,proto3" json:"cohort_ordinal,omitempty"`
-	// Opaque attribution captured at run creation.
-	ActorKind     string `protobuf:"bytes,17,opt,name=actor_kind,json=actorKind,proto3" json:"actor_kind,omitempty"`
-	ActorId       string `protobuf:"bytes,18,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
-	ActorDisplay  string `protobuf:"bytes,19,opt,name=actor_display,json=actorDisplay,proto3" json:"actor_display,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ResultJson     string                 `protobuf:"bytes,14,opt,name=result_json,json=resultJson,proto3" json:"result_json,omitempty"`
+	CohortId       string                 `protobuf:"bytes,15,opt,name=cohort_id,json=cohortId,proto3" json:"cohort_id,omitempty"`
+	CohortOrdinal  int32                  `protobuf:"varint,16,opt,name=cohort_ordinal,json=cohortOrdinal,proto3" json:"cohort_ordinal,omitempty"`
+	ActorKind      string                 `protobuf:"bytes,17,opt,name=actor_kind,json=actorKind,proto3" json:"actor_kind,omitempty"`
+	ActorId        string                 `protobuf:"bytes,18,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	ActorDisplay   string                 `protobuf:"bytes,19,opt,name=actor_display,json=actorDisplay,proto3" json:"actor_display,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *AgentRun) Reset() {
 	*x = AgentRun{}
-	mi := &file_core_v1_agent_proto_msgTypes[2]
+	mi := &file_core_v1_run_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -276,7 +271,7 @@ func (x *AgentRun) String() string {
 func (*AgentRun) ProtoMessage() {}
 
 func (x *AgentRun) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[2]
+	mi := &file_core_v1_run_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -289,7 +284,7 @@ func (x *AgentRun) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentRun.ProtoReflect.Descriptor instead.
 func (*AgentRun) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{2}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *AgentRun) GetId() string {
@@ -425,16 +420,15 @@ func (x *AgentRun) GetActorDisplay() string {
 	return ""
 }
 
-// RunWait is a parent's durable fan-in on child runs. It leaves the open state
-// exactly once, and clients render its state as the parent's awaiting reason.
+// RunWait is a parent's durable fan-in on child runs.
 type RunWait struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	ParentRunId   string                 `protobuf:"bytes,2,opt,name=parent_run_id,json=parentRunId,proto3" json:"parent_run_id,omitempty"`
 	StepIndex     int32                  `protobuf:"varint,3,opt,name=step_index,json=stepIndex,proto3" json:"step_index,omitempty"`
 	ToolCallId    string                 `protobuf:"bytes,4,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
-	Kind          string                 `protobuf:"bytes,5,opt,name=kind,proto3" json:"kind,omitempty"`   // wait | cohort
-	State         string                 `protobuf:"bytes,6,opt,name=state,proto3" json:"state,omitempty"` // open | resolved | timed_out | abandoned
+	Kind          string                 `protobuf:"bytes,5,opt,name=kind,proto3" json:"kind,omitempty"`
+	State         string                 `protobuf:"bytes,6,opt,name=state,proto3" json:"state,omitempty"`
 	TimeoutPolicy string                 `protobuf:"bytes,7,opt,name=timeout_policy,json=timeoutPolicy,proto3" json:"timeout_policy,omitempty"`
 	Deadline      *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=deadline,proto3" json:"deadline,omitempty"`
 	ResultJson    string                 `protobuf:"bytes,9,opt,name=result_json,json=resultJson,proto3" json:"result_json,omitempty"`
@@ -445,7 +439,7 @@ type RunWait struct {
 
 func (x *RunWait) Reset() {
 	*x = RunWait{}
-	mi := &file_core_v1_agent_proto_msgTypes[3]
+	mi := &file_core_v1_run_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -457,7 +451,7 @@ func (x *RunWait) String() string {
 func (*RunWait) ProtoMessage() {}
 
 func (x *RunWait) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[3]
+	mi := &file_core_v1_run_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -470,7 +464,7 @@ func (x *RunWait) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunWait.ProtoReflect.Descriptor instead.
 func (*RunWait) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{3}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RunWait) GetId() string {
@@ -543,8 +537,6 @@ func (x *RunWait) GetMemberRunIds() []string {
 	return nil
 }
 
-// RunTreeNode is one run plus its children, so a client can render a spawn
-// tree without N+1 requests.
 type RunTreeNode struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Run           *AgentRun              `protobuf:"bytes,1,opt,name=run,proto3" json:"run,omitempty"`
@@ -556,7 +548,7 @@ type RunTreeNode struct {
 
 func (x *RunTreeNode) Reset() {
 	*x = RunTreeNode{}
-	mi := &file_core_v1_agent_proto_msgTypes[4]
+	mi := &file_core_v1_run_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -568,7 +560,7 @@ func (x *RunTreeNode) String() string {
 func (*RunTreeNode) ProtoMessage() {}
 
 func (x *RunTreeNode) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[4]
+	mi := &file_core_v1_run_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -581,7 +573,7 @@ func (x *RunTreeNode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunTreeNode.ProtoReflect.Descriptor instead.
 func (*RunTreeNode) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{4}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RunTreeNode) GetRun() *AgentRun {
@@ -614,7 +606,7 @@ type GetRunTreeRequest struct {
 
 func (x *GetRunTreeRequest) Reset() {
 	*x = GetRunTreeRequest{}
-	mi := &file_core_v1_agent_proto_msgTypes[5]
+	mi := &file_core_v1_run_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -626,7 +618,7 @@ func (x *GetRunTreeRequest) String() string {
 func (*GetRunTreeRequest) ProtoMessage() {}
 
 func (x *GetRunTreeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[5]
+	mi := &file_core_v1_run_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -639,7 +631,7 @@ func (x *GetRunTreeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunTreeRequest.ProtoReflect.Descriptor instead.
 func (*GetRunTreeRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{5}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetRunTreeRequest) GetSessionId() string {
@@ -658,7 +650,7 @@ type GetRunTreeResponse struct {
 
 func (x *GetRunTreeResponse) Reset() {
 	*x = GetRunTreeResponse{}
-	mi := &file_core_v1_agent_proto_msgTypes[6]
+	mi := &file_core_v1_run_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -670,7 +662,7 @@ func (x *GetRunTreeResponse) String() string {
 func (*GetRunTreeResponse) ProtoMessage() {}
 
 func (x *GetRunTreeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[6]
+	mi := &file_core_v1_run_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -683,7 +675,7 @@ func (x *GetRunTreeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunTreeResponse.ProtoReflect.Descriptor instead.
 func (*GetRunTreeResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{6}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetRunTreeResponse) GetRoots() []*RunTreeNode {
@@ -694,21 +686,18 @@ func (x *GetRunTreeResponse) GetRoots() []*RunTreeNode {
 }
 
 type StartRunRequest struct {
-	state     protoimpl.MessageState `protogen:"open.v1"`
-	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Prompt    string                 `protobuf:"bytes,2,opt,name=prompt,proto3" json:"prompt,omitempty"`
-	// Optional; defaults to {provider: "openai", model from server default,
-	// credential: "default"}.
-	ModelConfig *ModelConfig `protobuf:"bytes,3,opt,name=model_config,json=modelConfig,proto3" json:"model_config,omitempty"`
-	// Optional; defaults to DefaultRunPolicy (full tools, all kinds, spawn cap).
-	Policy        *RunPolicy `protobuf:"bytes,4,opt,name=policy,proto3" json:"policy,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Prompt        string                 `protobuf:"bytes,2,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	ModelConfig   *ModelConfig           `protobuf:"bytes,3,opt,name=model_config,json=modelConfig,proto3" json:"model_config,omitempty"`
+	Policy        *RunPolicy             `protobuf:"bytes,4,opt,name=policy,proto3" json:"policy,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StartRunRequest) Reset() {
 	*x = StartRunRequest{}
-	mi := &file_core_v1_agent_proto_msgTypes[7]
+	mi := &file_core_v1_run_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -720,7 +709,7 @@ func (x *StartRunRequest) String() string {
 func (*StartRunRequest) ProtoMessage() {}
 
 func (x *StartRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[7]
+	mi := &file_core_v1_run_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -733,7 +722,7 @@ func (x *StartRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartRunRequest.ProtoReflect.Descriptor instead.
 func (*StartRunRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{7}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *StartRunRequest) GetSessionId() string {
@@ -765,17 +754,16 @@ func (x *StartRunRequest) GetPolicy() *RunPolicy {
 }
 
 type StartRunResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Run   *AgentRun              `protobuf:"bytes,1,opt,name=run,proto3" json:"run,omitempty"`
-	// Seq of the RunStarted event.
-	EventSeq      int64 `protobuf:"varint,2,opt,name=event_seq,json=eventSeq,proto3" json:"event_seq,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Run           *AgentRun              `protobuf:"bytes,1,opt,name=run,proto3" json:"run,omitempty"`
+	EventSeq      int64                  `protobuf:"varint,2,opt,name=event_seq,json=eventSeq,proto3" json:"event_seq,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StartRunResponse) Reset() {
 	*x = StartRunResponse{}
-	mi := &file_core_v1_agent_proto_msgTypes[8]
+	mi := &file_core_v1_run_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -787,7 +775,7 @@ func (x *StartRunResponse) String() string {
 func (*StartRunResponse) ProtoMessage() {}
 
 func (x *StartRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[8]
+	mi := &file_core_v1_run_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -800,7 +788,7 @@ func (x *StartRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartRunResponse.ProtoReflect.Descriptor instead.
 func (*StartRunResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{8}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *StartRunResponse) GetRun() *AgentRun {
@@ -817,9 +805,9 @@ func (x *StartRunResponse) GetEventSeq() int64 {
 	return 0
 }
 
-// PromptRun wakes an awaiting run with an answer, or starts a new turn on a
-// completed run.
-type PromptRunRequest struct {
+// AnswerRun wakes an awaiting run with an answer, or starts a new turn on a
+// completed run (ask_user reply path).
+type AnswerRunRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -827,21 +815,21 @@ type PromptRunRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PromptRunRequest) Reset() {
-	*x = PromptRunRequest{}
-	mi := &file_core_v1_agent_proto_msgTypes[9]
+func (x *AnswerRunRequest) Reset() {
+	*x = AnswerRunRequest{}
+	mi := &file_core_v1_run_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PromptRunRequest) String() string {
+func (x *AnswerRunRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PromptRunRequest) ProtoMessage() {}
+func (*AnswerRunRequest) ProtoMessage() {}
 
-func (x *PromptRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[9]
+func (x *AnswerRunRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_run_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -852,47 +840,47 @@ func (x *PromptRunRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PromptRunRequest.ProtoReflect.Descriptor instead.
-func (*PromptRunRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{9}
+// Deprecated: Use AnswerRunRequest.ProtoReflect.Descriptor instead.
+func (*AnswerRunRequest) Descriptor() ([]byte, []int) {
+	return file_core_v1_run_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *PromptRunRequest) GetRunId() string {
+func (x *AnswerRunRequest) GetRunId() string {
 	if x != nil {
 		return x.RunId
 	}
 	return ""
 }
 
-func (x *PromptRunRequest) GetMessage() string {
+func (x *AnswerRunRequest) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
 	return ""
 }
 
-type PromptRunResponse struct {
+type AnswerRunResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	EventSeq      int64                  `protobuf:"varint,1,opt,name=event_seq,json=eventSeq,proto3" json:"event_seq,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PromptRunResponse) Reset() {
-	*x = PromptRunResponse{}
-	mi := &file_core_v1_agent_proto_msgTypes[10]
+func (x *AnswerRunResponse) Reset() {
+	*x = AnswerRunResponse{}
+	mi := &file_core_v1_run_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PromptRunResponse) String() string {
+func (x *AnswerRunResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PromptRunResponse) ProtoMessage() {}
+func (*AnswerRunResponse) ProtoMessage() {}
 
-func (x *PromptRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[10]
+func (x *AnswerRunResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_run_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -903,12 +891,12 @@ func (x *PromptRunResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PromptRunResponse.ProtoReflect.Descriptor instead.
-func (*PromptRunResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{10}
+// Deprecated: Use AnswerRunResponse.ProtoReflect.Descriptor instead.
+func (*AnswerRunResponse) Descriptor() ([]byte, []int) {
+	return file_core_v1_run_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *PromptRunResponse) GetEventSeq() int64 {
+func (x *AnswerRunResponse) GetEventSeq() int64 {
 	if x != nil {
 		return x.EventSeq
 	}
@@ -924,7 +912,7 @@ type CancelRunRequest struct {
 
 func (x *CancelRunRequest) Reset() {
 	*x = CancelRunRequest{}
-	mi := &file_core_v1_agent_proto_msgTypes[11]
+	mi := &file_core_v1_run_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -936,7 +924,7 @@ func (x *CancelRunRequest) String() string {
 func (*CancelRunRequest) ProtoMessage() {}
 
 func (x *CancelRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[11]
+	mi := &file_core_v1_run_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -949,7 +937,7 @@ func (x *CancelRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelRunRequest.ProtoReflect.Descriptor instead.
 func (*CancelRunRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{11}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *CancelRunRequest) GetRunId() string {
@@ -967,7 +955,7 @@ type CancelRunResponse struct {
 
 func (x *CancelRunResponse) Reset() {
 	*x = CancelRunResponse{}
-	mi := &file_core_v1_agent_proto_msgTypes[12]
+	mi := &file_core_v1_run_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -979,7 +967,7 @@ func (x *CancelRunResponse) String() string {
 func (*CancelRunResponse) ProtoMessage() {}
 
 func (x *CancelRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[12]
+	mi := &file_core_v1_run_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -992,7 +980,7 @@ func (x *CancelRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelRunResponse.ProtoReflect.Descriptor instead.
 func (*CancelRunResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{12}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{12}
 }
 
 type GetRunRequest struct {
@@ -1004,7 +992,7 @@ type GetRunRequest struct {
 
 func (x *GetRunRequest) Reset() {
 	*x = GetRunRequest{}
-	mi := &file_core_v1_agent_proto_msgTypes[13]
+	mi := &file_core_v1_run_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1016,7 +1004,7 @@ func (x *GetRunRequest) String() string {
 func (*GetRunRequest) ProtoMessage() {}
 
 func (x *GetRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[13]
+	mi := &file_core_v1_run_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1029,7 +1017,7 @@ func (x *GetRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunRequest.ProtoReflect.Descriptor instead.
 func (*GetRunRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{13}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetRunRequest) GetRunId() string {
@@ -1048,7 +1036,7 @@ type GetRunResponse struct {
 
 func (x *GetRunResponse) Reset() {
 	*x = GetRunResponse{}
-	mi := &file_core_v1_agent_proto_msgTypes[14]
+	mi := &file_core_v1_run_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1060,7 +1048,7 @@ func (x *GetRunResponse) String() string {
 func (*GetRunResponse) ProtoMessage() {}
 
 func (x *GetRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[14]
+	mi := &file_core_v1_run_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1073,7 +1061,7 @@ func (x *GetRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunResponse.ProtoReflect.Descriptor instead.
 func (*GetRunResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{14}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetRunResponse) GetRun() *AgentRun {
@@ -1086,13 +1074,15 @@ func (x *GetRunResponse) GetRun() *AgentRun {
 type ListRunsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string                 `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListRunsRequest) Reset() {
 	*x = ListRunsRequest{}
-	mi := &file_core_v1_agent_proto_msgTypes[15]
+	mi := &file_core_v1_run_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1104,7 +1094,7 @@ func (x *ListRunsRequest) String() string {
 func (*ListRunsRequest) ProtoMessage() {}
 
 func (x *ListRunsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[15]
+	mi := &file_core_v1_run_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1117,7 +1107,7 @@ func (x *ListRunsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRunsRequest.ProtoReflect.Descriptor instead.
 func (*ListRunsRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{15}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ListRunsRequest) GetSessionId() string {
@@ -1127,16 +1117,31 @@ func (x *ListRunsRequest) GetSessionId() string {
 	return ""
 }
 
+func (x *ListRunsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListRunsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListRunsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Runs          []*AgentRun            `protobuf:"bytes,1,rep,name=runs,proto3" json:"runs,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListRunsResponse) Reset() {
 	*x = ListRunsResponse{}
-	mi := &file_core_v1_agent_proto_msgTypes[16]
+	mi := &file_core_v1_run_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1148,7 +1153,7 @@ func (x *ListRunsResponse) String() string {
 func (*ListRunsResponse) ProtoMessage() {}
 
 func (x *ListRunsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[16]
+	mi := &file_core_v1_run_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1161,7 +1166,7 @@ func (x *ListRunsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRunsResponse.ProtoReflect.Descriptor instead.
 func (*ListRunsResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{16}
+	return file_core_v1_run_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListRunsResponse) GetRuns() []*AgentRun {
@@ -1171,11 +1176,18 @@ func (x *ListRunsResponse) GetRuns() []*AgentRun {
 	return nil
 }
 
-var File_core_v1_agent_proto protoreflect.FileDescriptor
+func (x *ListRunsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
 
-const file_core_v1_agent_proto_rawDesc = "" +
+var File_core_v1_run_proto protoreflect.FileDescriptor
+
+const file_core_v1_run_proto_rawDesc = "" +
 	"\n" +
-	"\x13core/v1/agent.proto\x12\acore.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x98\x01\n" +
+	"\x11core/v1/run.proto\x12\acore.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x98\x01\n" +
 	"\vModelConfig\x12\x1a\n" +
 	"\bprovider\x18\x01 \x01(\tR\bprovider\x12\x19\n" +
 	"\bmodel_id\x18\x02 \x01(\tR\amodelId\x12\x1e\n" +
@@ -1250,10 +1262,10 @@ const file_core_v1_agent_proto_rawDesc = "" +
 	"\x10StartRunResponse\x12#\n" +
 	"\x03run\x18\x01 \x01(\v2\x11.core.v1.AgentRunR\x03run\x12\x1b\n" +
 	"\tevent_seq\x18\x02 \x01(\x03R\beventSeq\"C\n" +
-	"\x10PromptRunRequest\x12\x15\n" +
+	"\x10AnswerRunRequest\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"0\n" +
-	"\x11PromptRunResponse\x12\x1b\n" +
+	"\x11AnswerRunResponse\x12\x1b\n" +
 	"\tevent_seq\x18\x01 \x01(\x03R\beventSeq\")\n" +
 	"\x10CancelRunRequest\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\"\x13\n" +
@@ -1261,12 +1273,16 @@ const file_core_v1_agent_proto_rawDesc = "" +
 	"\rGetRunRequest\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\"5\n" +
 	"\x0eGetRunResponse\x12#\n" +
-	"\x03run\x18\x01 \x01(\v2\x11.core.v1.AgentRunR\x03run\"0\n" +
+	"\x03run\x18\x01 \x01(\v2\x11.core.v1.AgentRunR\x03run\"l\n" +
 	"\x0fListRunsRequest\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"9\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\"a\n" +
 	"\x10ListRunsResponse\x12%\n" +
-	"\x04runs\x18\x01 \x03(\v2\x11.core.v1.AgentRunR\x04runs*\xb3\x01\n" +
+	"\x04runs\x18\x01 \x03(\v2\x11.core.v1.AgentRunR\x04runs\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken*\xb3\x01\n" +
 	"\bRunState\x12\x19\n" +
 	"\x15RUN_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11RUN_STATE_PENDING\x10\x01\x12\x15\n" +
@@ -1274,10 +1290,11 @@ const file_core_v1_agent_proto_rawDesc = "" +
 	"\x12RUN_STATE_AWAITING\x10\x03\x12\x17\n" +
 	"\x13RUN_STATE_COMPLETED\x10\x04\x12\x14\n" +
 	"\x10RUN_STATE_FAILED\x10\x05\x12\x17\n" +
-	"\x13RUN_STATE_CANCELLED\x10\x062\x9a\x03\n" +
-	"\fAgentService\x12?\n" +
+	"\x13RUN_STATE_CANCELLED\x10\x062\x98\x03\n" +
+	"\n" +
+	"RunService\x12?\n" +
 	"\bStartRun\x12\x18.core.v1.StartRunRequest\x1a\x19.core.v1.StartRunResponse\x12B\n" +
-	"\tPromptRun\x12\x19.core.v1.PromptRunRequest\x1a\x1a.core.v1.PromptRunResponse\x12B\n" +
+	"\tAnswerRun\x12\x19.core.v1.AnswerRunRequest\x1a\x1a.core.v1.AnswerRunResponse\x12B\n" +
 	"\tCancelRun\x12\x19.core.v1.CancelRunRequest\x1a\x1a.core.v1.CancelRunResponse\x129\n" +
 	"\x06GetRun\x12\x16.core.v1.GetRunRequest\x1a\x17.core.v1.GetRunResponse\x12?\n" +
 	"\bListRuns\x12\x18.core.v1.ListRunsRequest\x1a\x19.core.v1.ListRunsResponse\x12E\n" +
@@ -1285,20 +1302,20 @@ const file_core_v1_agent_proto_rawDesc = "" +
 	"GetRunTree\x12\x1a.core.v1.GetRunTreeRequest\x1a\x1b.core.v1.GetRunTreeResponseB7Z5github.com/aleksclark/ultracore/gen/go/core/v1;corev1b\x06proto3"
 
 var (
-	file_core_v1_agent_proto_rawDescOnce sync.Once
-	file_core_v1_agent_proto_rawDescData []byte
+	file_core_v1_run_proto_rawDescOnce sync.Once
+	file_core_v1_run_proto_rawDescData []byte
 )
 
-func file_core_v1_agent_proto_rawDescGZIP() []byte {
-	file_core_v1_agent_proto_rawDescOnce.Do(func() {
-		file_core_v1_agent_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_core_v1_agent_proto_rawDesc), len(file_core_v1_agent_proto_rawDesc)))
+func file_core_v1_run_proto_rawDescGZIP() []byte {
+	file_core_v1_run_proto_rawDescOnce.Do(func() {
+		file_core_v1_run_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_core_v1_run_proto_rawDesc), len(file_core_v1_run_proto_rawDesc)))
 	})
-	return file_core_v1_agent_proto_rawDescData
+	return file_core_v1_run_proto_rawDescData
 }
 
-var file_core_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_core_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
-var file_core_v1_agent_proto_goTypes = []any{
+var file_core_v1_run_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_core_v1_run_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_core_v1_run_proto_goTypes = []any{
 	(RunState)(0),                 // 0: core.v1.RunState
 	(*ModelConfig)(nil),           // 1: core.v1.ModelConfig
 	(*RunPolicy)(nil),             // 2: core.v1.RunPolicy
@@ -1309,8 +1326,8 @@ var file_core_v1_agent_proto_goTypes = []any{
 	(*GetRunTreeResponse)(nil),    // 7: core.v1.GetRunTreeResponse
 	(*StartRunRequest)(nil),       // 8: core.v1.StartRunRequest
 	(*StartRunResponse)(nil),      // 9: core.v1.StartRunResponse
-	(*PromptRunRequest)(nil),      // 10: core.v1.PromptRunRequest
-	(*PromptRunResponse)(nil),     // 11: core.v1.PromptRunResponse
+	(*AnswerRunRequest)(nil),      // 10: core.v1.AnswerRunRequest
+	(*AnswerRunResponse)(nil),     // 11: core.v1.AnswerRunResponse
 	(*CancelRunRequest)(nil),      // 12: core.v1.CancelRunRequest
 	(*CancelRunResponse)(nil),     // 13: core.v1.CancelRunResponse
 	(*GetRunRequest)(nil),         // 14: core.v1.GetRunRequest
@@ -1319,7 +1336,7 @@ var file_core_v1_agent_proto_goTypes = []any{
 	(*ListRunsResponse)(nil),      // 17: core.v1.ListRunsResponse
 	(*timestamppb.Timestamp)(nil), // 18: google.protobuf.Timestamp
 }
-var file_core_v1_agent_proto_depIdxs = []int32{
+var file_core_v1_run_proto_depIdxs = []int32{
 	1,  // 0: core.v1.ModelConfig.fallbacks:type_name -> core.v1.ModelConfig
 	0,  // 1: core.v1.AgentRun.state:type_name -> core.v1.RunState
 	1,  // 2: core.v1.AgentRun.model_config:type_name -> core.v1.ModelConfig
@@ -1336,18 +1353,18 @@ var file_core_v1_agent_proto_depIdxs = []int32{
 	3,  // 13: core.v1.StartRunResponse.run:type_name -> core.v1.AgentRun
 	3,  // 14: core.v1.GetRunResponse.run:type_name -> core.v1.AgentRun
 	3,  // 15: core.v1.ListRunsResponse.runs:type_name -> core.v1.AgentRun
-	8,  // 16: core.v1.AgentService.StartRun:input_type -> core.v1.StartRunRequest
-	10, // 17: core.v1.AgentService.PromptRun:input_type -> core.v1.PromptRunRequest
-	12, // 18: core.v1.AgentService.CancelRun:input_type -> core.v1.CancelRunRequest
-	14, // 19: core.v1.AgentService.GetRun:input_type -> core.v1.GetRunRequest
-	16, // 20: core.v1.AgentService.ListRuns:input_type -> core.v1.ListRunsRequest
-	6,  // 21: core.v1.AgentService.GetRunTree:input_type -> core.v1.GetRunTreeRequest
-	9,  // 22: core.v1.AgentService.StartRun:output_type -> core.v1.StartRunResponse
-	11, // 23: core.v1.AgentService.PromptRun:output_type -> core.v1.PromptRunResponse
-	13, // 24: core.v1.AgentService.CancelRun:output_type -> core.v1.CancelRunResponse
-	15, // 25: core.v1.AgentService.GetRun:output_type -> core.v1.GetRunResponse
-	17, // 26: core.v1.AgentService.ListRuns:output_type -> core.v1.ListRunsResponse
-	7,  // 27: core.v1.AgentService.GetRunTree:output_type -> core.v1.GetRunTreeResponse
+	8,  // 16: core.v1.RunService.StartRun:input_type -> core.v1.StartRunRequest
+	10, // 17: core.v1.RunService.AnswerRun:input_type -> core.v1.AnswerRunRequest
+	12, // 18: core.v1.RunService.CancelRun:input_type -> core.v1.CancelRunRequest
+	14, // 19: core.v1.RunService.GetRun:input_type -> core.v1.GetRunRequest
+	16, // 20: core.v1.RunService.ListRuns:input_type -> core.v1.ListRunsRequest
+	6,  // 21: core.v1.RunService.GetRunTree:input_type -> core.v1.GetRunTreeRequest
+	9,  // 22: core.v1.RunService.StartRun:output_type -> core.v1.StartRunResponse
+	11, // 23: core.v1.RunService.AnswerRun:output_type -> core.v1.AnswerRunResponse
+	13, // 24: core.v1.RunService.CancelRun:output_type -> core.v1.CancelRunResponse
+	15, // 25: core.v1.RunService.GetRun:output_type -> core.v1.GetRunResponse
+	17, // 26: core.v1.RunService.ListRuns:output_type -> core.v1.ListRunsResponse
+	7,  // 27: core.v1.RunService.GetRunTree:output_type -> core.v1.GetRunTreeResponse
 	22, // [22:28] is the sub-list for method output_type
 	16, // [16:22] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name
@@ -1355,27 +1372,27 @@ var file_core_v1_agent_proto_depIdxs = []int32{
 	0,  // [0:16] is the sub-list for field type_name
 }
 
-func init() { file_core_v1_agent_proto_init() }
-func file_core_v1_agent_proto_init() {
-	if File_core_v1_agent_proto != nil {
+func init() { file_core_v1_run_proto_init() }
+func file_core_v1_run_proto_init() {
+	if File_core_v1_run_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_core_v1_agent_proto_rawDesc), len(file_core_v1_agent_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_core_v1_run_proto_rawDesc), len(file_core_v1_run_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_core_v1_agent_proto_goTypes,
-		DependencyIndexes: file_core_v1_agent_proto_depIdxs,
-		EnumInfos:         file_core_v1_agent_proto_enumTypes,
-		MessageInfos:      file_core_v1_agent_proto_msgTypes,
+		GoTypes:           file_core_v1_run_proto_goTypes,
+		DependencyIndexes: file_core_v1_run_proto_depIdxs,
+		EnumInfos:         file_core_v1_run_proto_enumTypes,
+		MessageInfos:      file_core_v1_run_proto_msgTypes,
 	}.Build()
-	File_core_v1_agent_proto = out.File
-	file_core_v1_agent_proto_goTypes = nil
-	file_core_v1_agent_proto_depIdxs = nil
+	File_core_v1_run_proto = out.File
+	file_core_v1_run_proto_goTypes = nil
+	file_core_v1_run_proto_depIdxs = nil
 }

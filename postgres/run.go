@@ -13,7 +13,7 @@ import (
 
 type runStore struct{ scope *tenantScope }
 
-const runColumns = `id, session_id, org_id, parent_run_id, COALESCE(spawn_key,''), COALESCE(cohort_id::text,''), COALESCE(cohort_ordinal,0),
+const runColumns = `id, session_id, tenant_id, parent_run_id, COALESCE(spawn_key,''), COALESCE(cohort_id::text,''), COALESCE(cohort_ordinal,0),
 	grants, result, state, loop_kind, loop_version, model_config,
 	prompt, history, failure_reason, failure_message, cancel_requested_at, created_at, updated_at,
 	COALESCE(actor_kind,''), COALESCE(actor_id,''), COALESCE(actor_display,'')`
@@ -89,11 +89,11 @@ func (r *runStore) Create(ctx context.Context, run uc.AgentRun) error {
 		cohortID = run.CohortID
 	}
 	tag, err := r.scope.s.db().Exec(ctx,
-		`INSERT INTO agent_runs (id, session_id, org_id, parent_run_id, grants, state, loop_kind, loop_version, model_config, prompt, history, spawn_key, cohort_id, cohort_ordinal, actor_kind, actor_id, actor_display)
-		 SELECT $1, s.id, s.org_id, $3, $4, $5, $6, $7, $8, $9, $10, $12, $13, $14, $15, $16, $17
-		   FROM sessions s WHERE s.id = $2 AND s.org_id = $11`,
+		`INSERT INTO agent_runs (id, session_id, tenant_id, parent_run_id, grants, state, loop_kind, loop_version, model_config, prompt, history, spawn_key, cohort_id, cohort_ordinal, actor_kind, actor_id, actor_display)
+		 SELECT $1, s.id, s.tenant_id, $3, $4, $5, $6, $7, $8, $9, $10, $12, $13, $14, $15, $16, $17
+		   FROM sessions s WHERE s.id = $2 AND s.tenant_id = $11`,
 		string(run.ID), string(run.SessionID), run.ParentRunID, grants, string(uc.RunPending), run.LoopKind,
-		run.LoopVersion, modelConfig, run.Prompt, history, string(r.scope.org), spawnKey, cohortID, run.CohortOrdinal,
+		run.LoopVersion, modelConfig, run.Prompt, history, string(r.scope.tenant), spawnKey, cohortID, run.CohortOrdinal,
 		run.Actor.Kind, run.Actor.ID, run.Actor.Display)
 	if isUniqueViolation(err) {
 		return uc.ErrAlreadyExists
@@ -109,21 +109,21 @@ func (r *runStore) Create(ctx context.Context, run uc.AgentRun) error {
 
 func (r *runStore) Get(ctx context.Context, id uc.RunID) (uc.AgentRun, error) {
 	return r.scan(r.scope.s.db().QueryRow(ctx,
-		`SELECT `+runColumns+` FROM agent_runs WHERE id = $1 AND org_id = $2`,
-		string(id), string(r.scope.org)))
+		`SELECT `+runColumns+` FROM agent_runs WHERE id = $1 AND tenant_id = $2`,
+		string(id), string(r.scope.tenant)))
 }
 
 func (r *runStore) GetForUpdate(ctx context.Context, id uc.RunID) (uc.AgentRun, error) {
 	return r.scan(r.scope.s.db().QueryRow(ctx,
-		`SELECT `+runColumns+` FROM agent_runs WHERE id = $1 AND org_id = $2 FOR UPDATE`,
-		string(id), string(r.scope.org)))
+		`SELECT `+runColumns+` FROM agent_runs WHERE id = $1 AND tenant_id = $2 FOR UPDATE`,
+		string(id), string(r.scope.tenant)))
 }
 
 func (r *runStore) List(ctx context.Context, session uc.SessionID) ([]uc.AgentRun, error) {
 	rows, err := r.scope.s.db().Query(ctx,
 		`SELECT `+runColumns+` FROM agent_runs
-		  WHERE session_id = $1 AND org_id = $2 ORDER BY created_at`,
-		string(session), string(r.scope.org))
+		  WHERE session_id = $1 AND tenant_id = $2 ORDER BY created_at`,
+		string(session), string(r.scope.tenant))
 	if err != nil {
 		return nil, fmt.Errorf("postgres: list runs: %w", err)
 	}
@@ -141,15 +141,15 @@ func (r *runStore) List(ctx context.Context, session uc.SessionID) ([]uc.AgentRu
 
 func (r *runStore) SetHistory(ctx context.Context, id uc.RunID, history json.RawMessage) error {
 	return r.exec(ctx,
-		`UPDATE agent_runs SET history = $3, updated_at = now() WHERE id = $1 AND org_id = $2`,
-		string(id), string(r.scope.org), history)
+		`UPDATE agent_runs SET history = $3, updated_at = now() WHERE id = $1 AND tenant_id = $2`,
+		string(id), string(r.scope.tenant), history)
 }
 
 func (r *runStore) SetState(ctx context.Context, id uc.RunID, state uc.RunState, failureReason, failureMessage string) error {
 	return r.exec(ctx,
 		`UPDATE agent_runs SET state = $3, failure_reason = $4, failure_message = $5, updated_at = now()
-		  WHERE id = $1 AND org_id = $2`,
-		string(id), string(r.scope.org), string(state), failureReason, failureMessage)
+		  WHERE id = $1 AND tenant_id = $2`,
+		string(id), string(r.scope.tenant), string(state), failureReason, failureMessage)
 }
 
 // SetResult persists a run's final result. It is written in the same
@@ -157,16 +157,16 @@ func (r *runStore) SetState(ctx context.Context, id uc.RunID, state uc.RunState,
 // child always sees the result that child produced.
 func (r *runStore) SetResult(ctx context.Context, id uc.RunID, result json.RawMessage) error {
 	return r.exec(ctx,
-		`UPDATE agent_runs SET result = $3, updated_at = now() WHERE id = $1 AND org_id = $2`,
-		string(id), string(r.scope.org), result)
+		`UPDATE agent_runs SET result = $3, updated_at = now() WHERE id = $1 AND tenant_id = $2`,
+		string(id), string(r.scope.tenant), result)
 }
 
 // GetBySpawnKey is the read half of spawn idempotency: a redelivered step
 // replaying the same tool call finds the child it already created.
 func (r *runStore) GetBySpawnKey(ctx context.Context, key string) (uc.AgentRun, error) {
 	return r.scan(r.scope.s.db().QueryRow(ctx,
-		`SELECT `+runColumns+` FROM agent_runs WHERE spawn_key = $1 AND org_id = $2`,
-		key, string(r.scope.org)))
+		`SELECT `+runColumns+` FROM agent_runs WHERE spawn_key = $1 AND tenant_id = $2`,
+		key, string(r.scope.tenant)))
 }
 
 // Children lists direct children in creation order, which is the order clients
@@ -174,9 +174,9 @@ func (r *runStore) GetBySpawnKey(ctx context.Context, key string) (uc.AgentRun, 
 func (r *runStore) Children(ctx context.Context, id uc.RunID) ([]uc.AgentRun, error) {
 	rows, err := r.scope.s.db().Query(ctx,
 		`SELECT `+runColumns+` FROM agent_runs
-		  WHERE parent_run_id = $1 AND org_id = $2
+		  WHERE parent_run_id = $1 AND tenant_id = $2
 		  ORDER BY COALESCE(cohort_ordinal, 0), created_at`,
-		string(id), string(r.scope.org))
+		string(id), string(r.scope.tenant))
 	if err != nil {
 		return nil, fmt.Errorf("postgres: list children: %w", err)
 	}
@@ -195,8 +195,8 @@ func (r *runStore) Children(ctx context.Context, id uc.RunID) ([]uc.AgentRun, er
 func (r *runStore) RequestCancel(ctx context.Context, id uc.RunID) error {
 	return r.exec(ctx,
 		`UPDATE agent_runs SET cancel_requested_at = COALESCE(cancel_requested_at, now()), updated_at = now()
-		  WHERE id = $1 AND org_id = $2`,
-		string(id), string(r.scope.org))
+		  WHERE id = $1 AND tenant_id = $2`,
+		string(id), string(r.scope.tenant))
 }
 
 func (r *runStore) exec(ctx context.Context, sql string, args ...any) error {
@@ -214,9 +214,9 @@ func (r *runStore) InsertStep(ctx context.Context, s uc.RunStep) error {
 	_, err := r.scope.s.db().Exec(ctx,
 		`INSERT INTO agent_run_steps (agent_run_id, step_index, attempt, tokens_in, tokens_out, finish_reason)
 		 SELECT $1, $2, $3, $4, $5, $6
-		   FROM agent_runs WHERE id = $1 AND org_id = $7`,
+		   FROM agent_runs WHERE id = $1 AND tenant_id = $7`,
 		string(s.RunID), s.StepIndex, s.Attempt, s.TokensIn, s.TokensOut, s.FinishReason,
-		string(r.scope.org))
+		string(r.scope.tenant))
 	if isUniqueViolation(err) {
 		return uc.ErrAlreadyExists
 	}
@@ -230,8 +230,8 @@ func (r *runStore) Steps(ctx context.Context, id uc.RunID) ([]uc.RunStep, error)
 	rows, err := r.scope.s.db().Query(ctx,
 		`SELECT st.agent_run_id, st.step_index, st.attempt, st.tokens_in, st.tokens_out, st.finish_reason, st.created_at
 		   FROM agent_run_steps st JOIN agent_runs ar ON ar.id = st.agent_run_id
-		  WHERE st.agent_run_id = $1 AND ar.org_id = $2 ORDER BY st.step_index`,
-		string(id), string(r.scope.org))
+		  WHERE st.agent_run_id = $1 AND ar.tenant_id = $2 ORDER BY st.step_index`,
+		string(id), string(r.scope.tenant))
 	if err != nil {
 		return nil, fmt.Errorf("postgres: list steps: %w", err)
 	}
@@ -251,11 +251,11 @@ type credentialStore struct{ scope *tenantScope }
 
 func (c *credentialStore) Put(ctx context.Context, cred uc.Credential) error {
 	_, err := c.scope.s.db().Exec(ctx,
-		`INSERT INTO credentials (org_id, kind, name, enc_payload)
+		`INSERT INTO credentials (tenant_id, kind, name, enc_payload)
 		 VALUES ($1, $2, $3, $4)
-		 ON CONFLICT (org_id, kind, name)
+		 ON CONFLICT (tenant_id, kind, name)
 		 DO UPDATE SET enc_payload = EXCLUDED.enc_payload, rotated_at = now()`,
-		string(c.scope.org), cred.Kind, cred.Name, cred.EncPayload)
+		string(c.scope.tenant), cred.Kind, cred.Name, cred.EncPayload)
 	if err != nil {
 		return fmt.Errorf("postgres: put credential: %w", err)
 	}
@@ -265,7 +265,7 @@ func (c *credentialStore) Put(ctx context.Context, cred uc.Credential) error {
 func (c *credentialStore) List(ctx context.Context) ([]uc.CredentialInfo, error) {
 	rows, err := c.scope.s.db().Query(ctx,
 		`SELECT kind, name, created_at, rotated_at FROM credentials
-		  WHERE org_id = $1 ORDER BY kind, name`, string(c.scope.org))
+		  WHERE tenant_id = $1 ORDER BY kind, name`, string(c.scope.tenant))
 	if err != nil {
 		return nil, fmt.Errorf("postgres: list credentials: %w", err)
 	}
@@ -284,9 +284,9 @@ func (c *credentialStore) List(ctx context.Context) ([]uc.CredentialInfo, error)
 func (c *credentialStore) Get(ctx context.Context, kind, name string) (uc.Credential, error) {
 	var cred uc.Credential
 	err := c.scope.s.db().QueryRow(ctx,
-		`SELECT org_id, kind, name, enc_payload, created_at, rotated_at FROM credentials
-		  WHERE org_id = $1 AND kind = $2 AND name = $3`,
-		string(c.scope.org), kind, name).
+		`SELECT tenant_id, kind, name, enc_payload, created_at, rotated_at FROM credentials
+		  WHERE tenant_id = $1 AND kind = $2 AND name = $3`,
+		string(c.scope.tenant), kind, name).
 		Scan(&cred.TenantID, &cred.Kind, &cred.Name, &cred.EncPayload, &cred.CreatedAt, &cred.RotatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return uc.Credential{}, uc.ErrNotFound
@@ -299,8 +299,8 @@ func (c *credentialStore) Get(ctx context.Context, kind, name string) (uc.Creden
 
 func (c *credentialStore) Delete(ctx context.Context, kind, name string) error {
 	tag, err := c.scope.s.db().Exec(ctx,
-		`DELETE FROM credentials WHERE org_id = $1 AND kind = $2 AND name = $3`,
-		string(c.scope.org), kind, name)
+		`DELETE FROM credentials WHERE tenant_id = $1 AND kind = $2 AND name = $3`,
+		string(c.scope.tenant), kind, name)
 	if err != nil {
 		return fmt.Errorf("postgres: delete credential: %w", err)
 	}

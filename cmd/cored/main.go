@@ -1,30 +1,26 @@
 // cored is the ultracore API server: stateless, horizontally scalable,
-// all state in Postgres. Configuration is environment-driven:
-//
-//	DATABASE_URL     Postgres connection string (required)
-//	CORE_ADDR       listen address (default :8080)
-//	CORE_MASTER_KEY AES-256 key for credential/API-key encryption (required)
-//	CORE_MIGRATE    run migrations at startup (default true)
+// all state in Postgres. Configuration is environment-driven (CORE_*);
+// unknown CORE_* variables refuse startup. See docs/deploy.md.
 package main
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
 	uc "github.com/aleksclark/ultracore"
-	"github.com/aleksclark/ultracore/provider"
-	"github.com/aleksclark/ultracore/resourcework"
+	"github.com/aleksclark/ultracore/config"
 	ultrahttp "github.com/aleksclark/ultracore/http"
 	riverqueue "github.com/aleksclark/ultracore/jobqueue/river"
 	"github.com/aleksclark/ultracore/postgres"
+	"github.com/aleksclark/ultracore/provider"
+	"github.com/aleksclark/ultracore/resourcework"
 	"github.com/aleksclark/ultracore/secrets"
 )
 
@@ -37,6 +33,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	if err := config.RefuseUnknown(); err != nil {
+		return err
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -44,18 +44,13 @@ func run(log *slog.Logger) error {
 	if databaseURL == "" {
 		return errors.New("DATABASE_URL is required")
 	}
-	addr := os.Getenv("CORE_ADDR")
-	if addr == "" {
-		addr = ":8080"
-	}
-	// Authentication is tenant API keys looked up in the store. Bootstrap
-	// keys are seeded by the harness / CLI / ops tooling.
+	addr := config.String("CORE_ADDR", ":8080")
 	keyring, err := secrets.NewAESKeyring(os.Getenv("CORE_MASTER_KEY"))
 	if err != nil {
 		return err
 	}
 
-	if os.Getenv("CORE_MIGRATE") != "false" {
+	if config.String("CORE_MIGRATE", "true") != "false" {
 		if err := postgres.Migrate(ctx, databaseURL); err != nil {
 			return err
 		}
@@ -72,7 +67,6 @@ func run(log *slog.Logger) error {
 	bus.Start()
 	defer bus.Stop()
 
-	// Enqueue-only queue handle: cored inserts step jobs; workers run them.
 	queue, err := riverqueue.New(ctx, pool, riverqueue.Config{})
 	if err != nil {
 		return err
@@ -81,13 +75,11 @@ func run(log *slog.Logger) error {
 	resources := &resourcework.Service{Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Keyring: keyring, Log: log}
 
 	defaultModel := uc.ModelConfig{
-		Provider:   envOr("CORE_DEFAULT_PROVIDER", "openai"),
-		ModelID:    envOr("CORE_DEFAULT_MODEL", "gpt-4.1-mini"),
+		Provider:   config.String("CORE_DEFAULT_PROVIDER", "openai"),
+		ModelID:    config.String("CORE_DEFAULT_MODEL", "gpt-4.1-mini"),
 		Credential: "default",
 	}
 
-	// Registration probes the real control plane through this registry, so a
-	// stored provider is one that answered rather than one that parsed.
 	providers := provider.StandardRegistry(providerDeployment())
 	resources.Providers = providers
 	handler := ultrahttp.NewHandler(ultrahttp.Config{
@@ -100,6 +92,12 @@ func run(log *slog.Logger) error {
 		Enqueue:      postgres.TxEnqueuer{Queue: queue},
 		DefaultModel: defaultModel,
 		Resources:    resources,
+		Ready: func() error {
+			if err := pool.Ping(context.Background()); err != nil {
+				return fmt.Errorf("postgres: %w", err)
+			}
+			return nil
+		},
 	})
 
 	protocols := new(http.Protocols)
@@ -128,42 +126,16 @@ func run(log *slog.Logger) error {
 	return srv.Shutdown(shutdownCtx)
 }
 
-func envOr(name, def string) string {
-	if v := os.Getenv(name); v != "" {
-		return v
-	}
-	return def
-}
-
-// providerDeployment reads which provider kinds this deployment offers and how
-// environments are reached. Defaults keep a single-machine deployment working
-// with no configuration.
 func providerDeployment() provider.Deployment {
 	deployment := provider.Deployment{
-		BezalelImage:           envOr("CORE_BEZALEL_IMAGE", "ultracore/bezalel:local"),
+		BezalelImage:           config.String("CORE_BEZALEL_IMAGE", "ultracore/bezalel:local"),
 		BezalelBinary:          os.Getenv("CORE_BEZALEL_BINARY"),
-		KubernetesEndpointMode: envOr("CORE_K8S_ENDPOINT_MODE", ""),
-		KubernetesEndpointHost: envOr("CORE_K8S_ENDPOINT_HOST", ""),
+		KubernetesEndpointMode: config.String("CORE_K8S_ENDPOINT_MODE", ""),
+		KubernetesEndpointHost: config.String("CORE_K8S_ENDPOINT_HOST", ""),
+		EnabledKinds:           config.CSV("CORE_PROVIDER_KINDS"),
 	}
-	if kinds := os.Getenv("CORE_PROVIDER_KINDS"); kinds != "" {
-		deployment.EnabledKinds = strings.Split(kinds, ",")
-	}
-	if low, high := envInt32("CORE_K8S_NODEPORT_LOW"), envInt32("CORE_K8S_NODEPORT_HIGH"); high > 0 {
+	if low, high := config.Int32("CORE_K8S_NODEPORT_LOW"), config.Int32("CORE_K8S_NODEPORT_HIGH"); high > 0 {
 		deployment.KubernetesNodePortRange = [2]int32{low, high}
 	}
 	return deployment
-}
-
-// envInt32 reads a bounded numeric setting, treating anything unparseable as
-// unset rather than as zero.
-func envInt32(name string) int32 {
-	value := os.Getenv(name)
-	if value == "" {
-		return 0
-	}
-	parsed, err := strconv.ParseInt(value, 10, 32)
-	if err != nil {
-		return 0
-	}
-	return int32(parsed)
 }

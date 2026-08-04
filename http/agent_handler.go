@@ -14,7 +14,7 @@ import (
 	"github.com/aleksclark/ultracore/loop"
 )
 
-// agentHandler implements corev1connect.AgentServiceHandler.
+// agentHandler implements corev1connect.RunServiceHandler.
 type agentHandler struct {
 	store        uc.Store
 	enqueue      jobqueue.TxEnqueuer
@@ -120,7 +120,7 @@ func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[corev1
 	return connect.NewResponse(&corev1.StartRunResponse{Run: runToProto(created), EventSeq: eventSeq}), nil
 }
 
-func (h *agentHandler) PromptRun(ctx context.Context, req *connect.Request[corev1.PromptRunRequest]) (*connect.Response[corev1.PromptRunResponse], error) {
+func (h *agentHandler) AnswerRun(ctx context.Context, req *connect.Request[corev1.AnswerRunRequest]) (*connect.Response[corev1.AnswerRunResponse], error) {
 	run, err := h.resolveRun(ctx, uc.RunID(req.Msg.GetRunId()))
 	if err != nil {
 		return nil, err
@@ -185,7 +185,7 @@ func (h *agentHandler) PromptRun(ctx context.Context, req *connect.Request[corev
 		}
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&corev1.PromptRunResponse{EventSeq: eventSeq}), nil
+	return connect.NewResponse(&corev1.AnswerRunResponse{EventSeq: eventSeq}), nil
 }
 
 func (h *agentHandler) CancelRun(ctx context.Context, req *connect.Request[corev1.CancelRunRequest]) (*connect.Response[corev1.CancelRunResponse], error) {

@@ -105,7 +105,7 @@ func providerRegister(ctx context.Context, clients *Clients, environment Env, ar
 	if err != nil {
 		return ExitUsage, err
 	}
-	resp, err := clients.Orgs.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
+	resp, err := clients.Providers.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
 		TenantId: tenantID, Kind: *kind, Name: positional[0], ConfigJson: *config,
 	}))
 	if err != nil {
@@ -152,7 +152,7 @@ func providerList(ctx context.Context, clients *Clients, environment Env, args [
 }
 
 func listProviders(ctx context.Context, clients *Clients, tenantID string) ([]providerView, error) {
-	resp, err := clients.Orgs.ListProviders(ctx, connect.NewRequest(&corev1.ListProvidersRequest{TenantId: tenantID}))
+	resp, err := clients.Providers.ListProviders(ctx, connect.NewRequest(&corev1.ListProvidersRequest{TenantId: tenantID}))
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +235,7 @@ func providerRemove(ctx context.Context, clients *Clients, environment Env, args
 	}
 	// Removal is refused while the provider still hosts environments, so the
 	// error is the useful answer here rather than an exception.
-	if _, err := clients.Orgs.DeleteProvider(ctx, connect.NewRequest(&corev1.DeleteProviderRequest{
+	if _, err := clients.Providers.DeregisterProvider(ctx, connect.NewRequest(&corev1.DeregisterProviderRequest{
 		TenantId: tenantID, ProviderId: item.ID,
 	})); err != nil {
 		return report(stderr, *asJSON, err)

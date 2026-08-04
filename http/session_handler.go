@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"context"
 	"encoding/json"
 	"errors"
@@ -219,6 +220,19 @@ func appendTransition(ctx context.Context, scope uc.TenantScope, session uc.Sess
 	b, _ := json.Marshal(payload)
 	return scope.Events().Append(ctx, session, uc.Event{Actor: uc.ActorSystem(), Kind: kind, Payload: b})
 }
+func (h *sessionHandler) ArchiveSession(ctx context.Context, req *connect.Request[corev1.ArchiveSessionRequest]) (*connect.Response[corev1.ArchiveSessionResponse], error) {
+	sessionID := uc.SessionID(req.Msg.GetSessionId())
+	org, _, err := resolveSessionTenant(ctx, h.store, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	s, err := h.store.Tenant(org).Sessions().Archive(ctx, sessionID)
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	return connect.NewResponse(&corev1.ArchiveSessionResponse{Session: sessionToProto(s)}), nil
+}
+
 func (h *sessionHandler) SetMemory(ctx context.Context, req *connect.Request[corev1.SetMemoryRequest]) (*connect.Response[corev1.SetMemoryResponse], error) {
 	session := uc.SessionID(req.Msg.GetSessionId())
 	org, a, err := resolveSessionTenant(ctx, h.store, session)
@@ -298,3 +312,48 @@ func (h *sessionHandler) DeleteMemory(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(&corev1.DeleteMemoryResponse{EventSeq: seq}), nil
 }
 
+func (h *eventHandler) Get(ctx context.Context, req *connect.Request[corev1.GetRequest]) (*connect.Response[corev1.GetResponse], error) {
+	sessionID := uc.SessionID(req.Msg.GetSessionId())
+	org, _, err := resolveSessionTenant(ctx, h.store, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	from := req.Msg.GetFromSeq()
+	if tok := req.Msg.GetPageToken(); tok != "" {
+		// page tokens are the last delivered seq as decimal.
+		var n int64
+		for _, c := range tok {
+			if c < '0' || c > '9' {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("invalid page_token"))
+			}
+			n = n*10 + int64(c-'0')
+		}
+		from = n
+	}
+	limit := int(req.Msg.GetPageSize())
+	if limit <= 0 || limit > 256 {
+		limit = 256
+	}
+	// Over-fetch one to detect more pages when to_seq is unset.
+	events, err := h.store.Tenant(org).Events().Range(ctx, sessionID, from, limit+1)
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	to := req.Msg.GetToSeq()
+	resp := &corev1.GetResponse{}
+	for _, e := range events {
+		if to > 0 && e.Seq > to {
+			break
+		}
+		if len(resp.Events) >= limit {
+			resp.NextPageToken = fmt.Sprintf("%d", resp.Events[len(resp.Events)-1].GetSeq())
+			break
+		}
+		pe, err := eventToProto(e)
+		if err != nil {
+			return nil, err
+		}
+		resp.Events = append(resp.Events, pe)
+	}
+	return connect.NewResponse(resp), nil
+}

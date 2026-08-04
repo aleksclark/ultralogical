@@ -1,0 +1,24 @@
+[Unit]
+Description=ultracore API (cored)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=core
+Group=core
+EnvironmentFile=/etc/ultracore/cored.env
+ExecStart=/usr/local/bin/cored
+Restart=on-failure
+RestartSec=2
+LimitNOFILE=65536
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=
+
+[Install]
+WantedBy=multi-user.target

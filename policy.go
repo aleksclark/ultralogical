@@ -99,7 +99,7 @@ func (p RunPolicy) allowHasStar() bool {
 	return stringSet(p.AllowTools)["*"]
 }
 
-// SubsetOf reports whether p is no wider than parent on every axis:
+// IsSubset reports whether p is no wider than parent on every axis:
 //   - effective allow ⊆ parent's effective allow
 //   - resource kinds ⊆ parent's kinds
 //   - MaxChildren ≤ parent's MaxChildren

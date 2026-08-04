@@ -45,6 +45,9 @@ const (
 	// SessionServiceUpdateSessionLabelsProcedure is the fully-qualified name of the SessionService's
 	// UpdateSessionLabels RPC.
 	SessionServiceUpdateSessionLabelsProcedure = "/core.v1.SessionService/UpdateSessionLabels"
+	// SessionServiceArchiveSessionProcedure is the fully-qualified name of the SessionService's
+	// ArchiveSession RPC.
+	SessionServiceArchiveSessionProcedure = "/core.v1.SessionService/ArchiveSession"
 	// SessionServiceSetMemoryProcedure is the fully-qualified name of the SessionService's SetMemory
 	// RPC.
 	SessionServiceSetMemoryProcedure = "/core.v1.SessionService/SetMemory"
@@ -65,6 +68,7 @@ type SessionServiceClient interface {
 	GetSession(context.Context, *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error)
 	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
 	UpdateSessionLabels(context.Context, *connect.Request[v1.UpdateSessionLabelsRequest]) (*connect.Response[v1.UpdateSessionLabelsResponse], error)
+	ArchiveSession(context.Context, *connect.Request[v1.ArchiveSessionRequest]) (*connect.Response[v1.ArchiveSessionResponse], error)
 	SetMemory(context.Context, *connect.Request[v1.SetMemoryRequest]) (*connect.Response[v1.SetMemoryResponse], error)
 	GetMemory(context.Context, *connect.Request[v1.GetMemoryRequest]) (*connect.Response[v1.GetMemoryResponse], error)
 	ListMemory(context.Context, *connect.Request[v1.ListMemoryRequest]) (*connect.Response[v1.ListMemoryResponse], error)
@@ -106,6 +110,12 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("UpdateSessionLabels")),
 			connect.WithClientOptions(opts...),
 		),
+		archiveSession: connect.NewClient[v1.ArchiveSessionRequest, v1.ArchiveSessionResponse](
+			httpClient,
+			baseURL+SessionServiceArchiveSessionProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("ArchiveSession")),
+			connect.WithClientOptions(opts...),
+		),
 		setMemory: connect.NewClient[v1.SetMemoryRequest, v1.SetMemoryResponse](
 			httpClient,
 			baseURL+SessionServiceSetMemoryProcedure,
@@ -139,6 +149,7 @@ type sessionServiceClient struct {
 	getSession          *connect.Client[v1.GetSessionRequest, v1.GetSessionResponse]
 	listSessions        *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
 	updateSessionLabels *connect.Client[v1.UpdateSessionLabelsRequest, v1.UpdateSessionLabelsResponse]
+	archiveSession      *connect.Client[v1.ArchiveSessionRequest, v1.ArchiveSessionResponse]
 	setMemory           *connect.Client[v1.SetMemoryRequest, v1.SetMemoryResponse]
 	getMemory           *connect.Client[v1.GetMemoryRequest, v1.GetMemoryResponse]
 	listMemory          *connect.Client[v1.ListMemoryRequest, v1.ListMemoryResponse]
@@ -163,6 +174,11 @@ func (c *sessionServiceClient) ListSessions(ctx context.Context, req *connect.Re
 // UpdateSessionLabels calls core.v1.SessionService.UpdateSessionLabels.
 func (c *sessionServiceClient) UpdateSessionLabels(ctx context.Context, req *connect.Request[v1.UpdateSessionLabelsRequest]) (*connect.Response[v1.UpdateSessionLabelsResponse], error) {
 	return c.updateSessionLabels.CallUnary(ctx, req)
+}
+
+// ArchiveSession calls core.v1.SessionService.ArchiveSession.
+func (c *sessionServiceClient) ArchiveSession(ctx context.Context, req *connect.Request[v1.ArchiveSessionRequest]) (*connect.Response[v1.ArchiveSessionResponse], error) {
+	return c.archiveSession.CallUnary(ctx, req)
 }
 
 // SetMemory calls core.v1.SessionService.SetMemory.
@@ -191,6 +207,7 @@ type SessionServiceHandler interface {
 	GetSession(context.Context, *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error)
 	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
 	UpdateSessionLabels(context.Context, *connect.Request[v1.UpdateSessionLabelsRequest]) (*connect.Response[v1.UpdateSessionLabelsResponse], error)
+	ArchiveSession(context.Context, *connect.Request[v1.ArchiveSessionRequest]) (*connect.Response[v1.ArchiveSessionResponse], error)
 	SetMemory(context.Context, *connect.Request[v1.SetMemoryRequest]) (*connect.Response[v1.SetMemoryResponse], error)
 	GetMemory(context.Context, *connect.Request[v1.GetMemoryRequest]) (*connect.Response[v1.GetMemoryResponse], error)
 	ListMemory(context.Context, *connect.Request[v1.ListMemoryRequest]) (*connect.Response[v1.ListMemoryResponse], error)
@@ -228,6 +245,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("UpdateSessionLabels")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceArchiveSessionHandler := connect.NewUnaryHandler(
+		SessionServiceArchiveSessionProcedure,
+		svc.ArchiveSession,
+		connect.WithSchema(sessionServiceMethods.ByName("ArchiveSession")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sessionServiceSetMemoryHandler := connect.NewUnaryHandler(
 		SessionServiceSetMemoryProcedure,
 		svc.SetMemory,
@@ -262,6 +285,8 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceListSessionsHandler.ServeHTTP(w, r)
 		case SessionServiceUpdateSessionLabelsProcedure:
 			sessionServiceUpdateSessionLabelsHandler.ServeHTTP(w, r)
+		case SessionServiceArchiveSessionProcedure:
+			sessionServiceArchiveSessionHandler.ServeHTTP(w, r)
 		case SessionServiceSetMemoryProcedure:
 			sessionServiceSetMemoryHandler.ServeHTTP(w, r)
 		case SessionServiceGetMemoryProcedure:
@@ -293,6 +318,10 @@ func (UnimplementedSessionServiceHandler) ListSessions(context.Context, *connect
 
 func (UnimplementedSessionServiceHandler) UpdateSessionLabels(context.Context, *connect.Request[v1.UpdateSessionLabelsRequest]) (*connect.Response[v1.UpdateSessionLabelsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.SessionService.UpdateSessionLabels is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) ArchiveSession(context.Context, *connect.Request[v1.ArchiveSessionRequest]) (*connect.Response[v1.ArchiveSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.SessionService.ArchiveSession is not implemented"))
 }
 
 func (UnimplementedSessionServiceHandler) SetMemory(context.Context, *connect.Request[v1.SetMemoryRequest]) (*connect.Response[v1.SetMemoryResponse], error) {

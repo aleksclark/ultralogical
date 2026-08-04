@@ -1,0 +1,60 @@
+# Reference deployment: Postgres + cored + coreworker.
+# Usage:
+#   docker compose up --build
+#   curl -sf http://localhost:8080/healthz
+#   curl -sf http://localhost:8080/readyz
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: core
+      POSTGRES_PASSWORD: core
+      POSTGRES_DB: core
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U core -d core"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  cored:
+    build: .
+    command: ["/usr/local/bin/cored"]
+    environment:
+      DATABASE_URL: postgres://core:core@postgres:5432/core?sslmode=disable
+      CORE_MASTER_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      CORE_ADDR: ":8080"
+      CORE_MIGRATE: "true"
+      CORE_DEFAULT_PROVIDER: openai
+      CORE_DEFAULT_MODEL: gpt-4.1-mini
+      CORE_PROVIDER_KINDS: null,static
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Image is distroless (no curl/wget). Probe /healthz and /readyz from the
+    # host or orchestrator rather than an in-container healthcheck command.
+
+  coreworker:
+    build: .
+    command: ["/usr/local/bin/coreworker"]
+    environment:
+      DATABASE_URL: postgres://core:core@postgres:5432/core?sslmode=disable
+      CORE_MASTER_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      CORE_ADDR: ":8081"
+      CORE_MAX_WORKERS: "4"
+      CORE_PROVIDER_KINDS: null,static
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      cored:
+        condition: service_started
+
+volumes:
+  pgdata:

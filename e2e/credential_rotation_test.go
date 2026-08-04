@@ -51,7 +51,7 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 
 	// Rotate through the public API, to the same kind and name, which is what
 	// makes this a rotation rather than a second credential.
-	rotated, err := alice.Tenants.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
+	rotated, err := alice.Credentials.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
 		TenantId: org, Kind: uc.CredentialKindOpenAI, Name: "default",
 		ApiKey: rotatedAPIKey, BaseUrl: stack.Model.URL(),
 	}))
@@ -97,7 +97,7 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 		assertNoSecret(t, secret, "cored and worker logs", stack.Logs())
 
 		// The credential surface never echoes secret material back.
-		listed, err := alice.Tenants.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+		listed, err := alice.Credentials.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
 			TenantId: org,
 		}))
 		if err != nil {
@@ -143,7 +143,7 @@ func TestA106_RotationAppliesToAlreadyRunningSessions(t *testing.T) {
 	}
 	alice.AwaitRunState(t, first.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
 
-	if _, err := alice.Tenants.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
+	if _, err := alice.Credentials.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
 		TenantId: org, Kind: uc.CredentialKindOpenAI, Name: "default",
 		ApiKey: rotatedAPIKey, BaseUrl: stack.Model.URL(),
 	})); err != nil {

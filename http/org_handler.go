@@ -23,6 +23,18 @@ type tenantHandler struct {
 	providers *provider.Registry
 }
 
+// credentialHandler implements corev1connect.CredentialServiceHandler.
+type credentialHandler struct {
+	store   uc.Store
+	keyring secrets.Keyring
+}
+
+// providerHandler implements corev1connect.ProviderServiceHandler.
+type providerHandler struct {
+	store     uc.Store
+	providers *provider.Registry
+}
+
 func keyScopeToProto(s uc.KeyScope) corev1.KeyScope {
 	switch s {
 	case uc.KeyScopeAdmin:
@@ -191,7 +203,7 @@ func validCredentialKind(kind string) bool {
 	}
 }
 
-func (h *tenantHandler) PutCredential(ctx context.Context, req *connect.Request[corev1.PutCredentialRequest]) (*connect.Response[corev1.PutCredentialResponse], error) {
+func (h *credentialHandler) PutCredential(ctx context.Context, req *connect.Request[corev1.PutCredentialRequest]) (*connect.Response[corev1.PutCredentialResponse], error) {
 	tenantID := uc.TenantID(req.Msg.GetTenantId())
 	if _, err := requireAdmin(ctx, tenantID); err != nil {
 		return nil, err
@@ -240,7 +252,7 @@ func (h *tenantHandler) PutCredential(ctx context.Context, req *connect.Request[
 	})}), nil
 }
 
-func (h *tenantHandler) ListCredentials(ctx context.Context, req *connect.Request[corev1.ListCredentialsRequest]) (*connect.Response[corev1.ListCredentialsResponse], error) {
+func (h *credentialHandler) ListCredentials(ctx context.Context, req *connect.Request[corev1.ListCredentialsRequest]) (*connect.Response[corev1.ListCredentialsResponse], error) {
 	tenantID := uc.TenantID(req.Msg.GetTenantId())
 	if _, err := requireTenant(ctx, tenantID); err != nil {
 		return nil, err
@@ -256,7 +268,7 @@ func (h *tenantHandler) ListCredentials(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(resp), nil
 }
 
-func (h *tenantHandler) DeleteCredential(ctx context.Context, req *connect.Request[corev1.DeleteCredentialRequest]) (*connect.Response[corev1.DeleteCredentialResponse], error) {
+func (h *credentialHandler) DeleteCredential(ctx context.Context, req *connect.Request[corev1.DeleteCredentialRequest]) (*connect.Response[corev1.DeleteCredentialResponse], error) {
 	tenantID := uc.TenantID(req.Msg.GetTenantId())
 	if _, err := requireAdmin(ctx, tenantID); err != nil {
 		return nil, err
@@ -280,7 +292,7 @@ func providerToProto(p uc.ProviderInstance) *corev1.ProviderInstance {
 	return out
 }
 
-func (h *tenantHandler) RegisterProvider(ctx context.Context, req *connect.Request[corev1.RegisterProviderRequest]) (*connect.Response[corev1.RegisterProviderResponse], error) {
+func (h *providerHandler) RegisterProvider(ctx context.Context, req *connect.Request[corev1.RegisterProviderRequest]) (*connect.Response[corev1.RegisterProviderResponse], error) {
 	tenantID := uc.TenantID(req.Msg.GetTenantId())
 	if _, err := requireAdmin(ctx, tenantID); err != nil {
 		return nil, err
@@ -314,7 +326,7 @@ func (h *tenantHandler) RegisterProvider(ctx context.Context, req *connect.Reque
 	return connect.NewResponse(&corev1.RegisterProviderResponse{Provider: providerToProto(created)}), nil
 }
 
-func (h *tenantHandler) ListProviders(ctx context.Context, req *connect.Request[corev1.ListProvidersRequest]) (*connect.Response[corev1.ListProvidersResponse], error) {
+func (h *providerHandler) ListProviders(ctx context.Context, req *connect.Request[corev1.ListProvidersRequest]) (*connect.Response[corev1.ListProvidersResponse], error) {
 	tenantID := uc.TenantID(req.Msg.GetTenantId())
 	if _, err := requireTenant(ctx, tenantID); err != nil {
 		return nil, err
@@ -330,7 +342,19 @@ func (h *tenantHandler) ListProviders(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(resp), nil
 }
 
-func (h *tenantHandler) DeleteProvider(ctx context.Context, req *connect.Request[corev1.DeleteProviderRequest]) (*connect.Response[corev1.DeleteProviderResponse], error) {
+func (h *providerHandler) GetProvider(ctx context.Context, req *connect.Request[corev1.GetProviderRequest]) (*connect.Response[corev1.GetProviderResponse], error) {
+	tenantID := uc.TenantID(req.Msg.GetTenantId())
+	if _, err := requireTenant(ctx, tenantID); err != nil {
+		return nil, err
+	}
+	p, err := h.store.Tenant(tenantID).Providers().Get(ctx, uc.ProviderInstanceID(req.Msg.GetProviderId()))
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	return connect.NewResponse(&corev1.GetProviderResponse{Provider: providerToProto(p)}), nil
+}
+
+func (h *providerHandler) DeregisterProvider(ctx context.Context, req *connect.Request[corev1.DeregisterProviderRequest]) (*connect.Response[corev1.DeregisterProviderResponse], error) {
 	tenantID := uc.TenantID(req.Msg.GetTenantId())
 	if _, err := requireAdmin(ctx, tenantID); err != nil {
 		return nil, err
@@ -353,5 +377,5 @@ func (h *tenantHandler) DeleteProvider(ctx context.Context, req *connect.Request
 	if err := h.store.Tenant(tenantID).Providers().Delete(ctx, providerID); err != nil {
 		return nil, mapStoreErr(err)
 	}
-	return connect.NewResponse(&corev1.DeleteProviderResponse{}), nil
+	return connect.NewResponse(&corev1.DeregisterProviderResponse{}), nil
 }

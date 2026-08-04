@@ -37,10 +37,11 @@ const (
 
 // Clients bundles the generated service clients one authenticated user needs.
 type Clients struct {
-	Orgs     corev1connect.TenantServiceClient
-	Sessions corev1connect.SessionServiceClient
+	Orgs      corev1connect.TenantServiceClient
+	Providers corev1connect.ProviderServiceClient
+	Sessions  corev1connect.SessionServiceClient
 	Resources corev1connect.ResourceServiceClient
-	HTTP     *http.Client
+	HTTP      *http.Client
 }
 
 type authTransport struct {
@@ -58,10 +59,11 @@ func (t *authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 func NewClients(baseURL, token string) *Clients {
 	httpClient := &http.Client{Timeout: 30 * time.Second, Transport: &authTransport{token: token, base: http.DefaultTransport}}
 	return &Clients{
-		Orgs:     corev1connect.NewTenantServiceClient(httpClient, baseURL),
-		Sessions: corev1connect.NewSessionServiceClient(httpClient, baseURL),
-		Resources:     corev1connect.NewResourceServiceClient(httpClient, baseURL),
-		HTTP:     httpClient,
+		Orgs:      corev1connect.NewTenantServiceClient(httpClient, baseURL),
+		Providers: corev1connect.NewProviderServiceClient(httpClient, baseURL),
+		Sessions:  corev1connect.NewSessionServiceClient(httpClient, baseURL),
+		Resources: corev1connect.NewResourceServiceClient(httpClient, baseURL),
+		HTTP:      httpClient,
 	}
 }
 

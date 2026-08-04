@@ -90,6 +90,8 @@ type SessionStore interface {
 	List(ctx context.Context, selectors []LabelSelector) ([]Session, error)
 	// UpdateLabels replaces the full label map and returns the new session.
 	UpdateLabels(ctx context.Context, id SessionID, labels map[string]string) (Session, error)
+	// Archive stamps archived_at (idempotent) and returns the session.
+	Archive(ctx context.Context, id SessionID) (Session, error)
 }
 
 // EventStore is the append-only session event log within one tenant.

@@ -220,9 +220,26 @@ message SubscribeResponse {
   SessionEvent event = 1;
 }
 
+message GetRequest {
+  string session_id = 1;
+  // Inclusive lower bound: deliver events with seq > from_seq.
+  int64 from_seq = 2;
+  // Inclusive upper bound when > 0; 0 means no upper bound.
+  int64 to_seq = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message GetResponse {
+  repeated SessionEvent events = 1;
+  string next_page_token = 2;
+}
+
 // EventService is the observation surface: streaming, multiplayer, history
-// replay, and test assertions all use Subscribe.
+// replay, and test assertions all use Subscribe. Get is the non-streaming
+// range read for SDKs and offline tooling.
 service EventService {
   rpc Append(AppendRequest) returns (AppendResponse);
   rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
+  rpc Get(GetRequest) returns (GetResponse);
 }

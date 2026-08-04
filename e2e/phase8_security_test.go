@@ -248,7 +248,7 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 		assertNoCanary(t, "persisted run history", string(stored.History))
 		assertNoCanary(t, "persisted run result", string(stored.Result))
 
-		listed, err := alice.Tenants.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+		listed, err := alice.Credentials.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
 			TenantId: string(org),
 		}))
 		if err != nil {

@@ -37,12 +37,15 @@ const (
 	EventServiceAppendProcedure = "/core.v1.EventService/Append"
 	// EventServiceSubscribeProcedure is the fully-qualified name of the EventService's Subscribe RPC.
 	EventServiceSubscribeProcedure = "/core.v1.EventService/Subscribe"
+	// EventServiceGetProcedure is the fully-qualified name of the EventService's Get RPC.
+	EventServiceGetProcedure = "/core.v1.EventService/Get"
 )
 
 // EventServiceClient is a client for the core.v1.EventService service.
 type EventServiceClient interface {
 	Append(context.Context, *connect.Request[v1.AppendRequest]) (*connect.Response[v1.AppendResponse], error)
 	Subscribe(context.Context, *connect.Request[v1.SubscribeRequest]) (*connect.ServerStreamForClient[v1.SubscribeResponse], error)
+	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 }
 
 // NewEventServiceClient constructs a client for the core.v1.EventService service. By default, it
@@ -68,6 +71,12 @@ func NewEventServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(eventServiceMethods.ByName("Subscribe")),
 			connect.WithClientOptions(opts...),
 		),
+		get: connect.NewClient[v1.GetRequest, v1.GetResponse](
+			httpClient,
+			baseURL+EventServiceGetProcedure,
+			connect.WithSchema(eventServiceMethods.ByName("Get")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -75,6 +84,7 @@ func NewEventServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 type eventServiceClient struct {
 	append    *connect.Client[v1.AppendRequest, v1.AppendResponse]
 	subscribe *connect.Client[v1.SubscribeRequest, v1.SubscribeResponse]
+	get       *connect.Client[v1.GetRequest, v1.GetResponse]
 }
 
 // Append calls core.v1.EventService.Append.
@@ -87,10 +97,16 @@ func (c *eventServiceClient) Subscribe(ctx context.Context, req *connect.Request
 	return c.subscribe.CallServerStream(ctx, req)
 }
 
+// Get calls core.v1.EventService.Get.
+func (c *eventServiceClient) Get(ctx context.Context, req *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error) {
+	return c.get.CallUnary(ctx, req)
+}
+
 // EventServiceHandler is an implementation of the core.v1.EventService service.
 type EventServiceHandler interface {
 	Append(context.Context, *connect.Request[v1.AppendRequest]) (*connect.Response[v1.AppendResponse], error)
 	Subscribe(context.Context, *connect.Request[v1.SubscribeRequest], *connect.ServerStream[v1.SubscribeResponse]) error
+	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 }
 
 // NewEventServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -112,12 +128,20 @@ func NewEventServiceHandler(svc EventServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(eventServiceMethods.ByName("Subscribe")),
 		connect.WithHandlerOptions(opts...),
 	)
+	eventServiceGetHandler := connect.NewUnaryHandler(
+		EventServiceGetProcedure,
+		svc.Get,
+		connect.WithSchema(eventServiceMethods.ByName("Get")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/core.v1.EventService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case EventServiceAppendProcedure:
 			eventServiceAppendHandler.ServeHTTP(w, r)
 		case EventServiceSubscribeProcedure:
 			eventServiceSubscribeHandler.ServeHTTP(w, r)
+		case EventServiceGetProcedure:
+			eventServiceGetHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -133,4 +157,8 @@ func (UnimplementedEventServiceHandler) Append(context.Context, *connect.Request
 
 func (UnimplementedEventServiceHandler) Subscribe(context.Context, *connect.Request[v1.SubscribeRequest], *connect.ServerStream[v1.SubscribeResponse]) error {
 	return connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.EventService.Subscribe is not implemented"))
+}
+
+func (UnimplementedEventServiceHandler) Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.EventService.Get is not implemented"))
 }

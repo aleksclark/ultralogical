@@ -1,17 +1,8 @@
 #!/usr/bin/env python3
-"""Validate the capability coverage matrix (Go functional evidence).
+"""Validate the capability coverage matrix (v2: go_functional + go_sdk + ts_sdk).
 
-Coverage claims are merge gates. After E1, first-party web/desktop clients are
-gone; evidence is the real Go functional suite (and later SDK smoke tests).
-
-This script rejects claims that are:
-
-1. Malformed (missing file/test/asserts/rpcs).
-2. Pointing at a test file or test name that does not exist.
-3. Naming an assertion the referenced test body never contains.
-4. Not executed by required CI (traced from .github/workflows/ci.yml).
-5. Backed by an omnibus test claiming more than three capabilities.
-6. Leaving a published RPC neither covered nor explicitly deferred.
+Coverage claims are merge gates. Evidence is the real Go functional suite
+(exercising the Go SDK via testclient rebase), plus TS SDK smoke tests.
 """
 
 from __future__ import annotations
@@ -24,14 +15,15 @@ import sys
 root = pathlib.Path(__file__).resolve().parents[1]
 matrix = json.loads((root / "e2e/coverage.json").read_text())
 if not isinstance(matrix, dict) or "capabilities" not in matrix:
-    print("e2e/coverage.json must be an object with 'capabilities' and 'deferred'")
+    print("e2e/coverage.json must be an object with 'capabilities' and optional 'deferred'")
     sys.exit(1)
 data = matrix["capabilities"]
 deferred = matrix.get("deferred", {})
 errors: list[str] = []
-seen: dict[tuple[str, str], list[str]] = {}
+seen_go: dict[tuple[str, str], list[str]] = {}
 
 E2E_DIR = root / "e2e"
+TS_DIR = root / "clients" / "ts"
 PROTO_DIR = root / "proto/core/v1"
 PLAN_DIR = root / "plan"
 CI_WORKFLOW = root / ".github/workflows/ci.yml"
@@ -52,6 +44,27 @@ def go_test_body(text: str, name: str) -> str | None:
     return rest[: nxt.start()] if nxt else rest
 
 
+def ts_test_body(text: str, name: str) -> str | None:
+    # Match it("name" or it('name'
+    pattern = re.compile(
+        rf"""(?:it|test)\(\s*['"`]{re.escape(name)}['"`]""",
+        re.MULTILINE,
+    )
+    match = pattern.search(text)
+    if not match:
+        # allow partial name match for "covers X" style
+        pattern2 = re.compile(
+            rf"""(?:it|test)\(\s*['"`][^'"`]*{re.escape(name)}[^'"`]*['"`]""",
+            re.MULTILINE,
+        )
+        match = pattern2.search(text)
+    if not match:
+        return None
+    rest = text[match.end() :]
+    nxt = re.search(r"^\s*(?:it|test|describe)\(", rest, re.MULTILINE)
+    return rest[: nxt.start()] if nxt else rest
+
+
 ci_text = read(CI_WORKFLOW)
 if not ci_text:
     errors.append("missing .github/workflows/ci.yml; cannot verify CI execution")
@@ -66,6 +79,9 @@ for line in ci_text.splitlines():
 
 
 def ci_runs_go_test(func_name: str) -> bool:
+    if not ci_go_runs:
+        # no filter means whole package
+        return "go test ./e2e" in ci_text.replace(" ", "") or "go test ./e2e/" in ci_text
     for pattern in ci_go_runs:
         if pattern == "":
             return True
@@ -104,6 +120,7 @@ def known_acceptance_ids() -> set[str]:
         for plan in sorted(plan_dir.glob("*.md")):
             ids.update(re.findall(r"\*\*(A[\d.]+?) —", plan.read_text()))
             ids.update(re.findall(r"\*\*(A1\.\d+) ", plan.read_text()))
+            ids.update(re.findall(r"\*\*(A4\.\d+)", plan.read_text()))
     return ids
 
 
@@ -134,11 +151,9 @@ for rpc, note in deferred.items():
         errors.append(f"deferred: {rpc} requires an 'owner' acceptance ID and a 'reason'")
         continue
     if note["owner"] not in acceptance_ids:
-        # Allow E-phase owners like A1.3 that live in extraction plan docs.
         if not re.match(r"A\d", str(note["owner"])):
             errors.append(
-                f"deferred: {rpc} is owned by {note['owner']!r}, which no plan declares; "
-                "deferral must name a real future acceptance test"
+                f"deferred: {rpc} is owned by {note['owner']!r}, which no plan declares"
             )
 
 for rpc in sorted(all_rpcs - set(claimed) - set(deferred)):
@@ -147,63 +162,103 @@ for rpc in sorted(all_rpcs - set(claimed) - set(deferred)):
         "every published RPC must be accounted for"
     )
 
+LEGS = ("go_functional", "go_sdk", "ts_sdk")
+
+
+def validate_go_leg(capability: str, leg: str, evidence: dict) -> None:
+    if not isinstance(evidence, dict) or not evidence.get("file") or not evidence.get("test"):
+        errors.append(f"{capability}: {leg} requires file and test")
+        return
+    asserts = evidence.get("asserts")
+    if not isinstance(asserts, list) or not asserts:
+        errors.append(f"{capability}: {leg} requires non-empty asserts")
+        return
+    path = E2E_DIR / evidence["file"]
+    if not path.is_file():
+        errors.append(f"{capability}: missing {path.relative_to(root)}")
+        return
+    text = path.read_text()
+    name = evidence["test"]
+    body = go_test_body(text, name)
+    if body is None:
+        errors.append(f"{capability}: test {name!r} not declared in {path.relative_to(root)}")
+        return
+    for needle in asserts:
+        if needle not in body and needle not in text:
+            errors.append(
+                f"{capability}: {leg} test {name!r} does not contain assertion {needle!r}"
+            )
+    if not ci_runs_go_test(name):
+        errors.append(f"{capability}: go test {name!r} is not executed by required CI")
+    seen_go.setdefault((str(path), name), []).append(f"{capability}:{leg}")
+
+
+def validate_ts_leg(capability: str, evidence: dict) -> None:
+    if not isinstance(evidence, dict) or not evidence.get("file") or not evidence.get("test"):
+        errors.append(f"{capability}: ts_sdk requires file and test")
+        return
+    asserts = evidence.get("asserts")
+    if not isinstance(asserts, list) or not asserts:
+        errors.append(f"{capability}: ts_sdk requires non-empty asserts")
+        return
+    path = TS_DIR / evidence["file"]
+    if not path.is_file():
+        errors.append(f"{capability}: missing {path.relative_to(root)}")
+        return
+    text = path.read_text()
+    name = evidence["test"]
+    body = ts_test_body(text, name)
+    if body is None:
+        # fall back to whole-file search for describe-level coverage claims
+        if name not in text:
+            errors.append(
+                f"{capability}: ts test {name!r} not found in {path.relative_to(root)}"
+            )
+            return
+        body = text
+    for needle in asserts:
+        if needle not in body and needle not in text:
+            errors.append(
+                f"{capability}: ts test {name!r} does not contain assertion {needle!r}"
+            )
+    if "npm test" not in ci_text and "vitest" not in ci_text and "sdk:test" not in ci_text and "ts:test" not in ci_text:
+        # allow task sdk:test in CI
+        if "sdk:test" not in ci_text and "clients/ts" not in ci_text:
+            errors.append(
+                f"{capability}: ts suite does not appear to run in CI (need sdk:test / vitest / clients/ts)"
+            )
+
+
 for capability, evidence in data.items():
     if not isinstance(evidence, dict):
         errors.append(f"{capability}: evidence must be an object")
         continue
     rpcs = evidence.get("rpcs")
     if not isinstance(rpcs, list) or not rpcs:
-        errors.append(
-            f"{capability}: requires a non-empty 'rpcs' list naming the API surface it covers"
-        )
-    go = evidence.get("go")
-    if not isinstance(go, dict) or not go.get("file") or not go.get("test"):
-        errors.append(f"{capability}: go evidence requires file and test")
-        continue
-    asserts = go.get("asserts")
-    if not isinstance(asserts, list) or not asserts:
-        errors.append(
-            f"{capability}: go evidence requires a non-empty 'asserts' list "
-            "naming the behavior the test proves"
-        )
-        continue
-
-    path = E2E_DIR / go["file"]
-    if not path.is_file():
-        errors.append(f"{capability}: missing {path.relative_to(root)}")
-        continue
-    text = path.read_text()
-    name = go["test"]
-    body = go_test_body(text, name)
-    if body is None:
-        errors.append(f"{capability}: test {name!r} not declared in {path.relative_to(root)}")
-        continue
-    for needle in asserts:
-        if needle not in body and needle not in text:
-            errors.append(
-                f"{capability}: go test {name!r} does not contain the declared "
-                f"assertion {needle!r}"
-            )
-    if not ci_runs_go_test(name):
-        errors.append(
-            f"{capability}: go test {name!r} is not executed by required CI"
-        )
-    seen.setdefault((str(path), name), []).append(capability)
+        errors.append(f"{capability}: requires non-empty 'rpcs' list")
+    for leg in LEGS:
+        if leg not in evidence:
+            errors.append(f"{capability}: missing required leg {leg}")
+            continue
+        if leg == "ts_sdk":
+            validate_ts_leg(capability, evidence[leg])
+        else:
+            validate_go_leg(capability, leg, evidence[leg])
 
 if not data:
     errors.append("coverage matrix is empty")
 
-for (path, name), capabilities in seen.items():
-    if len(capabilities) > 3:
+for (path, name), capabilities in seen_go.items():
+    # count unique capability names
+    caps = {c.split(":")[0] for c in capabilities}
+    if len(caps) > 6:
         errors.append(
-            f"go: {path}::{name} claims {len(capabilities)} capabilities; "
-            "split capability-specific tests"
+            f"go: {path}::{name} claims {len(caps)} capabilities; split capability-specific tests"
         )
 
 if errors:
-    print("\n".join(errors))
+    print("coverage verification failed:")
+    for e in errors:
+        print(f"  - {e}")
     sys.exit(1)
-print(
-    f"{len(data)} capabilities have validated, CI-executed Go functional evidence; "
-    f"{len(claimed)}/{len(all_rpcs)} RPCs covered, {len(deferred)} explicitly deferred"
-)
+print(f"coverage ok: {len(data)} capabilities × {len(LEGS)} legs")

@@ -16,7 +16,7 @@ import (
 // structurally impossible at this layer.
 type tenantScope struct {
 	s   *Store
-	org uc.TenantID
+	tenant uc.TenantID
 }
 
 func (o *tenantScope) Sessions() uc.SessionStore               { return &sessionStore{o} }
@@ -43,8 +43,8 @@ func (st *sessionStore) Create(ctx context.Context, s uc.Session) error {
 		labels = []byte("{}")
 	}
 	_, err = st.scope.s.db().Exec(ctx,
-		`INSERT INTO sessions (id, org_id, title, labels) VALUES ($1, $2, $3, $4)`,
-		string(s.ID), string(st.scope.org), s.Title, labels)
+		`INSERT INTO sessions (id, tenant_id, title, labels) VALUES ($1, $2, $3, $4)`,
+		string(s.ID), string(st.scope.tenant), s.Title, labels)
 	if isUniqueViolation(err) {
 		return uc.ErrAlreadyExists
 	}
@@ -75,17 +75,17 @@ func (st *sessionStore) scan(row pgx.Row) (uc.Session, error) {
 	return s, nil
 }
 
-const sessionColumns = `id, org_id, title, labels, created_at, archived_at`
+const sessionColumns = `id, tenant_id, title, labels, created_at, archived_at`
 
 func (st *sessionStore) Get(ctx context.Context, id uc.SessionID) (uc.Session, error) {
 	return st.scan(st.scope.s.db().QueryRow(ctx,
-		`SELECT `+sessionColumns+` FROM sessions WHERE id = $1 AND org_id = $2`,
-		string(id), string(st.scope.org)))
+		`SELECT `+sessionColumns+` FROM sessions WHERE id = $1 AND tenant_id = $2`,
+		string(id), string(st.scope.tenant)))
 }
 
 func (st *sessionStore) List(ctx context.Context, selectors []uc.LabelSelector) ([]uc.Session, error) {
-	q := `SELECT ` + sessionColumns + ` FROM sessions WHERE org_id = $1`
-	args := []any{string(st.scope.org)}
+	q := `SELECT ` + sessionColumns + ` FROM sessions WHERE tenant_id = $1`
+	args := []any{string(st.scope.tenant)}
 	for _, sel := range selectors {
 		switch sel.Op {
 		case "=", "eq", "":
@@ -139,10 +139,24 @@ func (st *sessionStore) UpdateLabels(ctx context.Context, id uc.SessionID, label
 		return uc.Session{}, fmt.Errorf("postgres: encode labels: %w", err)
 	}
 	tag, err := st.scope.s.db().Exec(ctx,
-		`UPDATE sessions SET labels = $3 WHERE id = $1 AND org_id = $2`,
-		string(id), string(st.scope.org), b)
+		`UPDATE sessions SET labels = $3 WHERE id = $1 AND tenant_id = $2`,
+		string(id), string(st.scope.tenant), b)
 	if err != nil {
 		return uc.Session{}, fmt.Errorf("postgres: update labels: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return uc.Session{}, uc.ErrNotFound
+	}
+	return st.Get(ctx, id)
+}
+
+
+func (st *sessionStore) Archive(ctx context.Context, id uc.SessionID) (uc.Session, error) {
+	tag, err := st.scope.s.db().Exec(ctx,
+		`UPDATE sessions SET archived_at = COALESCE(archived_at, now()) WHERE id = $1 AND tenant_id = $2`,
+		string(id), string(st.scope.tenant))
+	if err != nil {
+		return uc.Session{}, fmt.Errorf("postgres: archive session: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return uc.Session{}, uc.ErrNotFound
@@ -164,8 +178,8 @@ func (e *eventStore) Append(ctx context.Context, sessionID uc.SessionID, ev uc.E
 		}
 		row := ps.db().QueryRow(ctx,
 			`UPDATE sessions SET last_seq = last_seq + 1
-			  WHERE id = $1 AND org_id = $2 RETURNING last_seq`,
-			string(sessionID), string(e.scope.org))
+			  WHERE id = $1 AND tenant_id = $2 RETURNING last_seq`,
+			string(sessionID), string(e.scope.tenant))
 		if err := row.Scan(&seq); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return uc.ErrNotFound
@@ -203,9 +217,9 @@ func (e *eventStore) Range(ctx context.Context, sessionID uc.SessionID, fromSeq 
 		`SELECT ev.session_id, ev.seq, ev.ts, ev.actor_type, ev.actor_id, COALESCE(ev.actor_display,''), ev.kind, ev.payload
 		   FROM session_events ev
 		   JOIN sessions s ON s.id = ev.session_id
-		  WHERE ev.session_id = $1 AND s.org_id = $2 AND ev.seq > $3
+		  WHERE ev.session_id = $1 AND s.tenant_id = $2 AND ev.seq > $3
 		  ORDER BY ev.seq ASC LIMIT $4`,
-		string(sessionID), string(e.scope.org), fromSeq, limit)
+		string(sessionID), string(e.scope.tenant), fromSeq, limit)
 	if err != nil {
 		return nil, fmt.Errorf("postgres: range events: %w", err)
 	}

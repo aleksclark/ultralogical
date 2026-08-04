@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-command local development stack: Postgres, a local model endpoint,
-# cored and the worker, plus seeded org, user, provider,
+# cored and the worker, plus a seeded tenant, admin API key, provider,
 # and credential records so the stack is usable rather than merely running.
 #
 # Usage:
@@ -15,8 +15,6 @@ cd "$(dirname "$0")/.."
 mode="${1:-up}"
 
 : "${CORE_BEZALEL_IMAGE:=ultracore/bezalel:phase2-test}"
-: "${CORE_DEV_TOKEN:=dev-token}"
-: "${CORE_DEV_EMAIL:=dev@example.com}"
 
 if [ "$mode" = "smoke" ]; then
   # The smoke run must not collide with a developer's long-lived stack.
@@ -53,13 +51,13 @@ cleanup() {
       wait "$pid" 2>/dev/null
     fi
   done
-  # The smoke run owns its Postgres container and any environment containers it
+  # The smoke run owns its Postgres container and any resource containers it
   # provisioned; a developer stack keeps its database between runs.
   if [ "$mode" = "smoke" ]; then
-    local envs
-    envs=$(docker ps -aq --filter "label=ultracore.env_id" 2>/dev/null)
-    if [ -n "$envs" ]; then
-      docker rm -f $envs >/dev/null 2>&1
+    local resources
+    resources=$(docker ps -aq --filter "label=ultracore.resource_id" 2>/dev/null)
+    if [ -n "$resources" ]; then
+      docker rm -f $resources >/dev/null 2>&1
     fi
     docker rm -f "$pg_container" >/dev/null 2>&1
   fi
@@ -105,22 +103,24 @@ CORE_MODEL_ADDR="127.0.0.1:${model_port}" "$state_dir/devstack" model \
   >"$state_dir/model.log" 2>&1 &
 pids+=($!)
 
-log "seeding org, user, provider, and credential"
+log "seeding tenant, admin API key, provider, and credential"
 DATABASE_URL="$database_url" \
 CORE_MASTER_KEY="$master_key" \
-CORE_DEV_EMAIL="$CORE_DEV_EMAIL" \
 CORE_MODEL_URL="$model_url" \
   "$state_dir/devstack" seed >"$state_dir/seed.json" 2>"$state_dir/seed.err" \
   || { cat "$state_dir/seed.err" >&2; fail "seed"; }
-org_id=$(python3 -c "import json;print(json.load(open('$state_dir/seed.json'))['org_id'])")
-log "seeded org $org_id"
+tenant_id=$(python3 -c "import json;print(json.load(open('$state_dir/seed.json'))['tenant_id'])")
+api_key=$(python3 -c "import json;print(json.load(open('$state_dir/seed.json'))['api_key'])")
+log "seeded tenant $tenant_id"
 
 log "starting cored on port ${api_port}"
 DATABASE_URL="$database_url" \
 CORE_ADDR="127.0.0.1:${api_port}" \
-CORE_DEV_TOKENS="${CORE_DEV_TOKEN}=${CORE_DEV_EMAIL}" \
 CORE_MASTER_KEY="$master_key" \
+CORE_DEFAULT_PROVIDER=openai \
 CORE_DEFAULT_MODEL=devstack \
+CORE_MIGRATE=false \
+CORE_PROVIDER_KINDS=local_docker,null,static \
   "$state_dir/cored" >"$state_dir/cored.log" 2>&1 &
 pids+=($!)
 
@@ -129,6 +129,7 @@ DATABASE_URL="$database_url" \
 CORE_MASTER_KEY="$master_key" \
 CORE_BEZALEL_IMAGE="$CORE_BEZALEL_IMAGE" \
 CORE_RECONCILE_INTERVAL=2s \
+CORE_PROVIDER_KINDS=local_docker,null,static \
   "$state_dir/worker" >"$state_dir/worker.log" 2>&1 &
 pids+=($!)
 
@@ -153,8 +154,8 @@ fi
 if [ "$mode" = "smoke" ]; then
   log "running the noninteractive smoke"
   if ! CORE_SMOKE_API="$api" \
-       CORE_SMOKE_TOKEN="$CORE_DEV_TOKEN" \
-       CORE_SMOKE_ORG="$org_id" \
+       CORE_SMOKE_TOKEN="$api_key" \
+       CORE_SMOKE_TENANT="$tenant_id" \
        "$state_dir/devstack" smoke; then
     echo "--- cored log ---" >&2
     tail -50 "$state_dir/cored.log" >&2
@@ -169,8 +170,8 @@ fi
 cat <<EOF
 [dev-stack] stack is up
   API:      $api
-  token:    $CORE_DEV_TOKEN
-  org:      $org_id
+  token:    $api_key
+  tenant:   $tenant_id
   model:    $model_url
   Postgres: $database_url
   logs:     $state_dir

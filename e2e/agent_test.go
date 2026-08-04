@@ -239,7 +239,7 @@ func TestA13_AwaitingWithoutParkedWorkers(t *testing.T) {
 	}
 
 	// Answer resumes the run.
-	if _, err := alice.Agents.PromptRun(ctx, connect.NewRequest(&corev1.PromptRunRequest{
+	if _, err := alice.Agents.AnswerRun(ctx, connect.NewRequest(&corev1.AnswerRunRequest{
 		RunId: run.GetId(), Message: "blue",
 	})); err != nil {
 		t.Fatal(err)
@@ -321,7 +321,7 @@ func TestA14_Cancellation(t *testing.T) {
 	}
 
 	// PromptRun on a cancelled run is rejected with a typed error.
-	_, err = alice.Agents.PromptRun(ctx, connect.NewRequest(&corev1.PromptRunRequest{
+	_, err = alice.Agents.AnswerRun(ctx, connect.NewRequest(&corev1.AnswerRunRequest{
 		RunId: run.GetId(), Message: "hello?",
 	}))
 	var cerr *connect.Error
@@ -523,7 +523,7 @@ func TestCredentialRPCs(t *testing.T) {
 	alice := stack.AliceClient()
 	ctx := context.Background()
 
-	put, err := alice.Tenants.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
+	put, err := alice.Credentials.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
 		TenantId: string(stack.TenantA.ID), Kind: "inference:anthropic",
 		ApiKey: "sk-ant-secret-value-12345", BaseUrl: "https://gateway.example.test/anthropic",
 		ExtraHeadersJson: `{"cf-aig-collect-log-payload":"false","cf-aig-metadata":"{\"tier\":\"fast\"}"}`,
@@ -557,7 +557,7 @@ func TestCredentialRPCs(t *testing.T) {
 		t.Fatal("credential value echoed in response")
 	}
 
-	list, err := alice.Tenants.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+	list, err := alice.Credentials.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
 		TenantId: string(stack.TenantA.ID),
 	}))
 	if err != nil {
@@ -570,14 +570,14 @@ func TestCredentialRPCs(t *testing.T) {
 		t.Fatal("list leaked secret material")
 	}
 
-	if _, err := alice.Tenants.DeleteCredential(ctx, connect.NewRequest(&corev1.DeleteCredentialRequest{
+	if _, err := alice.Credentials.DeleteCredential(ctx, connect.NewRequest(&corev1.DeleteCredentialRequest{
 		TenantId: string(stack.TenantA.ID), Kind: "inference:anthropic", Name: "default",
 	})); err != nil {
 		t.Fatal(err)
 	}
 
 	// Bob (not a member of org A) is denied indistinguishably.
-	_, err = stack.BobClient().Tenants.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+	_, err = stack.BobClient().Credentials.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
 		TenantId: string(stack.TenantA.ID),
 	}))
 	var cerr *connect.Error

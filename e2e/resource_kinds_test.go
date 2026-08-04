@@ -26,7 +26,7 @@ func TestResourceKinds_DevEnvAndNullConcurrent(t *testing.T) {
 	ctx := context.Background()
 	client := stack.AliceClient()
 
-	_, err := client.Tenants.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
+	_, err := client.Providers.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
 		TenantId:      string(stack.TenantA.ID),
 		Name:       "null",
 		Kind:       uc.ProviderKindNull,

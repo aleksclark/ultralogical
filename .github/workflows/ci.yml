@@ -86,6 +86,25 @@ jobs:
   # A10.8: provider adapters are exercised against the control planes they
   # claim to drive. A leg that could not stand its cluster up must fail, not
   # skip: a skipped provider test is indistinguishable from a passing one.
+
+  sdk-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: clients/ts/package-lock.json
+      - name: Install TS SDK deps
+        working-directory: clients/ts
+        run: npm ci
+      - name: SDK tests (Go resume/parity + TS smoke via e2e)
+        run: go test ./e2e/ -run 'TestA45_|TestA46_|TestA48_|TestA01_TS' -count=1 -timeout 40m
+
   providers-kubernetes:
     runs-on: ubuntu-latest
     steps:

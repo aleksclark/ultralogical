@@ -63,12 +63,12 @@ func TestA31_CrossTenantInvisibility(t *testing.T) {
 	}
 
 	// Credentials and provider instances are also tenant-scoped.
-	if _, err := bob.Tenants.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+	if _, err := bob.Credentials.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
 		TenantId: string(stack.TenantA.ID),
 	})); err == nil {
 		t.Fatal("cross-tenant list credentials succeeded")
 	}
-	if _, err := bob.Tenants.ListProviders(ctx, connect.NewRequest(&corev1.ListProvidersRequest{
+	if _, err := bob.Providers.ListProviders(ctx, connect.NewRequest(&corev1.ListProvidersRequest{
 		TenantId: string(stack.TenantA.ID),
 	})); err == nil {
 		t.Fatal("cross-tenant list providers succeeded")

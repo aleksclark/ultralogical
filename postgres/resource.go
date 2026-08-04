@@ -14,9 +14,7 @@ import (
 type resourceStore struct{ scope *tenantScope }
 type providerStore struct{ scope *tenantScope }
 
-// Schema still carries flow/rate_class columns until the E4 squash; readers
-// discard them and writers leave defaults.
-const resourceColumns = `id, org_id, session_id, provider_instance_id, kind, state, spec, handle,
+const resourceColumns = `id, tenant_id, session_id, provider_instance_id, kind, state, spec, handle,
 endpoint, token_hash, token_enc, epoch, failure_message, created_by_run_id,
 created_at, updated_at, ready_at, terminated_at`
 
@@ -54,12 +52,12 @@ func (s *resourceStore) Create(ctx context.Context, r uc.Resource) error {
 		createdBy = string(*r.CreatedByRunID)
 	}
 	tag, err := s.scope.s.db().Exec(ctx,
-		`INSERT INTO dev_envs (id, org_id, session_id, provider_instance_id, kind, spec,
+		`INSERT INTO resources (id, tenant_id, session_id, provider_instance_id, kind, spec,
 		 token_hash, token_enc, created_by_run_id)
-		 SELECT $1, se.org_id, se.id, pi.id, $4, $5, $6, $7, $8
-		 FROM sessions se JOIN provider_instances pi ON pi.org_id = se.org_id
-		 WHERE se.id = $2 AND se.org_id = $3 AND pi.id = $9`,
-		string(r.ID), string(r.SessionID), string(s.scope.org), kind, []byte(spec),
+		 SELECT $1, se.tenant_id, se.id, pi.id, $4, $5, $6, $7, $8
+		 FROM sessions se JOIN provider_instances pi ON pi.tenant_id = se.tenant_id
+		 WHERE se.id = $2 AND se.tenant_id = $3 AND pi.id = $9`,
+		string(r.ID), string(r.SessionID), string(s.scope.tenant), kind, []byte(spec),
 		r.TokenHash, r.TokenEnc, createdBy, string(r.ProviderInstanceID))
 	if isUniqueViolation(err) {
 		return uc.ErrAlreadyExists
@@ -75,33 +73,33 @@ func (s *resourceStore) Create(ctx context.Context, r uc.Resource) error {
 
 func (s *resourceStore) Get(ctx context.Context, id uc.ResourceID) (uc.Resource, error) {
 	return scanResource(s.scope.s.db().QueryRow(ctx,
-		`SELECT `+resourceColumns+` FROM dev_envs WHERE id = $1 AND org_id = $2`,
-		string(id), string(s.scope.org)))
+		`SELECT `+resourceColumns+` FROM resources WHERE id = $1 AND tenant_id = $2`,
+		string(id), string(s.scope.tenant)))
 }
 
 func (s *resourceStore) GetForUpdate(ctx context.Context, id uc.ResourceID) (uc.Resource, error) {
 	return scanResource(s.scope.s.db().QueryRow(ctx,
-		`SELECT `+resourceColumns+` FROM dev_envs WHERE id = $1 AND org_id = $2 FOR UPDATE`,
-		string(id), string(s.scope.org)))
+		`SELECT `+resourceColumns+` FROM resources WHERE id = $1 AND tenant_id = $2 FOR UPDATE`,
+		string(id), string(s.scope.tenant)))
 }
 
 func (s *resourceStore) List(ctx context.Context, session uc.SessionID, kinds ...uc.ResourceKind) ([]uc.Resource, error) {
 	if len(kinds) == 0 {
-		return s.list(ctx, `SELECT `+resourceColumns+` FROM dev_envs
-			WHERE session_id = $1 AND org_id = $2 ORDER BY created_at`, string(session), string(s.scope.org))
+		return s.list(ctx, `SELECT `+resourceColumns+` FROM resources
+			WHERE session_id = $1 AND tenant_id = $2 ORDER BY created_at`, string(session), string(s.scope.tenant))
 	}
 	kindStrs := make([]string, len(kinds))
 	for i, k := range kinds {
 		kindStrs[i] = string(k)
 	}
-	return s.list(ctx, `SELECT `+resourceColumns+` FROM dev_envs
-		WHERE session_id = $1 AND org_id = $2 AND kind = ANY($3) ORDER BY created_at`,
-		string(session), string(s.scope.org), kindStrs)
+	return s.list(ctx, `SELECT `+resourceColumns+` FROM resources
+		WHERE session_id = $1 AND tenant_id = $2 AND kind = ANY($3) ORDER BY created_at`,
+		string(session), string(s.scope.tenant), kindStrs)
 }
 
 func (s *resourceStore) ListActive(ctx context.Context) ([]uc.Resource, error) {
-	return s.list(ctx, `SELECT `+resourceColumns+` FROM dev_envs
-		WHERE org_id = $1 AND state NOT IN ('terminated', 'failed') ORDER BY created_at`, string(s.scope.org))
+	return s.list(ctx, `SELECT `+resourceColumns+` FROM resources
+		WHERE tenant_id = $1 AND state NOT IN ('terminated', 'failed') ORDER BY created_at`, string(s.scope.tenant))
 }
 
 func (s *resourceStore) list(ctx context.Context, sql string, args ...any) ([]uc.Resource, error) {
@@ -122,7 +120,7 @@ func (s *resourceStore) list(ctx context.Context, sql string, args ...any) ([]uc
 }
 
 func (s *resourceStore) update(ctx context.Context, id uc.ResourceID, sql string, args ...any) error {
-	all := []any{string(id), string(s.scope.org)}
+	all := []any{string(id), string(s.scope.tenant)}
 	all = append(all, args...)
 	tag, err := s.scope.s.db().Exec(ctx, sql, all...)
 	if err != nil {
@@ -135,8 +133,8 @@ func (s *resourceStore) update(ctx context.Context, id uc.ResourceID, sql string
 }
 
 func (s *resourceStore) SetProvisioning(ctx context.Context, id uc.ResourceID) error {
-	return s.update(ctx, id, `UPDATE dev_envs SET state='provisioning', updated_at=now()
-		WHERE id=$1 AND org_id=$2`)
+	return s.update(ctx, id, `UPDATE resources SET state='provisioning', updated_at=now()
+		WHERE id=$1 AND tenant_id=$2`)
 }
 
 func (s *resourceStore) SetHandle(ctx context.Context, id uc.ResourceID, handle json.RawMessage) error {
@@ -144,8 +142,8 @@ func (s *resourceStore) SetHandle(ctx context.Context, id uc.ResourceID, handle 
 	if len(h) == 0 {
 		h = []byte(`{}`)
 	}
-	return s.update(ctx, id, `UPDATE dev_envs SET handle=$3, updated_at=now()
-		WHERE id=$1 AND org_id=$2`, []byte(h))
+	return s.update(ctx, id, `UPDATE resources SET handle=$3, updated_at=now()
+		WHERE id=$1 AND tenant_id=$2`, []byte(h))
 }
 
 func (s *resourceStore) SetReady(ctx context.Context, id uc.ResourceID, handle json.RawMessage, endpoint uc.ToolEndpoint) error {
@@ -153,14 +151,14 @@ func (s *resourceStore) SetReady(ctx context.Context, id uc.ResourceID, handle j
 	if len(h) == 0 {
 		h = []byte(`{}`)
 	}
-	return s.update(ctx, id, `UPDATE dev_envs SET state='ready', handle=$3,
+	return s.update(ctx, id, `UPDATE resources SET state='ready', handle=$3,
 		endpoint=$4, ready_at=COALESCE(ready_at, now()), failure_message='', updated_at=now()
-		WHERE id=$1 AND org_id=$2`, []byte(h), string(endpoint))
+		WHERE id=$1 AND tenant_id=$2`, []byte(h), string(endpoint))
 }
 
 func (s *resourceStore) SetFailed(ctx context.Context, id uc.ResourceID, message string) error {
-	return s.update(ctx, id, `UPDATE dev_envs SET state='failed', failure_message=$3,
-		terminated_at=now(), updated_at=now() WHERE id=$1 AND org_id=$2`, message)
+	return s.update(ctx, id, `UPDATE resources SET state='failed', failure_message=$3,
+		terminated_at=now(), updated_at=now() WHERE id=$1 AND tenant_id=$2`, message)
 }
 
 // SetSuspended parks a resource whose host is unreachable. It deliberately
@@ -173,9 +171,9 @@ func (s *resourceStore) SetFailed(ctx context.Context, id uc.ResourceID, message
 // is a no-op rather than an error: losing a race is not a failure.
 func (s *resourceStore) SetSuspended(ctx context.Context, id uc.ResourceID, message string) error {
 	tag, err := s.scope.s.db().Exec(ctx,
-		`UPDATE dev_envs SET state='suspended', failure_message=$3, updated_at=now()
-		 WHERE id=$1 AND org_id=$2 AND state IN ('ready','suspended')`,
-		string(id), string(s.scope.org), message)
+		`UPDATE resources SET state='suspended', failure_message=$3, updated_at=now()
+		 WHERE id=$1 AND tenant_id=$2 AND state IN ('ready','suspended')`,
+		string(id), string(s.scope.tenant), message)
 	if err != nil {
 		return fmt.Errorf("postgres: suspend resource: %w", err)
 	}
@@ -188,18 +186,18 @@ func (s *resourceStore) SetSuspended(ctx context.Context, id uc.ResourceID, mess
 }
 
 func (s *resourceStore) SetTerminating(ctx context.Context, id uc.ResourceID) error {
-	return s.update(ctx, id, `UPDATE dev_envs SET state='terminating', updated_at=now()
-		WHERE id=$1 AND org_id=$2`)
+	return s.update(ctx, id, `UPDATE resources SET state='terminating', updated_at=now()
+		WHERE id=$1 AND tenant_id=$2`)
 }
 
 func (s *resourceStore) SetTerminated(ctx context.Context, id uc.ResourceID) error {
-	return s.update(ctx, id, `UPDATE dev_envs SET state='terminated',
-		terminated_at=now(), updated_at=now() WHERE id=$1 AND org_id=$2`)
+	return s.update(ctx, id, `UPDATE resources SET state='terminated',
+		terminated_at=now(), updated_at=now() WHERE id=$1 AND tenant_id=$2`)
 }
 
 func (s *resourceStore) RotateToken(ctx context.Context, id uc.ResourceID, hash, enc []byte) error {
-	return s.update(ctx, id, `UPDATE dev_envs SET token_hash=$3, token_enc=$4,
-		epoch=epoch+1, updated_at=now() WHERE id=$1 AND org_id=$2`, hash, enc)
+	return s.update(ctx, id, `UPDATE resources SET token_hash=$3, token_enc=$4,
+		epoch=epoch+1, updated_at=now() WHERE id=$1 AND tenant_id=$2`, hash, enc)
 }
 
 func (s *providerStore) Create(ctx context.Context, p uc.ProviderInstance) error {
@@ -211,10 +209,9 @@ func (s *providerStore) Create(ctx context.Context, p uc.ProviderInstance) error
 	if err != nil {
 		return fmt.Errorf("postgres: encode provider capabilities: %w", err)
 	}
-	// rate_class column remains until E4 squash; write the historical default.
 	_, err = s.scope.s.db().Exec(ctx,
-		`INSERT INTO provider_instances (id, org_id, kind, name, config, rate_class, state, capabilities)
-		VALUES ($1,$2,$3,$4,$5,'byo',$6,$7)`, string(p.ID), string(s.scope.org), p.Kind,
+		`INSERT INTO provider_instances (id, tenant_id, kind, name, config, state, capabilities)
+		VALUES ($1,$2,$3,$4,$5,$6,$7)`, string(p.ID), string(s.scope.tenant), p.Kind,
 		p.Name, config, p.State, capabilities)
 	if isUniqueViolation(err) {
 		return uc.ErrAlreadyExists
@@ -225,7 +222,7 @@ func (s *providerStore) Create(ctx context.Context, p uc.ProviderInstance) error
 	return nil
 }
 
-const providerColumns = `id, org_id, kind, name, config, state, capabilities, last_healthy_at, created_at`
+const providerColumns = `id, tenant_id, kind, name, config, state, capabilities, last_healthy_at, created_at`
 
 func scanProvider(row pgx.Row) (uc.ProviderInstance, error) {
 	var p uc.ProviderInstance
@@ -246,19 +243,19 @@ func scanProvider(row pgx.Row) (uc.ProviderInstance, error) {
 
 func (s *providerStore) Get(ctx context.Context, id uc.ProviderInstanceID) (uc.ProviderInstance, error) {
 	return scanProvider(s.scope.s.db().QueryRow(ctx,
-		`SELECT `+providerColumns+` FROM provider_instances WHERE id=$1 AND org_id=$2`,
-		string(id), string(s.scope.org)))
+		`SELECT `+providerColumns+` FROM provider_instances WHERE id=$1 AND tenant_id=$2`,
+		string(id), string(s.scope.tenant)))
 }
 
 func (s *providerStore) GetByName(ctx context.Context, name string) (uc.ProviderInstance, error) {
 	return scanProvider(s.scope.s.db().QueryRow(ctx,
-		`SELECT `+providerColumns+` FROM provider_instances WHERE name=$1 AND org_id=$2`,
-		name, string(s.scope.org)))
+		`SELECT `+providerColumns+` FROM provider_instances WHERE name=$1 AND tenant_id=$2`,
+		name, string(s.scope.tenant)))
 }
 
 func (s *providerStore) List(ctx context.Context) ([]uc.ProviderInstance, error) {
 	rows, err := s.scope.s.db().Query(ctx,
-		`SELECT `+providerColumns+` FROM provider_instances WHERE org_id=$1 ORDER BY name`, string(s.scope.org))
+		`SELECT `+providerColumns+` FROM provider_instances WHERE tenant_id=$1 ORDER BY name`, string(s.scope.tenant))
 	if err != nil {
 		return nil, err
 	}
@@ -276,9 +273,9 @@ func (s *providerStore) List(ctx context.Context) ([]uc.ProviderInstance, error)
 
 func (s *providerStore) Delete(ctx context.Context, id uc.ProviderInstanceID) error {
 	tag, err := s.scope.s.db().Exec(ctx, `DELETE FROM provider_instances pi
-		WHERE pi.id=$1 AND pi.org_id=$2 AND NOT EXISTS (
-		SELECT 1 FROM dev_envs e WHERE e.provider_instance_id=pi.id AND e.state NOT IN ('terminated','failed'))`,
-		string(id), string(s.scope.org))
+		WHERE pi.id=$1 AND pi.tenant_id=$2 AND NOT EXISTS (
+		SELECT 1 FROM resources e WHERE e.provider_instance_id=pi.id AND e.state NOT IN ('terminated','failed'))`,
+		string(id), string(s.scope.tenant))
 	if err != nil {
 		return fmt.Errorf("postgres: delete provider: %w", err)
 	}
@@ -290,7 +287,7 @@ func (s *providerStore) Delete(ctx context.Context, id uc.ProviderInstanceID) er
 
 func (s *providerStore) MarkHealthy(ctx context.Context, id uc.ProviderInstanceID) error {
 	tag, err := s.scope.s.db().Exec(ctx, `UPDATE provider_instances SET last_healthy_at=now(), state='ready'
-		WHERE id=$1 AND org_id=$2`, string(id), string(s.scope.org))
+		WHERE id=$1 AND tenant_id=$2`, string(id), string(s.scope.tenant))
 	if err != nil {
 		return err
 	}

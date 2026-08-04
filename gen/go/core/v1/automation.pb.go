@@ -220,6 +220,8 @@ func (x *PutPeriodicPromptResponse) GetPeriodicPrompt() *PeriodicPrompt {
 type ListPeriodicPromptsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string                 `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -261,9 +263,24 @@ func (x *ListPeriodicPromptsRequest) GetSessionId() string {
 	return ""
 }
 
+func (x *ListPeriodicPromptsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListPeriodicPromptsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListPeriodicPromptsResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	PeriodicPrompts []*PeriodicPrompt      `protobuf:"bytes,1,rep,name=periodic_prompts,json=periodicPrompts,proto3" json:"periodic_prompts,omitempty"`
+	NextPageToken   string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -303,6 +320,13 @@ func (x *ListPeriodicPromptsResponse) GetPeriodicPrompts() []*PeriodicPrompt {
 		return x.PeriodicPrompts
 	}
 	return nil
+}
+
+func (x *ListPeriodicPromptsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type SetPeriodicPromptEnabledRequest struct {
@@ -413,12 +437,16 @@ const file_core_v1_automation_proto_rawDesc = "" +
 	"\bschedule\x18\x03 \x01(\tR\bschedule\x12\x16\n" +
 	"\x06prompt\x18\x04 \x01(\tR\x06prompt\"]\n" +
 	"\x19PutPeriodicPromptResponse\x12@\n" +
-	"\x0fperiodic_prompt\x18\x01 \x01(\v2\x17.core.v1.PeriodicPromptR\x0eperiodicPrompt\";\n" +
+	"\x0fperiodic_prompt\x18\x01 \x01(\v2\x17.core.v1.PeriodicPromptR\x0eperiodicPrompt\"w\n" +
 	"\x1aListPeriodicPromptsRequest\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"a\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\"\x89\x01\n" +
 	"\x1bListPeriodicPromptsResponse\x12B\n" +
-	"\x10periodic_prompts\x18\x01 \x03(\v2\x17.core.v1.PeriodicPromptR\x0fperiodicPrompts\"i\n" +
+	"\x10periodic_prompts\x18\x01 \x03(\v2\x17.core.v1.PeriodicPromptR\x0fperiodicPrompts\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"i\n" +
 	"\x1fSetPeriodicPromptEnabledRequest\x12,\n" +
 	"\x12periodic_prompt_id\x18\x01 \x01(\tR\x10periodicPromptId\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\"\"\n" +

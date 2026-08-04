@@ -2386,6 +2386,136 @@ func (x *SubscribeResponse) GetEvent() *SessionEvent {
 	return nil
 }
 
+type GetRequest struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	// Inclusive lower bound: deliver events with seq > from_seq.
+	FromSeq int64 `protobuf:"varint,2,opt,name=from_seq,json=fromSeq,proto3" json:"from_seq,omitempty"`
+	// Inclusive upper bound when > 0; 0 means no upper bound.
+	ToSeq         int64  `protobuf:"varint,3,opt,name=to_seq,json=toSeq,proto3" json:"to_seq,omitempty"`
+	PageSize      int32  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,5,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRequest) Reset() {
+	*x = GetRequest{}
+	mi := &file_core_v1_event_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRequest) ProtoMessage() {}
+
+func (x *GetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_event_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
+func (*GetRequest) Descriptor() ([]byte, []int) {
+	return file_core_v1_event_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *GetRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *GetRequest) GetFromSeq() int64 {
+	if x != nil {
+		return x.FromSeq
+	}
+	return 0
+}
+
+func (x *GetRequest) GetToSeq() int64 {
+	if x != nil {
+		return x.ToSeq
+	}
+	return 0
+}
+
+func (x *GetRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *GetRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+type GetResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Events        []*SessionEvent        `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetResponse) Reset() {
+	*x = GetResponse{}
+	mi := &file_core_v1_event_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetResponse) ProtoMessage() {}
+
+func (x *GetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_event_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
+func (*GetResponse) Descriptor() ([]byte, []int) {
+	return file_core_v1_event_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GetResponse) GetEvents() []*SessionEvent {
+	if x != nil {
+		return x.Events
+	}
+	return nil
+}
+
+func (x *GetResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
 var File_core_v1_event_proto protoreflect.FileDescriptor
 
 const file_core_v1_event_proto_rawDesc = "" +
@@ -2579,10 +2709,23 @@ const file_core_v1_event_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x19\n" +
 	"\bfrom_seq\x18\x02 \x01(\x03R\afromSeq\"@\n" +
 	"\x11SubscribeResponse\x12+\n" +
-	"\x05event\x18\x01 \x01(\v2\x15.core.v1.SessionEventR\x05event2\x8f\x01\n" +
+	"\x05event\x18\x01 \x01(\v2\x15.core.v1.SessionEventR\x05event\"\x99\x01\n" +
+	"\n" +
+	"GetRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x19\n" +
+	"\bfrom_seq\x18\x02 \x01(\x03R\afromSeq\x12\x15\n" +
+	"\x06to_seq\x18\x03 \x01(\x03R\x05toSeq\x12\x1b\n" +
+	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x05 \x01(\tR\tpageToken\"d\n" +
+	"\vGetResponse\x12-\n" +
+	"\x06events\x18\x01 \x03(\v2\x15.core.v1.SessionEventR\x06events\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xc1\x01\n" +
 	"\fEventService\x129\n" +
 	"\x06Append\x12\x16.core.v1.AppendRequest\x1a\x17.core.v1.AppendResponse\x12D\n" +
-	"\tSubscribe\x12\x19.core.v1.SubscribeRequest\x1a\x1a.core.v1.SubscribeResponse0\x01B7Z5github.com/aleksclark/ultracore/gen/go/core/v1;corev1b\x06proto3"
+	"\tSubscribe\x12\x19.core.v1.SubscribeRequest\x1a\x1a.core.v1.SubscribeResponse0\x01\x120\n" +
+	"\x03Get\x12\x13.core.v1.GetRequest\x1a\x14.core.v1.GetResponseB7Z5github.com/aleksclark/ultracore/gen/go/core/v1;corev1b\x06proto3"
 
 var (
 	file_core_v1_event_proto_rawDescOnce sync.Once
@@ -2596,7 +2739,7 @@ func file_core_v1_event_proto_rawDescGZIP() []byte {
 	return file_core_v1_event_proto_rawDescData
 }
 
-var file_core_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_core_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_core_v1_event_proto_goTypes = []any{
 	(*Actor)(nil),                 // 0: core.v1.Actor
 	(*UserMessage)(nil),           // 1: core.v1.UserMessage
@@ -2629,12 +2772,14 @@ var file_core_v1_event_proto_goTypes = []any{
 	(*AppendResponse)(nil),        // 28: core.v1.AppendResponse
 	(*SubscribeRequest)(nil),      // 29: core.v1.SubscribeRequest
 	(*SubscribeResponse)(nil),     // 30: core.v1.SubscribeResponse
-	nil,                           // 31: core.v1.SessionLabelsChanged.LabelsEntry
-	(*timestamppb.Timestamp)(nil), // 32: google.protobuf.Timestamp
+	(*GetRequest)(nil),            // 31: core.v1.GetRequest
+	(*GetResponse)(nil),           // 32: core.v1.GetResponse
+	nil,                           // 33: core.v1.SessionLabelsChanged.LabelsEntry
+	(*timestamppb.Timestamp)(nil), // 34: google.protobuf.Timestamp
 }
 var file_core_v1_event_proto_depIdxs = []int32{
 	10, // 0: core.v1.RunAwaiting.question:type_name -> core.v1.Question
-	31, // 1: core.v1.SessionLabelsChanged.labels:type_name -> core.v1.SessionLabelsChanged.LabelsEntry
+	33, // 1: core.v1.SessionLabelsChanged.labels:type_name -> core.v1.SessionLabelsChanged.LabelsEntry
 	1,  // 2: core.v1.EventPayload.user_message:type_name -> core.v1.UserMessage
 	2,  // 3: core.v1.EventPayload.annotation:type_name -> core.v1.Annotation
 	3,  // 4: core.v1.EventPayload.run_started:type_name -> core.v1.RunStarted
@@ -2665,20 +2810,23 @@ var file_core_v1_event_proto_depIdxs = []int32{
 	22, // 29: core.v1.EventPayload.periodic_prompt_fired:type_name -> core.v1.PeriodicPromptFired
 	15, // 30: core.v1.EventPayload.resource_suspended:type_name -> core.v1.ResourceLifecycle
 	24, // 31: core.v1.EventPayload.session_labels_changed:type_name -> core.v1.SessionLabelsChanged
-	32, // 32: core.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
+	34, // 32: core.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
 	0,  // 33: core.v1.SessionEvent.actor:type_name -> core.v1.Actor
 	25, // 34: core.v1.SessionEvent.payload:type_name -> core.v1.EventPayload
 	25, // 35: core.v1.AppendRequest.payload:type_name -> core.v1.EventPayload
 	26, // 36: core.v1.SubscribeResponse.event:type_name -> core.v1.SessionEvent
-	27, // 37: core.v1.EventService.Append:input_type -> core.v1.AppendRequest
-	29, // 38: core.v1.EventService.Subscribe:input_type -> core.v1.SubscribeRequest
-	28, // 39: core.v1.EventService.Append:output_type -> core.v1.AppendResponse
-	30, // 40: core.v1.EventService.Subscribe:output_type -> core.v1.SubscribeResponse
-	39, // [39:41] is the sub-list for method output_type
-	37, // [37:39] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	26, // 37: core.v1.GetResponse.events:type_name -> core.v1.SessionEvent
+	27, // 38: core.v1.EventService.Append:input_type -> core.v1.AppendRequest
+	29, // 39: core.v1.EventService.Subscribe:input_type -> core.v1.SubscribeRequest
+	31, // 40: core.v1.EventService.Get:input_type -> core.v1.GetRequest
+	28, // 41: core.v1.EventService.Append:output_type -> core.v1.AppendResponse
+	30, // 42: core.v1.EventService.Subscribe:output_type -> core.v1.SubscribeResponse
+	32, // 43: core.v1.EventService.Get:output_type -> core.v1.GetResponse
+	41, // [41:44] is the sub-list for method output_type
+	38, // [38:41] is the sub-list for method input_type
+	38, // [38:38] is the sub-list for extension type_name
+	38, // [38:38] is the sub-list for extension extendee
+	0,  // [0:38] is the sub-list for field type_name
 }
 
 func init() { file_core_v1_event_proto_init() }
@@ -2724,7 +2872,7 @@ func file_core_v1_event_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_core_v1_event_proto_rawDesc), len(file_core_v1_event_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   32,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

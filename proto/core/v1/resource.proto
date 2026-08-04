@@ -61,8 +61,8 @@ message ProvisionResourceRequest {
 message ProvisionResourceResponse { Resource resource = 1; int64 event_seq = 2; }
 message GetResourceRequest { string resource_id = 1; }
 message GetResourceResponse { Resource resource = 1; }
-message ListResourcesRequest { string session_id = 1; string kind = 2; }
-message ListResourcesResponse { repeated Resource resources = 1; }
+message ListResourcesRequest { string session_id = 1; string kind = 2; int32 page_size = 3; string page_token = 4; }
+message ListResourcesResponse { repeated Resource resources = 1; string next_page_token = 2; }
 message TerminateResourceRequest { string resource_id = 1; }
 message TerminateResourceResponse {}
 message ExecPreviewRequest { string resource_id = 1; string command = 2; }

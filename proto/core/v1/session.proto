@@ -46,10 +46,13 @@ message LabelSelector {
 message ListSessionsRequest {
   string tenant_id = 1;
   repeated LabelSelector label_selectors = 2;
+  int32 page_size = 3;
+  string page_token = 4;
 }
 
 message ListSessionsResponse {
   repeated Session sessions = 1;
+  string next_page_token = 2;
 }
 
 message UpdateSessionLabelsRequest {
@@ -60,6 +63,14 @@ message UpdateSessionLabelsRequest {
 message UpdateSessionLabelsResponse {
   Session session = 1;
   int64 event_seq = 2;
+}
+
+message ArchiveSessionRequest {
+  string session_id = 1;
+}
+
+message ArchiveSessionResponse {
+  Session session = 1;
 }
 
 message MemoryEntry {
@@ -73,20 +84,18 @@ message SetMemoryRequest { string session_id = 1; string key = 2; string value_j
 message SetMemoryResponse { int64 event_seq = 1; }
 message GetMemoryRequest { string session_id = 1; string key = 2; }
 message GetMemoryResponse { MemoryEntry entry = 1; }
-message ListMemoryRequest { string session_id = 1; }
-message ListMemoryResponse { repeated MemoryEntry entries = 1; }
+message ListMemoryRequest { string session_id = 1; int32 page_size = 2; string page_token = 3; }
+message ListMemoryResponse { repeated MemoryEntry entries = 1; string next_page_token = 2; }
 message DeleteMemoryRequest { string session_id = 1; string key = 2; }
 message DeleteMemoryResponse { int64 event_seq = 1; }
 
 // SessionService manages session lifecycle, labels, and session memory.
-// Access requires a key belonging to the session's tenant; missing sessions
-// and cross-tenant access return the same not-found error so existence never
-// leaks.
 service SessionService {
   rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
   rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
   rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
   rpc UpdateSessionLabels(UpdateSessionLabelsRequest) returns (UpdateSessionLabelsResponse);
+  rpc ArchiveSession(ArchiveSessionRequest) returns (ArchiveSessionResponse);
   rpc SetMemory(SetMemoryRequest) returns (SetMemoryResponse);
   rpc GetMemory(GetMemoryRequest) returns (GetMemoryResponse);
   rpc ListMemory(ListMemoryRequest) returns (ListMemoryResponse);

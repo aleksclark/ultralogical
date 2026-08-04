@@ -11,10 +11,10 @@ import (
 	"connectrpc.com/connect"
 
 	uc "github.com/aleksclark/ultracore"
-	"github.com/aleksclark/ultracore/provider"
-	"github.com/aleksclark/ultracore/resourcework"
 	"github.com/aleksclark/ultracore/gen/go/core/v1/corev1connect"
 	"github.com/aleksclark/ultracore/jobqueue"
+	"github.com/aleksclark/ultracore/provider"
+	"github.com/aleksclark/ultracore/resourcework"
 	"github.com/aleksclark/ultracore/secrets"
 )
 
@@ -37,27 +37,43 @@ type Config struct {
 	DefaultModel uc.ModelConfig
 	// Resources orchestrates development-environment lifecycle and ExecPreview.
 	Resources *resourcework.Service
+	// Ready reports whether the process can serve traffic (pg + queue).
+	// When nil, /readyz always succeeds.
+	Ready func() error
 }
 
 // NewHandler builds the full cored http.Handler: all Connect services under
-// their generated paths plus /healthz. Serve it with unencrypted HTTP/2
-// enabled (http.Server.Protocols) so gRPC and Connect streaming work over
-// cleartext.
+// their generated paths plus /healthz and /readyz. Serve it with unencrypted
+// HTTP/2 enabled (http.Server.Protocols) so gRPC and Connect streaming work
+// over cleartext.
 func NewHandler(cfg Config) http.Handler {
 	interceptors := connect.WithInterceptors(NewAuthInterceptor(cfg.Auth))
 
 	mux := http.NewServeMux()
 
-	tenantPath, tenantH := corev1connect.NewTenantServiceHandler(&tenantHandler{store: cfg.Store, keyring: cfg.Keyring, providers: cfg.Providers}, interceptors)
+	tenantPath, tenantH := corev1connect.NewTenantServiceHandler(&tenantHandler{
+		store: cfg.Store, keyring: cfg.Keyring, providers: cfg.Providers,
+	}, interceptors)
 	mux.Handle(tenantPath, tenantH)
+
+	credPath, credH := corev1connect.NewCredentialServiceHandler(&credentialHandler{
+		store: cfg.Store, keyring: cfg.Keyring,
+	}, interceptors)
+	mux.Handle(credPath, credH)
+
+	provPath, provH := corev1connect.NewProviderServiceHandler(&providerHandler{
+		store: cfg.Store, providers: cfg.Providers,
+	}, interceptors)
+	mux.Handle(provPath, provH)
 
 	sessPath, sessH := corev1connect.NewSessionServiceHandler(&sessionHandler{store: cfg.Store}, interceptors)
 	mux.Handle(sessPath, sessH)
 
-	agentPath, agentH := corev1connect.NewAgentServiceHandler(&agentHandler{
+	runPath, runH := corev1connect.NewRunServiceHandler(&agentHandler{
 		store: cfg.Store, enqueue: cfg.Enqueue, defaultModel: cfg.DefaultModel,
 	}, interceptors)
-	mux.Handle(agentPath, agentH)
+	mux.Handle(runPath, runH)
+
 	automationPath, automationH := corev1connect.NewAutomationServiceHandler(&automationHandler{store: cfg.Store}, interceptors)
 	mux.Handle(automationPath, automationH)
 
@@ -66,12 +82,22 @@ func NewHandler(cfg Config) http.Handler {
 		mux.Handle(resourcePath, resourceH)
 	}
 
-	// The unary interceptor covers Append; Subscribe is a streaming RPC and
+	// The unary interceptor covers Append/Get; Subscribe is a streaming RPC and
 	// authenticates inside the handler.
 	evPath, evH := corev1connect.NewEventServiceHandler(&eventHandler{store: cfg.Store, auth: cfg.Auth, bus: cfg.Bus}, interceptors)
 	mux.Handle(evPath, evH)
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
+	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, _ *http.Request) {
+		if cfg.Ready != nil {
+			if err := cfg.Ready(); err != nil {
+				http.Error(w, err.Error(), http.StatusServiceUnavailable)
+				return
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
@@ -84,7 +110,7 @@ func NewHandler(cfg Config) http.Handler {
 func cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Connect-Protocol-Version, Connect-Timeout-Ms")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Connect-Protocol-Version, Connect-Timeout-Ms, X-Core-Actor")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Expose-Headers", "Connect-Accept-Encoding, Connect-Content-Encoding, Connect-Error-Code, Connect-Error-Message")
 		if r.Method == http.MethodOptions {

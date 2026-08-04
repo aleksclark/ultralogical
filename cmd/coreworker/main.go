@@ -1,31 +1,26 @@
-// coreworker executes durable queue jobs: agent-run steps and env lifecycle.
-// Stateless and horizontally scalable — any worker can resume any run from
-// its persisted history. Configuration:
-//
-//	DATABASE_URL         Postgres connection string (required)
-//	CORE_MASTER_KEY     32-byte hex credential master key (required)
-//	CORE_JOB_TIMEOUT    per-job timeout (default 2m)
-//	CORE_RESCUE_AFTER   rescue stuck jobs after (default job timeout + 30s)
-//	CORE_MAX_WORKERS    per-process concurrency (default 10)
+// coreworker executes durable queue jobs: agent-run steps and resource
+// lifecycle. Stateless and horizontally scalable. Configuration is CORE_*;
+// unknown CORE_* variables refuse startup. See docs/deploy.md.
 package main
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
-	"github.com/aleksclark/ultracore/provider"
-	"github.com/aleksclark/ultracore/resourcework"
+	"github.com/aleksclark/ultracore/config"
 	"github.com/aleksclark/ultracore/jobqueue"
 	riverqueue "github.com/aleksclark/ultracore/jobqueue/river"
 	"github.com/aleksclark/ultracore/loop"
 	"github.com/aleksclark/ultracore/postgres"
+	"github.com/aleksclark/ultracore/provider"
+	"github.com/aleksclark/ultracore/resourcework"
 	"github.com/aleksclark/ultracore/secrets"
 )
 
@@ -38,6 +33,10 @@ func main() {
 }
 
 func run(log *slog.Logger) error {
+	if err := config.RefuseUnknown(); err != nil {
+		return err
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -56,13 +55,37 @@ func run(log *slog.Logger) error {
 	}
 	defer pool.Close()
 
-	jobTimeout := envDuration("CORE_JOB_TIMEOUT", 2*time.Minute)
-	rescueAfter := envDuration("CORE_RESCUE_AFTER", 0)
+	// Health endpoints for orchestrators that probe workers. Opt-in via
+	// CORE_ADDR so parallel test workers do not collide on a fixed port.
+	if healthAddr := os.Getenv("CORE_ADDR"); healthAddr != "" {
+		mux := http.NewServeMux()
+		mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("ok"))
+		})
+		mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, _ *http.Request) {
+			if err := pool.Ping(context.Background()); err != nil {
+				http.Error(w, fmt.Sprintf("postgres: %v", err), http.StatusServiceUnavailable)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("ok"))
+		})
+		go func() {
+			if err := http.ListenAndServe(healthAddr, mux); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Error("health server", "error", err)
+			}
+		}()
+		log.Info("worker health listening", "addr", healthAddr)
+	}
+
+	jobTimeout := config.Duration("CORE_JOB_TIMEOUT", 2*time.Minute)
+	rescueAfter := config.Duration("CORE_RESCUE_AFTER", 0)
 	if rescueAfter > 0 && rescueAfter <= jobTimeout {
 		return errors.New("CORE_RESCUE_AFTER must be greater than CORE_JOB_TIMEOUT")
 	}
 	queue, err := riverqueue.New(ctx, pool, riverqueue.Config{
-		MaxWorkers:  envInt("CORE_MAX_WORKERS", 10),
+		MaxWorkers:  config.Int("CORE_MAX_WORKERS", 10),
 		JobTimeout:  jobTimeout,
 		RescueAfter: rescueAfter,
 	})
@@ -70,19 +93,15 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
-	// Adapters are built per registration from its own configuration, so a
-	// worker never holds one provider standing in for another.
 	registry := provider.StandardRegistry(providerDeployment())
 	resources := &resourcework.Service{Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Keyring: keyring,
 		Providers: registry, Log: log,
-		ReconcileInterval: envDuration("CORE_RECONCILE_INTERVAL", 5*time.Second),
-		ProvisionTimeout:  envDuration("CORE_PROVISION_TIMEOUT", time.Minute)}
+		ReconcileInterval: config.Duration("CORE_RECONCILE_INTERVAL", 5*time.Second),
+		ProvisionTimeout:  config.Duration("CORE_PROVISION_TIMEOUT", time.Minute)}
 	stepWorker := &loop.StepWorker{
 		Store: store, Keyring: keyring, Enqueue: postgres.TxEnqueuer{Queue: queue},
 		Registry: loop.NewRegistry(), Log: log, ToolResolver: &loop.ResourceTools{Store: store, Resources: resources},
 	}
-	// Wait deadlines are enforced by any worker, not by the process that
-	// created the wait, so a parked parent is released even after a crash.
 	waitSweeper := &loop.WaitSweeper{
 		Store: store, Enqueue: postgres.TxEnqueuer{Queue: queue}, Worker: stepWorker, Log: log,
 	}
@@ -105,70 +124,16 @@ func run(log *slog.Logger) error {
 	return queue.Stop(stopCtx)
 }
 
-func envInt(name string, def int) int {
-	if v := os.Getenv(name); v != "" {
-		var n int
-		if _, err := parseInt(v, &n); err == nil {
-			return n
-		}
-	}
-	return def
-}
-
-func parseInt(s string, out *int) (int, error) {
-	n := 0
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return 0, errors.New("not a number")
-		}
-		n = n*10 + int(c-'0')
-	}
-	*out = n
-	return n, nil
-}
-
-func envOr(name, def string) string {
-	if v := os.Getenv(name); v != "" {
-		return v
-	}
-	return def
-}
-
-func envDuration(name string, def time.Duration) time.Duration {
-	if v := os.Getenv(name); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			return d
-		}
-	}
-	return def
-}
-
-// providerDeployment reads which provider kinds this worker can host and how
-// environments are reached.
 func providerDeployment() provider.Deployment {
 	deployment := provider.Deployment{
-		BezalelImage:           envOr("CORE_BEZALEL_IMAGE", "ultracore/bezalel:local"),
+		BezalelImage:           config.String("CORE_BEZALEL_IMAGE", "ultracore/bezalel:local"),
 		BezalelBinary:          os.Getenv("CORE_BEZALEL_BINARY"),
-		KubernetesEndpointMode: envOr("CORE_K8S_ENDPOINT_MODE", ""),
-		KubernetesEndpointHost: envOr("CORE_K8S_ENDPOINT_HOST", ""),
+		KubernetesEndpointMode: config.String("CORE_K8S_ENDPOINT_MODE", ""),
+		KubernetesEndpointHost: config.String("CORE_K8S_ENDPOINT_HOST", ""),
+		EnabledKinds:           config.CSV("CORE_PROVIDER_KINDS"),
 	}
-	if kinds := os.Getenv("CORE_PROVIDER_KINDS"); kinds != "" {
-		deployment.EnabledKinds = strings.Split(kinds, ",")
-	}
-	if low, high := envInt32("CORE_K8S_NODEPORT_LOW"), envInt32("CORE_K8S_NODEPORT_HIGH"); high > 0 {
+	if low, high := config.Int32("CORE_K8S_NODEPORT_LOW"), config.Int32("CORE_K8S_NODEPORT_HIGH"); high > 0 {
 		deployment.KubernetesNodePortRange = [2]int32{low, high}
 	}
 	return deployment
-}
-
-func envInt32(name string) int32 {
-	value := os.Getenv(name)
-	if value == "" {
-		return 0
-	}
-	parsed, err := strconv.ParseInt(value, 10, 32)
-	if err != nil {
-		return 0
-	}
-	return int32(parsed)
 }

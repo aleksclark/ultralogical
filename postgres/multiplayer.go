@@ -21,14 +21,14 @@ func (s *memoryStore) lock(ctx context.Context, session uc.SessionID) error {
 }
 func (s *memoryStore) Get(ctx context.Context, session uc.SessionID, key string) (uc.SessionMemoryEntry, error) {
 	var e uc.SessionMemoryEntry
-	err := s.scope.s.db().QueryRow(ctx, `SELECT m.session_id,m.key,m.value,m.updated_by_type,m.updated_by_id,m.updated_at FROM session_memory m JOIN sessions se ON se.id=m.session_id WHERE m.session_id=$1 AND se.org_id=$2 AND m.key=$3`, string(session), string(s.scope.org), key).Scan(&e.SessionID, &e.Key, &e.Value, &e.UpdatedBy.Kind, &e.UpdatedBy.ID, &e.UpdatedAt)
+	err := s.scope.s.db().QueryRow(ctx, `SELECT m.session_id,m.key,m.value,m.updated_by_type,m.updated_by_id,m.updated_at FROM session_memory m JOIN sessions se ON se.id=m.session_id WHERE m.session_id=$1 AND se.tenant_id=$2 AND m.key=$3`, string(session), string(s.scope.tenant), key).Scan(&e.SessionID, &e.Key, &e.Value, &e.UpdatedBy.Kind, &e.UpdatedBy.ID, &e.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return e, uc.ErrNotFound
 	}
 	return e, err
 }
 func (s *memoryStore) List(ctx context.Context, session uc.SessionID) ([]uc.SessionMemoryEntry, error) {
-	rows, err := s.scope.s.db().Query(ctx, `SELECT m.session_id,m.key,m.value,m.updated_by_type,m.updated_by_id,m.updated_at FROM session_memory m JOIN sessions se ON se.id=m.session_id WHERE m.session_id=$1 AND se.org_id=$2 ORDER BY m.key`, string(session), string(s.scope.org))
+	rows, err := s.scope.s.db().Query(ctx, `SELECT m.session_id,m.key,m.value,m.updated_by_type,m.updated_by_id,m.updated_at FROM session_memory m JOIN sessions se ON se.id=m.session_id WHERE m.session_id=$1 AND se.tenant_id=$2 ORDER BY m.key`, string(session), string(s.scope.tenant))
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (s *memoryStore) Set(ctx context.Context, e uc.SessionMemoryEntry) error {
 	if !exists && count >= uc.MaxMemoryKeys {
 		return errors.New("session memory limit reached")
 	}
-	tag, err := s.scope.s.db().Exec(ctx, `INSERT INTO session_memory(session_id,key,value,updated_by_type,updated_by_id) SELECT se.id,$2,$3,$4,$5 FROM sessions se WHERE se.id=$1 AND se.org_id=$6 ON CONFLICT(session_id,key) DO UPDATE SET value=EXCLUDED.value,updated_by_type=EXCLUDED.updated_by_type,updated_by_id=EXCLUDED.updated_by_id,updated_at=now()`, string(e.SessionID), e.Key, e.Value, e.UpdatedBy.Kind, e.UpdatedBy.ID, string(s.scope.org))
+	tag, err := s.scope.s.db().Exec(ctx, `INSERT INTO session_memory(session_id,key,value,updated_by_type,updated_by_id) SELECT se.id,$2,$3,$4,$5 FROM sessions se WHERE se.id=$1 AND se.tenant_id=$6 ON CONFLICT(session_id,key) DO UPDATE SET value=EXCLUDED.value,updated_by_type=EXCLUDED.updated_by_type,updated_by_id=EXCLUDED.updated_by_id,updated_at=now()`, string(e.SessionID), e.Key, e.Value, e.UpdatedBy.Kind, e.UpdatedBy.ID, string(s.scope.tenant))
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (s *memoryStore) Delete(ctx context.Context, session uc.SessionID, key stri
 	if err := s.lock(ctx, session); err != nil {
 		return err
 	}
-	tag, err := s.scope.s.db().Exec(ctx, `DELETE FROM session_memory m USING sessions se WHERE m.session_id=se.id AND m.session_id=$1 AND se.org_id=$2 AND m.key=$3`, string(session), string(s.scope.org), key)
+	tag, err := s.scope.s.db().Exec(ctx, `DELETE FROM session_memory m USING sessions se WHERE m.session_id=se.id AND m.session_id=$1 AND se.tenant_id=$2 AND m.key=$3`, string(session), string(s.scope.tenant), key)
 	if err != nil {
 		return err
 	}
@@ -118,8 +118,8 @@ func (s *waitStore) Create(ctx context.Context, w uc.RunWait, members []uc.RunWa
 		w.TimeoutPolicy = uc.TimeoutPolicyResolve
 	}
 	tag, err := s.scope.s.db().Exec(ctx, `INSERT INTO run_waits(id,parent_run_id,step_index,tool_call_id,kind,timeout_policy,deadline)
-SELECT $1,ar.id,$3,$4,$7,$8,$5 FROM agent_runs ar WHERE ar.id=$2 AND ar.org_id=$6 ON CONFLICT DO NOTHING`,
-		w.ID, string(w.ParentRunID), w.StepIndex, w.ToolCallID, w.Deadline, string(s.scope.org), w.Kind, w.TimeoutPolicy)
+SELECT $1,ar.id,$3,$4,$7,$8,$5 FROM agent_runs ar WHERE ar.id=$2 AND ar.tenant_id=$6 ON CONFLICT DO NOTHING`,
+		w.ID, string(w.ParentRunID), w.StepIndex, w.ToolCallID, w.Deadline, string(s.scope.tenant), w.Kind, w.TimeoutPolicy)
 	if isUniqueViolation(err) {
 		// A parent may hold at most one open wait; a second is a bug, not a
 		// retry, so surface it rather than silently dropping the wait.
@@ -145,17 +145,17 @@ SELECT $1,ar.id,$3,$4,$7,$8,$5 FROM agent_runs ar WHERE ar.id=$2 AND ar.org_id=$
 }
 
 func (s *waitStore) Get(ctx context.Context, id string) (uc.RunWait, error) {
-	return scanWait(s.scope.s.db().QueryRow(ctx, `SELECT `+waitColumns+` FROM run_waits w JOIN agent_runs ar ON ar.id=w.parent_run_id WHERE w.id=$1 AND ar.org_id=$2`, id, string(s.scope.org)))
+	return scanWait(s.scope.s.db().QueryRow(ctx, `SELECT `+waitColumns+` FROM run_waits w JOIN agent_runs ar ON ar.id=w.parent_run_id WHERE w.id=$1 AND ar.tenant_id=$2`, id, string(s.scope.tenant)))
 }
 
 // GetForUpdate locks the wait row so a terminal child and the timeout sweeper
 // serialize instead of both closing it.
 func (s *waitStore) GetForUpdate(ctx context.Context, id string) (uc.RunWait, error) {
-	return scanWait(s.scope.s.db().QueryRow(ctx, `SELECT `+waitColumns+` FROM run_waits w JOIN agent_runs ar ON ar.id=w.parent_run_id WHERE w.id=$1 AND ar.org_id=$2 FOR UPDATE OF w`, id, string(s.scope.org)))
+	return scanWait(s.scope.s.db().QueryRow(ctx, `SELECT `+waitColumns+` FROM run_waits w JOIN agent_runs ar ON ar.id=w.parent_run_id WHERE w.id=$1 AND ar.tenant_id=$2 FOR UPDATE OF w`, id, string(s.scope.tenant)))
 }
 
 func (s *waitStore) ListOpenForChild(ctx context.Context, id uc.RunID) ([]uc.RunWait, error) {
-	rows, err := s.scope.s.db().Query(ctx, `SELECT `+waitColumns+` FROM run_waits w JOIN run_wait_members m ON m.wait_id=w.id JOIN agent_runs ar ON ar.id=w.parent_run_id WHERE m.run_id=$1 AND ar.org_id=$2 AND w.state='open'`, string(id), string(s.scope.org))
+	rows, err := s.scope.s.db().Query(ctx, `SELECT `+waitColumns+` FROM run_waits w JOIN run_wait_members m ON m.wait_id=w.id JOIN agent_runs ar ON ar.id=w.parent_run_id WHERE m.run_id=$1 AND ar.tenant_id=$2 AND w.state='open'`, string(id), string(s.scope.tenant))
 	if err != nil {
 		return nil, fmt.Errorf("postgres: list waits for child: %w", err)
 	}
@@ -163,7 +163,7 @@ func (s *waitStore) ListOpenForChild(ctx context.Context, id uc.RunID) ([]uc.Run
 }
 
 func (s *waitStore) ListOpenForParent(ctx context.Context, id uc.RunID) ([]uc.RunWait, error) {
-	rows, err := s.scope.s.db().Query(ctx, `SELECT `+waitColumns+` FROM run_waits w JOIN agent_runs ar ON ar.id=w.parent_run_id WHERE w.parent_run_id=$1 AND ar.org_id=$2 AND w.state='open'`, string(id), string(s.scope.org))
+	rows, err := s.scope.s.db().Query(ctx, `SELECT `+waitColumns+` FROM run_waits w JOIN agent_runs ar ON ar.id=w.parent_run_id WHERE w.parent_run_id=$1 AND ar.tenant_id=$2 AND w.state='open'`, string(id), string(s.scope.tenant))
 	if err != nil {
 		return nil, fmt.Errorf("postgres: list waits for parent: %w", err)
 	}
@@ -175,7 +175,7 @@ func (s *waitStore) ListOpenForParent(ctx context.Context, id uc.RunID) ([]uc.Ru
 // cannot both time out one wait, and a child completing concurrently either
 // wins the row lock or finds the wait already closed.
 func (s *waitStore) ListForParent(ctx context.Context, id uc.RunID) ([]uc.RunWait, error) {
-	rows, err := s.scope.s.db().Query(ctx, `SELECT `+waitColumns+` FROM run_waits w JOIN agent_runs ar ON ar.id=w.parent_run_id WHERE w.parent_run_id=$1 AND ar.org_id=$2 ORDER BY w.step_index`, string(id), string(s.scope.org))
+	rows, err := s.scope.s.db().Query(ctx, `SELECT `+waitColumns+` FROM run_waits w JOIN agent_runs ar ON ar.id=w.parent_run_id WHERE w.parent_run_id=$1 AND ar.tenant_id=$2 ORDER BY w.step_index`, string(id), string(s.scope.tenant))
 	if err != nil {
 		return nil, fmt.Errorf("postgres: list waits for parent: %w", err)
 	}
@@ -185,10 +185,10 @@ func (s *waitStore) ListForParent(ctx context.Context, id uc.RunID) ([]uc.RunWai
 func (s *waitStore) ClaimDue(ctx context.Context, now time.Time, limit int) ([]uc.RunWait, error) {
 	rows, err := s.scope.s.db().Query(ctx, `WITH due AS (
   SELECT w.id FROM run_waits w JOIN agent_runs ar ON ar.id=w.parent_run_id
-   WHERE ar.org_id=$1 AND w.state='open' AND w.deadline<=$2
+   WHERE ar.tenant_id=$1 AND w.state='open' AND w.deadline<=$2
    ORDER BY w.deadline LIMIT $3 FOR UPDATE OF w SKIP LOCKED)
 UPDATE run_waits w SET state='timed_out',resolved_at=now() FROM due WHERE w.id=due.id
-RETURNING `+waitColumns, string(s.scope.org), now, limit)
+RETURNING `+waitColumns, string(s.scope.tenant), now, limit)
 	if err != nil {
 		return nil, fmt.Errorf("postgres: claim due waits: %w", err)
 	}
@@ -215,7 +215,7 @@ func (s *waitStore) Members(ctx context.Context, id string) ([]uc.RunWaitMember,
 // Close leaves the open state exactly once. The `state='open'` predicate is
 // the exactly-once guarantee: a second caller affects no rows and is told so.
 func (s *waitStore) Close(ctx context.Context, id, state string, result json.RawMessage) (bool, error) {
-	tag, err := s.scope.s.db().Exec(ctx, `UPDATE run_waits w SET state=$2,result=$4,resolved_at=now() FROM agent_runs ar WHERE w.parent_run_id=ar.id AND w.id=$1 AND ar.org_id=$3 AND w.state='open'`, id, state, string(s.scope.org), result)
+	tag, err := s.scope.s.db().Exec(ctx, `UPDATE run_waits w SET state=$2,result=$4,resolved_at=now() FROM agent_runs ar WHERE w.parent_run_id=ar.id AND w.id=$1 AND ar.tenant_id=$3 AND w.state='open'`, id, state, string(s.scope.tenant), result)
 	if err != nil {
 		return false, fmt.Errorf("postgres: close wait: %w", err)
 	}
@@ -226,7 +226,7 @@ func (s *waitStore) Close(ctx context.Context, id, state string, result json.Raw
 // what closes it, so the timeout path writes its result here rather than in
 // the same statement.
 func (s *waitStore) SetResult(ctx context.Context, id string, result json.RawMessage) error {
-	tag, err := s.scope.s.db().Exec(ctx, `UPDATE run_waits w SET result=$2 FROM agent_runs ar WHERE w.parent_run_id=ar.id AND w.id=$1 AND ar.org_id=$3`, id, result, string(s.scope.org))
+	tag, err := s.scope.s.db().Exec(ctx, `UPDATE run_waits w SET result=$2 FROM agent_runs ar WHERE w.parent_run_id=ar.id AND w.id=$1 AND ar.tenant_id=$3`, id, result, string(s.scope.tenant))
 	if err != nil {
 		return fmt.Errorf("postgres: set wait result: %w", err)
 	}
@@ -240,7 +240,7 @@ func (s *waitStore) SetResult(ctx context.Context, id string, result json.RawMes
 // `resumed_at IS NULL` predicate makes parent resumption at-most-once even if
 // two paths (last child and timeout sweeper) both reach a closed wait.
 func (s *waitStore) MarkResumed(ctx context.Context, id string) (bool, error) {
-	tag, err := s.scope.s.db().Exec(ctx, `UPDATE run_waits w SET resumed_at=now() FROM agent_runs ar WHERE w.parent_run_id=ar.id AND w.id=$1 AND ar.org_id=$2 AND w.resumed_at IS NULL`, id, string(s.scope.org))
+	tag, err := s.scope.s.db().Exec(ctx, `UPDATE run_waits w SET resumed_at=now() FROM agent_runs ar WHERE w.parent_run_id=ar.id AND w.id=$1 AND ar.tenant_id=$2 AND w.resumed_at IS NULL`, id, string(s.scope.tenant))
 	if err != nil {
 		return false, fmt.Errorf("postgres: mark wait resumed: %w", err)
 	}
@@ -249,7 +249,7 @@ func (s *waitStore) MarkResumed(ctx context.Context, id string) (bool, error) {
 
 func (r *runStore) CountChildren(ctx context.Context, id uc.RunID) (int, error) {
 	var n int
-	err := r.scope.s.db().QueryRow(ctx, `SELECT count(*) FROM agent_runs WHERE parent_run_id=$1 AND org_id=$2`, string(id), string(r.scope.org)).Scan(&n)
+	err := r.scope.s.db().QueryRow(ctx, `SELECT count(*) FROM agent_runs WHERE parent_run_id=$1 AND tenant_id=$2`, string(id), string(r.scope.tenant)).Scan(&n)
 	return n, err
 }
 

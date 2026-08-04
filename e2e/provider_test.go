@@ -67,7 +67,7 @@ func TestA51_A106_ProviderRegistrationProbesTheControlPlane(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	registered, err := client.Tenants.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
+	registered, err := client.Providers.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
 		TenantId: org, Kind: uc.ProviderKindBYOKubernetes, Name: "cluster", ConfigJson: config,
 	}))
 	if err != nil {
@@ -75,6 +75,15 @@ func TestA51_A106_ProviderRegistrationProbesTheControlPlane(t *testing.T) {
 	}
 	if registered.Msg.GetProvider().GetKind() != uc.ProviderKindBYOKubernetes {
 		t.Fatalf("kind = %q", registered.Msg.GetProvider().GetKind())
+	}
+	got, err := client.Providers.GetProvider(ctx, connect.NewRequest(&corev1.GetProviderRequest{
+		TenantId: org, ProviderId: registered.Msg.GetProvider().GetId(),
+	}))
+	if err != nil {
+		t.Fatalf("GetProvider: %v", err)
+	}
+	if got.Msg.GetProvider().GetId() != registered.Msg.GetProvider().GetId() {
+		t.Fatalf("GetProvider id mismatch")
 	}
 
 	// The probe's answer is stored with the registration, so a later decision
@@ -128,7 +137,7 @@ func TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing(t *testing.T)
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := client.Tenants.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
+			_, err := client.Providers.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
 				TenantId: org, Kind: tc.kind, Name: "refused-" + strings.ReplaceAll(tc.name, " ", "-"),
 				ConfigJson: tc.config,
 			}))
@@ -145,7 +154,7 @@ func TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing(t *testing.T)
 	}
 
 	// Nothing was persisted by any refusal.
-	listed, err := client.Tenants.ListProviders(ctx, connect.NewRequest(&corev1.ListProvidersRequest{TenantId: org}))
+	listed, err := client.Providers.ListProviders(ctx, connect.NewRequest(&corev1.ListProvidersRequest{TenantId: org}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +166,7 @@ func TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing(t *testing.T)
 
 	// A kind the deployment does not host is refused by name, not silently
 	// substituted with one that happens to be available.
-	_, err = client.Tenants.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
+	_, err = client.Providers.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
 		TenantId: org, Kind: "not_a_provider", Name: "bogus", ConfigJson: `{}`,
 	}))
 	if err == nil {

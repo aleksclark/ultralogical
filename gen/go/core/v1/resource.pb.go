@@ -548,6 +548,8 @@ type ListResourcesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string                 `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -596,9 +598,24 @@ func (x *ListResourcesRequest) GetKind() string {
 	return ""
 }
 
+func (x *ListResourcesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListResourcesRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListResourcesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Resources     []*Resource            `protobuf:"bytes,1,rep,name=resources,proto3" json:"resources,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -638,6 +655,13 @@ func (x *ListResourcesResponse) GetResources() []*Resource {
 		return x.Resources
 	}
 	return nil
+}
+
+func (x *ListResourcesResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type TerminateResourceRequest struct {
@@ -984,13 +1008,17 @@ const file_core_v1_resource_proto_rawDesc = "" +
 	"\vresource_id\x18\x01 \x01(\tR\n" +
 	"resourceId\"D\n" +
 	"\x13GetResourceResponse\x12-\n" +
-	"\bresource\x18\x01 \x01(\v2\x11.core.v1.ResourceR\bresource\"I\n" +
+	"\bresource\x18\x01 \x01(\v2\x11.core.v1.ResourceR\bresource\"\x85\x01\n" +
 	"\x14ListResourcesRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
-	"\x04kind\x18\x02 \x01(\tR\x04kind\"H\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\"p\n" +
 	"\x15ListResourcesResponse\x12/\n" +
-	"\tresources\x18\x01 \x03(\v2\x11.core.v1.ResourceR\tresources\";\n" +
+	"\tresources\x18\x01 \x03(\v2\x11.core.v1.ResourceR\tresources\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\";\n" +
 	"\x18TerminateResourceRequest\x12\x1f\n" +
 	"\vresource_id\x18\x01 \x01(\tR\n" +
 	"resourceId\"\x1b\n" +

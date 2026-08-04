@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file core/v1/session.proto.
  */
 export const file_core_v1_session: GenFile = /*@__PURE__*/
-  fileDesc("ChVjb3JlL3YxL3Nlc3Npb24ucHJvdG8SB2NvcmUudjEi9QEKB1Nlc3Npb24SCgoCaWQYASABKAkSEQoJdGVuYW50X2lkGAIgASgJEg0KBXRpdGxlGAMgASgJEi4KCmNyZWF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2FyY2hpdmVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIsCgZsYWJlbHMYBiADKAsyHC5jb3JlLnYxLlNlc3Npb24uTGFiZWxzRW50cnkaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASKiAQoUQ3JlYXRlU2Vzc2lvblJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEg0KBXRpdGxlGAIgASgJEjkKBmxhYmVscxgDIAMoCzIpLmNvcmUudjEuQ3JlYXRlU2Vzc2lvblJlcXVlc3QuTGFiZWxzRW50cnkaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASI6ChVDcmVhdGVTZXNzaW9uUmVzcG9uc2USIQoHc2Vzc2lvbhgBIAEoCzIQLmNvcmUudjEuU2Vzc2lvbiInChFHZXRTZXNzaW9uUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIjcKEkdldFNlc3Npb25SZXNwb25zZRIhCgdzZXNzaW9uGAEgASgLMhAuY29yZS52MS5TZXNzaW9uIjgKDUxhYmVsU2VsZWN0b3ISCwoDa2V5GAEgASgJEgoKAm9wGAIgASgJEg4KBnZhbHVlcxgDIAMoCSJZChNMaXN0U2Vzc2lvbnNSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIvCg9sYWJlbF9zZWxlY3RvcnMYAiADKAsyFi5jb3JlLnYxLkxhYmVsU2VsZWN0b3IiOgoUTGlzdFNlc3Npb25zUmVzcG9uc2USIgoIc2Vzc2lvbnMYASADKAsyEC5jb3JlLnYxLlNlc3Npb24ioAEKGlVwZGF0ZVNlc3Npb25MYWJlbHNSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSPwoGbGFiZWxzGAIgAygLMi8uY29yZS52MS5VcGRhdGVTZXNzaW9uTGFiZWxzUmVxdWVzdC5MYWJlbHNFbnRyeRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlMKG1VwZGF0ZVNlc3Npb25MYWJlbHNSZXNwb25zZRIhCgdzZXNzaW9uGAEgASgLMhAuY29yZS52MS5TZXNzaW9uEhEKCWV2ZW50X3NlcRgCIAEoAyKOAQoLTWVtb3J5RW50cnkSCwoDa2V5GAEgASgJEhIKCnZhbHVlX2pzb24YAiABKAkSFwoPdXBkYXRlZF9ieV90eXBlGAMgASgJEhUKDXVwZGF0ZWRfYnlfaWQYBCABKAkSLgoKdXBkYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiRwoQU2V0TWVtb3J5UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEgsKA2tleRgCIAEoCRISCgp2YWx1ZV9qc29uGAMgASgJIiYKEVNldE1lbW9yeVJlc3BvbnNlEhEKCWV2ZW50X3NlcRgBIAEoAyIzChBHZXRNZW1vcnlSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSCwoDa2V5GAIgASgJIjgKEUdldE1lbW9yeVJlc3BvbnNlEiMKBWVudHJ5GAEgASgLMhQuY29yZS52MS5NZW1vcnlFbnRyeSInChFMaXN0TWVtb3J5UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIjsKEkxpc3RNZW1vcnlSZXNwb25zZRIlCgdlbnRyaWVzGAEgAygLMhQuY29yZS52MS5NZW1vcnlFbnRyeSI2ChNEZWxldGVNZW1vcnlSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSCwoDa2V5GAIgASgJIikKFERlbGV0ZU1lbW9yeVJlc3BvbnNlEhEKCWV2ZW50X3NlcRgBIAEoAzLyBAoOU2Vzc2lvblNlcnZpY2USTgoNQ3JlYXRlU2Vzc2lvbhIdLmNvcmUudjEuQ3JlYXRlU2Vzc2lvblJlcXVlc3QaHi5jb3JlLnYxLkNyZWF0ZVNlc3Npb25SZXNwb25zZRJFCgpHZXRTZXNzaW9uEhouY29yZS52MS5HZXRTZXNzaW9uUmVxdWVzdBobLmNvcmUudjEuR2V0U2Vzc2lvblJlc3BvbnNlEksKDExpc3RTZXNzaW9ucxIcLmNvcmUudjEuTGlzdFNlc3Npb25zUmVxdWVzdBodLmNvcmUudjEuTGlzdFNlc3Npb25zUmVzcG9uc2USYAoTVXBkYXRlU2Vzc2lvbkxhYmVscxIjLmNvcmUudjEuVXBkYXRlU2Vzc2lvbkxhYmVsc1JlcXVlc3QaJC5jb3JlLnYxLlVwZGF0ZVNlc3Npb25MYWJlbHNSZXNwb25zZRJCCglTZXRNZW1vcnkSGS5jb3JlLnYxLlNldE1lbW9yeVJlcXVlc3QaGi5jb3JlLnYxLlNldE1lbW9yeVJlc3BvbnNlEkIKCUdldE1lbW9yeRIZLmNvcmUudjEuR2V0TWVtb3J5UmVxdWVzdBoaLmNvcmUudjEuR2V0TWVtb3J5UmVzcG9uc2USRQoKTGlzdE1lbW9yeRIaLmNvcmUudjEuTGlzdE1lbW9yeVJlcXVlc3QaGy5jb3JlLnYxLkxpc3RNZW1vcnlSZXNwb25zZRJLCgxEZWxldGVNZW1vcnkSHC5jb3JlLnYxLkRlbGV0ZU1lbW9yeVJlcXVlc3QaHS5jb3JlLnYxLkRlbGV0ZU1lbW9yeVJlc3BvbnNlQjdaNWdpdGh1Yi5jb20vYWxla3NjbGFyay91bHRyYWNvcmUvZ2VuL2dvL2NvcmUvdjE7Y29yZXYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChVjb3JlL3YxL3Nlc3Npb24ucHJvdG8SB2NvcmUudjEi9QEKB1Nlc3Npb24SCgoCaWQYASABKAkSEQoJdGVuYW50X2lkGAIgASgJEg0KBXRpdGxlGAMgASgJEi4KCmNyZWF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2FyY2hpdmVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIsCgZsYWJlbHMYBiADKAsyHC5jb3JlLnYxLlNlc3Npb24uTGFiZWxzRW50cnkaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASKiAQoUQ3JlYXRlU2Vzc2lvblJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEg0KBXRpdGxlGAIgASgJEjkKBmxhYmVscxgDIAMoCzIpLmNvcmUudjEuQ3JlYXRlU2Vzc2lvblJlcXVlc3QuTGFiZWxzRW50cnkaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASI6ChVDcmVhdGVTZXNzaW9uUmVzcG9uc2USIQoHc2Vzc2lvbhgBIAEoCzIQLmNvcmUudjEuU2Vzc2lvbiInChFHZXRTZXNzaW9uUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIjcKEkdldFNlc3Npb25SZXNwb25zZRIhCgdzZXNzaW9uGAEgASgLMhAuY29yZS52MS5TZXNzaW9uIjgKDUxhYmVsU2VsZWN0b3ISCwoDa2V5GAEgASgJEgoKAm9wGAIgASgJEg4KBnZhbHVlcxgDIAMoCSKAAQoTTGlzdFNlc3Npb25zUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkSLwoPbGFiZWxfc2VsZWN0b3JzGAIgAygLMhYuY29yZS52MS5MYWJlbFNlbGVjdG9yEhEKCXBhZ2Vfc2l6ZRgDIAEoBRISCgpwYWdlX3Rva2VuGAQgASgJIlMKFExpc3RTZXNzaW9uc1Jlc3BvbnNlEiIKCHNlc3Npb25zGAEgAygLMhAuY29yZS52MS5TZXNzaW9uEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSKgAQoaVXBkYXRlU2Vzc2lvbkxhYmVsc1JlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRI/CgZsYWJlbHMYAiADKAsyLy5jb3JlLnYxLlVwZGF0ZVNlc3Npb25MYWJlbHNSZXF1ZXN0LkxhYmVsc0VudHJ5Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiUwobVXBkYXRlU2Vzc2lvbkxhYmVsc1Jlc3BvbnNlEiEKB3Nlc3Npb24YASABKAsyEC5jb3JlLnYxLlNlc3Npb24SEQoJZXZlbnRfc2VxGAIgASgDIisKFUFyY2hpdmVTZXNzaW9uUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIjsKFkFyY2hpdmVTZXNzaW9uUmVzcG9uc2USIQoHc2Vzc2lvbhgBIAEoCzIQLmNvcmUudjEuU2Vzc2lvbiKOAQoLTWVtb3J5RW50cnkSCwoDa2V5GAEgASgJEhIKCnZhbHVlX2pzb24YAiABKAkSFwoPdXBkYXRlZF9ieV90eXBlGAMgASgJEhUKDXVwZGF0ZWRfYnlfaWQYBCABKAkSLgoKdXBkYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiRwoQU2V0TWVtb3J5UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEgsKA2tleRgCIAEoCRISCgp2YWx1ZV9qc29uGAMgASgJIiYKEVNldE1lbW9yeVJlc3BvbnNlEhEKCWV2ZW50X3NlcRgBIAEoAyIzChBHZXRNZW1vcnlSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSCwoDa2V5GAIgASgJIjgKEUdldE1lbW9yeVJlc3BvbnNlEiMKBWVudHJ5GAEgASgLMhQuY29yZS52MS5NZW1vcnlFbnRyeSJOChFMaXN0TWVtb3J5UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEhEKCXBhZ2Vfc2l6ZRgCIAEoBRISCgpwYWdlX3Rva2VuGAMgASgJIlQKEkxpc3RNZW1vcnlSZXNwb25zZRIlCgdlbnRyaWVzGAEgAygLMhQuY29yZS52MS5NZW1vcnlFbnRyeRIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkiNgoTRGVsZXRlTWVtb3J5UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEgsKA2tleRgCIAEoCSIpChREZWxldGVNZW1vcnlSZXNwb25zZRIRCglldmVudF9zZXEYASABKAMyxQUKDlNlc3Npb25TZXJ2aWNlEk4KDUNyZWF0ZVNlc3Npb24SHS5jb3JlLnYxLkNyZWF0ZVNlc3Npb25SZXF1ZXN0Gh4uY29yZS52MS5DcmVhdGVTZXNzaW9uUmVzcG9uc2USRQoKR2V0U2Vzc2lvbhIaLmNvcmUudjEuR2V0U2Vzc2lvblJlcXVlc3QaGy5jb3JlLnYxLkdldFNlc3Npb25SZXNwb25zZRJLCgxMaXN0U2Vzc2lvbnMSHC5jb3JlLnYxLkxpc3RTZXNzaW9uc1JlcXVlc3QaHS5jb3JlLnYxLkxpc3RTZXNzaW9uc1Jlc3BvbnNlEmAKE1VwZGF0ZVNlc3Npb25MYWJlbHMSIy5jb3JlLnYxLlVwZGF0ZVNlc3Npb25MYWJlbHNSZXF1ZXN0GiQuY29yZS52MS5VcGRhdGVTZXNzaW9uTGFiZWxzUmVzcG9uc2USUQoOQXJjaGl2ZVNlc3Npb24SHi5jb3JlLnYxLkFyY2hpdmVTZXNzaW9uUmVxdWVzdBofLmNvcmUudjEuQXJjaGl2ZVNlc3Npb25SZXNwb25zZRJCCglTZXRNZW1vcnkSGS5jb3JlLnYxLlNldE1lbW9yeVJlcXVlc3QaGi5jb3JlLnYxLlNldE1lbW9yeVJlc3BvbnNlEkIKCUdldE1lbW9yeRIZLmNvcmUudjEuR2V0TWVtb3J5UmVxdWVzdBoaLmNvcmUudjEuR2V0TWVtb3J5UmVzcG9uc2USRQoKTGlzdE1lbW9yeRIaLmNvcmUudjEuTGlzdE1lbW9yeVJlcXVlc3QaGy5jb3JlLnYxLkxpc3RNZW1vcnlSZXNwb25zZRJLCgxEZWxldGVNZW1vcnkSHC5jb3JlLnYxLkRlbGV0ZU1lbW9yeVJlcXVlc3QaHS5jb3JlLnYxLkRlbGV0ZU1lbW9yeVJlc3BvbnNlQjdaNWdpdGh1Yi5jb20vYWxla3NjbGFyay91bHRyYWNvcmUvZ2VuL2dvL2NvcmUvdjE7Y29yZXYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * Session is the durable unit of work. It outlives any process, UI, agent
@@ -180,6 +180,16 @@ export type ListSessionsRequest = Message<"core.v1.ListSessionsRequest"> & {
    * @generated from field: repeated core.v1.LabelSelector label_selectors = 2;
    */
   labelSelectors: LabelSelector[];
+
+  /**
+   * @generated from field: int32 page_size = 3;
+   */
+  pageSize: number;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken: string;
 };
 
 /**
@@ -197,6 +207,11 @@ export type ListSessionsResponse = Message<"core.v1.ListSessionsResponse"> & {
    * @generated from field: repeated core.v1.Session sessions = 1;
    */
   sessions: Session[];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
 };
 
 /**
@@ -251,6 +266,40 @@ export const UpdateSessionLabelsResponseSchema: GenMessage<UpdateSessionLabelsRe
   messageDesc(file_core_v1_session, 9);
 
 /**
+ * @generated from message core.v1.ArchiveSessionRequest
+ */
+export type ArchiveSessionRequest = Message<"core.v1.ArchiveSessionRequest"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+};
+
+/**
+ * Describes the message core.v1.ArchiveSessionRequest.
+ * Use `create(ArchiveSessionRequestSchema)` to create a new message.
+ */
+export const ArchiveSessionRequestSchema: GenMessage<ArchiveSessionRequest> = /*@__PURE__*/
+  messageDesc(file_core_v1_session, 10);
+
+/**
+ * @generated from message core.v1.ArchiveSessionResponse
+ */
+export type ArchiveSessionResponse = Message<"core.v1.ArchiveSessionResponse"> & {
+  /**
+   * @generated from field: core.v1.Session session = 1;
+   */
+  session?: Session | undefined;
+};
+
+/**
+ * Describes the message core.v1.ArchiveSessionResponse.
+ * Use `create(ArchiveSessionResponseSchema)` to create a new message.
+ */
+export const ArchiveSessionResponseSchema: GenMessage<ArchiveSessionResponse> = /*@__PURE__*/
+  messageDesc(file_core_v1_session, 11);
+
+/**
  * @generated from message core.v1.MemoryEntry
  */
 export type MemoryEntry = Message<"core.v1.MemoryEntry"> & {
@@ -285,7 +334,7 @@ export type MemoryEntry = Message<"core.v1.MemoryEntry"> & {
  * Use `create(MemoryEntrySchema)` to create a new message.
  */
 export const MemoryEntrySchema: GenMessage<MemoryEntry> = /*@__PURE__*/
-  messageDesc(file_core_v1_session, 10);
+  messageDesc(file_core_v1_session, 12);
 
 /**
  * @generated from message core.v1.SetMemoryRequest
@@ -312,7 +361,7 @@ export type SetMemoryRequest = Message<"core.v1.SetMemoryRequest"> & {
  * Use `create(SetMemoryRequestSchema)` to create a new message.
  */
 export const SetMemoryRequestSchema: GenMessage<SetMemoryRequest> = /*@__PURE__*/
-  messageDesc(file_core_v1_session, 11);
+  messageDesc(file_core_v1_session, 13);
 
 /**
  * @generated from message core.v1.SetMemoryResponse
@@ -329,7 +378,7 @@ export type SetMemoryResponse = Message<"core.v1.SetMemoryResponse"> & {
  * Use `create(SetMemoryResponseSchema)` to create a new message.
  */
 export const SetMemoryResponseSchema: GenMessage<SetMemoryResponse> = /*@__PURE__*/
-  messageDesc(file_core_v1_session, 12);
+  messageDesc(file_core_v1_session, 14);
 
 /**
  * @generated from message core.v1.GetMemoryRequest
@@ -351,7 +400,7 @@ export type GetMemoryRequest = Message<"core.v1.GetMemoryRequest"> & {
  * Use `create(GetMemoryRequestSchema)` to create a new message.
  */
 export const GetMemoryRequestSchema: GenMessage<GetMemoryRequest> = /*@__PURE__*/
-  messageDesc(file_core_v1_session, 13);
+  messageDesc(file_core_v1_session, 15);
 
 /**
  * @generated from message core.v1.GetMemoryResponse
@@ -368,7 +417,7 @@ export type GetMemoryResponse = Message<"core.v1.GetMemoryResponse"> & {
  * Use `create(GetMemoryResponseSchema)` to create a new message.
  */
 export const GetMemoryResponseSchema: GenMessage<GetMemoryResponse> = /*@__PURE__*/
-  messageDesc(file_core_v1_session, 14);
+  messageDesc(file_core_v1_session, 16);
 
 /**
  * @generated from message core.v1.ListMemoryRequest
@@ -378,6 +427,16 @@ export type ListMemoryRequest = Message<"core.v1.ListMemoryRequest"> & {
    * @generated from field: string session_id = 1;
    */
   sessionId: string;
+
+  /**
+   * @generated from field: int32 page_size = 2;
+   */
+  pageSize: number;
+
+  /**
+   * @generated from field: string page_token = 3;
+   */
+  pageToken: string;
 };
 
 /**
@@ -385,7 +444,7 @@ export type ListMemoryRequest = Message<"core.v1.ListMemoryRequest"> & {
  * Use `create(ListMemoryRequestSchema)` to create a new message.
  */
 export const ListMemoryRequestSchema: GenMessage<ListMemoryRequest> = /*@__PURE__*/
-  messageDesc(file_core_v1_session, 15);
+  messageDesc(file_core_v1_session, 17);
 
 /**
  * @generated from message core.v1.ListMemoryResponse
@@ -395,6 +454,11 @@ export type ListMemoryResponse = Message<"core.v1.ListMemoryResponse"> & {
    * @generated from field: repeated core.v1.MemoryEntry entries = 1;
    */
   entries: MemoryEntry[];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
 };
 
 /**
@@ -402,7 +466,7 @@ export type ListMemoryResponse = Message<"core.v1.ListMemoryResponse"> & {
  * Use `create(ListMemoryResponseSchema)` to create a new message.
  */
 export const ListMemoryResponseSchema: GenMessage<ListMemoryResponse> = /*@__PURE__*/
-  messageDesc(file_core_v1_session, 16);
+  messageDesc(file_core_v1_session, 18);
 
 /**
  * @generated from message core.v1.DeleteMemoryRequest
@@ -424,7 +488,7 @@ export type DeleteMemoryRequest = Message<"core.v1.DeleteMemoryRequest"> & {
  * Use `create(DeleteMemoryRequestSchema)` to create a new message.
  */
 export const DeleteMemoryRequestSchema: GenMessage<DeleteMemoryRequest> = /*@__PURE__*/
-  messageDesc(file_core_v1_session, 17);
+  messageDesc(file_core_v1_session, 19);
 
 /**
  * @generated from message core.v1.DeleteMemoryResponse
@@ -441,13 +505,10 @@ export type DeleteMemoryResponse = Message<"core.v1.DeleteMemoryResponse"> & {
  * Use `create(DeleteMemoryResponseSchema)` to create a new message.
  */
 export const DeleteMemoryResponseSchema: GenMessage<DeleteMemoryResponse> = /*@__PURE__*/
-  messageDesc(file_core_v1_session, 18);
+  messageDesc(file_core_v1_session, 20);
 
 /**
  * SessionService manages session lifecycle, labels, and session memory.
- * Access requires a key belonging to the session's tenant; missing sessions
- * and cross-tenant access return the same not-found error so existence never
- * leaks.
  *
  * @generated from service core.v1.SessionService
  */
@@ -483,6 +544,14 @@ export const SessionService: GenService<{
     methodKind: "unary";
     input: typeof UpdateSessionLabelsRequestSchema;
     output: typeof UpdateSessionLabelsResponseSchema;
+  },
+  /**
+   * @generated from rpc core.v1.SessionService.ArchiveSession
+   */
+  archiveSession: {
+    methodKind: "unary";
+    input: typeof ArchiveSessionRequestSchema;
+    output: typeof ArchiveSessionResponseSchema;
   },
   /**
    * @generated from rpc core.v1.SessionService.SetMemory

@@ -45,7 +45,7 @@ func TestRunPolicyResourceKinds(t *testing.T) {
 	}
 }
 
-func TestRunPolicySubsetOf(t *testing.T) {
+func TestRunPolicyIsSubset(t *testing.T) {
 	parent := uc.RunPolicy{
 		AllowTools: []string{"bash", "view", "spawn_agent"}, DenyTools: []string{"bash"},
 		ResourceKinds: []uc.ResourceKind{uc.ResourceKindDevEnv}, MaxChildren: 4,
