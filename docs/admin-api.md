@@ -97,8 +97,49 @@ on the public edge.
 
 ## Tests
 
+Go functional suite (httptest + real Postgres via testcontainers):
+
 ```sh
 task admin:test
+```
+
+Playwright API-level e2e (real `coreadmin` process + disposable Postgres;
+no SPA):
+
+```sh
+task admin:e2e
+```
+
+What `task admin:e2e` does:
+
+1. Starts Postgres in Docker and builds `coreadmin` (and `cored` for isolation checks).
+2. Boots `coreadmin` with `CORE_ADMIN_TOKEN`, migrates, and seeds tenants / keys /
+   credentials / sessions / events / runs.
+3. Writes an endpoint JSON file (`admin_url`, `admin_token`, optional `cored_url`,
+   `canary_api_key`).
+4. Runs `admin-e2e` Playwright tests via `APIRequestContext` and the generated
+   `@ultracore/admin-client` Connect client (`@connectrpc/connect`).
+5. Tears the stack down.
+
+Coverage includes: auth fail-closed, `/healthz`+`/readyz`, `ListTenants`
+pagination, `limit > 250` rejected, `DescribeCollection`, list smokes for
+sessions/events/runs, `GetRuntimeHealth`, secret non-disclosure, and cored 404
+on admin paths when both URLs are available.
+
+Manual / debug:
+
+```sh
+# Install deps once
+(cd admin-e2e && npm ci)
+
+# Boot stack and keep it (prints endpoint JSON path; Ctrl-C to stop)
+bash scripts/admin-e2e-stack.sh boot
+
+# Re-run Playwright against an existing endpoint JSON
+bash scripts/admin-e2e-stack.sh run /path/to/endpoints.json
+
+# Or point tests at an already-running coreadmin
+ADMIN_E2E_URL=http://127.0.0.1:8082 ADMIN_E2E_TOKEN=… ADMIN_E2E_CORED_URL=http://127.0.0.1:8080   (cd admin-e2e && npx playwright test)
 ```
 
 Scale note: CI seeds 5k events for pagination correctness and first-page

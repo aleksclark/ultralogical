@@ -4,6 +4,12 @@
   "private": true,
   "type": "module",
   "description": "Private TypeScript client for ultracore admin API (not published; E6 SPA only)",
+  "exports": {
+    ".": "./src/gen/admin/v1/admin_pb.ts",
+    "./gen/admin/v1/admin_pb.js": "./src/gen/admin/v1/admin_pb.ts",
+    "./gen/admin/v1/query_pb.js": "./src/gen/admin/v1/query_pb.ts",
+    "./gen/*": "./src/gen/*"
+  },
   "dependencies": {
     "@bufbuild/protobuf": "^2.2.0",
     "@connectrpc/connect": "^2.0.0"

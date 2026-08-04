@@ -114,3 +114,8 @@ tasks:
     cmds:
       - go test ./admin/... ./adminhttp/... ./postgres/ -run 'Admin|Query' -count=1 -timeout 30m
       - go test ./admin/ -count=1 -timeout 30m
+
+  admin:e2e:
+    desc: Boot Postgres+coreadmin (and cored), run Playwright admin API e2e
+    cmds:
+      - bash scripts/admin-e2e-stack.sh test
