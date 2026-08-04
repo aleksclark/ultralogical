@@ -25,7 +25,6 @@ import (
 const toolPort = 8080
 
 // handleVersion is the persisted handle schema version.
-const handleVersion = 1
 
 // Config configures the provider.
 type Config struct {
@@ -56,7 +55,7 @@ type Provider struct {
 
 // handleData is the persisted, provider-native identity of one environment.
 type handleData struct {
-	JobID string `json:"job_id"`
+	JobID      string `json:"job_id"`
 	ResourceID string `json:"resource_id"`
 }
 
@@ -183,8 +182,8 @@ func (p *Provider) Provision(ctx context.Context, r uc.Resource, token string) (
 		Type:        stringPtr("service"),
 		Datacenters: p.cfg.Datacenters,
 		Meta: map[string]string{
-			"ultracore.resource_id":     string(envID),
-			"ultracore.managed_by": "ultracore",
+			"ultracore.resource_id": string(envID),
+			"ultracore.managed_by":  "ultracore",
 		},
 		TaskGroups: []*nomadapi.TaskGroup{{
 			Name:  stringPtr("env"),

@@ -26,7 +26,7 @@ type RunPolicy struct {
 // Full tools, all resource kinds, a modest spawn cap, children inherit.
 func DefaultRunPolicy() RunPolicy {
 	return RunPolicy{
-		AllowTools: []string{"*"},
+		AllowTools:    []string{"*"},
 		ResourceKinds: []ResourceKind{"*"},
 		MaxChildren:   16,
 		ChildInherit:  false,

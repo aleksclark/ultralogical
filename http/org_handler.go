@@ -11,8 +11,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	uc "github.com/aleksclark/ultracore"
-	"github.com/aleksclark/ultracore/provider"
 	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/provider"
 	"github.com/aleksclark/ultracore/secrets"
 )
 
@@ -153,7 +153,7 @@ func (h *tenantHandler) ListTenants(ctx context.Context, _ *connect.Request[core
 
 func (h *tenantHandler) CreateAPIKey(ctx context.Context, req *connect.Request[corev1.CreateAPIKeyRequest]) (*connect.Response[corev1.CreateAPIKeyResponse], error) {
 	id := uc.TenantID(req.Msg.GetTenantId())
-	if _, err := requireAdmin(ctx, id); err != nil {
+	if err := requireAdmin(ctx, id); err != nil {
 		return nil, err
 	}
 	scope, ok := keyScopeFromProto(req.Msg.GetScope())
@@ -169,7 +169,7 @@ func (h *tenantHandler) CreateAPIKey(ctx context.Context, req *connect.Request[c
 
 func (h *tenantHandler) ListAPIKeys(ctx context.Context, req *connect.Request[corev1.ListAPIKeysRequest]) (*connect.Response[corev1.ListAPIKeysResponse], error) {
 	id := uc.TenantID(req.Msg.GetTenantId())
-	if _, err := requireAdmin(ctx, id); err != nil {
+	if err := requireAdmin(ctx, id); err != nil {
 		return nil, err
 	}
 	keys, err := h.store.APIKeys().List(ctx, id)
@@ -185,7 +185,7 @@ func (h *tenantHandler) ListAPIKeys(ctx context.Context, req *connect.Request[co
 
 func (h *tenantHandler) RevokeAPIKey(ctx context.Context, req *connect.Request[corev1.RevokeAPIKeyRequest]) (*connect.Response[corev1.RevokeAPIKeyResponse], error) {
 	id := uc.TenantID(req.Msg.GetTenantId())
-	if _, err := requireAdmin(ctx, id); err != nil {
+	if err := requireAdmin(ctx, id); err != nil {
 		return nil, err
 	}
 	if err := h.store.APIKeys().Revoke(ctx, id, uc.APIKeyID(req.Msg.GetKeyId())); err != nil {
@@ -205,7 +205,7 @@ func validCredentialKind(kind string) bool {
 
 func (h *credentialHandler) PutCredential(ctx context.Context, req *connect.Request[corev1.PutCredentialRequest]) (*connect.Response[corev1.PutCredentialResponse], error) {
 	tenantID := uc.TenantID(req.Msg.GetTenantId())
-	if _, err := requireAdmin(ctx, tenantID); err != nil {
+	if err := requireAdmin(ctx, tenantID); err != nil {
 		return nil, err
 	}
 	if !validCredentialKind(req.Msg.GetKind()) {
@@ -270,7 +270,7 @@ func (h *credentialHandler) ListCredentials(ctx context.Context, req *connect.Re
 
 func (h *credentialHandler) DeleteCredential(ctx context.Context, req *connect.Request[corev1.DeleteCredentialRequest]) (*connect.Response[corev1.DeleteCredentialResponse], error) {
 	tenantID := uc.TenantID(req.Msg.GetTenantId())
-	if _, err := requireAdmin(ctx, tenantID); err != nil {
+	if err := requireAdmin(ctx, tenantID); err != nil {
 		return nil, err
 	}
 	if err := h.store.Tenant(tenantID).Credentials().Delete(ctx, req.Msg.GetKind(), req.Msg.GetName()); err != nil {
@@ -294,7 +294,7 @@ func providerToProto(p uc.ProviderInstance) *corev1.ProviderInstance {
 
 func (h *providerHandler) RegisterProvider(ctx context.Context, req *connect.Request[corev1.RegisterProviderRequest]) (*connect.Response[corev1.RegisterProviderResponse], error) {
 	tenantID := uc.TenantID(req.Msg.GetTenantId())
-	if _, err := requireAdmin(ctx, tenantID); err != nil {
+	if err := requireAdmin(ctx, tenantID); err != nil {
 		return nil, err
 	}
 	if h.providers == nil || !h.providers.Enabled(req.Msg.GetKind()) {
@@ -356,7 +356,7 @@ func (h *providerHandler) GetProvider(ctx context.Context, req *connect.Request[
 
 func (h *providerHandler) DeregisterProvider(ctx context.Context, req *connect.Request[corev1.DeregisterProviderRequest]) (*connect.Response[corev1.DeregisterProviderResponse], error) {
 	tenantID := uc.TenantID(req.Msg.GetTenantId())
-	if _, err := requireAdmin(ctx, tenantID); err != nil {
+	if err := requireAdmin(ctx, tenantID); err != nil {
 		return nil, err
 	}
 	providerID := uc.ProviderInstanceID(req.Msg.GetProviderId())

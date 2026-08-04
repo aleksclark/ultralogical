@@ -10,8 +10,8 @@ import (
 	uc "github.com/aleksclark/ultracore"
 	"github.com/aleksclark/ultracore/provider/k8s"
 	"github.com/aleksclark/ultracore/provider/localdocker"
-	"github.com/aleksclark/ultracore/provider/nullresource"
 	"github.com/aleksclark/ultracore/provider/nomad"
+	"github.com/aleksclark/ultracore/provider/nullresource"
 	"github.com/aleksclark/ultracore/provider/static"
 	"github.com/aleksclark/ultracore/provider/tunnel"
 )
@@ -134,7 +134,6 @@ func StandardRegistry(deployment Deployment) *Registry {
 	})
 	return registry
 }
-
 
 // decode reads a registration's configuration strictly: an unknown field is a
 // typo an operator needs to see, not a setting to ignore.

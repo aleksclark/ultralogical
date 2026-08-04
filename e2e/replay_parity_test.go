@@ -132,7 +132,7 @@ it("parity dump", async () => {
 			if err := os.WriteFile(vt, []byte(body), 0o644); err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(vt)
+			defer func() { _ = os.Remove(vt) }()
 			cmd3 := exec.Command("npx", "vitest", "run", ".parity.temp.test.ts", "--reporter=verbose")
 			cmd3.Dir = tsDir
 			cmd3.Env = cmd.Env

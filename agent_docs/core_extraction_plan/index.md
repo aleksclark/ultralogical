@@ -39,8 +39,8 @@ ConnectRPC API with Go/TS SDKs.
 | Flows (versioned catalog, flowdef language, invocation provenance) | Trigger + template + wiring is consumer vocabulary; curri already has its own Flow model | curri-agents; primer tasks |
 | Multiplayer presence, human roster UX | Consumers own human identity and UI | consumer apps |
 | Grants lattice (monotone privilege, cohort grants) | Over-general for first-party consumers | collapses to per-run tool allowlists + a consumer policy hook (E3) |
-| First-party web SPA + GPUI desktop clients | Consumers bring their own UI | `testkit/testclient` + SDK smoke tests become the client evidence |
-| Human user/org-member model, interactive auth | Consumers are services | tenant API keys + opaque `Actor` attribution (E3) |
+| First-party consumer web SPA + GPUI desktop clients | Consumers bring their own UI | `testkit/testclient` + SDK smoke tests become the client evidence; the private operator-only admin SPA in E5–E7 is not a consumer client |
+| Human user/org-member model, interactive auth | Consumers are services | tenant API keys + opaque `Actor` attribution (E3); operator identity remains isolated to the private admin surface |
 
 ## Decision record
 
@@ -70,10 +70,13 @@ ConnectRPC API with Go/TS SDKs.
 - **D8 — The module is renamed once** at the end of E1
   (`github.com/aleksclark/ultracore`, binaries `cored` / `coreworker` /
   `core` CLI), after the deletions, so the rename touches the minimum tree.
-- **D9 — Consumer migrations are acceptance tests for the core.**
-  primer-agent (E5) proves the floor: resource-free sessions, labels,
-  periodic prompts, policy hook. curri-agents nativeagent (E6) proves the
-  ceiling: k8s provider at scale, high event throughput, multi-turn awaiting.
+- **D9 — Administration is private and separate.** Debugging requires a
+  comprehensive view across tenant boundaries, queue internals, provider
+  state, raw event payloads, and runtime health. That power never enters
+  `core.v1`: E5 adds a separately deployed `coreadmin` process and
+  `admin.v1` API, E6 adds its private SPA, and E7 adds audited operations.
+  Shared cursor pagination and typed server-side search/filtering are built
+  before screens so no route fetches or renders unbounded collections.
 
 ## Phases
 
@@ -84,8 +87,9 @@ ConnectRPC API with Go/TS SDKs.
 | [E2](phase_e2.md) | Generalize DevEnv → Resource + provider seam | E1 |
 | [E3](phase_e3.md) | Tenancy, identity, labels, and policy hook | E2 |
 | [E4](phase_e4.md) | Consumer surface: API v1, SDKs, ops hardening | E3 |
-| [E5](phase_e5.md) | Floor proof: primer-agent migration | E4 |
-| [E6](phase_e6.md) | Ceiling proof: curri-agents nativeagent migration | E4 (parallel with E5 after its first week) |
+| [E5](phase_e5.md) | Private admin API and query foundations | E4 |
+| [E6](phase_e6.md) | Comprehensive admin SPA | E5 |
+| [E7](phase_e7.md) | Admin operations, audit, and production hardening | E6 |
 
 ## Iron rules of the extraction
 
@@ -114,8 +118,14 @@ These carry over from AGENTS.md, adapted:
    an independent completion audit (`phase_eN_audit.md`) finds no open
    scoped bullet.
 8. **Don't build ahead.** No speculative resource kinds, no plugin registry
-   for hypothetical consumers, no config knob without a consumer that reads
-   it. E5/E6 are the only sources of new requirements.
+   for hypothetical consumers, no config knob without a real caller. E5–E7
+   may add operator visibility and controls but cannot change consumer
+   semantics to make the admin implementation easier.
+9. **Admin is a separate trust boundary.** `admin.v1`, `coreadmin`, and the
+   admin SPA never share routes, auth credentials, generated clients, or
+   deployment listeners with `core.v1`/`cored`. Every collection is bounded,
+   cursor-paginated, and searched server-side; no admin screen may fetch an
+   entire table.
 
 ## Testing tiers (post-extraction)
 
@@ -125,4 +135,6 @@ These carry over from AGENTS.md, adapted:
 | Functional acceptance (`e2e/`) | `task test:functional` | real stack |
 | CLI | `task cli:test` | real stack |
 | SDK smoke (Go + TS) | `task sdk:test` (new, E4) | real stack |
-| Consumer proof | primer / curri suites in their repos (E5/E6) | their stacks |
+| Admin API functional + query conformance | `task admin:test` (E5) | real Postgres + coreadmin |
+| Admin SPA golden + performance | `task admin:web:test` (E6) | real admin stack + seeded large dataset |
+| Admin security/operations | `task admin:security:test` (E7) | private-route harness + real stack |

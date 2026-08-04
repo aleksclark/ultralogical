@@ -133,7 +133,7 @@ func (p *Provider) Probe(context.Context) (uc.ProviderCapabilities, error) {
 			uc.CapabilityEnumeratesResources,
 		},
 		Notes: map[uc.ProviderCapability]string{
-			uc.CapabilityServesToolEndpoint:   "null_resource has no tool surface",
+			uc.CapabilityServesToolEndpoint:    "null_resource has no tool surface",
 			uc.CapabilityRestartPreservesState: "null_resource holds no durable state",
 			uc.CapabilityToleratesDisconnect:   "in-process provider has no disconnect path",
 		},

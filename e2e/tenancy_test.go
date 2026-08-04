@@ -42,7 +42,7 @@ func TestA31_CrossTenantInvisibility(t *testing.T) {
 	}
 	// Label selector matching Alice's labels returns empty for Bob, not error.
 	list, err := bob.Sessions.ListSessions(ctx, connect.NewRequest(&corev1.ListSessionsRequest{
-		TenantId: string(stack.TenantB.ID),
+		TenantId:       string(stack.TenantB.ID),
 		LabelSelectors: []*corev1.LabelSelector{{Key: "student", Op: "=", Values: []string{"jacob"}}},
 	}))
 	if err != nil {

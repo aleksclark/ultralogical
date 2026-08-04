@@ -56,7 +56,6 @@ func (p *Provider) dir(id uc.ResourceID) string { return filepath.Join(p.cfg.Roo
 
 // Provision starts one sandboxed Bezalel. Workspace is created first so restart reuses it.
 
-
 func (p *Provider) Provision(_ context.Context, r uc.Resource, token string) (json.RawMessage, error) {
 	envID := r.ID
 	spec, err := uc.ParseDevEnvSpec(r.Spec)
@@ -209,9 +208,8 @@ func stop(h json.RawMessage) {
 // Probe refuses a host without unprivileged user namespaces.
 func (p *Provider) Probe(context.Context) (uc.ProviderCapabilities, error) {
 	caps := uc.ProviderCapabilities{
-		Kind: uc.ProviderKindStatic,
-		Notes: map[uc.ProviderCapability]string{
-		},
+		Kind:  uc.ProviderKindStatic,
+		Notes: map[uc.ProviderCapability]string{},
 	}
 	if err := exec.Command("unshare", "--map-root-user", "--mount", "true").Run(); err != nil {
 		return caps, fmt.Errorf("static: this host has no unprivileged user namespaces: %w", err)

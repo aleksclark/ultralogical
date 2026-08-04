@@ -21,7 +21,7 @@ import (
 // life of the run.
 type StepJob struct {
 	RunID     string `json:"run_id"`
-	TenantID     string `json:"tenant_id"`
+	TenantID  string `json:"tenant_id"`
 	SessionID string `json:"session_id"`
 	StepIndex int    `json:"step_index"`
 }

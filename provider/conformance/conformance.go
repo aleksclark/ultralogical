@@ -55,13 +55,12 @@ func RunWith(t *testing.T, factory Factory, options Options) {
 	var handle json.RawMessage
 	var endpoint uc.ToolEndpoint
 	var client *mcp.Client
-	servesTools := !options.SkipToolSurface && (
-		options.Capabilities.Has(uc.CapabilityServesToolEndpoint) ||
-			// Empty capabilities on a real tool provider: default to running
-			// tool surface so a misconfigured options struct cannot weaken
-			// the suite for dev_env adapters.
-			(len(options.Capabilities.Supported) == 0 && provider.Kind() == uc.ResourceKindDevEnv) ||
-			provider.Kind() == uc.ResourceKindDevEnv && !options.SkipToolSurface)
+	servesTools := !options.SkipToolSurface && (options.Capabilities.Has(uc.CapabilityServesToolEndpoint) ||
+		// Empty capabilities on a real tool provider: default to running
+		// tool surface so a misconfigured options struct cannot weaken
+		// the suite for dev_env adapters.
+		(len(options.Capabilities.Supported) == 0 && provider.Kind() == uc.ResourceKindDevEnv) ||
+		provider.Kind() == uc.ResourceKindDevEnv && !options.SkipToolSurface)
 
 	// Lifecycle-only kinds never run tool surface.
 	if provider.Kind() == uc.ResourceKindNullResource || options.SkipToolSurface {

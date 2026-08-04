@@ -17,6 +17,7 @@ task cli:test          # cmd/core CLI against the real stack
 task verify:codegen    # fail if generated output is stale
 task verify:coverage   # capability coverage matrix (v2: go_functional+go_sdk+ts_sdk)
 task sdk:test          # Go SDK + TS SDK smoke against real stack
+task admin:test        # Admin API functional + query conformance (real Postgres)
 task dev               # one-command stack: pg + model + cored + coreworker
 task dev:smoke         # boot, smoke, tear down with leak checks
 ```

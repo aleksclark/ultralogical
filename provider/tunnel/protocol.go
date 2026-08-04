@@ -14,10 +14,10 @@
 package tunnel
 
 import (
-	"encoding/json"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -86,9 +86,9 @@ func VerifySignature(secret, path, timestampHeader, signatureHeader string, body
 
 // ProvisionRequest asks the agent to create an environment.
 type ProvisionRequest struct {
-	ResourceID uc.ResourceID   `json:"resource_id"`
-	Spec  uc.DevEnvSpec `json:"spec"`
-	Token string        `json:"token"`
+	ResourceID uc.ResourceID `json:"resource_id"`
+	Spec       uc.DevEnvSpec `json:"spec"`
+	Token      string        `json:"token"`
 }
 
 // ProvisionResponse reports the agent's local handle for an environment. The
@@ -99,22 +99,22 @@ type ProvisionResponse struct {
 
 // HandleRequest names an existing environment by its agent-side handle.
 type HandleRequest struct {
-	ResourceID  uc.ResourceID          `json:"resource_id"`
-	Handle json.RawMessage `json:"handle"`
+	ResourceID uc.ResourceID   `json:"resource_id"`
+	Handle     json.RawMessage `json:"handle"`
 }
 
 // RestartRequest replaces an environment's runtime with a rotated token.
 type RestartRequest struct {
-	ResourceID  uc.ResourceID          `json:"resource_id"`
-	Handle json.RawMessage `json:"handle"`
-	Spec   uc.DevEnvSpec        `json:"spec"`
-	Token  string               `json:"token"`
+	ResourceID uc.ResourceID   `json:"resource_id"`
+	Handle     json.RawMessage `json:"handle"`
+	Spec       uc.DevEnvSpec   `json:"spec"`
+	Token      string          `json:"token"`
 }
 
 // StatusResponse is the agent's view of one environment.
 type StatusResponse struct {
 	State   uc.ResourceState `json:"state"`
-	Message string         `json:"message,omitempty"`
+	Message string           `json:"message,omitempty"`
 }
 
 // EndpointResponse is the tool endpoint the agent publishes, already

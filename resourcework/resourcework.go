@@ -25,7 +25,7 @@ import (
 
 // ProvisionJob provisions one requested resource.
 type ProvisionJob struct {
-	TenantID      string `json:"tenant_id"`
+	TenantID   string `json:"tenant_id"`
 	ResourceID string `json:"resource_id"`
 }
 
@@ -33,7 +33,7 @@ func (ProvisionJob) Kind() string { return "resource.provision" }
 
 // TerminateJob terminates one resource.
 type TerminateJob struct {
-	TenantID      string `json:"tenant_id"`
+	TenantID   string `json:"tenant_id"`
 	ResourceID string `json:"resource_id"`
 }
 
@@ -41,14 +41,14 @@ func (TerminateJob) Kind() string { return "resource.terminate" }
 
 // ReconcileJob verifies one active resource and ticks metering.
 type ReconcileJob struct {
-	TenantID      string `json:"tenant_id"`
+	TenantID   string `json:"tenant_id"`
 	ResourceID string `json:"resource_id"`
 }
 
 // RestartJob replaces one resource's runtime, preserving durable state when
 // the provider claims restart_preserves_state, and rotating its bearer token.
 type RestartJob struct {
-	TenantID      string `json:"tenant_id"`
+	TenantID   string `json:"tenant_id"`
 	ResourceID string `json:"resource_id"`
 }
 

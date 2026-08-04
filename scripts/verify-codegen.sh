@@ -4,7 +4,7 @@
 # The check regenerates into a snapshot comparison rather than diffing against
 # git's index, so it is correct both in CI (where the working tree is clean) and
 # in a working tree with uncommitted generated changes. Either way the question
-# is the same: does `buf generate` reproduce exactly what is on disk?
+# is the same: does generate reproduce exactly what is on disk?
 #
 # Exit codes:
 #   0  generated output matches the protos
@@ -15,19 +15,25 @@ set -uo pipefail
 
 cd "$(dirname "$0")/.."
 
-targets=(gen clients/ts/src/gen)
+targets=(gen clients/ts/src/gen clients/admin-ts/src/gen)
 snapshot=$(mktemp -d)
 trap 'rm -rf "$snapshot"' EXIT
 
 for target in "${targets[@]}"; do
   mkdir -p "$snapshot/$(dirname "$target")"
-  cp -r "$target" "$snapshot/$target"
+  if [ -e "$target" ]; then
+    cp -r "$target" "$snapshot/$target"
+  else
+    mkdir -p "$snapshot/$target"
+  fi
 done
 
 restore_snapshot() {
   for target in "${targets[@]}"; do
     rm -rf "$target"
-    cp -r "$snapshot/$target" "$target"
+    if [ -e "$snapshot/$target" ]; then
+      cp -r "$snapshot/$target" "$target"
+    fi
   done
 }
 
@@ -38,7 +44,7 @@ generate_output=""
 generated=0
 retries=${CORE_CODEGEN_RETRIES:-8}
 for attempt in $(seq 1 "$retries"); do
-  generate_output=$(buf generate 2>&1)
+  generate_output=$(bash scripts/generate.sh 2>&1)
   if [ $? -eq 0 ]; then
     generated=1
     break
@@ -64,4 +70,11 @@ for target in "${targets[@]}"; do
     status=1
   fi
 done
+
+# Hard isolation: admin must never appear under the public TS client tree.
+if [ -d clients/ts/src/gen/admin ]; then
+  echo "admin symbols leaked into clients/ts/src/gen/admin" >&2
+  status=1
+fi
+
 exit $status

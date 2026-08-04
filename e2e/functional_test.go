@@ -20,7 +20,7 @@ func createSession(t *testing.T, c *testclient.Client, tenantID, title string) *
 	t.Helper()
 	resp, err := c.Sessions.CreateSession(context.Background(), connect.NewRequest(&corev1.CreateSessionRequest{
 		TenantId: tenantID,
-		Title: title,
+		Title:    title,
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -266,5 +266,3 @@ func TestA03_TenantAndKeys(t *testing.T) {
 		t.Fatal("cross-tenant get succeeded")
 	}
 }
-
-

@@ -1,10 +1,10 @@
 package http
 
 import (
-	"fmt"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"connectrpc.com/connect"
@@ -40,7 +40,6 @@ func resolveSessionTenant(ctx context.Context, store uc.Store, session uc.Sessio
 	}
 	return tenant, a, nil
 }
-
 
 func (h *sessionHandler) CreateSession(ctx context.Context, req *connect.Request[corev1.CreateSessionRequest]) (*connect.Response[corev1.CreateSessionResponse], error) {
 	tenantID := uc.TenantID(req.Msg.GetTenantId())

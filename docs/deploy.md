@@ -97,3 +97,10 @@ Unit examples live in `deploy/systemd/`. Provide
 Goose baseline is `postgres/migrations/00001_baseline.sql`. After E4, schema
 changes are **additive-only**. River queue tables are created by River's own
 migrator when a process opens the queue.
+
+
+## coreadmin (private operator API)
+
+`coreadmin` is a separate process from `cored`. Bind it privately
+(`CORE_ADMIN_ADDR`, default `127.0.0.1:8082`), set `CORE_ADMIN_TOKEN`, and do
+not attach public Traefik routes. See [admin-api.md](admin-api.md).

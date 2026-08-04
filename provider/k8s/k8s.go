@@ -26,9 +26,9 @@ import (
 // the adapter uses to find its own resources again after a restart, a crash,
 // or an out-of-band deletion.
 const (
-	LabelResourceID     = "ultracore.dev/env-id"
-	LabelManagedBy = "app.kubernetes.io/managed-by"
-	ManagedByValue = "ultracore"
+	LabelResourceID = "ultracore.dev/env-id"
+	LabelManagedBy  = "app.kubernetes.io/managed-by"
+	ManagedByValue  = "ultracore"
 )
 
 // toolPort is the port Bezalel serves its authenticated tool endpoint on.
@@ -79,11 +79,11 @@ type Provider struct {
 
 // handleData is the persisted, provider-native identity of one environment.
 type handleData struct {
-	Namespace string `json:"namespace"`
-	Name      string `json:"name"`
+	Namespace  string `json:"namespace"`
+	Name       string `json:"name"`
 	ResourceID string `json:"resource_id"`
-	NodePort  int32  `json:"node_port,omitempty"`
-	Endpoint  string `json:"endpoint,omitempty"`
+	NodePort   int32  `json:"node_port,omitempty"`
+	Endpoint   string `json:"endpoint,omitempty"`
 }
 
 // New builds a provider from configuration.
@@ -172,8 +172,8 @@ func sanitize(value string) string {
 
 func (p *Provider) labels(envID uc.ResourceID) map[string]string {
 	return map[string]string{
-		LabelResourceID:     sanitize(string(envID)),
-		LabelManagedBy: ManagedByValue,
+		LabelResourceID: sanitize(string(envID)),
+		LabelManagedBy:  ManagedByValue,
 	}
 }
 

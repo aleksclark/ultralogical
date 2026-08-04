@@ -1,0 +1,9 @@
+version: v2
+clean: true
+plugins:
+  # Private admin SPA client. Not exported from @ultracore/client.
+  - remote: buf.build/bufbuild/es
+    out: clients/admin-ts/src/gen
+    opt:
+      - target=ts
+      - import_extension=js

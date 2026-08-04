@@ -86,7 +86,6 @@ func decodeHandle(h json.RawMessage) (handleData, error) {
 	return d, nil
 }
 
-
 // Kind implements uc.ResourceProvider.
 func (p *Provider) Kind() uc.ResourceKind { return uc.ResourceKindDevEnv }
 

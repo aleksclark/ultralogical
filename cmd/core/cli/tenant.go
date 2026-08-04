@@ -109,7 +109,7 @@ func tenantKeyCreate(ctx context.Context, clients *Clients, environment Env, arg
 	if err != nil {
 		return ExitUsage, err
 	}
-	protoScope := corev1.KeyScope_KEY_SCOPE_SESSIONS
+	var protoScope corev1.KeyScope
 	switch *scope {
 	case "admin":
 		protoScope = corev1.KeyScope_KEY_SCOPE_ADMIN
