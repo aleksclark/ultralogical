@@ -162,7 +162,7 @@ func TestA81_SpawnIdempotentRetry(t *testing.T) {
 	org := stack.TenantA.ID
 	sess := createSession(t, alice, string(org), "spawn idempotency")
 
-		stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
+	stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
 		{
 			Match:  modelscript.UserContains("limit test"),
 			Sticky: true,

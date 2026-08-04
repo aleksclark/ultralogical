@@ -65,9 +65,9 @@ func (s childSpec) resolvePolicy(parent uc.RunPolicy) (uc.RunPolicy, error) {
 // spawnOutcome is what a spawn tool returns to the model.
 type spawnOutcome struct {
 	RunID    uc.RunID `json:"run_id"`
-	Adopted  bool        `json:"adopted,omitempty"`
-	CohortID string      `json:"cohort_id,omitempty"`
-	Ordinal  int         `json:"ordinal,omitempty"`
+	Adopted  bool     `json:"adopted,omitempty"`
+	CohortID string   `json:"cohort_id,omitempty"`
+	Ordinal  int      `json:"ordinal,omitempty"`
 }
 
 func (w *StepWorker) spawnTools(run uc.AgentRun, job StepJob, rec *stepRecorder) []fantasy.AgentTool {

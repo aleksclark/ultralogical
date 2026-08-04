@@ -193,10 +193,10 @@ func ensureAdminAPIKey(ctx context.Context, store uc.Store, keyring secrets.Keyr
 }
 
 type smokeClient struct {
-	sessions corev1connect.SessionServiceClient
-	events   corev1connect.EventServiceClient
-	agents   corev1connect.RunServiceClient
-	resources     corev1connect.ResourceServiceClient
+	sessions  corev1connect.SessionServiceClient
+	events    corev1connect.EventServiceClient
+	agents    corev1connect.RunServiceClient
+	resources corev1connect.ResourceServiceClient
 }
 
 type bearer struct {

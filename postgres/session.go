@@ -15,7 +15,7 @@ import (
 // tenantScope filters every query by tenant id, making cross-tenant access
 // structurally impossible at this layer.
 type tenantScope struct {
-	s   *Store
+	s      *Store
 	tenant uc.TenantID
 }
 
@@ -149,7 +149,6 @@ func (st *sessionStore) UpdateLabels(ctx context.Context, id uc.SessionID, label
 	}
 	return st.Get(ctx, id)
 }
-
 
 func (st *sessionStore) Archive(ctx context.Context, id uc.SessionID) (uc.Session, error) {
 	tag, err := st.scope.s.db().Exec(ctx,

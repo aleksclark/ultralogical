@@ -14,10 +14,10 @@ import (
 	"github.com/google/uuid"
 
 	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/mcp"
 	"github.com/aleksclark/ultracore/provider/conformance"
 	"github.com/aleksclark/ultracore/provider/localdocker"
 	"github.com/aleksclark/ultracore/provider/tunnel"
-	"github.com/aleksclark/ultracore/mcp"
 	"github.com/aleksclark/ultracore/testkit/harness"
 )
 

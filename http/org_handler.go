@@ -11,8 +11,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	uc "github.com/aleksclark/ultracore"
-	"github.com/aleksclark/ultracore/provider"
 	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
+	"github.com/aleksclark/ultracore/provider"
 	"github.com/aleksclark/ultracore/secrets"
 )
 

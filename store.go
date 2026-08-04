@@ -76,7 +76,7 @@ type TenantScope interface {
 // Op is "=" or "in". Values has length 1 for equality.
 type LabelSelector struct {
 	Key    string
-	Op     string   // "=" or "in"
+	Op     string // "=" or "in"
 	Values []string
 }
 

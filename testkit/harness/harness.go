@@ -74,8 +74,8 @@ type Stack struct {
 	BaseURL     string
 	DatabaseURL string
 	MasterKey   string
-	TenantA        uc.Tenant
-	TenantB        uc.Tenant
+	TenantA     uc.Tenant
+	TenantB     uc.Tenant
 	KeyA        string
 	KeyB        string
 	Store       *postgres.Store

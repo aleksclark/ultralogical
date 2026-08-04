@@ -14,7 +14,6 @@ import (
 type memoryStore struct{ scope *tenantScope }
 type waitStore struct{ scope *tenantScope }
 
-
 func (s *memoryStore) lock(ctx context.Context, session uc.SessionID) error {
 	_, err := s.scope.s.db().Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1::text,683124))`, string(session))
 	return err

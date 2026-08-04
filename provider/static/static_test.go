@@ -102,8 +102,7 @@ func TestA109_StaticProviderWalkthrough(t *testing.T) {
 				uc.CapabilityRestartPreservesState,
 				uc.CapabilityServesToolEndpoint,
 			},
-			Notes: map[uc.ProviderCapability]string{
-			},
+			Notes: map[uc.ProviderCapability]string{},
 		},
 		Inspect: func(t *testing.T, ctx context.Context, id uc.ResourceID) []string {
 			t.Helper()
@@ -222,8 +221,7 @@ func TestA109_WorkerSelectsStaticConfiguration(t *testing.T) {
 				uc.CapabilityRestartPreservesState,
 				uc.CapabilityServesToolEndpoint,
 			},
-			Notes: map[uc.ProviderCapability]string{
-			},
+			Notes: map[uc.ProviderCapability]string{},
 		},
 		Inspect: func(t *testing.T, ctx context.Context, id uc.ResourceID) []string {
 			t.Helper()

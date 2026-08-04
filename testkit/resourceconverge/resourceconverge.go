@@ -19,10 +19,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	uc "github.com/aleksclark/ultracore"
-	"github.com/aleksclark/ultracore/resourcework"
 	"github.com/aleksclark/ultracore/jobqueue"
 	"github.com/aleksclark/ultracore/jobqueue/inproc"
 	"github.com/aleksclark/ultracore/postgres"
+	"github.com/aleksclark/ultracore/resourcework"
 	"github.com/aleksclark/ultracore/secrets"
 	"github.com/aleksclark/ultracore/testkit/pgtest"
 )
@@ -34,11 +34,11 @@ const masterKey = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc
 
 // Harness is a running environment control plane over one adapter.
 type Harness struct {
-	Store   *postgres.Store
-	Resources    *resourcework.Service
-	Keyring secrets.Keyring
-	Tenant     uc.TenantID
-	Session uc.SessionID
+	Store     *postgres.Store
+	Resources *resourcework.Service
+	Keyring   secrets.Keyring
+	Tenant    uc.TenantID
+	Session   uc.SessionID
 
 	queue *inproc.Queue
 	pool  *pgxpool.Pool

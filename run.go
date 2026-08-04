@@ -61,9 +61,9 @@ type AgentRun struct {
 	SpawnKey string
 	// CohortID and CohortOrdinal link children launched by one
 	// run_agent_cohort call and preserve their declaration order.
-	CohortID          string
-	CohortOrdinal     int
-	Policy            RunPolicy
+	CohortID      string
+	CohortOrdinal int
+	Policy        RunPolicy
 	// Actor is the opaque attribution captured at run creation (API caller
 	// or parent run). Loop-internal events carry this Actor.
 	Actor             Actor

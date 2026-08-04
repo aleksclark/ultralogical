@@ -215,7 +215,6 @@ func TestA86_SessionMemory(t *testing.T) {
 		_, missingList := bob.Sessions.ListMemory(ctx, connect.NewRequest(&corev1.ListMemoryRequest{SessionId: missing}))
 		assertSameDenial(t, "ListMemory", foreignList, missingList)
 
-
 		_, foreignWrite := bob.Sessions.SetMemory(ctx, connect.NewRequest(&corev1.SetMemoryRequest{
 			SessionId: sess.GetId(), Key: "tenant.intrusion", ValueJson: "true",
 		}))

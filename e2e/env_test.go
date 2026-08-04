@@ -9,9 +9,9 @@ import (
 	"connectrpc.com/connect"
 
 	uc "github.com/aleksclark/ultracore"
-	"github.com/aleksclark/ultracore/provider/localdocker"
 	corev1 "github.com/aleksclark/ultracore/gen/go/core/v1"
 	"github.com/aleksclark/ultracore/mcp"
+	"github.com/aleksclark/ultracore/provider/localdocker"
 	"github.com/aleksclark/ultracore/secrets"
 	"github.com/aleksclark/ultracore/testkit/harness"
 	"github.com/aleksclark/ultracore/testkit/modelscript"

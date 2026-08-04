@@ -27,14 +27,14 @@ type Options struct {
 
 // Client is an authenticated ultracore API client.
 type Client struct {
-	Tenants    corev1connect.TenantServiceClient
+	Tenants     corev1connect.TenantServiceClient
 	Credentials corev1connect.CredentialServiceClient
-	Providers  corev1connect.ProviderServiceClient
-	Sessions   corev1connect.SessionServiceClient
-	Runs       corev1connect.RunServiceClient
-	Resources  corev1connect.ResourceServiceClient
-	Events     corev1connect.EventServiceClient
-	Automation corev1connect.AutomationServiceClient
+	Providers   corev1connect.ProviderServiceClient
+	Sessions    corev1connect.SessionServiceClient
+	Runs        corev1connect.RunServiceClient
+	Resources   corev1connect.ResourceServiceClient
+	Events      corev1connect.EventServiceClient
+	Automation  corev1connect.AutomationServiceClient
 
 	baseURL string
 	apiKey  string

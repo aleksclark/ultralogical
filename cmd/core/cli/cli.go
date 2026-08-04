@@ -70,16 +70,16 @@ func NewClients(baseURL, token string) *Clients {
 // Env is the process environment the CLI reads. Tests set it explicitly so a
 // developer's shell cannot change what a test exercises.
 type Env struct {
-	URL   string
-	Token string
-	Tenant   string
+	URL    string
+	Token  string
+	Tenant string
 }
 
 func envFromOS() Env {
 	return Env{
-		URL:   envOr("CORE_URL", "http://localhost:8080"),
-		Token: os.Getenv("CORE_TOKEN"),
-		Tenant:   os.Getenv("CORE_TENANT"),
+		URL:    envOr("CORE_URL", "http://localhost:8080"),
+		Token:  os.Getenv("CORE_TOKEN"),
+		Tenant: os.Getenv("CORE_TENANT"),
 	}
 }
 

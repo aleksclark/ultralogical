@@ -39,7 +39,7 @@ func TestA35_LabelsCRUDAndSelectors(t *testing.T) {
 
 	// Equality selector.
 	eq, err := alice.Sessions.ListSessions(ctx, connect.NewRequest(&corev1.ListSessionsRequest{
-		TenantId: tid,
+		TenantId:       tid,
 		LabelSelectors: []*corev1.LabelSelector{{Key: "student", Op: "=", Values: []string{"jacob"}}},
 	}))
 	if err != nil {
@@ -51,7 +51,7 @@ func TestA35_LabelsCRUDAndSelectors(t *testing.T) {
 
 	// Set membership.
 	in, err := alice.Sessions.ListSessions(ctx, connect.NewRequest(&corev1.ListSessionsRequest{
-		TenantId: tid,
+		TenantId:       tid,
 		LabelSelectors: []*corev1.LabelSelector{{Key: "subject", Op: "in", Values: []string{"math", "science"}}},
 	}))
 	if err != nil {

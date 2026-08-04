@@ -10,8 +10,8 @@ import (
 	uc "github.com/aleksclark/ultracore"
 	"github.com/aleksclark/ultracore/provider/localdocker"
 	"github.com/aleksclark/ultracore/provider/tunnel"
-	"github.com/aleksclark/ultracore/testkit/resourceconverge"
 	"github.com/aleksclark/ultracore/testkit/harness"
+	"github.com/aleksclark/ultracore/testkit/resourceconverge"
 )
 
 // A10.5 — a lost transport must suspend the environment rather than fail it,
@@ -78,4 +78,3 @@ func TestA105_LostTransportSuspendsRatherThanFails(t *testing.T) {
 		t.Fatal("a resumed environment reports no ready time")
 	}
 }
-

@@ -15,10 +15,10 @@ import (
 	"github.com/google/uuid"
 
 	uc "github.com/aleksclark/ultracore"
+	"github.com/aleksclark/ultracore/mcp"
 	"github.com/aleksclark/ultracore/provider/conformance"
 	"github.com/aleksclark/ultracore/provider/localdocker"
 	"github.com/aleksclark/ultracore/provider/tunnel"
-	"github.com/aleksclark/ultracore/mcp"
 	"github.com/aleksclark/ultracore/testkit/harness"
 )
 
@@ -96,8 +96,8 @@ func TestA105_UnsignedControlRequestsAreRefused(t *testing.T) {
 	_, controlURL := startAgent(t)
 	body, err := json.Marshal(tunnel.ProvisionRequest{
 		ResourceID: uc.ResourceID(uuid.NewString()),
-		Spec:  uc.DevEnvSpec{Name: "forged", Workdir: "/work"},
-		Token: "forged",
+		Spec:       uc.DevEnvSpec{Name: "forged", Workdir: "/work"},
+		Token:      "forged",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -267,7 +267,7 @@ func TestA105_DisconnectSuspendsAndReconnectResumes(t *testing.T) {
 	}
 	gone := time.Now().Add(30 * time.Second)
 	for time.Now().Before(gone) {
-		if mcp.Healthy(ctx, string(endpoint)) != nil {
+		if mcp.Healthy(ctx, endpoint) != nil {
 			return
 		}
 		time.Sleep(200 * time.Millisecond)
@@ -295,7 +295,7 @@ func awaitReady(t *testing.T, ctx context.Context, provider *tunnel.Provider, ha
 		status, err := provider.Status(ctx, uc.Resource{Handle: handle})
 		if err == nil && status.State == uc.ResourceReady {
 			endpoint, err := provider.Endpoint(ctx, uc.Resource{Handle: handle})
-			if err == nil && mcp.Healthy(ctx, string(endpoint)) == nil {
+			if err == nil && mcp.Healthy(ctx, endpoint) == nil {
 				return string(endpoint)
 			}
 		}
