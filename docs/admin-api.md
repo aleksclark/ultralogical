@@ -146,9 +146,19 @@ Scale note: CI seeds 5k events for pagination correctness and first-page
 latency. A bulk-insert path in the scale test can be raised toward 100k locally
 when benchmarking indexes.
 
-## Non-goals (this phase)
+## Admin SPA (E6)
 
-- No admin SPA (E6)
+See [`docs/admin-spa.md`](./admin-spa.md). The private React console lives in
+`admin-web/` and talks only to this API (Vite proxy or `CORE_ADMIN_CORS_ORIGIN`).
+
+```sh
+task admin:web:test   # Playwright SPA against real coreadmin + seeded Postgres
+```
+
+## Non-goals
+
 - No mutating/admin operations or audit log (E7)
 - No break-glass secret reveal (E7)
 - No changes to consumer `core.v1` semantics
+- SPA is never mounted on `cored`
+

@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
 # Boot a disposable Postgres + coreadmin (+ optional cored) stack for the
-# Playwright admin API e2e suite. Writes endpoint JSON and tears everything
-# down on exit.
+# Playwright admin API and admin SPA e2e suites. Writes endpoint JSON and tears
+# everything down on exit.
 #
 # Usage:
-#   scripts/admin-e2e-stack.sh              # boot, run playwright, tear down
+#   scripts/admin-e2e-stack.sh              # boot, run admin-e2e API tests, tear down
+#   scripts/admin-e2e-stack.sh test         # same
+#   scripts/admin-e2e-stack.sh spa          # boot, serve SPA via vite, run admin-web e2e
 #   scripts/admin-e2e-stack.sh boot         # boot only (writes endpoint JSON path)
-#   scripts/admin-e2e-stack.sh run <json>   # run playwright against existing JSON
+#   scripts/admin-e2e-stack.sh run <json>   # run admin-e2e API tests against existing JSON
+#   scripts/admin-e2e-stack.sh run-spa <json>  # run admin-web SPA tests against existing JSON
 #
 # Endpoint JSON fields:
-#   admin_url, admin_token, cored_url (optional), database_url, canary_api_key
+#   admin_url, admin_token, cored_url (optional), database_url, canary_api_key, spa_url (spa mode)
+#
+# SPA path: Vite dev/preview proxies /admin.v1.* to coreadmin (see admin-web/vite.config.ts).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -21,6 +26,7 @@ suffix="admin-e2e-$$"
 pg_port=$((16000 + RANDOM % 1000))
 admin_port=$((19000 + RANDOM % 1000))
 cored_port=$((20000 + RANDOM % 1000))
+spa_port=$((21000 + RANDOM % 1000))
 
 pg_container="ultra-${suffix}-pg"
 state_dir=$(mktemp -d -t ultra-admin-e2e-XXXXXX)
@@ -149,6 +155,7 @@ payload = {
     "cored_url": cored_url or None,
     "database_url": database_url,
     "canary_api_key": canary,
+    "spa_url": None,
 }
 with open(path, "w", encoding="utf-8") as f:
     json.dump(payload, f, indent=2)
@@ -159,21 +166,25 @@ PY
   log "endpoints written to $endpoint_json"
 }
 
+ensure_admin_ts() {
+  if [ ! -e admin-e2e/src/gen ]; then
+    ln -sfn ../../clients/admin-ts/src/gen admin-e2e/src/gen || fail "link admin gen"
+  fi
+  if [ ! -e admin-web/src/gen ]; then
+    ln -sfn ../../clients/admin-ts/src/gen admin-web/src/gen || fail "link admin-web gen"
+  fi
+  if [ ! -d clients/admin-ts/node_modules ]; then
+    log "installing clients/admin-ts npm deps (for generated imports)"
+    (cd clients/admin-ts && npm install) || fail "admin-ts npm install"
+  fi
+}
+
 run_playwright() {
   local json_path="$1"
   if [ ! -f "$json_path" ]; then
     fail "endpoint JSON not found: $json_path"
   fi
-  # Generated admin TS client is linked in so Playwright can transform it
-  # (protoc-gen-es emits .js import specifiers; node_modules is not transformed).
-  if [ ! -e admin-e2e/src/gen ]; then
-    ln -sfn ../../clients/admin-ts/src/gen admin-e2e/src/gen || fail "link admin gen"
-  fi
-  # Gen sources resolve @bufbuild/protobuf from clients/admin-ts/node_modules.
-  if [ ! -d clients/admin-ts/node_modules ]; then
-    log "installing clients/admin-ts npm deps (for generated imports)"
-    (cd clients/admin-ts && npm install) || fail "admin-ts npm install"
-  fi
+  ensure_admin_ts
   if [ ! -d admin-e2e/node_modules ]; then
     log "installing admin-e2e npm deps"
     if [ -f admin-e2e/package-lock.json ]; then
@@ -182,10 +193,79 @@ run_playwright() {
       (cd admin-e2e && npm install) || fail "npm install"
     fi
   fi
-  log "running Playwright against $json_path"
+  log "running admin-e2e Playwright against $json_path"
   (
     cd admin-e2e
     ADMIN_E2E_ENDPOINTS="$json_path" npx playwright test
+  )
+}
+
+start_spa() {
+  local admin_url="$1"
+  ensure_admin_ts
+  if [ ! -d admin-web/node_modules ]; then
+    log "installing admin-web npm deps"
+    if [ -f admin-web/package-lock.json ]; then
+      (cd admin-web && npm ci) || fail "admin-web npm ci"
+    else
+      (cd admin-web && npm install) || fail "admin-web npm install"
+    fi
+  fi
+  # Import gates before serving.
+  (cd admin-web && node scripts/check-import-gates.mjs) || fail "admin-web import gates"
+
+  # Prefer preview of a production build for stable e2e; fall back to vite dev.
+  log "building admin-web"
+  (cd admin-web && npm run build) || fail "admin-web build"
+
+  log "starting SPA preview on port ${spa_port} (proxy → ${admin_url})"
+  (
+    cd admin-web
+    CORE_ADMIN_URL="$admin_url" npx vite preview --host 127.0.0.1 --port "$spa_port"
+  ) >"$state_dir/spa.log" 2>&1 &
+  pids+=($!)
+  spa_url="http://127.0.0.1:${spa_port}"
+  wait_http "$spa_url" "admin-web spa"
+
+  python3 - "$endpoint_json" "$spa_url" <<'PY'
+import json, sys
+path, spa_url = sys.argv[1:]
+with open(path, encoding="utf-8") as f:
+    payload = json.load(f)
+payload["spa_url"] = spa_url
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(payload, f, indent=2)
+    f.write("\n")
+PY
+  log "spa_url=$spa_url written to endpoints"
+}
+
+run_spa_playwright() {
+  local json_path="$1"
+  if [ ! -f "$json_path" ]; then
+    fail "endpoint JSON not found: $json_path"
+  fi
+  ensure_admin_ts
+  if [ ! -d admin-web/node_modules ]; then
+    log "installing admin-web npm deps"
+    if [ -f admin-web/package-lock.json ]; then
+      (cd admin-web && npm ci) || fail "admin-web npm ci"
+    else
+      (cd admin-web && npm install) || fail "admin-web npm install"
+    fi
+  fi
+  # Ensure browsers
+  (cd admin-web && npx playwright install chromium) || fail "playwright install"
+
+  spa_url=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("spa_url") or "")' "$json_path")
+  [ -n "$spa_url" ] || fail "endpoints.json missing spa_url — boot with spa mode first"
+
+  log "running admin-web Playwright against $spa_url"
+  (
+    cd admin-web
+    ADMIN_E2E_ENDPOINTS="$json_path" \
+    ADMIN_WEB_URL="$spa_url" \
+      npx playwright test
   )
 }
 
@@ -193,6 +273,14 @@ case "$mode" in
   test|"")
     boot_stack
     run_playwright "$endpoint_json"
+    ;;
+  spa)
+    # API stack + SPA for admin-web e2e
+    start_cored=false
+    boot_stack
+    admin_url=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["admin_url"])' "$endpoint_json")
+    start_spa "$admin_url"
+    run_spa_playwright "$endpoint_json"
     ;;
   boot)
     # Leave stack running until this process is killed; print JSON path.
@@ -207,7 +295,11 @@ case "$mode" in
     # No cleanup trap for external stack.
     run_playwright "$endpoint_json_in"
     ;;
+  run-spa)
+    [ -n "$endpoint_json_in" ] || fail "usage: $0 run-spa <endpoints.json>"
+    run_spa_playwright "$endpoint_json_in"
+    ;;
   *)
-    fail "unknown mode: $mode (expected test|boot|run)"
+    fail "unknown mode: $mode (expected test|spa|boot|run|run-spa)"
     ;;
 esac
