@@ -42,6 +42,9 @@ const (
 	// SessionServiceListSessionsProcedure is the fully-qualified name of the SessionService's
 	// ListSessions RPC.
 	SessionServiceListSessionsProcedure = "/core.v1.SessionService/ListSessions"
+	// SessionServiceUpdateSessionLabelsProcedure is the fully-qualified name of the SessionService's
+	// UpdateSessionLabels RPC.
+	SessionServiceUpdateSessionLabelsProcedure = "/core.v1.SessionService/UpdateSessionLabels"
 	// SessionServiceSetMemoryProcedure is the fully-qualified name of the SessionService's SetMemory
 	// RPC.
 	SessionServiceSetMemoryProcedure = "/core.v1.SessionService/SetMemory"
@@ -61,6 +64,7 @@ type SessionServiceClient interface {
 	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
 	GetSession(context.Context, *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error)
 	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
+	UpdateSessionLabels(context.Context, *connect.Request[v1.UpdateSessionLabelsRequest]) (*connect.Response[v1.UpdateSessionLabelsResponse], error)
 	SetMemory(context.Context, *connect.Request[v1.SetMemoryRequest]) (*connect.Response[v1.SetMemoryResponse], error)
 	GetMemory(context.Context, *connect.Request[v1.GetMemoryRequest]) (*connect.Response[v1.GetMemoryResponse], error)
 	ListMemory(context.Context, *connect.Request[v1.ListMemoryRequest]) (*connect.Response[v1.ListMemoryResponse], error)
@@ -96,6 +100,12 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("ListSessions")),
 			connect.WithClientOptions(opts...),
 		),
+		updateSessionLabels: connect.NewClient[v1.UpdateSessionLabelsRequest, v1.UpdateSessionLabelsResponse](
+			httpClient,
+			baseURL+SessionServiceUpdateSessionLabelsProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("UpdateSessionLabels")),
+			connect.WithClientOptions(opts...),
+		),
 		setMemory: connect.NewClient[v1.SetMemoryRequest, v1.SetMemoryResponse](
 			httpClient,
 			baseURL+SessionServiceSetMemoryProcedure,
@@ -125,13 +135,14 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // sessionServiceClient implements SessionServiceClient.
 type sessionServiceClient struct {
-	createSession *connect.Client[v1.CreateSessionRequest, v1.CreateSessionResponse]
-	getSession    *connect.Client[v1.GetSessionRequest, v1.GetSessionResponse]
-	listSessions  *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
-	setMemory     *connect.Client[v1.SetMemoryRequest, v1.SetMemoryResponse]
-	getMemory     *connect.Client[v1.GetMemoryRequest, v1.GetMemoryResponse]
-	listMemory    *connect.Client[v1.ListMemoryRequest, v1.ListMemoryResponse]
-	deleteMemory  *connect.Client[v1.DeleteMemoryRequest, v1.DeleteMemoryResponse]
+	createSession       *connect.Client[v1.CreateSessionRequest, v1.CreateSessionResponse]
+	getSession          *connect.Client[v1.GetSessionRequest, v1.GetSessionResponse]
+	listSessions        *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
+	updateSessionLabels *connect.Client[v1.UpdateSessionLabelsRequest, v1.UpdateSessionLabelsResponse]
+	setMemory           *connect.Client[v1.SetMemoryRequest, v1.SetMemoryResponse]
+	getMemory           *connect.Client[v1.GetMemoryRequest, v1.GetMemoryResponse]
+	listMemory          *connect.Client[v1.ListMemoryRequest, v1.ListMemoryResponse]
+	deleteMemory        *connect.Client[v1.DeleteMemoryRequest, v1.DeleteMemoryResponse]
 }
 
 // CreateSession calls core.v1.SessionService.CreateSession.
@@ -147,6 +158,11 @@ func (c *sessionServiceClient) GetSession(ctx context.Context, req *connect.Requ
 // ListSessions calls core.v1.SessionService.ListSessions.
 func (c *sessionServiceClient) ListSessions(ctx context.Context, req *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error) {
 	return c.listSessions.CallUnary(ctx, req)
+}
+
+// UpdateSessionLabels calls core.v1.SessionService.UpdateSessionLabels.
+func (c *sessionServiceClient) UpdateSessionLabels(ctx context.Context, req *connect.Request[v1.UpdateSessionLabelsRequest]) (*connect.Response[v1.UpdateSessionLabelsResponse], error) {
+	return c.updateSessionLabels.CallUnary(ctx, req)
 }
 
 // SetMemory calls core.v1.SessionService.SetMemory.
@@ -174,6 +190,7 @@ type SessionServiceHandler interface {
 	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
 	GetSession(context.Context, *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error)
 	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
+	UpdateSessionLabels(context.Context, *connect.Request[v1.UpdateSessionLabelsRequest]) (*connect.Response[v1.UpdateSessionLabelsResponse], error)
 	SetMemory(context.Context, *connect.Request[v1.SetMemoryRequest]) (*connect.Response[v1.SetMemoryResponse], error)
 	GetMemory(context.Context, *connect.Request[v1.GetMemoryRequest]) (*connect.Response[v1.GetMemoryResponse], error)
 	ListMemory(context.Context, *connect.Request[v1.ListMemoryRequest]) (*connect.Response[v1.ListMemoryResponse], error)
@@ -203,6 +220,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		SessionServiceListSessionsProcedure,
 		svc.ListSessions,
 		connect.WithSchema(sessionServiceMethods.ByName("ListSessions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceUpdateSessionLabelsHandler := connect.NewUnaryHandler(
+		SessionServiceUpdateSessionLabelsProcedure,
+		svc.UpdateSessionLabels,
+		connect.WithSchema(sessionServiceMethods.ByName("UpdateSessionLabels")),
 		connect.WithHandlerOptions(opts...),
 	)
 	sessionServiceSetMemoryHandler := connect.NewUnaryHandler(
@@ -237,6 +260,8 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceGetSessionHandler.ServeHTTP(w, r)
 		case SessionServiceListSessionsProcedure:
 			sessionServiceListSessionsHandler.ServeHTTP(w, r)
+		case SessionServiceUpdateSessionLabelsProcedure:
+			sessionServiceUpdateSessionLabelsHandler.ServeHTTP(w, r)
 		case SessionServiceSetMemoryProcedure:
 			sessionServiceSetMemoryHandler.ServeHTTP(w, r)
 		case SessionServiceGetMemoryProcedure:
@@ -264,6 +289,10 @@ func (UnimplementedSessionServiceHandler) GetSession(context.Context, *connect.R
 
 func (UnimplementedSessionServiceHandler) ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.SessionService.ListSessions is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) UpdateSessionLabels(context.Context, *connect.Request[v1.UpdateSessionLabelsRequest]) (*connect.Response[v1.UpdateSessionLabelsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.SessionService.UpdateSessionLabels is not implemented"))
 }
 
 func (UnimplementedSessionServiceHandler) SetMemory(context.Context, *connect.Request[v1.SetMemoryRequest]) (*connect.Response[v1.SetMemoryResponse], error) {

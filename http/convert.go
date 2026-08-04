@@ -31,64 +31,33 @@ func mapStoreErr(err error) error {
 	}
 }
 
-func orgToProto(o uc.Org) *corev1.Org {
-	return &corev1.Org{
+func tenantToProto(o uc.Tenant) *corev1.Tenant {
+	return &corev1.Tenant{
 		Id:        string(o.ID),
 		Name:      o.Name,
 		CreatedAt: timestamppb.New(o.CreatedAt),
 	}
 }
 
-func roleToProto(r uc.OrgRole) corev1.OrgRole {
-	switch r {
-	case uc.OrgRoleOwner:
-		return corev1.OrgRole_ORG_ROLE_OWNER
-	case uc.OrgRoleAdmin:
-		return corev1.OrgRole_ORG_ROLE_ADMIN
-	case uc.OrgRoleMember:
-		return corev1.OrgRole_ORG_ROLE_MEMBER
-	default:
-		return corev1.OrgRole_ORG_ROLE_UNSPECIFIED
-	}
-}
-
-func roleFromProto(r corev1.OrgRole) (uc.OrgRole, bool) {
-	switch r {
-	case corev1.OrgRole_ORG_ROLE_OWNER:
-		return uc.OrgRoleOwner, true
-	case corev1.OrgRole_ORG_ROLE_ADMIN:
-		return uc.OrgRoleAdmin, true
-	case corev1.OrgRole_ORG_ROLE_MEMBER:
-		return uc.OrgRoleMember, true
-	default:
-		return "", false
-	}
-}
-
 func sessionToProto(s uc.Session) *corev1.Session {
 	out := &corev1.Session{
 		Id:        string(s.ID),
-		OrgId:     string(s.OrgID),
+		TenantId:  string(s.TenantID),
 		Title:     s.Title,
 		CreatedAt: timestamppb.New(s.CreatedAt),
+		Labels:    s.Labels,
 	}
 	if s.ArchivedAt != nil {
 		out.ArchivedAt = timestamppb.New(*s.ArchivedAt)
+	}
+	if out.Labels == nil {
+		out.Labels = map[string]string{}
 	}
 	return out
 }
 
 func actorToProto(a uc.Actor) *corev1.Actor {
-	out := &corev1.Actor{Id: a.ID}
-	switch a.Type {
-	case uc.ActorUser:
-		out.Type = corev1.ActorType_ACTOR_TYPE_USER
-	case uc.ActorAgent:
-		out.Type = corev1.ActorType_ACTOR_TYPE_AGENT
-	case uc.ActorSystem:
-		out.Type = corev1.ActorType_ACTOR_TYPE_SYSTEM
-	}
-	return out
+	return &corev1.Actor{Kind: a.Kind, Id: a.ID, Display: a.Display}
 }
 
 // payloadToDomain converts a proto EventPayload into (kind, JSON payload).
@@ -236,6 +205,10 @@ func payloadFromDomain(kind string, payload []byte) (*corev1.EventPayload, error
 		return decodeAs(payload, &corev1.PeriodicPromptFired{}, func(m *corev1.PeriodicPromptFired) *corev1.EventPayload {
 			return &corev1.EventPayload{Payload: &corev1.EventPayload_PeriodicPromptFired{PeriodicPromptFired: m}}
 		})
+	case uc.EventKindSessionLabelsChanged:
+		return decodeAs(payload, &corev1.SessionLabelsChanged{}, func(m *corev1.SessionLabelsChanged) *corev1.EventPayload {
+			return &corev1.EventPayload{Payload: &corev1.EventPayload_SessionLabelsChanged{SessionLabelsChanged: m}}
+		})
 	case uc.EventKindPermissionDenied:
 		return decodeAs(payload, &corev1.PermissionDenied{}, func(m *corev1.PermissionDenied) *corev1.EventPayload {
 			return &corev1.EventPayload{Payload: &corev1.EventPayload_PermissionDenied{PermissionDenied: m}}
@@ -281,10 +254,13 @@ func runToProto(r uc.AgentRun) *corev1.AgentRun {
 		FailureMessage: r.FailureMessage,
 		CreatedAt:      timestamppb.New(r.CreatedAt),
 		UpdatedAt:      timestamppb.New(r.UpdatedAt),
-		Grants:         grantsToProto(r.Grants),
+		Policy:         policyToProto(r.Policy),
 		ResultJson:     string(r.Result),
 		CohortId:       r.CohortID,
 		CohortOrdinal:  int32(r.CohortOrdinal),
+		ActorKind:      r.Actor.Kind,
+		ActorId:        r.Actor.ID,
+		ActorDisplay:   r.Actor.Display,
 	}
 	if r.ParentRunID != nil {
 		out.ParentRunId = string(*r.ParentRunID)
@@ -292,24 +268,54 @@ func runToProto(r uc.AgentRun) *corev1.AgentRun {
 	return out
 }
 
-// grantsToProto exposes a run's authority so clients can show what a child was
+// policyToProto exposes a run's authority so clients can show what a child was
 // actually allowed to do, rather than implying it inherited everything.
-func grantsToProto(g uc.Grants) *corev1.Grants {
-	return &corev1.Grants{Tools: g.Tools}
+func policyToProto(p uc.RunPolicy) *corev1.RunPolicy {
+	kinds := make([]string, len(p.ResourceKinds))
+	for i, k := range p.ResourceKinds {
+		kinds[i] = string(k)
+	}
+	return &corev1.RunPolicy{
+		AllowTools:    append([]string(nil), p.AllowTools...),
+		DenyTools:     append([]string(nil), p.DenyTools...),
+		ResourceKinds: kinds,
+		MaxChildren:   int32(p.MaxChildren),
+		ChildInherit:  p.ChildInherit,
+	}
 }
 
-// grantsFromProto reads a caller-supplied grant request. It performs no
-// authority checks itself: the caller must validate the result against what
-// it is allowed to delegate.
-func grantsFromProto(g *corev1.Grants) uc.Grants {
+// policyFromProto reads a caller-supplied policy. Nil means DefaultRunPolicy.
+// A non-nil message is taken field-for-field:
+//   - empty allow_tools is a deliberately mute tool surface
+//   - empty resource_kinds means no kinds may be provisioned (not "all")
+//
+// Proto3 cannot distinguish unset max_children from 0. When allow_tools is
+// non-empty and max_children is 0, the default spawn cap is applied so a
+// partial policy that only names tools keeps the usual spawn budget. Callers
+// who need MaxChildren=0 with tools must omit spawn tools from allow (or
+// deny them); MaxChildren=0 with an empty allow list is preserved as mute.
+func policyFromProto(g *corev1.RunPolicy) uc.RunPolicy {
 	if g == nil {
-		return uc.DefaultGrants()
+		return uc.DefaultRunPolicy()
 	}
-	tools := g.GetTools()
-	if len(tools) == 0 {
-		return uc.DefaultGrants()
+	kinds := make([]uc.ResourceKind, len(g.GetResourceKinds()))
+	for i, k := range g.GetResourceKinds() {
+		kinds[i] = uc.ResourceKind(k)
 	}
-	return uc.Grants{Tools: append([]string(nil), tools...)}
+	p := uc.RunPolicy{
+		AllowTools:    append([]string(nil), g.GetAllowTools()...),
+		DenyTools:     append([]string(nil), g.GetDenyTools()...),
+		ResourceKinds: kinds,
+		MaxChildren:   int(g.GetMaxChildren()),
+		ChildInherit:  g.GetChildInherit(),
+	}
+	if len(p.AllowTools) == 0 {
+		return p // mute tools; kinds stay as specified (empty = none)
+	}
+	if p.MaxChildren == 0 {
+		p.MaxChildren = uc.DefaultRunPolicy().MaxChildren
+	}
+	return p
 }
 
 func waitToProto(w uc.RunWait, members []uc.RunWaitMember) *corev1.RunWait {

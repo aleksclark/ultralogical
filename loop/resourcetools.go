@@ -41,12 +41,12 @@ func resourceDisplayName(r uc.Resource) string {
 
 func (r *ResourceTools) deny(ctx context.Context, run uc.AgentRun, tool string, resourceID *uc.ResourceID, reason string) fantasy.ToolResponse {
 	payload, _ := json.Marshal(uc.PermissionDeniedPayload{RunID: run.ID, Tool: tool, ResourceID: resourceID, Reason: reason})
-	_, _ = r.Store.Org(run.OrgID).Events().Append(ctx, run.SessionID, uc.Event{Actor: uc.Actor{Type: uc.ActorSystem}, Kind: uc.EventKindPermissionDenied, Payload: payload})
+	_, _ = r.Store.Tenant(run.TenantID).Events().Append(ctx, run.SessionID, uc.Event{Actor: uc.ActorSystem(), Kind: uc.EventKindPermissionDenied, Payload: payload})
 	return fantasy.NewTextErrorResponse("permission denied")
 }
 
 func (r *ResourceTools) Tools(ctx context.Context, run uc.AgentRun) ([]fantasy.AgentTool, error) {
-	resources, err := r.Store.Org(run.OrgID).Resources().List(ctx, run.SessionID)
+	resources, err := r.Store.Tenant(run.TenantID).Resources().List(ctx, run.SessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (r *ResourceTools) Tools(ctx context.Context, run uc.AgentRun) ([]fantasy.A
 
 	// provision_resource and its provision_env alias share behavior.
 	addProvision := func(name, desc string) {
-		if !run.Grants.AllowsTool(name) {
+		if !run.Policy.AllowsTool(name) {
 			return
 		}
 		type input struct {
@@ -64,12 +64,15 @@ func (r *ResourceTools) Tools(ctx context.Context, run uc.AgentRun) ([]fantasy.A
 			Image            string `json:"image,omitempty"`
 		}
 		tools = append(tools, fantasy.NewAgentTool(name, desc, func(ctx context.Context, in input, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			if !run.Grants.AllowsTool(name) {
+			if !run.Policy.AllowsTool(name) {
 				return r.deny(ctx, run, name, nil, "tool not granted"), nil
 			}
 			kind := uc.ResourceKind(in.Kind)
 			if kind == "" {
 				kind = uc.ResourceKindDevEnv
+			}
+			if !run.Policy.AllowsResourceKind(kind) {
+				return r.deny(ctx, run, name, nil, "resource kind not permitted"), nil
 			}
 			var spec json.RawMessage
 			if kind == uc.ResourceKindDevEnv {
@@ -80,14 +83,14 @@ func (r *ResourceTools) Tools(ctx context.Context, run uc.AgentRun) ([]fantasy.A
 				spec = b
 			}
 			id := run.ID
-			res, _, err := r.Resources.Request(ctx, run.OrgID, run.SessionID, kind, spec, in.ProviderInstance, &id)
+			res, _, err := r.Resources.Request(ctx, run.TenantID, run.SessionID, kind, spec, in.ProviderInstance, &id)
 			if err != nil {
 				return fantasy.NewTextErrorResponse("provision failed"), nil
 			}
 			ticker := time.NewTicker(200 * time.Millisecond)
 			defer ticker.Stop()
 			for {
-				current, e := r.Store.Org(run.OrgID).Resources().Get(ctx, res.ID)
+				current, e := r.Store.Tenant(run.TenantID).Resources().Get(ctx, res.ID)
 				if e != nil {
 					return fantasy.NewTextErrorResponse("lookup failed"), nil
 				}
@@ -110,11 +113,11 @@ func (r *ResourceTools) Tools(ctx context.Context, run uc.AgentRun) ([]fantasy.A
 	addProvision("provision_env", "Provision a development environment.")
 
 	addList := func(name, desc string) {
-		if !run.Grants.AllowsTool(name) {
+		if !run.Policy.AllowsTool(name) {
 			return
 		}
 		tools = append(tools, fantasy.NewAgentTool(name, desc, func(ctx context.Context, _ struct{}, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			if !run.Grants.AllowsTool(name) {
+			if !run.Policy.AllowsTool(name) {
 				return r.deny(ctx, run, name, nil, "tool not granted"), nil
 			}
 			b, _ := json.Marshal(resources)
@@ -125,7 +128,7 @@ func (r *ResourceTools) Tools(ctx context.Context, run uc.AgentRun) ([]fantasy.A
 	addList("list_envs", "List session environments.")
 
 	addTerminate := func(name, desc string) {
-		if !run.Grants.AllowsTool(name) {
+		if !run.Policy.AllowsTool(name) {
 			return
 		}
 		type input struct {
@@ -139,10 +142,10 @@ func (r *ResourceTools) Tools(ctx context.Context, run uc.AgentRun) ([]fantasy.A
 				raw = in.EnvID
 			}
 			id := uc.ResourceID(raw)
-			if !run.Grants.AllowsTool(name) {
+			if !run.Policy.AllowsTool(name) {
 				return r.deny(ctx, run, name, &id, "resource or tool not granted"), nil
 			}
-			if err := r.Resources.RequestTerminate(ctx, run.OrgID, id); err != nil {
+			if err := r.Resources.RequestTerminate(ctx, run.TenantID, id); err != nil {
 				return fantasy.NewTextErrorResponse("terminate failed"), nil
 			}
 			return fantasy.NewTextResponse("termination requested"), nil
@@ -180,7 +183,7 @@ func (r *ResourceTools) Tools(ctx context.Context, run uc.AgentRun) ([]fantasy.A
 				names := make([]string, 0, len(discovered))
 				for _, dt := range discovered {
 					names = append(names, dt.Name)
-					if !run.Grants.AllowsTool(dt.Name) {
+					if !run.Policy.AllowsTool(dt.Name) {
 						continue
 					}
 					tools = append(tools, newMCPTool(prefix+dt.Name, dt, client, r, run, res.ID))
@@ -189,12 +192,12 @@ func (r *ResourceTools) Tools(ctx context.Context, run uc.AgentRun) ([]fantasy.A
 				continue
 			}
 		}
-		tools = append(tools, r.unreachableResourceTools(prefix, res, run.Grants, e)...)
+		tools = append(tools, r.unreachableResourceTools(prefix, res, run.Policy, e)...)
 	}
 	return tools, nil
 }
 
-func (r *ResourceTools) unreachableResourceTools(prefix string, res uc.Resource, grants uc.Grants, cause error) []fantasy.AgentTool {
+func (r *ResourceTools) unreachableResourceTools(prefix string, res uc.Resource, grants uc.RunPolicy, cause error) []fantasy.AgentTool {
 	var tools []fantasy.AgentTool
 	for _, name := range r.Resources.LastTools(res.ID) {
 		if !grants.AllowsTool(name) {
@@ -244,10 +247,10 @@ const toolCallTimeout = 5 * time.Minute
 
 func (t *mcpTool) Run(ctx context.Context, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
 	if t.tools != nil {
-		if !t.run.Grants.AllowsTool(t.remote) {
+		if !t.run.Policy.AllowsTool(t.remote) {
 			return t.tools.deny(ctx, t.run, t.remote, nil, "tool not granted"), nil
 		}
-		res, err := t.tools.Store.Org(t.run.OrgID).Resources().Get(ctx, t.resID)
+		res, err := t.tools.Store.Tenant(t.run.TenantID).Resources().Get(ctx, t.resID)
 		if err != nil || res.State != uc.ResourceReady {
 			return fantasy.NewTextErrorResponse("resource unavailable"), nil
 		}

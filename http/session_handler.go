@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
@@ -18,34 +19,42 @@ type sessionHandler struct {
 	store uc.Store
 }
 
-// resolveSessionOrg maps a session id to its org and verifies the caller is
-// a member. Missing sessions and cross-tenant access return the identical
-// not-found error.
-func resolveSessionOrg(ctx context.Context, store uc.Store, session uc.SessionID) (uc.OrgID, uc.User, error) {
-	user, ok := userFrom(ctx)
+// resolveSessionTenant maps a session id to its tenant and verifies the
+// caller's key belongs to that tenant. Missing sessions and cross-tenant
+// access return the identical not-found error.
+// resolveSessionTenant maps a session id to its tenant and verifies the
+// caller's key belongs to that tenant. Missing sessions and cross-tenant
+// access return the identical not-found error.
+func resolveSessionTenant(ctx context.Context, store uc.Store, session uc.SessionID) (uc.TenantID, authContext, error) {
+	a, ok := identityFrom(ctx)
 	if !ok {
-		return "", uc.User{}, errUnauthenticated()
+		return "", authContext{}, errUnauthenticated()
 	}
-	org, err := store.SessionOrg(ctx, session)
+	tenant, err := store.SessionTenant(ctx, session)
 	if err != nil {
-		return "", uc.User{}, errNotFound()
+		return "", authContext{}, errNotFound()
 	}
-	if _, err := store.Orgs().MemberRole(ctx, org, user.ID); err != nil {
-		return "", uc.User{}, errNotFound()
+	if a.Identity.TenantID != tenant {
+		return "", authContext{}, errNotFound()
 	}
-	return org, user, nil
+	return tenant, a, nil
 }
 
+
 func (h *sessionHandler) CreateSession(ctx context.Context, req *connect.Request[corev1.CreateSessionRequest]) (*connect.Response[corev1.CreateSessionResponse], error) {
-	orgID := uc.OrgID(req.Msg.GetOrgId())
-	if _, err := requireMember(ctx, h.store, orgID); err != nil {
+	tenantID := uc.TenantID(req.Msg.GetTenantId())
+	if _, err := requireTenant(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	sess := uc.Session{ID: uc.SessionID(uuid.NewString()), Title: req.Msg.GetTitle()}
-	if err := h.store.Org(orgID).Sessions().Create(ctx, sess); err != nil {
+	labels := req.Msg.GetLabels()
+	if err := uc.ValidateLabels(labels); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	sess := uc.Session{ID: uc.SessionID(uuid.NewString()), Title: req.Msg.GetTitle(), Labels: labels}
+	if err := h.store.Tenant(tenantID).Sessions().Create(ctx, sess); err != nil {
 		return nil, mapStoreErr(err)
 	}
-	created, err := h.store.Org(orgID).Sessions().Get(ctx, sess.ID)
+	created, err := h.store.Tenant(tenantID).Sessions().Get(ctx, sess.ID)
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
@@ -54,11 +63,11 @@ func (h *sessionHandler) CreateSession(ctx context.Context, req *connect.Request
 
 func (h *sessionHandler) GetSession(ctx context.Context, req *connect.Request[corev1.GetSessionRequest]) (*connect.Response[corev1.GetSessionResponse], error) {
 	sessionID := uc.SessionID(req.Msg.GetSessionId())
-	org, _, err := resolveSessionOrg(ctx, h.store, sessionID)
+	org, _, err := resolveSessionTenant(ctx, h.store, sessionID)
 	if err != nil {
 		return nil, err
 	}
-	sess, err := h.store.Org(org).Sessions().Get(ctx, sessionID)
+	sess, err := h.store.Tenant(org).Sessions().Get(ctx, sessionID)
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
@@ -66,11 +75,19 @@ func (h *sessionHandler) GetSession(ctx context.Context, req *connect.Request[co
 }
 
 func (h *sessionHandler) ListSessions(ctx context.Context, req *connect.Request[corev1.ListSessionsRequest]) (*connect.Response[corev1.ListSessionsResponse], error) {
-	orgID := uc.OrgID(req.Msg.GetOrgId())
-	if _, err := requireMember(ctx, h.store, orgID); err != nil {
+	tenantID := uc.TenantID(req.Msg.GetTenantId())
+	if _, err := requireTenant(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	sessions, err := h.store.Org(orgID).Sessions().List(ctx)
+	var selectors []uc.LabelSelector
+	for _, s := range req.Msg.GetLabelSelectors() {
+		op := s.GetOp()
+		if op == "" {
+			op = "="
+		}
+		selectors = append(selectors, uc.LabelSelector{Key: s.GetKey(), Op: op, Values: append([]string(nil), s.GetValues()...)})
+	}
+	sessions, err := h.store.Tenant(tenantID).Sessions().List(ctx, selectors)
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
@@ -79,6 +96,38 @@ func (h *sessionHandler) ListSessions(ctx context.Context, req *connect.Request[
 		resp.Sessions = append(resp.Sessions, sessionToProto(s))
 	}
 	return connect.NewResponse(resp), nil
+}
+
+func (h *sessionHandler) UpdateSessionLabels(ctx context.Context, req *connect.Request[corev1.UpdateSessionLabelsRequest]) (*connect.Response[corev1.UpdateSessionLabelsResponse], error) {
+	sessionID := uc.SessionID(req.Msg.GetSessionId())
+	org, a, err := resolveSessionTenant(ctx, h.store, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	labels := req.Msg.GetLabels()
+	if err := uc.ValidateLabels(labels); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	var seq int64
+	var updated uc.Session
+	err = h.store.Tx(ctx, func(txs uc.Store) error {
+		scope := txs.Tenant(org)
+		var e error
+		updated, e = scope.Sessions().UpdateLabels(ctx, sessionID, labels)
+		if e != nil {
+			return e
+		}
+		payload, e := json.Marshal(uc.SessionLabelsChangedPayload{Labels: labels})
+		if e != nil {
+			return e
+		}
+		seq, e = scope.Events().Append(ctx, sessionID, uc.Event{Actor: a.Actor, Kind: uc.EventKindSessionLabelsChanged, Payload: payload})
+		return e
+	})
+	if err != nil {
+		return nil, mapStoreErr(err)
+	}
+	return connect.NewResponse(&corev1.UpdateSessionLabelsResponse{Session: sessionToProto(updated), EventSeq: seq}), nil
 }
 
 // eventHandler implements corev1connect.EventServiceHandler.
@@ -90,7 +139,7 @@ type eventHandler struct {
 
 func (h *eventHandler) Append(ctx context.Context, req *connect.Request[corev1.AppendRequest]) (*connect.Response[corev1.AppendResponse], error) {
 	sessionID := uc.SessionID(req.Msg.GetSessionId())
-	org, user, err := resolveSessionOrg(ctx, h.store, sessionID)
+	org, a, err := resolveSessionTenant(ctx, h.store, sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +147,8 @@ func (h *eventHandler) Append(ctx context.Context, req *connect.Request[corev1.A
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	seq, err := h.store.Org(org).Events().Append(ctx, sessionID, uc.Event{
-		Actor:   uc.Actor{Type: uc.ActorUser, ID: string(user.ID)},
+	seq, err := h.store.Tenant(org).Events().Append(ctx, sessionID, uc.Event{
+		Actor:   a.Actor,
 		Kind:    kind,
 		Payload: payload,
 	})
@@ -111,12 +160,13 @@ func (h *eventHandler) Append(ctx context.Context, req *connect.Request[corev1.A
 
 func (h *eventHandler) Subscribe(ctx context.Context, req *connect.Request[corev1.SubscribeRequest], stream *connect.ServerStream[corev1.SubscribeResponse]) error {
 	// Streaming RPCs bypass unary interceptors; authenticate here.
-	ctx, err := authenticate(ctx, h.auth, req.Header().Get("Authorization"))
+	authorization := req.Header().Get("Authorization")
+	ctx, err := authenticate(ctx, h.auth, authorization, req.Header().Get("X-Core-Actor"))
 	if err != nil {
 		return err
 	}
 	sessionID := uc.SessionID(req.Msg.GetSessionId())
-	org, _, err := resolveSessionOrg(ctx, h.store, sessionID)
+	org, _, err := resolveSessionTenant(ctx, h.store, sessionID)
 	if err != nil {
 		return err
 	}
@@ -130,28 +180,48 @@ func (h *eventHandler) Subscribe(ctx context.Context, req *connect.Request[corev
 	if err := stream.Send(&corev1.SubscribeResponse{}); err != nil {
 		return err
 	}
-	for e := range events {
-		msg, err := eventToProto(e)
-		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.New("event encoding failed"))
-		}
-		if err := stream.Send(&corev1.SubscribeResponse{Event: msg}); err != nil {
-			return err
+	// A3.3: a revoked key must fail closed mid-stream. Re-authenticate on
+	// each delivery (and on a slow poll tick when the bus is idle) so an open
+	// Subscribe does not outlive the key that opened it.
+	recheck := time.NewTicker(time.Second)
+	defer recheck.Stop()
+	token := bearer(authorization)
+	for {
+		select {
+		case e, ok := <-events:
+			if !ok {
+				return ctx.Err()
+			}
+			if _, err := h.auth.Authenticate(ctx, token); err != nil {
+				return errUnauthenticated()
+			}
+			msg, err := eventToProto(e)
+			if err != nil {
+				return connect.NewError(connect.CodeInternal, errors.New("event encoding failed"))
+			}
+			if err := stream.Send(&corev1.SubscribeResponse{Event: msg}); err != nil {
+				return err
+			}
+		case <-recheck.C:
+			if _, err := h.auth.Authenticate(ctx, token); err != nil {
+				return errUnauthenticated()
+			}
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
-	return ctx.Err()
 }
 
 func memoryToProto(e uc.SessionMemoryEntry) *corev1.MemoryEntry {
-	return &corev1.MemoryEntry{Key: e.Key, ValueJson: string(e.Value), UpdatedByType: string(e.UpdatedBy.Type), UpdatedById: e.UpdatedBy.ID, UpdatedAt: timestamppb.New(e.UpdatedAt)}
+	return &corev1.MemoryEntry{Key: e.Key, ValueJson: string(e.Value), UpdatedByType: e.UpdatedBy.Kind, UpdatedById: e.UpdatedBy.ID, UpdatedAt: timestamppb.New(e.UpdatedAt)}
 }
-func appendTransition(ctx context.Context, scope uc.OrgScope, session uc.SessionID, kind string, payload any) (int64, error) {
+func appendTransition(ctx context.Context, scope uc.TenantScope, session uc.SessionID, kind string, payload any) (int64, error) {
 	b, _ := json.Marshal(payload)
-	return scope.Events().Append(ctx, session, uc.Event{Actor: uc.Actor{Type: uc.ActorSystem}, Kind: kind, Payload: b})
+	return scope.Events().Append(ctx, session, uc.Event{Actor: uc.ActorSystem(), Kind: kind, Payload: b})
 }
 func (h *sessionHandler) SetMemory(ctx context.Context, req *connect.Request[corev1.SetMemoryRequest]) (*connect.Response[corev1.SetMemoryResponse], error) {
 	session := uc.SessionID(req.Msg.GetSessionId())
-	org, user, err := resolveSessionOrg(ctx, h.store, session)
+	org, a, err := resolveSessionTenant(ctx, h.store, session)
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +231,8 @@ func (h *sessionHandler) SetMemory(ctx context.Context, req *connect.Request[cor
 	}
 	var seq int64
 	err = h.store.Tx(ctx, func(txs uc.Store) error {
-		scope := txs.Org(org)
-		entry := uc.SessionMemoryEntry{SessionID: session, Key: req.Msg.GetKey(), Value: value, UpdatedBy: uc.Actor{Type: uc.ActorUser, ID: string(user.ID)}}
+		scope := txs.Tenant(org)
+		entry := uc.SessionMemoryEntry{SessionID: session, Key: req.Msg.GetKey(), Value: value, UpdatedBy: a.Actor}
 		if e := scope.Memory().Set(ctx, entry); e != nil {
 			return e
 		}
@@ -181,11 +251,11 @@ func (h *sessionHandler) SetMemory(ctx context.Context, req *connect.Request[cor
 }
 func (h *sessionHandler) GetMemory(ctx context.Context, req *connect.Request[corev1.GetMemoryRequest]) (*connect.Response[corev1.GetMemoryResponse], error) {
 	session := uc.SessionID(req.Msg.GetSessionId())
-	org, _, err := resolveSessionOrg(ctx, h.store, session)
+	org, _, err := resolveSessionTenant(ctx, h.store, session)
 	if err != nil {
 		return nil, err
 	}
-	e, err := h.store.Org(org).Memory().Get(ctx, session, req.Msg.GetKey())
+	e, err := h.store.Tenant(org).Memory().Get(ctx, session, req.Msg.GetKey())
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
@@ -193,11 +263,11 @@ func (h *sessionHandler) GetMemory(ctx context.Context, req *connect.Request[cor
 }
 func (h *sessionHandler) ListMemory(ctx context.Context, req *connect.Request[corev1.ListMemoryRequest]) (*connect.Response[corev1.ListMemoryResponse], error) {
 	session := uc.SessionID(req.Msg.GetSessionId())
-	org, _, err := resolveSessionOrg(ctx, h.store, session)
+	org, _, err := resolveSessionTenant(ctx, h.store, session)
 	if err != nil {
 		return nil, err
 	}
-	items, err := h.store.Org(org).Memory().List(ctx, session)
+	items, err := h.store.Tenant(org).Memory().List(ctx, session)
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
@@ -209,17 +279,17 @@ func (h *sessionHandler) ListMemory(ctx context.Context, req *connect.Request[co
 }
 func (h *sessionHandler) DeleteMemory(ctx context.Context, req *connect.Request[corev1.DeleteMemoryRequest]) (*connect.Response[corev1.DeleteMemoryResponse], error) {
 	session := uc.SessionID(req.Msg.GetSessionId())
-	org, user, err := resolveSessionOrg(ctx, h.store, session)
+	org, a, err := resolveSessionTenant(ctx, h.store, session)
 	if err != nil {
 		return nil, err
 	}
 	var seq int64
 	err = h.store.Tx(ctx, func(txs uc.Store) error {
-		scope := txs.Org(org)
+		scope := txs.Tenant(org)
 		if e := scope.Memory().Delete(ctx, session, req.Msg.GetKey()); e != nil {
 			return e
 		}
-		seq, err = appendTransition(ctx, scope, session, uc.EventKindMemoryDeleted, uc.NewMemoryEventPayload(req.Msg.GetKey(), uc.Actor{Type: uc.ActorUser, ID: string(user.ID)}, nil))
+		seq, err = appendTransition(ctx, scope, session, uc.EventKindMemoryDeleted, uc.NewMemoryEventPayload(req.Msg.GetKey(), a.Actor, nil))
 		return err
 	})
 	if err != nil {

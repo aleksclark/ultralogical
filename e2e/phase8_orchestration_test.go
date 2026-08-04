@@ -16,12 +16,12 @@ import (
 )
 
 // awaitRun polls a run until it reaches one of the wanted states.
-func awaitRunOneOf(t *testing.T, stack *harness.Stack, org uc.OrgID, id uc.RunID, timeout time.Duration, want ...uc.RunState) uc.AgentRun {
+func awaitRunOneOf(t *testing.T, stack *harness.Stack, org uc.TenantID, id uc.RunID, timeout time.Duration, want ...uc.RunState) uc.AgentRun {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
 	var last uc.AgentRun
 	for time.Now().Before(deadline) {
-		run, err := stack.Store.Org(org).Runs().Get(context.Background(), id)
+		run, err := stack.Store.Tenant(org).Runs().Get(context.Background(), id)
 		if err == nil {
 			last = run
 			for _, w := range want {
@@ -37,12 +37,12 @@ func awaitRunOneOf(t *testing.T, stack *harness.Stack, org uc.OrgID, id uc.RunID
 }
 
 // childrenOf returns a run's children, waiting until the expected number exist.
-func childrenOf(t *testing.T, stack *harness.Stack, org uc.OrgID, parent uc.RunID, want int, timeout time.Duration) []uc.AgentRun {
+func childrenOf(t *testing.T, stack *harness.Stack, org uc.TenantID, parent uc.RunID, want int, timeout time.Duration) []uc.AgentRun {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
 	var last []uc.AgentRun
 	for time.Now().Before(deadline) {
-		kids, err := stack.Store.Org(org).Runs().Children(context.Background(), parent)
+		kids, err := stack.Store.Tenant(org).Runs().Children(context.Background(), parent)
 		if err == nil {
 			last = kids
 			if len(kids) >= want {
@@ -56,9 +56,9 @@ func childrenOf(t *testing.T, stack *harness.Stack, org uc.OrgID, parent uc.RunI
 }
 
 // waitsOf returns every wait a parent has held.
-func waitsOf(t *testing.T, stack *harness.Stack, org uc.OrgID, parent uc.RunID) []uc.RunWait {
+func waitsOf(t *testing.T, stack *harness.Stack, org uc.TenantID, parent uc.RunID) []uc.RunWait {
 	t.Helper()
-	waits, err := stack.Store.Org(org).Waits().ListForParent(context.Background(), parent)
+	waits, err := stack.Store.Tenant(org).Waits().ListForParent(context.Background(), parent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestA81_SpawnDurabilityAndGrants(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	org := stack.OrgA.ID
+	org := stack.TenantA.ID
 	sess := createSession(t, alice, string(org), "spawn grants")
 
 	// The parent spawns a child restricted to two tools and no spawning of
@@ -116,11 +116,11 @@ func TestA81_SpawnDurabilityAndGrants(t *testing.T) {
 	awaitRunOneOf(t, stack, org, grandchild.ID, 90*time.Second, uc.RunCompleted)
 
 	// Child allowlist is exactly what was requested.
-	if !child.Grants.AllowsTool("post_event") || !child.Grants.AllowsTool("spawn_agent") {
-		t.Fatalf("child grants = %+v", child.Grants)
+	if !child.Policy.AllowsTool("post_event") || !child.Policy.AllowsTool("spawn_agent") {
+		t.Fatalf("child grants = %+v", child.Policy)
 	}
-	if child.Grants.AllowsTool("terminate_env") {
-		t.Fatalf("child gained terminate_env without being granted it: %+v", child.Grants)
+	if child.Policy.AllowsTool("terminate_env") {
+		t.Fatalf("child gained terminate_env without being granted it: %+v", child.Policy)
 	}
 }
 
@@ -132,7 +132,7 @@ func collectEvents(t *testing.T, stack *harness.Stack, session, kind string, tim
 		var found []uc.Event
 		var from int64
 		for {
-			batch, err := stack.Store.Org(stack.OrgA.ID).Events().Range(context.Background(), uc.SessionID(session), from, 512)
+			batch, err := stack.Store.Tenant(stack.TenantA.ID).Events().Range(context.Background(), uc.SessionID(session), from, 512)
 			if err != nil || len(batch) == 0 {
 				break
 			}
@@ -159,7 +159,7 @@ func TestA81_SpawnIdempotentRetry(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	org := stack.OrgA.ID
+	org := stack.TenantA.ID
 	sess := createSession(t, alice, string(org), "spawn idempotency")
 
 		stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
@@ -179,7 +179,7 @@ func TestA81_SpawnIdempotentRetry(t *testing.T) {
 	run, err := alice.Agents.StartRun(ctx, connect.NewRequest(&corev1.StartRunRequest{
 		SessionId: sess.GetId(), Prompt: "limit test",
 		// Two children allowed, three requested.
-		Grants: &corev1.Grants{Tools: []string{"*"}},
+		Policy: &corev1.RunPolicy{AllowTools: []string{"*"}},
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -206,7 +206,7 @@ func TestA81_SpawnIdempotentRetry(t *testing.T) {
 	// Each child ran exactly one first step: redelivery would show as extra
 	// step rows for index 0, which the unique constraint forbids.
 	for _, kid := range kids {
-		steps, err := stack.Store.Org(org).Runs().Steps(ctx, kid.ID)
+		steps, err := stack.Store.Tenant(org).Runs().Steps(ctx, kid.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -220,9 +220,9 @@ func TestA81_SpawnIdempotentRetry(t *testing.T) {
 	}
 }
 
-func stackChildren(t *testing.T, stack *harness.Stack, org uc.OrgID, parent uc.RunID) []uc.AgentRun {
+func stackChildren(t *testing.T, stack *harness.Stack, org uc.TenantID, parent uc.RunID) []uc.AgentRun {
 	t.Helper()
-	kids, err := stack.Store.Org(org).Runs().Children(context.Background(), parent)
+	kids, err := stack.Store.Tenant(org).Runs().Children(context.Background(), parent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +232,7 @@ func stackChildren(t *testing.T, stack *harness.Stack, org uc.OrgID, parent uc.R
 // assertSingleCorrelatedResult checks the invariant every wait case shares: the
 // wait closed once, resumed the parent at most once, and injected exactly one
 // tool result correlated to the parent's original tool call.
-func assertSingleCorrelatedResult(t *testing.T, stack *harness.Stack, org uc.OrgID, parent uc.RunID, wantStates ...string) uc.RunWait {
+func assertSingleCorrelatedResult(t *testing.T, stack *harness.Stack, org uc.TenantID, parent uc.RunID, wantStates ...string) uc.RunWait {
 	t.Helper()
 	waits := waitsOf(t, stack, org, parent)
 	if len(waits) != 1 {
@@ -254,7 +254,7 @@ func assertSingleCorrelatedResult(t *testing.T, stack *harness.Stack, org uc.Org
 		}
 	}
 
-	run, err := stack.Store.Org(org).Runs().Get(context.Background(), parent)
+	run, err := stack.Store.Tenant(org).Runs().Get(context.Background(), parent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,7 +322,7 @@ func TestA83_CohortFanOutFanIn(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	org := stack.OrgA.ID
+	org := stack.TenantA.ID
 	sess := createSession(t, alice, string(org), "cohort")
 
 	stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
@@ -408,7 +408,7 @@ func TestA83_CohortFailedMember(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	org := stack.OrgA.ID
+	org := stack.TenantA.ID
 	sess := createSession(t, alice, string(org), "cohort failure")
 
 	stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
@@ -459,7 +459,7 @@ func TestA83_CohortParksWithoutQueuedParentStep(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	org := stack.OrgA.ID
+	org := stack.TenantA.ID
 	sess := createSession(t, alice, string(org), "cohort parking")
 
 	// The members block until released, so the parent is observably parked.

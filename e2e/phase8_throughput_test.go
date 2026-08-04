@@ -134,8 +134,8 @@ func TestA88_ThroughputBaseline(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	org := stack.OrgA.ID
-	ingress := stack.IngressClient(harness.TokenAlice)
+	org := stack.TenantA.ID
+	ingress := stack.IngressClient(stack.KeyA)
 
 	// Two tool steps then a final answer: three steps per run, so the
 	// measurement covers the whole durable loop (job claim, model call, tool
@@ -170,7 +170,7 @@ func TestA88_ThroughputBaseline(t *testing.T) {
 	defer stopSubs()
 	var subWG sync.WaitGroup
 	for replica := range baselineUltrad {
-		client := stack.ReplicaClient(replica, harness.TokenAlice)
+		client := stack.ReplicaClient(replica, stack.KeyA)
 		for _, sessID := range sessions {
 			sub, err := client.Subscribe(subCtx, sessID, 0)
 			if err != nil {
@@ -243,7 +243,7 @@ func TestA88_ThroughputBaseline(t *testing.T) {
 	// twice, and the scripted step count was actually reached.
 	stepsRecorded, retries := 0, 0
 	for _, id := range runIDs {
-		steps, err := stack.Store.Org(org).Runs().Steps(ctx, uc.RunID(id))
+		steps, err := stack.Store.Tenant(org).Runs().Steps(ctx, uc.RunID(id))
 		if err != nil {
 			t.Fatal(err)
 		}

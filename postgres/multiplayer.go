@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type memoryStore struct{ scope *orgScope }
-type waitStore struct{ scope *orgScope }
+type memoryStore struct{ scope *tenantScope }
+type waitStore struct{ scope *tenantScope }
 
 
 func (s *memoryStore) lock(ctx context.Context, session uc.SessionID) error {
@@ -21,7 +21,7 @@ func (s *memoryStore) lock(ctx context.Context, session uc.SessionID) error {
 }
 func (s *memoryStore) Get(ctx context.Context, session uc.SessionID, key string) (uc.SessionMemoryEntry, error) {
 	var e uc.SessionMemoryEntry
-	err := s.scope.s.db().QueryRow(ctx, `SELECT m.session_id,m.key,m.value,m.updated_by_type,m.updated_by_id,m.updated_at FROM session_memory m JOIN sessions se ON se.id=m.session_id WHERE m.session_id=$1 AND se.org_id=$2 AND m.key=$3`, string(session), string(s.scope.org), key).Scan(&e.SessionID, &e.Key, &e.Value, &e.UpdatedBy.Type, &e.UpdatedBy.ID, &e.UpdatedAt)
+	err := s.scope.s.db().QueryRow(ctx, `SELECT m.session_id,m.key,m.value,m.updated_by_type,m.updated_by_id,m.updated_at FROM session_memory m JOIN sessions se ON se.id=m.session_id WHERE m.session_id=$1 AND se.org_id=$2 AND m.key=$3`, string(session), string(s.scope.org), key).Scan(&e.SessionID, &e.Key, &e.Value, &e.UpdatedBy.Kind, &e.UpdatedBy.ID, &e.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return e, uc.ErrNotFound
 	}
@@ -36,7 +36,7 @@ func (s *memoryStore) List(ctx context.Context, session uc.SessionID) ([]uc.Sess
 	var out []uc.SessionMemoryEntry
 	for rows.Next() {
 		var e uc.SessionMemoryEntry
-		if err := rows.Scan(&e.SessionID, &e.Key, &e.Value, &e.UpdatedBy.Type, &e.UpdatedBy.ID, &e.UpdatedAt); err != nil {
+		if err := rows.Scan(&e.SessionID, &e.Key, &e.Value, &e.UpdatedBy.Kind, &e.UpdatedBy.ID, &e.UpdatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, e)
@@ -63,7 +63,7 @@ func (s *memoryStore) Set(ctx context.Context, e uc.SessionMemoryEntry) error {
 	if !exists && count >= uc.MaxMemoryKeys {
 		return errors.New("session memory limit reached")
 	}
-	tag, err := s.scope.s.db().Exec(ctx, `INSERT INTO session_memory(session_id,key,value,updated_by_type,updated_by_id) SELECT se.id,$2,$3,$4,$5 FROM sessions se WHERE se.id=$1 AND se.org_id=$6 ON CONFLICT(session_id,key) DO UPDATE SET value=EXCLUDED.value,updated_by_type=EXCLUDED.updated_by_type,updated_by_id=EXCLUDED.updated_by_id,updated_at=now()`, string(e.SessionID), e.Key, e.Value, string(e.UpdatedBy.Type), e.UpdatedBy.ID, string(s.scope.org))
+	tag, err := s.scope.s.db().Exec(ctx, `INSERT INTO session_memory(session_id,key,value,updated_by_type,updated_by_id) SELECT se.id,$2,$3,$4,$5 FROM sessions se WHERE se.id=$1 AND se.org_id=$6 ON CONFLICT(session_id,key) DO UPDATE SET value=EXCLUDED.value,updated_by_type=EXCLUDED.updated_by_type,updated_by_id=EXCLUDED.updated_by_id,updated_at=now()`, string(e.SessionID), e.Key, e.Value, e.UpdatedBy.Kind, e.UpdatedBy.ID, string(s.scope.org))
 	if err != nil {
 		return err
 	}

@@ -37,7 +37,7 @@ const (
 
 // Clients bundles the generated service clients one authenticated user needs.
 type Clients struct {
-	Orgs     corev1connect.OrgServiceClient
+	Orgs     corev1connect.TenantServiceClient
 	Sessions corev1connect.SessionServiceClient
 	Resources corev1connect.ResourceServiceClient
 	HTTP     *http.Client
@@ -58,7 +58,7 @@ func (t *authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 func NewClients(baseURL, token string) *Clients {
 	httpClient := &http.Client{Timeout: 30 * time.Second, Transport: &authTransport{token: token, base: http.DefaultTransport}}
 	return &Clients{
-		Orgs:     corev1connect.NewOrgServiceClient(httpClient, baseURL),
+		Orgs:     corev1connect.NewTenantServiceClient(httpClient, baseURL),
 		Sessions: corev1connect.NewSessionServiceClient(httpClient, baseURL),
 		Resources:     corev1connect.NewResourceServiceClient(httpClient, baseURL),
 		HTTP:     httpClient,
@@ -70,14 +70,14 @@ func NewClients(baseURL, token string) *Clients {
 type Env struct {
 	URL   string
 	Token string
-	Org   string
+	Tenant   string
 }
 
 func envFromOS() Env {
 	return Env{
 		URL:   envOr("CORE_URL", "http://localhost:8080"),
 		Token: os.Getenv("CORE_TOKEN"),
-		Org:   os.Getenv("CORE_ORG"),
+		Tenant:   os.Getenv("CORE_TENANT"),
 	}
 }
 
@@ -91,6 +91,10 @@ func envOr(name, fallback string) string {
 const usage = `core — durable-session substrate CLI
 
 Usage:
+  core tenant create --name NAME [--json]
+  core tenant key create --name NAME --scope admin|sessions [--org ID] [--json]
+  core tenant key list [--org ID] [--json]
+  core tenant key revoke KEY_ID [--org ID] [--json]
   core provider register NAME --kind KIND --config JSON [--json]
   core provider list [--json]
   core provider show NAME [--json]
@@ -98,9 +102,9 @@ Usage:
   core help
 
 Environment:
-  CORE_URL    API base URL (default http://localhost:8080)
-  CORE_TOKEN  bearer token (required)
-  CORE_ORG    default org id for org-scoped commands
+  CORE_URL       API base URL (default http://localhost:8080)
+  CORE_TOKEN     bearer token (required)
+  CORE_TENANT    default tenant id for tenant-scoped commands
 `
 
 // Run executes one CLI invocation and returns its exit code. It never calls
@@ -117,6 +121,8 @@ func RunWithEnv(args []string, environment Env, stdout, stderr io.Writer) (int, 
 		return ExitUsage, sink.Err()
 	}
 	switch args[0] {
+	case "tenant":
+		return runTenant(args[1:], environment, stdout, stderr)
 	case "provider":
 		return runProvider(args[1:], environment, stdout, stderr)
 	case "help", "-h", "--help":
@@ -130,7 +136,7 @@ func RunWithEnv(args []string, environment Env, stdout, stderr io.Writer) (int, 
 }
 
 // NewEnv builds an environment for tests and embedders.
-func NewEnv(url, token, org string) Env { return Env{URL: url, Token: token, Org: org} }
+func NewEnv(url, token, org string) Env { return Env{URL: url, Token: token, Tenant: org} }
 
 // splitArgs separates positional arguments from flags.
 func splitArgs(args []string) (positional, flags []string) {
@@ -201,14 +207,14 @@ func (o *out) writeJSON(value any) error {
 
 func writeJSON(w io.Writer, value any) error { return newOut(w).writeJSON(value) }
 
-func requireOrg(environment Env, override string) (string, error) {
+func requireTenantID(environment Env, override string) (string, error) {
 	if override != "" {
 		return override, nil
 	}
-	if environment.Org != "" {
-		return environment.Org, nil
+	if environment.Tenant != "" {
+		return environment.Tenant, nil
 	}
-	return "", errors.New("org id is required (pass --org or set CORE_ORG)")
+	return "", errors.New("tenant id is required (pass --org or set CORE_TENANT)")
 }
 
 // cliError is the machine-readable failure the CLI prints in --json mode.
@@ -252,4 +258,4 @@ func cleanMessage(err error) string {
 
 // silence unused import guard for context used by provider.go
 var _ = context.Background
-var _ = corev1.Org{}
+var _ = corev1.Tenant{}

@@ -6,55 +6,6 @@ import (
 	"time"
 )
 
-// Grants is the per-run tool allowlist attached to a run. "*" means every
-// canonical tool. Children inherit the parent's allowlist verbatim; E3 will
-// add a consumer policy hook on top of this interim safety net.
-type Grants struct {
-	Tools []string `json:"tools"`
-}
-
-// DefaultGrants are assigned by the server to human-started runs.
-func DefaultGrants() Grants {
-	return Grants{Tools: []string{"*"}}
-}
-
-func stringSet(values []string) map[string]bool {
-	out := map[string]bool{}
-	for _, v := range values {
-		out[v] = true
-	}
-	return out
-}
-
-// CanonicalTools is every capability a run can be granted: the native tools
-// plus the resource tools Bezalel exposes for dev_env.
-//
-// It exists so a run can be offered an explicit denial stub for the tools it
-// lacks. Simply omitting them would be worse: the agent framework answers an
-// unknown tool call by listing every tool that *does* exist, which is an
-// existence oracle. A uniform refusal reveals nothing.
-//
-// provision_env/list_envs/terminate_env are kept as aliases of the
-// provision_resource family through E5/E6; both names are grantable.
-func CanonicalTools() []string {
-	return []string{
-		// Native session and orchestration tools.
-		"ask_user", "post_event",
-		"session_memory_get", "session_memory_list", "session_memory_set", "session_memory_delete",
-		"spawn_agent", "wait_for_agents", "run_agent_cohort",
-		"provision_resource", "list_resources", "terminate_resource",
-		// Aliases kept through E5/E6 migrations.
-		"provision_env", "list_envs", "terminate_env",
-		// Resource tools served over MCP (dev_env).
-		"bash", "view", "write", "edit", "multiedit", "delete", "ls", "glob", "grep",
-		"job_output", "job_kill", "download", "fetch", "web_fetch",
-		"lsp_diagnostics", "lsp_references", "lsp_restart",
-	}
-}
-
-// AllowsTool checks a canonical capability (not a displayed resource alias).
-func (g Grants) AllowsTool(name string) bool { s := stringSet(g.Tools); return s["*"] || s[name] }
-
 // SessionMemoryEntry is durable session-scoped structured memory.
 type SessionMemoryEntry struct {
 	SessionID SessionID
@@ -157,6 +108,7 @@ type RunWait struct {
 // Terminal reports whether a wait has left the open state.
 func (w RunWait) Terminal() bool { return w.State != WaitOpen }
 
+// RunWaitMember is one child a wait is watching.
 type RunWaitMember struct {
 	WaitID  string
 	RunID   RunID
@@ -189,6 +141,7 @@ type WaitOutcome struct {
 	Pending   int                `json:"pending,omitempty"`
 }
 
+// RunWaitStore manages durable waits within one tenant.
 type RunWaitStore interface {
 	Create(context.Context, RunWait, []RunWaitMember) error
 	Get(context.Context, string) (RunWait, error)

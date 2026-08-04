@@ -45,7 +45,7 @@ func TestA105_LostTransportSuspendsRatherThanFails(t *testing.T) {
 
 	env := converge.Request(t, uc.DevEnvSpec{Name: "tunnel", Workdir: "/work"})
 	t.Cleanup(func() {
-		current, err := converge.Store.Org(converge.Org).Resources().Get(context.Background(), env.ID)
+		current, err := converge.Store.Tenant(converge.Tenant).Resources().Get(context.Background(), env.ID)
 		if err == nil {
 			_ = provider.Terminate(context.Background(), current)
 		}
@@ -70,7 +70,7 @@ func TestA105_LostTransportSuspendsRatherThanFails(t *testing.T) {
 	converge.Await(t, env.ID, uc.ResourceReady, 90*time.Second)
 
 	// The workspace survived, so this is the same environment resuming.
-	current, err := converge.Store.Org(converge.Org).Resources().Get(context.Background(), env.ID)
+	current, err := converge.Store.Tenant(converge.Tenant).Resources().Get(context.Background(), env.ID)
 	if err != nil {
 		t.Fatal(err)
 	}

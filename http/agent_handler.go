@@ -24,32 +24,23 @@ type agentHandler struct {
 // resolveRunOrg maps a run id to its org and session, verifying membership.
 // Missing runs and cross-tenant access are indistinguishable.
 func (h *agentHandler) resolveRun(ctx context.Context, runID uc.RunID) (uc.AgentRun, error) {
-	user, ok := userFrom(ctx)
+	a, ok := identityFrom(ctx)
 	if !ok {
 		return uc.AgentRun{}, errUnauthenticated()
 	}
-	// Directory lookup: find the run's org via its session. We scan the
-	// caller's orgs — a run is only visible inside an org the caller
-	// belongs to.
-	orgs, err := h.store.Orgs().ListForUser(ctx, user.ID)
+	run, err := h.store.Tenant(a.Identity.TenantID).Runs().Get(ctx, runID)
 	if err != nil {
+		if errors.Is(err, uc.ErrNotFound) {
+			return uc.AgentRun{}, errNotFound()
+		}
 		return uc.AgentRun{}, mapStoreErr(err)
 	}
-	for _, org := range orgs {
-		run, err := h.store.Org(org.ID).Runs().Get(ctx, runID)
-		if err == nil {
-			return run, nil
-		}
-		if !errors.Is(err, uc.ErrNotFound) {
-			return uc.AgentRun{}, mapStoreErr(err)
-		}
-	}
-	return uc.AgentRun{}, errNotFound()
+	return run, nil
 }
 
 func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[corev1.StartRunRequest]) (*connect.Response[corev1.StartRunResponse], error) {
 	sessionID := uc.SessionID(req.Msg.GetSessionId())
-	org, _, err := resolveSessionOrg(ctx, h.store, sessionID)
+	org, _, err := resolveSessionTenant(ctx, h.store, sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,27 +65,29 @@ func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[corev1
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	// A human-started run receives the default tool allowlist unless the
-	// caller supplies an explicit tools list.
-	grants := uc.DefaultGrants()
-	if requested := req.Msg.GetGrants(); requested != nil {
-		grants = grantsFromProto(requested)
+	// API-started runs receive DefaultRunPolicy unless the caller supplies an
+	// explicit policy. The caller's Actor is captured on the run so children
+	// and audit surfaces can attribute the tree without re-reading headers.
+	policy := uc.DefaultRunPolicy()
+	if requested := req.Msg.GetPolicy(); requested != nil {
+		policy = policyFromProto(requested)
 	}
 	run := uc.AgentRun{
 		ID:          uc.RunID(uuid.NewString()),
 		SessionID:   sessionID,
-		OrgID:       org,
+		TenantID:    org,
 		LoopKind:    loop.DefaultLoopKind,
 		LoopVersion: loop.DefaultLoopVersion,
 		ModelConfig: modelConfig,
 		Prompt:      req.Msg.GetPrompt(),
 		History:     history,
-		Grants:      grants,
+		Policy:      policy,
+		Actor:       actorFrom(ctx),
 	}
 
 	var eventSeq int64
 	err = h.store.Tx(ctx, func(txs uc.Store) error {
-		scope := txs.Org(org)
+		scope := txs.Tenant(org)
 		if err := scope.Runs().Create(ctx, run); err != nil {
 			return err
 		}
@@ -103,7 +96,7 @@ func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[corev1
 			return err
 		}
 		eventSeq, err = scope.Events().Append(ctx, sessionID, uc.Event{
-			Actor:   uc.Actor{Type: uc.ActorAgent, ID: string(run.ID)},
+			Actor:   uc.ActorAgent(uc.RunID(string(run.ID))),
 			Kind:    uc.EventKindRunStarted,
 			Payload: payload,
 		})
@@ -113,14 +106,14 @@ func (h *agentHandler) StartRun(ctx context.Context, req *connect.Request[corev1
 		// Run row + RunStarted event + first step job commit atomically:
 		// no orphaned runs, ever.
 		return h.enqueue.EnqueueInTx(ctx, txs, loop.StepJob{
-			RunID: string(run.ID), OrgID: string(org), SessionID: string(sessionID), StepIndex: 0,
+			RunID: string(run.ID), TenantID: string(org), SessionID: string(sessionID), StepIndex: 0,
 		})
 	})
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
 
-	created, err := h.store.Org(org).Runs().Get(ctx, run.ID)
+	created, err := h.store.Tenant(org).Runs().Get(ctx, run.ID)
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
@@ -135,11 +128,11 @@ func (h *agentHandler) PromptRun(ctx context.Context, req *connect.Request[corev
 	if req.Msg.GetMessage() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("message is required"))
 	}
-	user, _ := userFrom(ctx)
+	caller := actorFrom(ctx)
 
 	var eventSeq int64
 	err = h.store.Tx(ctx, func(txs uc.Store) error {
-		scope := txs.Org(run.OrgID)
+		scope := txs.Tenant(run.TenantID)
 		locked, err := scope.Runs().GetForUpdate(ctx, run.ID)
 		if err != nil {
 			return err
@@ -163,7 +156,7 @@ func (h *agentHandler) PromptRun(ctx context.Context, req *connect.Request[corev
 			return err
 		}
 		eventSeq, err = scope.Events().Append(ctx, run.SessionID, uc.Event{
-			Actor:   uc.Actor{Type: uc.ActorUser, ID: string(user.ID)},
+			Actor:   caller,
 			Kind:    uc.EventKindUserMessage,
 			Payload: payload,
 		})
@@ -181,7 +174,7 @@ func (h *agentHandler) PromptRun(ctx context.Context, req *connect.Request[corev
 			}
 		}
 		return h.enqueue.EnqueueInTx(ctx, txs, loop.StepJob{
-			RunID: string(run.ID), OrgID: string(run.OrgID), SessionID: string(run.SessionID),
+			RunID: string(run.ID), TenantID: string(run.TenantID), SessionID: string(run.SessionID),
 			StepIndex: nextIndex,
 		})
 	})
@@ -201,7 +194,7 @@ func (h *agentHandler) CancelRun(ctx context.Context, req *connect.Request[corev
 		return nil, err
 	}
 	err = h.store.Tx(ctx, func(txs uc.Store) error {
-		scope := txs.Org(run.OrgID)
+		scope := txs.Tenant(run.TenantID)
 		locked, err := scope.Runs().GetForUpdate(ctx, run.ID)
 		if err != nil {
 			return err
@@ -222,12 +215,12 @@ func (h *agentHandler) CancelRun(ctx context.Context, req *connect.Request[corev
 			// A run awaiting child agents holds an open wait. Closing it here
 			// is what stops a child that finishes later from resuming a run
 			// the user has already cancelled.
-			if err := loop.AbandonWaits(ctx, txs, run.OrgID, run.ID); err != nil {
+			if err := loop.AbandonWaits(ctx, txs, run.TenantID, run.ID); err != nil {
 				return err
 			}
 			payload, _ := json.Marshal(uc.RunCancelledPayload{RunID: run.ID})
 			_, err = scope.Events().Append(ctx, run.SessionID, uc.Event{
-				Actor:   uc.Actor{Type: uc.ActorSystem},
+				Actor:   uc.ActorSystem(),
 				Kind:    uc.EventKindRunCancelled,
 				Payload: payload,
 			})
@@ -258,11 +251,11 @@ func (h *agentHandler) GetRun(ctx context.Context, req *connect.Request[corev1.G
 // walking it request by request would race the live event stream.
 func (h *agentHandler) GetRunTree(ctx context.Context, req *connect.Request[corev1.GetRunTreeRequest]) (*connect.Response[corev1.GetRunTreeResponse], error) {
 	sessionID := uc.SessionID(req.Msg.GetSessionId())
-	org, _, err := resolveSessionOrg(ctx, h.store, sessionID)
+	org, _, err := resolveSessionTenant(ctx, h.store, sessionID)
 	if err != nil {
 		return nil, err
 	}
-	scope := h.store.Org(org)
+	scope := h.store.Tenant(org)
 	runs, err := scope.Runs().List(ctx, sessionID)
 	if err != nil {
 		return nil, mapStoreErr(err)
@@ -304,11 +297,11 @@ func (h *agentHandler) GetRunTree(ctx context.Context, req *connect.Request[core
 
 func (h *agentHandler) ListRuns(ctx context.Context, req *connect.Request[corev1.ListRunsRequest]) (*connect.Response[corev1.ListRunsResponse], error) {
 	sessionID := uc.SessionID(req.Msg.GetSessionId())
-	org, _, err := resolveSessionOrg(ctx, h.store, sessionID)
+	org, _, err := resolveSessionTenant(ctx, h.store, sessionID)
 	if err != nil {
 		return nil, err
 	}
-	runs, err := h.store.Org(org).Runs().List(ctx, sessionID)
+	runs, err := h.store.Tenant(org).Runs().List(ctx, sessionID)
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}

@@ -11,8 +11,8 @@ import (
 	uc "github.com/aleksclark/ultracore"
 )
 
-type resourceStore struct{ scope *orgScope }
-type providerStore struct{ scope *orgScope }
+type resourceStore struct{ scope *tenantScope }
+type providerStore struct{ scope *tenantScope }
 
 // Schema still carries flow/rate_class columns until the E4 squash; readers
 // discard them and writers leave defaults.
@@ -24,7 +24,7 @@ func scanResource(row pgx.Row) (uc.Resource, error) {
 	var r uc.Resource
 	var spec, handle []byte
 	var endpoint string
-	err := row.Scan(&r.ID, &r.OrgID, &r.SessionID, &r.ProviderInstanceID, &r.Kind,
+	err := row.Scan(&r.ID, &r.TenantID, &r.SessionID, &r.ProviderInstanceID, &r.Kind,
 		&r.State, &spec, &handle, &endpoint, &r.TokenHash, &r.TokenEnc,
 		&r.Epoch, &r.FailureMessage, &r.CreatedByRunID,
 		&r.CreatedAt, &r.UpdatedAt, &r.ReadyAt, &r.TerminatedAt)
@@ -230,7 +230,7 @@ const providerColumns = `id, org_id, kind, name, config, state, capabilities, la
 func scanProvider(row pgx.Row) (uc.ProviderInstance, error) {
 	var p uc.ProviderInstance
 	var capabilities []byte
-	err := row.Scan(&p.ID, &p.OrgID, &p.Kind, &p.Name, &p.Config,
+	err := row.Scan(&p.ID, &p.TenantID, &p.Kind, &p.Name, &p.Config,
 		&p.State, &capabilities, &p.LastHealthyAt, &p.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return uc.ProviderInstance{}, uc.ErrNotFound

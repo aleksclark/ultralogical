@@ -8,7 +8,7 @@ import (
 // Sentinel errors. Store implementations translate backend errors into these
 // so handlers can map them to typed API errors. Handlers deliberately return
 // the same "not found" answer for missing rows and cross-tenant access so
-// resource existence never leaks across orgs.
+// resource existence never leaks across tenants.
 var (
 	ErrNotFound         = errors.New("not found")
 	ErrAlreadyExists    = errors.New("already exists")
@@ -16,47 +16,51 @@ var (
 )
 
 // Store is the root data-access seam. All tenant data access flows through
-// Org(id), which returns an org-scoped handle: every query it issues carries
-// the org id, making cross-tenant reads structurally impossible rather than
-// merely checked.
+// Tenant(id), which returns a tenant-scoped handle: every query it issues
+// carries the tenant id, making cross-tenant reads structurally impossible
+// rather than merely checked.
 type Store interface {
-	// Orgs manages org lifecycle and membership (pre-tenant surface).
-	Orgs() OrgStore
-	// Users manages global user identities.
-	Users() UserStore
-	// Org returns an org-scoped view. It does not verify the org exists;
-	// scoped queries simply match nothing for a bogus id.
-	Org(id OrgID) OrgScope
-	// SessionOrg is the single directory lookup: which org owns a session.
-	// Callers must verify membership before acting on the answer and must
-	// collapse "no such session" and "not a member" into the same error.
-	SessionOrg(ctx context.Context, id SessionID) (OrgID, error)
+	// Tenants manages tenant lifecycle.
+	Tenants() TenantStore
+	// APIKeys manages tenant API keys (lookup is global by hash; creation is
+	// tenant-scoped via the key's TenantID field).
+	APIKeys() APIKeyStore
+	// Tenant returns a tenant-scoped view. It does not verify the tenant
+	// exists; scoped queries simply match nothing for a bogus id.
+	Tenant(id TenantID) TenantScope
+	// SessionTenant is the single directory lookup: which tenant owns a
+	// session. Callers must collapse "no such session" and "not yours" into
+	// the same error.
+	SessionTenant(ctx context.Context, id SessionID) (TenantID, error)
 	// Tx runs fn inside a transaction, providing a transaction-bound Store.
 	// Nested calls reuse the outer transaction.
 	Tx(ctx context.Context, fn func(Store) error) error
 }
 
-// OrgStore manages orgs and memberships.
-type OrgStore interface {
-	Create(ctx context.Context, o Org) error
-	Get(ctx context.Context, id OrgID) (Org, error)
-	AddMember(ctx context.Context, m OrgMember) error
-	ListMembers(ctx context.Context, id OrgID) ([]OrgMember, error)
-	// MemberRole returns ErrNotFound when the user is not a member.
-	MemberRole(ctx context.Context, id OrgID, user UserID) (OrgRole, error)
-	ListForUser(ctx context.Context, user UserID) ([]Org, error)
+// TenantStore manages tenants.
+type TenantStore interface {
+	Create(ctx context.Context, t Tenant) error
+	Get(ctx context.Context, id TenantID) (Tenant, error)
+	List(ctx context.Context) ([]Tenant, error)
 }
 
-// UserStore manages global user identities.
-type UserStore interface {
-	Create(ctx context.Context, u User) error
-	Get(ctx context.Context, id UserID) (User, error)
-	GetByEmail(ctx context.Context, email string) (User, error)
+// APIKeyStore manages API keys. GetByHash is the auth path; Create/Revoke/
+// List are the admin path.
+type APIKeyStore interface {
+	Create(ctx context.Context, k APIKey) error
+	// GetByHash looks up a live or revoked key by SHA-256 digest. Callers
+	// must still check RevokedAt.
+	GetByHash(ctx context.Context, hash []byte) (APIKey, error)
+	Get(ctx context.Context, id APIKeyID) (APIKey, error)
+	List(ctx context.Context, tenant TenantID) ([]APIKeyInfo, error)
+	// Revoke stamps revoked_at (idempotent). Returns ErrNotFound when the
+	// key is missing or belongs to another tenant.
+	Revoke(ctx context.Context, tenant TenantID, id APIKeyID) error
 }
 
-// OrgScope is the tenant-scoped data surface. Everything reachable from it is
-// automatically filtered to the org it was created for.
-type OrgScope interface {
+// TenantScope is the tenant-scoped data surface. Everything reachable from it
+// is automatically filtered to the tenant it was created for.
+type TenantScope interface {
 	Sessions() SessionStore
 	Events() EventStore
 	Runs() RunStore
@@ -68,15 +72,27 @@ type OrgScope interface {
 	PeriodicPrompts() PeriodicPromptStore
 }
 
-// SessionStore manages sessions within one org.
-type SessionStore interface {
-	Create(ctx context.Context, s Session) error
-	// Get returns ErrNotFound for sessions that exist in another org.
-	Get(ctx context.Context, id SessionID) (Session, error)
-	List(ctx context.Context) ([]Session, error)
+// LabelSelector is one equality or set-membership predicate on session labels.
+// Op is "=" or "in". Values has length 1 for equality.
+type LabelSelector struct {
+	Key    string
+	Op     string   // "=" or "in"
+	Values []string
 }
 
-// EventStore is the append-only session event log within one org.
+// SessionStore manages sessions within one tenant.
+type SessionStore interface {
+	Create(ctx context.Context, s Session) error
+	// Get returns ErrNotFound for sessions that exist in another tenant.
+	Get(ctx context.Context, id SessionID) (Session, error)
+	// List returns sessions matching every selector (AND). An empty selector
+	// list returns all sessions in the tenant.
+	List(ctx context.Context, selectors []LabelSelector) ([]Session, error)
+	// UpdateLabels replaces the full label map and returns the new session.
+	UpdateLabels(ctx context.Context, id SessionID, labels map[string]string) (Session, error)
+}
+
+// EventStore is the append-only session event log within one tenant.
 type EventStore interface {
 	// Append assigns the next per-session sequence number, persists the
 	// event, and (in the same transaction) notifies subscribers. Returns the

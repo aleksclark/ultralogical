@@ -12,7 +12,7 @@ import (
 func TestA66_PeriodicPromptAPI(t *testing.T) {
 	stack := harness.Up(t)
 	c := stack.AliceClient()
-	sess := createSession(t, c, string(stack.OrgA.ID), "periodic")
+	sess := createSession(t, c, string(stack.TenantA.ID), "periodic")
 	put, err := c.Automation.PutPeriodicPrompt(context.Background(), connect.NewRequest(&corev1.PutPeriodicPromptRequest{SessionId: sess.GetId(), Schedule: "1s", Prompt: "check status"}))
 	if err != nil {
 		t.Fatal(err)

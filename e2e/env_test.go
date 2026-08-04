@@ -51,7 +51,7 @@ func TestA22_A23_AgentEnvPersistence(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "env work")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "env work")
 	_ = provisionEnv(t, stack, sess.GetId())
 	stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
 		{ToolCalls: []modelscript.ToolCallSpec{{Name: "bash", Args: map[string]any{"command": "git init && echo hi > README.md"}}}},
@@ -81,9 +81,9 @@ func TestA24_A25_A27_AuthReconcileMetering(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "reconcile")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "reconcile")
 	envProto := provisionEnv(t, stack, sess.GetId())
-	env, err := stack.Store.Org(stack.OrgA.ID).Resources().Get(ctx, uc.ResourceID(envProto.GetId()))
+	env, err := stack.Store.Tenant(stack.TenantA.ID).Resources().Get(ctx, uc.ResourceID(envProto.GetId()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,13 +111,13 @@ func TestA24_A25_A27_AuthReconcileMetering(t *testing.T) {
 	}
 	deadline := time.Now().Add(20 * time.Second)
 	for time.Now().Before(deadline) {
-		current, _ := stack.Store.Org(stack.OrgA.ID).Resources().Get(ctx, env.ID)
+		current, _ := stack.Store.Tenant(stack.TenantA.ID).Resources().Get(ctx, env.ID)
 		if current.State == uc.ResourceFailed {
 			break
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
-	current, _ := stack.Store.Org(stack.OrgA.ID).Resources().Get(ctx, env.ID)
+	current, _ := stack.Store.Tenant(stack.TenantA.ID).Resources().Get(ctx, env.ID)
 	if current.State != uc.ResourceFailed {
 		t.Fatalf("state=%s", current.State)
 	}

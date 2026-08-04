@@ -16,7 +16,7 @@ import (
 // the deadline lives in the database and any worker can enforce it. The job
 // reschedules itself, which makes it self-healing after a crash.
 type WaitTimeoutJob struct {
-	OrgID string `json:"org_id"`
+	TenantID string `json:"org_id"`
 }
 
 // Kind implements jobqueue.Job.
@@ -57,8 +57,8 @@ func (s *WaitSweeper) retry() time.Duration {
 // even if two workers sweep simultaneously, and a child completing at the same
 // instant either wins the row lock or finds the wait already closed.
 func (s *WaitSweeper) Sweep(ctx context.Context, job WaitTimeoutJob) error {
-	org := uc.OrgID(job.OrgID)
-	due, err := s.Store.Org(org).Waits().ClaimDue(ctx, time.Now(), s.batch())
+	org := uc.TenantID(job.TenantID)
+	due, err := s.Store.Tenant(org).Waits().ClaimDue(ctx, time.Now(), s.batch())
 	if err != nil {
 		return err
 	}
@@ -89,9 +89,9 @@ func (s *WaitSweeper) Sweep(ctx context.Context, job WaitTimeoutJob) error {
 
 // rearm schedules another sweep shortly, used when a batch was truncated or a
 // resolution needs retrying.
-func (s *WaitSweeper) rearm(ctx context.Context, org uc.OrgID) error {
+func (s *WaitSweeper) rearm(ctx context.Context, org uc.TenantID) error {
 	return s.Store.Tx(ctx, func(txs uc.Store) error {
-		return s.Enqueue.EnqueueInTx(ctx, txs, WaitTimeoutJob{OrgID: string(org)},
+		return s.Enqueue.EnqueueInTx(ctx, txs, WaitTimeoutJob{TenantID: string(org)},
 			jobqueue.WithScheduledAt(time.Now().Add(s.retry())))
 	})
 }

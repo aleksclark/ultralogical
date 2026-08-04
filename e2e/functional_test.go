@@ -16,10 +16,10 @@ import (
 	"github.com/aleksclark/ultracore/testkit/testclient"
 )
 
-func createSession(t *testing.T, c *testclient.Client, orgID, title string) *corev1.Session {
+func createSession(t *testing.T, c *testclient.Client, tenantID, title string) *corev1.Session {
 	t.Helper()
 	resp, err := c.Sessions.CreateSession(context.Background(), connect.NewRequest(&corev1.CreateSessionRequest{
-		OrgId: orgID,
+		TenantId: tenantID,
 		Title: title,
 	}))
 	if err != nil {
@@ -35,8 +35,8 @@ func TestA01_SessionRoundtrip(t *testing.T) {
 	alice := stack.AliceClient()
 	ctx := context.Background()
 
-	created := createSession(t, alice, string(stack.OrgA.ID), "phase zero")
-	if created.GetId() == "" || created.GetOrgId() != string(stack.OrgA.ID) || created.GetTitle() != "phase zero" {
+	created := createSession(t, alice, string(stack.TenantA.ID), "phase zero")
+	if created.GetId() == "" || created.GetTenantId() != string(stack.TenantA.ID) || created.GetTitle() != "phase zero" {
 		t.Fatalf("created session malformed: %+v", created)
 	}
 
@@ -47,12 +47,12 @@ func TestA01_SessionRoundtrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := got.Msg.GetSession()
-	if s.GetId() != created.GetId() || s.GetTitle() != created.GetTitle() || s.GetOrgId() != created.GetOrgId() {
+	if s.GetId() != created.GetId() || s.GetTitle() != created.GetTitle() || s.GetTenantId() != created.GetTenantId() {
 		t.Fatalf("roundtrip mismatch: created %+v, got %+v", created, s)
 	}
 
 	list, err := alice.Sessions.ListSessions(ctx, connect.NewRequest(&corev1.ListSessionsRequest{
-		OrgId: string(stack.OrgA.ID),
+		TenantId: string(stack.TenantA.ID),
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -70,7 +70,7 @@ func TestA02_AppendFanout(t *testing.T) {
 	alice := stack.AliceClient()
 	ctx := context.Background()
 
-	sess := createSession(t, alice, string(stack.OrgA.ID), "fanout")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "fanout")
 
 	sub1, err := alice.Subscribe(ctx, sess.GetId(), 0)
 	if err != nil {
@@ -100,8 +100,8 @@ func TestA02_AppendFanout(t *testing.T) {
 		if ev.GetPayload().GetUserMessage().GetText() != "hello world" {
 			t.Fatalf("subscriber %d: payload mismatch: %+v", i+1, ev.GetPayload())
 		}
-		if ev.GetActor().GetType() != corev1.ActorType_ACTOR_TYPE_USER {
-			t.Fatalf("subscriber %d: actor = %v", i+1, ev.GetActor())
+		if ev.GetActor().GetKind() == "" {
+			t.Fatalf("subscriber %d: empty actor kind: %v", i+1, ev.GetActor())
 		}
 	}
 }
@@ -114,7 +114,7 @@ func TestA03_ResumeContract(t *testing.T) {
 	alice := stack.AliceClient()
 	ctx := context.Background()
 
-	sess := createSession(t, alice, string(stack.OrgA.ID), "resume")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "resume")
 
 	// Event 1 observed live, then the subscriber disconnects.
 	sub, err := alice.Subscribe(ctx, sess.GetId(), 0)
@@ -172,7 +172,7 @@ func TestA06_TenantIsolation(t *testing.T) {
 	bob := stack.BobClient()
 	ctx := context.Background()
 
-	sess := createSession(t, alice, string(stack.OrgA.ID), "private")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "private")
 
 	assertNotFound := func(name string, err error) {
 		t.Helper()
@@ -199,7 +199,7 @@ func TestA06_TenantIsolation(t *testing.T) {
 	}
 
 	// ListSessions across orgs.
-	_, err := bob.Sessions.ListSessions(ctx, connect.NewRequest(&corev1.ListSessionsRequest{OrgId: string(stack.OrgA.ID)}))
+	_, err := bob.Sessions.ListSessions(ctx, connect.NewRequest(&corev1.ListSessionsRequest{TenantId: string(stack.TenantA.ID)}))
 	assertNotFound("ListSessions(org A as bob)", err)
 
 	// Append into a foreign session.
@@ -215,8 +215,8 @@ func TestA06_TenantIsolation(t *testing.T) {
 	assertNotFound("Subscribe(foreign)", err)
 
 	// Bob's own org list contains only org B sessions.
-	bobSess := createSession(t, bob, string(stack.OrgB.ID), "bobs")
-	list, err := bob.Sessions.ListSessions(ctx, connect.NewRequest(&corev1.ListSessionsRequest{OrgId: string(stack.OrgB.ID)}))
+	bobSess := createSession(t, bob, string(stack.TenantB.ID), "bobs")
+	list, err := bob.Sessions.ListSessions(ctx, connect.NewRequest(&corev1.ListSessionsRequest{TenantId: string(stack.TenantB.ID)}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,36 +233,38 @@ func TestA06_TenantIsolation(t *testing.T) {
 	}
 }
 
-// Org lifecycle: CreateOrg makes the caller owner; members can be invited.
-func TestOrgLifecycle(t *testing.T) {
-	t.Parallel()
+// Tenant lifecycle: CreateTenant (admin) + API keys.
+func TestA03_TenantAndKeys(t *testing.T) {
 	stack := harness.Up(t)
-	alice := stack.AliceClient()
 	ctx := context.Background()
+	alice := stack.AliceClient()
 
-	created, err := alice.Orgs.CreateOrg(ctx, connect.NewRequest(&corev1.CreateOrgRequest{Name: "newco"}))
+	created, err := alice.Tenants.CreateTenant(ctx, connect.NewRequest(&corev1.CreateTenantRequest{Name: "newco"}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	orgID := created.Msg.GetOrg().GetId()
-
-	invited, err := alice.Orgs.InviteMember(ctx, connect.NewRequest(&corev1.InviteMemberRequest{
-		OrgId: orgID,
-		Email: harness.EmailBob,
-		Role:  corev1.OrgRole_ORG_ROLE_MEMBER,
+	if created.Msg.GetTenant().GetName() != "newco" {
+		t.Fatalf("name = %q", created.Msg.GetTenant().GetName())
+	}
+	if created.Msg.GetAdminKey() == "" {
+		t.Fatal("expected admin key once")
+	}
+	// New tenant's admin key works; sessions-scope cannot create tenants.
+	newAdmin := testclient.New(stack.BaseURL, created.Msg.GetAdminKey())
+	sessKey, err := newAdmin.Tenants.CreateAPIKey(ctx, connect.NewRequest(&corev1.CreateAPIKeyRequest{
+		TenantId: created.Msg.GetTenant().GetId(), Name: "sess", Scope: corev1.KeyScope_KEY_SCOPE_SESSIONS,
 	}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if invited.Msg.GetMember().GetEmail() != harness.EmailBob {
-		t.Fatalf("invite returned %+v", invited.Msg.GetMember())
+	sessClient := testclient.New(stack.BaseURL, sessKey.Msg.GetRawKey())
+	if _, err := sessClient.Tenants.CreateTenant(ctx, connect.NewRequest(&corev1.CreateTenantRequest{Name: "nope"})); err == nil {
+		t.Fatal("sessions key created a tenant")
 	}
-
-	members, err := stack.BobClient().Orgs.ListMembers(ctx, connect.NewRequest(&corev1.ListMembersRequest{OrgId: orgID}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(members.Msg.GetMembers()) != 2 {
-		t.Fatalf("member count = %d, want 2", len(members.Msg.GetMembers()))
+	// Cross-tenant get is not-found.
+	if _, err := alice.Tenants.GetTenant(ctx, connect.NewRequest(&corev1.GetTenantRequest{TenantId: created.Msg.GetTenant().GetId()})); err == nil {
+		t.Fatal("cross-tenant get succeeded")
 	}
 }
+
+

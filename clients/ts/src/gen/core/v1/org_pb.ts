@@ -12,14 +12,14 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file core/v1/org.proto.
  */
 export const file_core_v1_org: GenFile = /*@__PURE__*/
-  fileDesc("ChFjb3JlL3YxL29yZy5wcm90bxIHY29yZS52MSJPCgNPcmcSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIuCgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKKAQoJT3JnTWVtYmVyEg4KBm9yZ19pZBgBIAEoCRIPCgd1c2VyX2lkGAIgASgJEg0KBWVtYWlsGAMgASgJEh4KBHJvbGUYBCABKA4yEC5jb3JlLnYxLk9yZ1JvbGUSLQoJam9pbmVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIgChBDcmVhdGVPcmdSZXF1ZXN0EgwKBG5hbWUYASABKAkiLgoRQ3JlYXRlT3JnUmVzcG9uc2USGQoDb3JnGAEgASgLMgwuY29yZS52MS5PcmciHwoNR2V0T3JnUmVxdWVzdBIOCgZvcmdfaWQYASABKAkiKwoOR2V0T3JnUmVzcG9uc2USGQoDb3JnGAEgASgLMgwuY29yZS52MS5PcmciVAoTSW52aXRlTWVtYmVyUmVxdWVzdBIOCgZvcmdfaWQYASABKAkSDQoFZW1haWwYAiABKAkSHgoEcm9sZRgDIAEoDjIQLmNvcmUudjEuT3JnUm9sZSI6ChRJbnZpdGVNZW1iZXJSZXNwb25zZRIiCgZtZW1iZXIYASABKAsyEi5jb3JlLnYxLk9yZ01lbWJlciIkChJMaXN0TWVtYmVyc1JlcXVlc3QSDgoGb3JnX2lkGAEgASgJIjoKE0xpc3RNZW1iZXJzUmVzcG9uc2USIwoHbWVtYmVycxgBIAMoCzISLmNvcmUudjEuT3JnTWVtYmVyIhEKD0xpc3RPcmdzUmVxdWVzdCIuChBMaXN0T3Jnc1Jlc3BvbnNlEhoKBG9yZ3MYASADKAsyDC5jb3JlLnYxLk9yZyKMAQoOQ3JlZGVudGlhbEluZm8SDAoEa2luZBgBIAEoCRIMCgRuYW1lGAIgASgJEi4KCmNyZWF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnJvdGF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIoEBChRQdXRDcmVkZW50aWFsUmVxdWVzdBIOCgZvcmdfaWQYASABKAkSDAoEa2luZBgCIAEoCRIMCgRuYW1lGAMgASgJEg8KB2FwaV9rZXkYBCABKAkSEAoIYmFzZV91cmwYBSABKAkSGgoSZXh0cmFfaGVhZGVyc19qc29uGAYgASgJIkQKFVB1dENyZWRlbnRpYWxSZXNwb25zZRIrCgpjcmVkZW50aWFsGAEgASgLMhcuY29yZS52MS5DcmVkZW50aWFsSW5mbyIoChZMaXN0Q3JlZGVudGlhbHNSZXF1ZXN0Eg4KBm9yZ19pZBgBIAEoCSJHChdMaXN0Q3JlZGVudGlhbHNSZXNwb25zZRIsCgtjcmVkZW50aWFscxgBIAMoCzIXLmNvcmUudjEuQ3JlZGVudGlhbEluZm8iRQoXRGVsZXRlQ3JlZGVudGlhbFJlcXVlc3QSDgoGb3JnX2lkGAEgASgJEgwKBGtpbmQYAiABKAkSDAoEbmFtZRgDIAEoCSIaChhEZWxldGVDcmVkZW50aWFsUmVzcG9uc2UiRQoSUHJvdmlkZXJDYXBhYmlsaXR5EgwKBG5hbWUYASABKAkSEQoJc3VwcG9ydGVkGAIgASgIEg4KBnJlYXNvbhgDIAEoCSLxAQoQUHJvdmlkZXJJbnN0YW5jZRIKCgJpZBgBIAEoCRIOCgZvcmdfaWQYAiABKAkSDAoEa2luZBgDIAEoCRIMCgRuYW1lGAQgASgJEg0KBXN0YXRlGAYgASgJEjMKD2xhc3RfaGVhbHRoeV9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKY3JlYXRlZF9hdBgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoMY2FwYWJpbGl0aWVzGAkgAygLMhsuY29yZS52MS5Qcm92aWRlckNhcGFiaWxpdHkiWgoXUmVnaXN0ZXJQcm92aWRlclJlcXVlc3QSDgoGb3JnX2lkGAEgASgJEgwKBGtpbmQYAiABKAkSDAoEbmFtZRgDIAEoCRITCgtjb25maWdfanNvbhgEIAEoCSJHChhSZWdpc3RlclByb3ZpZGVyUmVzcG9uc2USKwoIcHJvdmlkZXIYASABKAsyGS5jb3JlLnYxLlByb3ZpZGVySW5zdGFuY2UiJgoUTGlzdFByb3ZpZGVyc1JlcXVlc3QSDgoGb3JnX2lkGAEgASgJIkUKFUxpc3RQcm92aWRlcnNSZXNwb25zZRIsCglwcm92aWRlcnMYASADKAsyGS5jb3JlLnYxLlByb3ZpZGVySW5zdGFuY2UiPAoVRGVsZXRlUHJvdmlkZXJSZXF1ZXN0Eg4KBm9yZ19pZBgBIAEoCRITCgtwcm92aWRlcl9pZBgCIAEoCSIYChZEZWxldGVQcm92aWRlclJlc3BvbnNlKmAKB09yZ1JvbGUSGAoUT1JHX1JPTEVfVU5TUEVDSUZJRUQQABISCg5PUkdfUk9MRV9PV05FUhABEhIKDk9SR19ST0xFX0FETUlOEAISEwoPT1JHX1JPTEVfTUVNQkVSEAMy3gYKCk9yZ1NlcnZpY2USQgoJQ3JlYXRlT3JnEhkuY29yZS52MS5DcmVhdGVPcmdSZXF1ZXN0GhouY29yZS52MS5DcmVhdGVPcmdSZXNwb25zZRI5CgZHZXRPcmcSFi5jb3JlLnYxLkdldE9yZ1JlcXVlc3QaFy5jb3JlLnYxLkdldE9yZ1Jlc3BvbnNlEj8KCExpc3RPcmdzEhguY29yZS52MS5MaXN0T3Jnc1JlcXVlc3QaGS5jb3JlLnYxLkxpc3RPcmdzUmVzcG9uc2USSwoMSW52aXRlTWVtYmVyEhwuY29yZS52MS5JbnZpdGVNZW1iZXJSZXF1ZXN0Gh0uY29yZS52MS5JbnZpdGVNZW1iZXJSZXNwb25zZRJICgtMaXN0TWVtYmVycxIbLmNvcmUudjEuTGlzdE1lbWJlcnNSZXF1ZXN0GhwuY29yZS52MS5MaXN0TWVtYmVyc1Jlc3BvbnNlEk4KDVB1dENyZWRlbnRpYWwSHS5jb3JlLnYxLlB1dENyZWRlbnRpYWxSZXF1ZXN0Gh4uY29yZS52MS5QdXRDcmVkZW50aWFsUmVzcG9uc2USVAoPTGlzdENyZWRlbnRpYWxzEh8uY29yZS52MS5MaXN0Q3JlZGVudGlhbHNSZXF1ZXN0GiAuY29yZS52MS5MaXN0Q3JlZGVudGlhbHNSZXNwb25zZRJXChBEZWxldGVDcmVkZW50aWFsEiAuY29yZS52MS5EZWxldGVDcmVkZW50aWFsUmVxdWVzdBohLmNvcmUudjEuRGVsZXRlQ3JlZGVudGlhbFJlc3BvbnNlElcKEFJlZ2lzdGVyUHJvdmlkZXISIC5jb3JlLnYxLlJlZ2lzdGVyUHJvdmlkZXJSZXF1ZXN0GiEuY29yZS52MS5SZWdpc3RlclByb3ZpZGVyUmVzcG9uc2USTgoNTGlzdFByb3ZpZGVycxIdLmNvcmUudjEuTGlzdFByb3ZpZGVyc1JlcXVlc3QaHi5jb3JlLnYxLkxpc3RQcm92aWRlcnNSZXNwb25zZRJRCg5EZWxldGVQcm92aWRlchIeLmNvcmUudjEuRGVsZXRlUHJvdmlkZXJSZXF1ZXN0Gh8uY29yZS52MS5EZWxldGVQcm92aWRlclJlc3BvbnNlQjdaNWdpdGh1Yi5jb20vYWxla3NjbGFyay91bHRyYWNvcmUvZ2VuL2dvL2NvcmUvdjE7Y29yZXYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChFjb3JlL3YxL29yZy5wcm90bxIHY29yZS52MSJSCgZUZW5hbnQSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIuCgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCLLAQoKQVBJS2V5SW5mbxIKCgJpZBgBIAEoCRIRCgl0ZW5hbnRfaWQYAiABKAkSDAoEbmFtZRgDIAEoCRIgCgVzY29wZRgEIAEoDjIRLmNvcmUudjEuS2V5U2NvcGUSDgoGcHJlZml4GAUgASgJEi4KCmNyZWF0ZWRfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnJldm9rZWRfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiMKE0NyZWF0ZVRlbmFudFJlcXVlc3QSDAoEbmFtZRgBIAEoCSJKChRDcmVhdGVUZW5hbnRSZXNwb25zZRIfCgZ0ZW5hbnQYASABKAsyDy5jb3JlLnYxLlRlbmFudBIRCglhZG1pbl9rZXkYAiABKAkiJQoQR2V0VGVuYW50UmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkiNAoRR2V0VGVuYW50UmVzcG9uc2USHwoGdGVuYW50GAEgASgLMg8uY29yZS52MS5UZW5hbnQiFAoSTGlzdFRlbmFudHNSZXF1ZXN0IjcKE0xpc3RUZW5hbnRzUmVzcG9uc2USIAoHdGVuYW50cxgBIAMoCzIPLmNvcmUudjEuVGVuYW50IlgKE0NyZWF0ZUFQSUtleVJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEgwKBG5hbWUYAiABKAkSIAoFc2NvcGUYAyABKA4yES5jb3JlLnYxLktleVNjb3BlIkkKFENyZWF0ZUFQSUtleVJlc3BvbnNlEiAKA2tleRgBIAEoCzITLmNvcmUudjEuQVBJS2V5SW5mbxIPCgdyYXdfa2V5GAIgASgJIicKEkxpc3RBUElLZXlzUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkiOAoTTGlzdEFQSUtleXNSZXNwb25zZRIhCgRrZXlzGAEgAygLMhMuY29yZS52MS5BUElLZXlJbmZvIjgKE1Jldm9rZUFQSUtleVJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEg4KBmtleV9pZBgCIAEoCSIWChRSZXZva2VBUElLZXlSZXNwb25zZSKMAQoOQ3JlZGVudGlhbEluZm8SDAoEa2luZBgBIAEoCRIMCgRuYW1lGAIgASgJEi4KCmNyZWF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnJvdGF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIoQBChRQdXRDcmVkZW50aWFsUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkSDAoEa2luZBgCIAEoCRIMCgRuYW1lGAMgASgJEg8KB2FwaV9rZXkYBCABKAkSEAoIYmFzZV91cmwYBSABKAkSGgoSZXh0cmFfaGVhZGVyc19qc29uGAYgASgJIkQKFVB1dENyZWRlbnRpYWxSZXNwb25zZRIrCgpjcmVkZW50aWFsGAEgASgLMhcuY29yZS52MS5DcmVkZW50aWFsSW5mbyIrChZMaXN0Q3JlZGVudGlhbHNSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCSJHChdMaXN0Q3JlZGVudGlhbHNSZXNwb25zZRIsCgtjcmVkZW50aWFscxgBIAMoCzIXLmNvcmUudjEuQ3JlZGVudGlhbEluZm8iSAoXRGVsZXRlQ3JlZGVudGlhbFJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEgwKBGtpbmQYAiABKAkSDAoEbmFtZRgDIAEoCSIaChhEZWxldGVDcmVkZW50aWFsUmVzcG9uc2UiRQoSUHJvdmlkZXJDYXBhYmlsaXR5EgwKBG5hbWUYASABKAkSEQoJc3VwcG9ydGVkGAIgASgIEg4KBnJlYXNvbhgDIAEoCSL0AQoQUHJvdmlkZXJJbnN0YW5jZRIKCgJpZBgBIAEoCRIRCgl0ZW5hbnRfaWQYAiABKAkSDAoEa2luZBgDIAEoCRIMCgRuYW1lGAQgASgJEg0KBXN0YXRlGAYgASgJEjMKD2xhc3RfaGVhbHRoeV9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKY3JlYXRlZF9hdBgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoMY2FwYWJpbGl0aWVzGAkgAygLMhsuY29yZS52MS5Qcm92aWRlckNhcGFiaWxpdHkiXQoXUmVnaXN0ZXJQcm92aWRlclJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEgwKBGtpbmQYAiABKAkSDAoEbmFtZRgDIAEoCRITCgtjb25maWdfanNvbhgEIAEoCSJHChhSZWdpc3RlclByb3ZpZGVyUmVzcG9uc2USKwoIcHJvdmlkZXIYASABKAsyGS5jb3JlLnYxLlByb3ZpZGVySW5zdGFuY2UiKQoUTGlzdFByb3ZpZGVyc1JlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJIkUKFUxpc3RQcm92aWRlcnNSZXNwb25zZRIsCglwcm92aWRlcnMYASADKAsyGS5jb3JlLnYxLlByb3ZpZGVySW5zdGFuY2UiPwoVRGVsZXRlUHJvdmlkZXJSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRITCgtwcm92aWRlcl9pZBgCIAEoCSIYChZEZWxldGVQcm92aWRlclJlc3BvbnNlKlIKCEtleVNjb3BlEhkKFUtFWV9TQ09QRV9VTlNQRUNJRklFRBAAEhMKD0tFWV9TQ09QRV9BRE1JThABEhYKEktFWV9TQ09QRV9TRVNTSU9OUxACMskHCg1UZW5hbnRTZXJ2aWNlEksKDENyZWF0ZVRlbmFudBIcLmNvcmUudjEuQ3JlYXRlVGVuYW50UmVxdWVzdBodLmNvcmUudjEuQ3JlYXRlVGVuYW50UmVzcG9uc2USQgoJR2V0VGVuYW50EhkuY29yZS52MS5HZXRUZW5hbnRSZXF1ZXN0GhouY29yZS52MS5HZXRUZW5hbnRSZXNwb25zZRJICgtMaXN0VGVuYW50cxIbLmNvcmUudjEuTGlzdFRlbmFudHNSZXF1ZXN0GhwuY29yZS52MS5MaXN0VGVuYW50c1Jlc3BvbnNlEksKDENyZWF0ZUFQSUtleRIcLmNvcmUudjEuQ3JlYXRlQVBJS2V5UmVxdWVzdBodLmNvcmUudjEuQ3JlYXRlQVBJS2V5UmVzcG9uc2USSAoLTGlzdEFQSUtleXMSGy5jb3JlLnYxLkxpc3RBUElLZXlzUmVxdWVzdBocLmNvcmUudjEuTGlzdEFQSUtleXNSZXNwb25zZRJLCgxSZXZva2VBUElLZXkSHC5jb3JlLnYxLlJldm9rZUFQSUtleVJlcXVlc3QaHS5jb3JlLnYxLlJldm9rZUFQSUtleVJlc3BvbnNlEk4KDVB1dENyZWRlbnRpYWwSHS5jb3JlLnYxLlB1dENyZWRlbnRpYWxSZXF1ZXN0Gh4uY29yZS52MS5QdXRDcmVkZW50aWFsUmVzcG9uc2USVAoPTGlzdENyZWRlbnRpYWxzEh8uY29yZS52MS5MaXN0Q3JlZGVudGlhbHNSZXF1ZXN0GiAuY29yZS52MS5MaXN0Q3JlZGVudGlhbHNSZXNwb25zZRJXChBEZWxldGVDcmVkZW50aWFsEiAuY29yZS52MS5EZWxldGVDcmVkZW50aWFsUmVxdWVzdBohLmNvcmUudjEuRGVsZXRlQ3JlZGVudGlhbFJlc3BvbnNlElcKEFJlZ2lzdGVyUHJvdmlkZXISIC5jb3JlLnYxLlJlZ2lzdGVyUHJvdmlkZXJSZXF1ZXN0GiEuY29yZS52MS5SZWdpc3RlclByb3ZpZGVyUmVzcG9uc2USTgoNTGlzdFByb3ZpZGVycxIdLmNvcmUudjEuTGlzdFByb3ZpZGVyc1JlcXVlc3QaHi5jb3JlLnYxLkxpc3RQcm92aWRlcnNSZXNwb25zZRJRCg5EZWxldGVQcm92aWRlchIeLmNvcmUudjEuRGVsZXRlUHJvdmlkZXJSZXF1ZXN0Gh8uY29yZS52MS5EZWxldGVQcm92aWRlclJlc3BvbnNlQjdaNWdpdGh1Yi5jb20vYWxla3NjbGFyay91bHRyYWNvcmUvZ2VuL2dvL2NvcmUvdjE7Y29yZXYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
- * Org is the tenancy boundary.
+ * Tenant is the tenancy boundary.
  *
- * @generated from message core.v1.Org
+ * @generated from message core.v1.Tenant
  */
-export type Org = Message<"core.v1.Org"> & {
+export type Tenant = Message<"core.v1.Tenant"> & {
   /**
    * @generated from field: string id = 1;
    */
@@ -37,55 +37,65 @@ export type Org = Message<"core.v1.Org"> & {
 };
 
 /**
- * Describes the message core.v1.Org.
- * Use `create(OrgSchema)` to create a new message.
+ * Describes the message core.v1.Tenant.
+ * Use `create(TenantSchema)` to create a new message.
  */
-export const OrgSchema: GenMessage<Org> = /*@__PURE__*/
+export const TenantSchema: GenMessage<Tenant> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 0);
 
 /**
- * OrgMember links a user to an org with a role.
+ * APIKeyInfo is the listable, secret-free view of a tenant API key.
  *
- * @generated from message core.v1.OrgMember
+ * @generated from message core.v1.APIKeyInfo
  */
-export type OrgMember = Message<"core.v1.OrgMember"> & {
+export type APIKeyInfo = Message<"core.v1.APIKeyInfo"> & {
   /**
-   * @generated from field: string org_id = 1;
+   * @generated from field: string id = 1;
    */
-  orgId: string;
+  id: string;
 
   /**
-   * @generated from field: string user_id = 2;
+   * @generated from field: string tenant_id = 2;
    */
-  userId: string;
+  tenantId: string;
 
   /**
-   * @generated from field: string email = 3;
+   * @generated from field: string name = 3;
    */
-  email: string;
+  name: string;
 
   /**
-   * @generated from field: core.v1.OrgRole role = 4;
+   * @generated from field: core.v1.KeyScope scope = 4;
    */
-  role: OrgRole;
+  scope: KeyScope;
 
   /**
-   * @generated from field: google.protobuf.Timestamp joined_at = 5;
+   * @generated from field: string prefix = 5;
    */
-  joinedAt?: Timestamp | undefined;
+  prefix: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_at = 6;
+   */
+  createdAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp revoked_at = 7;
+   */
+  revokedAt?: Timestamp | undefined;
 };
 
 /**
- * Describes the message core.v1.OrgMember.
- * Use `create(OrgMemberSchema)` to create a new message.
+ * Describes the message core.v1.APIKeyInfo.
+ * Use `create(APIKeyInfoSchema)` to create a new message.
  */
-export const OrgMemberSchema: GenMessage<OrgMember> = /*@__PURE__*/
+export const APIKeyInfoSchema: GenMessage<APIKeyInfo> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 1);
 
 /**
- * @generated from message core.v1.CreateOrgRequest
+ * @generated from message core.v1.CreateTenantRequest
  */
-export type CreateOrgRequest = Message<"core.v1.CreateOrgRequest"> & {
+export type CreateTenantRequest = Message<"core.v1.CreateTenantRequest"> & {
   /**
    * @generated from field: string name = 1;
    */
@@ -93,175 +103,221 @@ export type CreateOrgRequest = Message<"core.v1.CreateOrgRequest"> & {
 };
 
 /**
- * Describes the message core.v1.CreateOrgRequest.
- * Use `create(CreateOrgRequestSchema)` to create a new message.
+ * Describes the message core.v1.CreateTenantRequest.
+ * Use `create(CreateTenantRequestSchema)` to create a new message.
  */
-export const CreateOrgRequestSchema: GenMessage<CreateOrgRequest> = /*@__PURE__*/
+export const CreateTenantRequestSchema: GenMessage<CreateTenantRequest> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 2);
 
 /**
- * @generated from message core.v1.CreateOrgResponse
+ * @generated from message core.v1.CreateTenantResponse
  */
-export type CreateOrgResponse = Message<"core.v1.CreateOrgResponse"> & {
+export type CreateTenantResponse = Message<"core.v1.CreateTenantResponse"> & {
   /**
-   * @generated from field: core.v1.Org org = 1;
+   * @generated from field: core.v1.Tenant tenant = 1;
    */
-  org?: Org | undefined;
+  tenant?: Tenant | undefined;
+
+  /**
+   * Raw key returned once at creation. Never stored or logged.
+   *
+   * @generated from field: string admin_key = 2;
+   */
+  adminKey: string;
 };
 
 /**
- * Describes the message core.v1.CreateOrgResponse.
- * Use `create(CreateOrgResponseSchema)` to create a new message.
+ * Describes the message core.v1.CreateTenantResponse.
+ * Use `create(CreateTenantResponseSchema)` to create a new message.
  */
-export const CreateOrgResponseSchema: GenMessage<CreateOrgResponse> = /*@__PURE__*/
+export const CreateTenantResponseSchema: GenMessage<CreateTenantResponse> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 3);
 
 /**
- * @generated from message core.v1.GetOrgRequest
+ * @generated from message core.v1.GetTenantRequest
  */
-export type GetOrgRequest = Message<"core.v1.GetOrgRequest"> & {
+export type GetTenantRequest = Message<"core.v1.GetTenantRequest"> & {
   /**
-   * @generated from field: string org_id = 1;
+   * @generated from field: string tenant_id = 1;
    */
-  orgId: string;
+  tenantId: string;
 };
 
 /**
- * Describes the message core.v1.GetOrgRequest.
- * Use `create(GetOrgRequestSchema)` to create a new message.
+ * Describes the message core.v1.GetTenantRequest.
+ * Use `create(GetTenantRequestSchema)` to create a new message.
  */
-export const GetOrgRequestSchema: GenMessage<GetOrgRequest> = /*@__PURE__*/
+export const GetTenantRequestSchema: GenMessage<GetTenantRequest> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 4);
 
 /**
- * @generated from message core.v1.GetOrgResponse
+ * @generated from message core.v1.GetTenantResponse
  */
-export type GetOrgResponse = Message<"core.v1.GetOrgResponse"> & {
+export type GetTenantResponse = Message<"core.v1.GetTenantResponse"> & {
   /**
-   * @generated from field: core.v1.Org org = 1;
+   * @generated from field: core.v1.Tenant tenant = 1;
    */
-  org?: Org | undefined;
+  tenant?: Tenant | undefined;
 };
 
 /**
- * Describes the message core.v1.GetOrgResponse.
- * Use `create(GetOrgResponseSchema)` to create a new message.
+ * Describes the message core.v1.GetTenantResponse.
+ * Use `create(GetTenantResponseSchema)` to create a new message.
  */
-export const GetOrgResponseSchema: GenMessage<GetOrgResponse> = /*@__PURE__*/
+export const GetTenantResponseSchema: GenMessage<GetTenantResponse> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 5);
 
 /**
- * @generated from message core.v1.InviteMemberRequest
+ * @generated from message core.v1.ListTenantsRequest
  */
-export type InviteMemberRequest = Message<"core.v1.InviteMemberRequest"> & {
-  /**
-   * @generated from field: string org_id = 1;
-   */
-  orgId: string;
-
-  /**
-   * Email of an existing user. Invitation flows for unknown emails are a
-   * later phase; for now the user must already exist.
-   *
-   * @generated from field: string email = 2;
-   */
-  email: string;
-
-  /**
-   * @generated from field: core.v1.OrgRole role = 3;
-   */
-  role: OrgRole;
+export type ListTenantsRequest = Message<"core.v1.ListTenantsRequest"> & {
 };
 
 /**
- * Describes the message core.v1.InviteMemberRequest.
- * Use `create(InviteMemberRequestSchema)` to create a new message.
+ * Describes the message core.v1.ListTenantsRequest.
+ * Use `create(ListTenantsRequestSchema)` to create a new message.
  */
-export const InviteMemberRequestSchema: GenMessage<InviteMemberRequest> = /*@__PURE__*/
+export const ListTenantsRequestSchema: GenMessage<ListTenantsRequest> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 6);
 
 /**
- * @generated from message core.v1.InviteMemberResponse
+ * @generated from message core.v1.ListTenantsResponse
  */
-export type InviteMemberResponse = Message<"core.v1.InviteMemberResponse"> & {
+export type ListTenantsResponse = Message<"core.v1.ListTenantsResponse"> & {
   /**
-   * @generated from field: core.v1.OrgMember member = 1;
+   * Tenants the caller's key can see (its own tenant).
+   *
+   * @generated from field: repeated core.v1.Tenant tenants = 1;
    */
-  member?: OrgMember | undefined;
+  tenants: Tenant[];
 };
 
 /**
- * Describes the message core.v1.InviteMemberResponse.
- * Use `create(InviteMemberResponseSchema)` to create a new message.
+ * Describes the message core.v1.ListTenantsResponse.
+ * Use `create(ListTenantsResponseSchema)` to create a new message.
  */
-export const InviteMemberResponseSchema: GenMessage<InviteMemberResponse> = /*@__PURE__*/
+export const ListTenantsResponseSchema: GenMessage<ListTenantsResponse> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 7);
 
 /**
- * @generated from message core.v1.ListMembersRequest
+ * @generated from message core.v1.CreateAPIKeyRequest
  */
-export type ListMembersRequest = Message<"core.v1.ListMembersRequest"> & {
+export type CreateAPIKeyRequest = Message<"core.v1.CreateAPIKeyRequest"> & {
   /**
-   * @generated from field: string org_id = 1;
+   * @generated from field: string tenant_id = 1;
    */
-  orgId: string;
+  tenantId: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: core.v1.KeyScope scope = 3;
+   */
+  scope: KeyScope;
 };
 
 /**
- * Describes the message core.v1.ListMembersRequest.
- * Use `create(ListMembersRequestSchema)` to create a new message.
+ * Describes the message core.v1.CreateAPIKeyRequest.
+ * Use `create(CreateAPIKeyRequestSchema)` to create a new message.
  */
-export const ListMembersRequestSchema: GenMessage<ListMembersRequest> = /*@__PURE__*/
+export const CreateAPIKeyRequestSchema: GenMessage<CreateAPIKeyRequest> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 8);
 
 /**
- * @generated from message core.v1.ListMembersResponse
+ * @generated from message core.v1.CreateAPIKeyResponse
  */
-export type ListMembersResponse = Message<"core.v1.ListMembersResponse"> & {
+export type CreateAPIKeyResponse = Message<"core.v1.CreateAPIKeyResponse"> & {
   /**
-   * @generated from field: repeated core.v1.OrgMember members = 1;
+   * @generated from field: core.v1.APIKeyInfo key = 1;
    */
-  members: OrgMember[];
+  key?: APIKeyInfo | undefined;
+
+  /**
+   * Raw key returned once. Never stored or logged.
+   *
+   * @generated from field: string raw_key = 2;
+   */
+  rawKey: string;
 };
 
 /**
- * Describes the message core.v1.ListMembersResponse.
- * Use `create(ListMembersResponseSchema)` to create a new message.
+ * Describes the message core.v1.CreateAPIKeyResponse.
+ * Use `create(CreateAPIKeyResponseSchema)` to create a new message.
  */
-export const ListMembersResponseSchema: GenMessage<ListMembersResponse> = /*@__PURE__*/
+export const CreateAPIKeyResponseSchema: GenMessage<CreateAPIKeyResponse> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 9);
 
 /**
- * @generated from message core.v1.ListOrgsRequest
+ * @generated from message core.v1.ListAPIKeysRequest
  */
-export type ListOrgsRequest = Message<"core.v1.ListOrgsRequest"> & {
+export type ListAPIKeysRequest = Message<"core.v1.ListAPIKeysRequest"> & {
+  /**
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
 };
 
 /**
- * Describes the message core.v1.ListOrgsRequest.
- * Use `create(ListOrgsRequestSchema)` to create a new message.
+ * Describes the message core.v1.ListAPIKeysRequest.
+ * Use `create(ListAPIKeysRequestSchema)` to create a new message.
  */
-export const ListOrgsRequestSchema: GenMessage<ListOrgsRequest> = /*@__PURE__*/
+export const ListAPIKeysRequestSchema: GenMessage<ListAPIKeysRequest> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 10);
 
 /**
- * @generated from message core.v1.ListOrgsResponse
+ * @generated from message core.v1.ListAPIKeysResponse
  */
-export type ListOrgsResponse = Message<"core.v1.ListOrgsResponse"> & {
+export type ListAPIKeysResponse = Message<"core.v1.ListAPIKeysResponse"> & {
   /**
-   * Orgs the caller is a member of.
-   *
-   * @generated from field: repeated core.v1.Org orgs = 1;
+   * @generated from field: repeated core.v1.APIKeyInfo keys = 1;
    */
-  orgs: Org[];
+  keys: APIKeyInfo[];
 };
 
 /**
- * Describes the message core.v1.ListOrgsResponse.
- * Use `create(ListOrgsResponseSchema)` to create a new message.
+ * Describes the message core.v1.ListAPIKeysResponse.
+ * Use `create(ListAPIKeysResponseSchema)` to create a new message.
  */
-export const ListOrgsResponseSchema: GenMessage<ListOrgsResponse> = /*@__PURE__*/
+export const ListAPIKeysResponseSchema: GenMessage<ListAPIKeysResponse> = /*@__PURE__*/
   messageDesc(file_core_v1_org, 11);
+
+/**
+ * @generated from message core.v1.RevokeAPIKeyRequest
+ */
+export type RevokeAPIKeyRequest = Message<"core.v1.RevokeAPIKeyRequest"> & {
+  /**
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * @generated from field: string key_id = 2;
+   */
+  keyId: string;
+};
+
+/**
+ * Describes the message core.v1.RevokeAPIKeyRequest.
+ * Use `create(RevokeAPIKeyRequestSchema)` to create a new message.
+ */
+export const RevokeAPIKeyRequestSchema: GenMessage<RevokeAPIKeyRequest> = /*@__PURE__*/
+  messageDesc(file_core_v1_org, 12);
+
+/**
+ * @generated from message core.v1.RevokeAPIKeyResponse
+ */
+export type RevokeAPIKeyResponse = Message<"core.v1.RevokeAPIKeyResponse"> & {
+};
+
+/**
+ * Describes the message core.v1.RevokeAPIKeyResponse.
+ * Use `create(RevokeAPIKeyResponseSchema)` to create a new message.
+ */
+export const RevokeAPIKeyResponseSchema: GenMessage<RevokeAPIKeyResponse> = /*@__PURE__*/
+  messageDesc(file_core_v1_org, 13);
 
 /**
  * CredentialInfo is the listable, secret-free view of a credential.
@@ -298,16 +354,16 @@ export type CredentialInfo = Message<"core.v1.CredentialInfo"> & {
  * Use `create(CredentialInfoSchema)` to create a new message.
  */
 export const CredentialInfoSchema: GenMessage<CredentialInfo> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 12);
+  messageDesc(file_core_v1_org, 14);
 
 /**
  * @generated from message core.v1.PutCredentialRequest
  */
 export type PutCredentialRequest = Message<"core.v1.PutCredentialRequest"> & {
   /**
-   * @generated from field: string org_id = 1;
+   * @generated from field: string tenant_id = 1;
    */
-  orgId: string;
+  tenantId: string;
 
   /**
    * inference:openai | inference:anthropic | inference:bedrock
@@ -351,7 +407,7 @@ export type PutCredentialRequest = Message<"core.v1.PutCredentialRequest"> & {
  * Use `create(PutCredentialRequestSchema)` to create a new message.
  */
 export const PutCredentialRequestSchema: GenMessage<PutCredentialRequest> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 13);
+  messageDesc(file_core_v1_org, 15);
 
 /**
  * @generated from message core.v1.PutCredentialResponse
@@ -368,16 +424,16 @@ export type PutCredentialResponse = Message<"core.v1.PutCredentialResponse"> & {
  * Use `create(PutCredentialResponseSchema)` to create a new message.
  */
 export const PutCredentialResponseSchema: GenMessage<PutCredentialResponse> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 14);
+  messageDesc(file_core_v1_org, 16);
 
 /**
  * @generated from message core.v1.ListCredentialsRequest
  */
 export type ListCredentialsRequest = Message<"core.v1.ListCredentialsRequest"> & {
   /**
-   * @generated from field: string org_id = 1;
+   * @generated from field: string tenant_id = 1;
    */
-  orgId: string;
+  tenantId: string;
 };
 
 /**
@@ -385,7 +441,7 @@ export type ListCredentialsRequest = Message<"core.v1.ListCredentialsRequest"> &
  * Use `create(ListCredentialsRequestSchema)` to create a new message.
  */
 export const ListCredentialsRequestSchema: GenMessage<ListCredentialsRequest> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 15);
+  messageDesc(file_core_v1_org, 17);
 
 /**
  * @generated from message core.v1.ListCredentialsResponse
@@ -402,16 +458,16 @@ export type ListCredentialsResponse = Message<"core.v1.ListCredentialsResponse">
  * Use `create(ListCredentialsResponseSchema)` to create a new message.
  */
 export const ListCredentialsResponseSchema: GenMessage<ListCredentialsResponse> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 16);
+  messageDesc(file_core_v1_org, 18);
 
 /**
  * @generated from message core.v1.DeleteCredentialRequest
  */
 export type DeleteCredentialRequest = Message<"core.v1.DeleteCredentialRequest"> & {
   /**
-   * @generated from field: string org_id = 1;
+   * @generated from field: string tenant_id = 1;
    */
-  orgId: string;
+  tenantId: string;
 
   /**
    * @generated from field: string kind = 2;
@@ -429,7 +485,7 @@ export type DeleteCredentialRequest = Message<"core.v1.DeleteCredentialRequest">
  * Use `create(DeleteCredentialRequestSchema)` to create a new message.
  */
 export const DeleteCredentialRequestSchema: GenMessage<DeleteCredentialRequest> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 17);
+  messageDesc(file_core_v1_org, 19);
 
 /**
  * @generated from message core.v1.DeleteCredentialResponse
@@ -442,7 +498,7 @@ export type DeleteCredentialResponse = Message<"core.v1.DeleteCredentialResponse
  * Use `create(DeleteCredentialResponseSchema)` to create a new message.
  */
 export const DeleteCredentialResponseSchema: GenMessage<DeleteCredentialResponse> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 18);
+  messageDesc(file_core_v1_org, 20);
 
 /**
  * ProviderCapability names one optional behavior a registration's control
@@ -477,7 +533,7 @@ export type ProviderCapability = Message<"core.v1.ProviderCapability"> & {
  * Use `create(ProviderCapabilitySchema)` to create a new message.
  */
 export const ProviderCapabilitySchema: GenMessage<ProviderCapability> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 19);
+  messageDesc(file_core_v1_org, 21);
 
 /**
  * @generated from message core.v1.ProviderInstance
@@ -489,9 +545,9 @@ export type ProviderInstance = Message<"core.v1.ProviderInstance"> & {
   id: string;
 
   /**
-   * @generated from field: string org_id = 2;
+   * @generated from field: string tenant_id = 2;
    */
-  orgId: string;
+  tenantId: string;
 
   /**
    * @generated from field: string kind = 3;
@@ -529,16 +585,16 @@ export type ProviderInstance = Message<"core.v1.ProviderInstance"> & {
  * Use `create(ProviderInstanceSchema)` to create a new message.
  */
 export const ProviderInstanceSchema: GenMessage<ProviderInstance> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 20);
+  messageDesc(file_core_v1_org, 22);
 
 /**
  * @generated from message core.v1.RegisterProviderRequest
  */
 export type RegisterProviderRequest = Message<"core.v1.RegisterProviderRequest"> & {
   /**
-   * @generated from field: string org_id = 1;
+   * @generated from field: string tenant_id = 1;
    */
-  orgId: string;
+  tenantId: string;
 
   /**
    * @generated from field: string kind = 2;
@@ -561,7 +617,7 @@ export type RegisterProviderRequest = Message<"core.v1.RegisterProviderRequest">
  * Use `create(RegisterProviderRequestSchema)` to create a new message.
  */
 export const RegisterProviderRequestSchema: GenMessage<RegisterProviderRequest> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 21);
+  messageDesc(file_core_v1_org, 23);
 
 /**
  * @generated from message core.v1.RegisterProviderResponse
@@ -578,16 +634,16 @@ export type RegisterProviderResponse = Message<"core.v1.RegisterProviderResponse
  * Use `create(RegisterProviderResponseSchema)` to create a new message.
  */
 export const RegisterProviderResponseSchema: GenMessage<RegisterProviderResponse> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 22);
+  messageDesc(file_core_v1_org, 24);
 
 /**
  * @generated from message core.v1.ListProvidersRequest
  */
 export type ListProvidersRequest = Message<"core.v1.ListProvidersRequest"> & {
   /**
-   * @generated from field: string org_id = 1;
+   * @generated from field: string tenant_id = 1;
    */
-  orgId: string;
+  tenantId: string;
 };
 
 /**
@@ -595,7 +651,7 @@ export type ListProvidersRequest = Message<"core.v1.ListProvidersRequest"> & {
  * Use `create(ListProvidersRequestSchema)` to create a new message.
  */
 export const ListProvidersRequestSchema: GenMessage<ListProvidersRequest> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 23);
+  messageDesc(file_core_v1_org, 25);
 
 /**
  * @generated from message core.v1.ListProvidersResponse
@@ -612,16 +668,16 @@ export type ListProvidersResponse = Message<"core.v1.ListProvidersResponse"> & {
  * Use `create(ListProvidersResponseSchema)` to create a new message.
  */
 export const ListProvidersResponseSchema: GenMessage<ListProvidersResponse> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 24);
+  messageDesc(file_core_v1_org, 26);
 
 /**
  * @generated from message core.v1.DeleteProviderRequest
  */
 export type DeleteProviderRequest = Message<"core.v1.DeleteProviderRequest"> & {
   /**
-   * @generated from field: string org_id = 1;
+   * @generated from field: string tenant_id = 1;
    */
-  orgId: string;
+  tenantId: string;
 
   /**
    * @generated from field: string provider_id = 2;
@@ -634,7 +690,7 @@ export type DeleteProviderRequest = Message<"core.v1.DeleteProviderRequest"> & {
  * Use `create(DeleteProviderRequestSchema)` to create a new message.
  */
 export const DeleteProviderRequestSchema: GenMessage<DeleteProviderRequest> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 25);
+  messageDesc(file_core_v1_org, 27);
 
 /**
  * @generated from message core.v1.DeleteProviderResponse
@@ -647,91 +703,96 @@ export type DeleteProviderResponse = Message<"core.v1.DeleteProviderResponse"> &
  * Use `create(DeleteProviderResponseSchema)` to create a new message.
  */
 export const DeleteProviderResponseSchema: GenMessage<DeleteProviderResponse> = /*@__PURE__*/
-  messageDesc(file_core_v1_org, 26);
+  messageDesc(file_core_v1_org, 28);
 
 /**
- * OrgRole is a user's role within an org.
+ * KeyScope is the authority granted by one API key.
  *
- * @generated from enum core.v1.OrgRole
+ * @generated from enum core.v1.KeyScope
  */
-export enum OrgRole {
+export enum KeyScope {
   /**
-   * @generated from enum value: ORG_ROLE_UNSPECIFIED = 0;
+   * @generated from enum value: KEY_SCOPE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: ORG_ROLE_OWNER = 1;
+   * @generated from enum value: KEY_SCOPE_ADMIN = 1;
    */
-  OWNER = 1,
+  ADMIN = 1,
 
   /**
-   * @generated from enum value: ORG_ROLE_ADMIN = 2;
+   * @generated from enum value: KEY_SCOPE_SESSIONS = 2;
    */
-  ADMIN = 2,
-
-  /**
-   * @generated from enum value: ORG_ROLE_MEMBER = 3;
-   */
-  MEMBER = 3,
+  SESSIONS = 2,
 }
 
 /**
- * Describes the enum core.v1.OrgRole.
+ * Describes the enum core.v1.KeyScope.
  */
-export const OrgRoleSchema: GenEnum<OrgRole> = /*@__PURE__*/
+export const KeyScopeSchema: GenEnum<KeyScope> = /*@__PURE__*/
   enumDesc(file_core_v1_org, 0);
 
 /**
- * OrgService manages orgs, membership, credentials, and provider instances. The caller of
- * CreateOrg becomes the org's owner. Credential payloads are write-only and
- * encrypted at rest.
+ * TenantService manages tenants, API keys, credentials, and provider
+ * instances. CreateTenant is bootstrap-only (no prior key required once a
+ * deployment-level bootstrap path exists; for now any authenticated admin
+ * key may create additional tenants). Credential payloads are write-only and
+ * encrypted at rest. Raw API keys are returned once at creation.
  *
- * @generated from service core.v1.OrgService
+ * @generated from service core.v1.TenantService
  */
-export const OrgService: GenService<{
+export const TenantService: GenService<{
   /**
-   * @generated from rpc core.v1.OrgService.CreateOrg
+   * @generated from rpc core.v1.TenantService.CreateTenant
    */
-  createOrg: {
+  createTenant: {
     methodKind: "unary";
-    input: typeof CreateOrgRequestSchema;
-    output: typeof CreateOrgResponseSchema;
+    input: typeof CreateTenantRequestSchema;
+    output: typeof CreateTenantResponseSchema;
   },
   /**
-   * @generated from rpc core.v1.OrgService.GetOrg
+   * @generated from rpc core.v1.TenantService.GetTenant
    */
-  getOrg: {
+  getTenant: {
     methodKind: "unary";
-    input: typeof GetOrgRequestSchema;
-    output: typeof GetOrgResponseSchema;
+    input: typeof GetTenantRequestSchema;
+    output: typeof GetTenantResponseSchema;
   },
   /**
-   * @generated from rpc core.v1.OrgService.ListOrgs
+   * @generated from rpc core.v1.TenantService.ListTenants
    */
-  listOrgs: {
+  listTenants: {
     methodKind: "unary";
-    input: typeof ListOrgsRequestSchema;
-    output: typeof ListOrgsResponseSchema;
+    input: typeof ListTenantsRequestSchema;
+    output: typeof ListTenantsResponseSchema;
   },
   /**
-   * @generated from rpc core.v1.OrgService.InviteMember
+   * @generated from rpc core.v1.TenantService.CreateAPIKey
    */
-  inviteMember: {
+  createAPIKey: {
     methodKind: "unary";
-    input: typeof InviteMemberRequestSchema;
-    output: typeof InviteMemberResponseSchema;
+    input: typeof CreateAPIKeyRequestSchema;
+    output: typeof CreateAPIKeyResponseSchema;
   },
   /**
-   * @generated from rpc core.v1.OrgService.ListMembers
+   * @generated from rpc core.v1.TenantService.ListAPIKeys
    */
-  listMembers: {
+  listAPIKeys: {
     methodKind: "unary";
-    input: typeof ListMembersRequestSchema;
-    output: typeof ListMembersResponseSchema;
+    input: typeof ListAPIKeysRequestSchema;
+    output: typeof ListAPIKeysResponseSchema;
   },
   /**
-   * @generated from rpc core.v1.OrgService.PutCredential
+   * @generated from rpc core.v1.TenantService.RevokeAPIKey
+   */
+  revokeAPIKey: {
+    methodKind: "unary";
+    input: typeof RevokeAPIKeyRequestSchema;
+    output: typeof RevokeAPIKeyResponseSchema;
+  },
+  /**
+   * @generated from rpc core.v1.TenantService.PutCredential
    */
   putCredential: {
     methodKind: "unary";
@@ -739,7 +800,7 @@ export const OrgService: GenService<{
     output: typeof PutCredentialResponseSchema;
   },
   /**
-   * @generated from rpc core.v1.OrgService.ListCredentials
+   * @generated from rpc core.v1.TenantService.ListCredentials
    */
   listCredentials: {
     methodKind: "unary";
@@ -747,7 +808,7 @@ export const OrgService: GenService<{
     output: typeof ListCredentialsResponseSchema;
   },
   /**
-   * @generated from rpc core.v1.OrgService.DeleteCredential
+   * @generated from rpc core.v1.TenantService.DeleteCredential
    */
   deleteCredential: {
     methodKind: "unary";
@@ -755,7 +816,7 @@ export const OrgService: GenService<{
     output: typeof DeleteCredentialResponseSchema;
   },
   /**
-   * @generated from rpc core.v1.OrgService.RegisterProvider
+   * @generated from rpc core.v1.TenantService.RegisterProvider
    */
   registerProvider: {
     methodKind: "unary";
@@ -763,7 +824,7 @@ export const OrgService: GenService<{
     output: typeof RegisterProviderResponseSchema;
   },
   /**
-   * @generated from rpc core.v1.OrgService.ListProviders
+   * @generated from rpc core.v1.TenantService.ListProviders
    */
   listProviders: {
     methodKind: "unary";
@@ -771,7 +832,7 @@ export const OrgService: GenService<{
     output: typeof ListProvidersResponseSchema;
   },
   /**
-   * @generated from rpc core.v1.OrgService.DeleteProvider
+   * @generated from rpc core.v1.TenantService.DeleteProvider
    */
   deleteProvider: {
     methodKind: "unary";

@@ -28,11 +28,11 @@ func InferenceCredentialKind(provider string) string {
 	}
 }
 
-// Credential is an org-scoped secret. Payload is AES-GCM ciphertext at rest;
+// Credential is a tenant-scoped secret. Payload is AES-GCM ciphertext at rest;
 // only workers decrypt it, at point of use. Cleartext never appears in
 // events, logs, or RPC responses.
 type Credential struct {
-	OrgID      OrgID
+	TenantID   TenantID
 	Kind       string
 	Name       string
 	EncPayload []byte
@@ -56,7 +56,7 @@ type InferencePayload struct {
 	ExtraHeaders map[string]string `json:"extra_headers,omitempty"`
 }
 
-// CredentialStore manages credentials within one org. Put upserts (rotate =
+// CredentialStore manages credentials within one tenant. Put upserts (rotate =
 // put with the same kind+name).
 type CredentialStore interface {
 	Put(ctx context.Context, c Credential) error

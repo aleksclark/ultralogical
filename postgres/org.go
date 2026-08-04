@@ -4,139 +4,136 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
 	uc "github.com/aleksclark/ultracore"
 )
 
-type orgStore struct{ s *Store }
+type tenantStore struct{ s *Store }
 
-func (o *orgStore) Create(ctx context.Context, org uc.Org) error {
+func (o *tenantStore) Create(ctx context.Context, tenant uc.Tenant) error {
 	_, err := o.s.db().Exec(ctx,
 		`INSERT INTO orgs (id, name) VALUES ($1, $2)`,
-		string(org.ID), org.Name)
+		string(tenant.ID), tenant.Name)
 	if isUniqueViolation(err) {
 		return uc.ErrAlreadyExists
 	}
 	if err != nil {
-		return fmt.Errorf("postgres: create org: %w", err)
+		return fmt.Errorf("postgres: create tenant: %w", err)
 	}
 	return nil
 }
 
-func (o *orgStore) Get(ctx context.Context, id uc.OrgID) (uc.Org, error) {
-	var org uc.Org
+func (o *tenantStore) Get(ctx context.Context, id uc.TenantID) (uc.Tenant, error) {
+	var tenant uc.Tenant
 	err := o.s.db().QueryRow(ctx,
 		`SELECT id, name, created_at FROM orgs WHERE id = $1`, string(id)).
-		Scan(&org.ID, &org.Name, &org.CreatedAt)
+		Scan(&tenant.ID, &tenant.Name, &tenant.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return uc.Org{}, uc.ErrNotFound
+		return uc.Tenant{}, uc.ErrNotFound
 	}
 	if err != nil {
-		return uc.Org{}, fmt.Errorf("postgres: get org: %w", err)
+		return uc.Tenant{}, fmt.Errorf("postgres: get tenant: %w", err)
 	}
-	return org, nil
+	return tenant, nil
 }
 
-func (o *orgStore) AddMember(ctx context.Context, m uc.OrgMember) error {
-	_, err := o.s.db().Exec(ctx,
-		`INSERT INTO org_members (org_id, user_id, role) VALUES ($1, $2, $3)`,
-		string(m.OrgID), string(m.UserID), string(m.Role))
+func (o *tenantStore) List(ctx context.Context) ([]uc.Tenant, error) {
+	rows, err := o.s.db().Query(ctx,
+		`SELECT id, name, created_at FROM orgs ORDER BY created_at`)
+	if err != nil {
+		return nil, fmt.Errorf("postgres: list tenants: %w", err)
+	}
+	defer rows.Close()
+	var out []uc.Tenant
+	for rows.Next() {
+		var t uc.Tenant
+		if err := rows.Scan(&t.ID, &t.Name, &t.CreatedAt); err != nil {
+			return nil, fmt.Errorf("postgres: scan tenant: %w", err)
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+type apiKeyStore struct{ s *Store }
+
+func (k *apiKeyStore) Create(ctx context.Context, key uc.APIKey) error {
+	_, err := k.s.db().Exec(ctx,
+		`INSERT INTO api_keys (id, org_id, name, scope, prefix, key_hash, key_enc)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		string(key.ID), string(key.TenantID), key.Name, string(key.Scope),
+		key.Prefix, key.KeyHash, key.KeyEnc)
 	if isUniqueViolation(err) {
 		return uc.ErrAlreadyExists
 	}
 	if err != nil {
-		return fmt.Errorf("postgres: add member: %w", err)
+		return fmt.Errorf("postgres: create api key: %w", err)
 	}
 	return nil
 }
 
-func (o *orgStore) ListMembers(ctx context.Context, id uc.OrgID) ([]uc.OrgMember, error) {
-	rows, err := o.s.db().Query(ctx,
-		`SELECT org_id, user_id, role, joined_at FROM org_members WHERE org_id = $1 ORDER BY joined_at`,
-		string(id))
-	if err != nil {
-		return nil, fmt.Errorf("postgres: list members: %w", err)
-	}
-	defer rows.Close()
-	var members []uc.OrgMember
-	for rows.Next() {
-		var m uc.OrgMember
-		if err := rows.Scan(&m.OrgID, &m.UserID, &m.Role, &m.JoinedAt); err != nil {
-			return nil, fmt.Errorf("postgres: scan member: %w", err)
-		}
-		members = append(members, m)
-	}
-	return members, rows.Err()
-}
-
-func (o *orgStore) MemberRole(ctx context.Context, id uc.OrgID, user uc.UserID) (uc.OrgRole, error) {
-	var role uc.OrgRole
-	err := o.s.db().QueryRow(ctx,
-		`SELECT role FROM org_members WHERE org_id = $1 AND user_id = $2`,
-		string(id), string(user)).Scan(&role)
+func (k *apiKeyStore) scan(row pgx.Row) (uc.APIKey, error) {
+	var key uc.APIKey
+	var scope string
+	err := row.Scan(&key.ID, &key.TenantID, &key.Name, &scope, &key.Prefix,
+		&key.KeyHash, &key.KeyEnc, &key.CreatedAt, &key.RevokedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", uc.ErrNotFound
+		return uc.APIKey{}, uc.ErrNotFound
 	}
 	if err != nil {
-		return "", fmt.Errorf("postgres: member role: %w", err)
+		return uc.APIKey{}, fmt.Errorf("postgres: scan api key: %w", err)
 	}
-	return role, nil
+	key.Scope = uc.KeyScope(scope)
+	return key, nil
 }
 
-func (o *orgStore) ListForUser(ctx context.Context, user uc.UserID) ([]uc.Org, error) {
-	rows, err := o.s.db().Query(ctx,
-		`SELECT o.id, o.name, o.created_at
-		   FROM orgs o JOIN org_members m ON m.org_id = o.id
-		  WHERE m.user_id = $1 ORDER BY o.created_at`, string(user))
+func (k *apiKeyStore) GetByHash(ctx context.Context, hash []byte) (uc.APIKey, error) {
+	return k.scan(k.s.db().QueryRow(ctx,
+		`SELECT id, org_id, name, scope, prefix, key_hash, key_enc, created_at, revoked_at
+		   FROM api_keys WHERE key_hash = $1`, hash))
+}
+
+func (k *apiKeyStore) Get(ctx context.Context, id uc.APIKeyID) (uc.APIKey, error) {
+	return k.scan(k.s.db().QueryRow(ctx,
+		`SELECT id, org_id, name, scope, prefix, key_hash, key_enc, created_at, revoked_at
+		   FROM api_keys WHERE id = $1`, string(id)))
+}
+
+func (k *apiKeyStore) List(ctx context.Context, tenant uc.TenantID) ([]uc.APIKeyInfo, error) {
+	rows, err := k.s.db().Query(ctx,
+		`SELECT id, org_id, name, scope, prefix, created_at, revoked_at
+		   FROM api_keys WHERE org_id = $1 ORDER BY created_at`, string(tenant))
 	if err != nil {
-		return nil, fmt.Errorf("postgres: list orgs for user: %w", err)
+		return nil, fmt.Errorf("postgres: list api keys: %w", err)
 	}
 	defer rows.Close()
-	var orgs []uc.Org
+	var out []uc.APIKeyInfo
 	for rows.Next() {
-		var o uc.Org
-		if err := rows.Scan(&o.ID, &o.Name, &o.CreatedAt); err != nil {
-			return nil, fmt.Errorf("postgres: scan org: %w", err)
+		var info uc.APIKeyInfo
+		var scope string
+		if err := rows.Scan(&info.ID, &info.TenantID, &info.Name, &scope,
+			&info.Prefix, &info.CreatedAt, &info.RevokedAt); err != nil {
+			return nil, fmt.Errorf("postgres: scan api key info: %w", err)
 		}
-		orgs = append(orgs, o)
+		info.Scope = uc.KeyScope(scope)
+		out = append(out, info)
 	}
-	return orgs, rows.Err()
+	return out, rows.Err()
 }
 
-type userStore struct{ s *Store }
-
-func (u *userStore) Create(ctx context.Context, user uc.User) error {
-	_, err := u.s.db().Exec(ctx,
-		`INSERT INTO users (id, email, display) VALUES ($1, $2, $3)`,
-		string(user.ID), user.Email, user.Display)
-	if isUniqueViolation(err) {
-		return uc.ErrAlreadyExists
-	}
+func (k *apiKeyStore) Revoke(ctx context.Context, tenant uc.TenantID, id uc.APIKeyID) error {
+	tag, err := k.s.db().Exec(ctx,
+		`UPDATE api_keys SET revoked_at = COALESCE(revoked_at, $3)
+		  WHERE id = $1 AND org_id = $2`,
+		string(id), string(tenant), time.Now().UTC())
 	if err != nil {
-		return fmt.Errorf("postgres: create user: %w", err)
+		return fmt.Errorf("postgres: revoke api key: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return uc.ErrNotFound
 	}
 	return nil
-}
-
-func (u *userStore) Get(ctx context.Context, id uc.UserID) (uc.User, error) {
-	return u.scanOne(ctx, `SELECT id, email, display, created_at FROM users WHERE id = $1`, string(id))
-}
-
-func (u *userStore) GetByEmail(ctx context.Context, email string) (uc.User, error) {
-	return u.scanOne(ctx, `SELECT id, email, display, created_at FROM users WHERE email = $1`, email)
-}
-
-func (u *userStore) scanOne(ctx context.Context, sql string, arg any) (uc.User, error) {
-	var user uc.User
-	err := u.s.db().QueryRow(ctx, sql, arg).
-		Scan(&user.ID, &user.Email, &user.Display, &user.CreatedAt)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return uc.User{}, uc.ErrNotFound
-	}
-	if err != nil {
-		return uc.User{}, fmt.Errorf("postgres: get user: %w", err)
-	}
-	return user, nil
 }

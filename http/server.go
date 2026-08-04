@@ -48,8 +48,8 @@ func NewHandler(cfg Config) http.Handler {
 
 	mux := http.NewServeMux()
 
-	orgPath, orgH := corev1connect.NewOrgServiceHandler(&orgHandler{store: cfg.Store, keyring: cfg.Keyring, providers: cfg.Providers}, interceptors)
-	mux.Handle(orgPath, orgH)
+	tenantPath, tenantH := corev1connect.NewTenantServiceHandler(&tenantHandler{store: cfg.Store, keyring: cfg.Keyring, providers: cfg.Providers}, interceptors)
+	mux.Handle(tenantPath, tenantH)
 
 	sessPath, sessH := corev1connect.NewSessionServiceHandler(&sessionHandler{store: cfg.Store}, interceptors)
 	mux.Handle(sessPath, sessH)

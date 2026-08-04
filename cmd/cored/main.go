@@ -3,8 +3,7 @@
 //
 //	DATABASE_URL     Postgres connection string (required)
 //	CORE_ADDR       listen address (default :8080)
-//	CORE_DEV_TOKENS static dev auth, "token=email,token2=email2" (required
-//	                 until real OIDC lands in Phase 7)
+//	CORE_MASTER_KEY AES-256 key for credential/API-key encryption (required)
 //	CORE_MIGRATE    run migrations at startup (default true)
 package main
 
@@ -49,10 +48,8 @@ func run(log *slog.Logger) error {
 	if addr == "" {
 		addr = ":8080"
 	}
-	devTokens := uc.ParseDevTokens(os.Getenv("CORE_DEV_TOKENS"))
-	if len(devTokens) == 0 {
-		return errors.New("CORE_DEV_TOKENS is required (no other authenticator is configured yet)")
-	}
+	// Authentication is tenant API keys looked up in the store. Bootstrap
+	// keys are seeded by the harness / CLI / ops tooling.
 	keyring, err := secrets.NewAESKeyring(os.Getenv("CORE_MASTER_KEY"))
 	if err != nil {
 		return err
@@ -96,7 +93,7 @@ func run(log *slog.Logger) error {
 	handler := ultrahttp.NewHandler(ultrahttp.Config{
 		Store:        store,
 		Providers:    providers,
-		Auth:         uc.NewDevTokenAuthenticator(store, devTokens),
+		Auth:         uc.NewAPIKeyAuthenticator(store),
 		Bus:          bus,
 		Log:          log,
 		Keyring:      keyring,

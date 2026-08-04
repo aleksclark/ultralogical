@@ -45,7 +45,7 @@ func deterministicWaitID(parent uc.RunID, stepIndex int, toolCallID string) stri
 // has already resumed the parent, so the parent must not also be marked
 // awaiting.
 func (w *StepWorker) createWait(ctx context.Context, txs uc.Store, run uc.AgentRun, job StepJob, rec *stepRecorder) (park bool, err error) {
-	scope := txs.Org(run.OrgID)
+	scope := txs.Tenant(run.TenantID)
 	waitID := deterministicWaitID(run.ID, job.StepIndex, rec.waitToolCallID)
 	members := make([]uc.RunWaitMember, 0, len(rec.waitRunIDs))
 	for i, id := range rec.waitRunIDs {
@@ -61,7 +61,7 @@ func (w *StepWorker) createWait(ctx context.Context, txs uc.Store, run uc.AgentR
 	}
 	// Evaluate immediately: children that finished before this row existed are
 	// already terminal, and this is the only place that notices.
-	resumed, err := w.tryCloseWait(ctx, txs, run.OrgID, waitID, closeReasonChild)
+	resumed, err := w.tryCloseWait(ctx, txs, run.TenantID, waitID, closeReasonChild)
 	if err != nil {
 		return false, err
 	}
@@ -70,7 +70,7 @@ func (w *StepWorker) createWait(ctx context.Context, txs uc.Store, run uc.AgentR
 	}
 	// Arm the deadline in the same transaction as the wait, so a wait can
 	// never exist without something scheduled to time it out.
-	if err := w.Enqueue.EnqueueInTx(ctx, txs, WaitTimeoutJob{OrgID: string(run.OrgID)},
+	if err := w.Enqueue.EnqueueInTx(ctx, txs, WaitTimeoutJob{TenantID: string(run.TenantID)},
 		jobqueue.WithScheduledAt(wait.Deadline.Add(waitTimeoutSlack))); err != nil {
 		return false, err
 	}
@@ -98,8 +98,8 @@ const (
 // state: Close only affects a row still `open`, and MarkResumed only affects a
 // row whose resumption is unrecorded. Two concurrent terminal children, or a
 // child racing the timeout sweeper, therefore produce exactly one resumption.
-func (w *StepWorker) tryCloseWait(ctx context.Context, txs uc.Store, org uc.OrgID, waitID string, reason closeReason) (bool, error) {
-	scope := txs.Org(org)
+func (w *StepWorker) tryCloseWait(ctx context.Context, txs uc.Store, org uc.TenantID, waitID string, reason closeReason) (bool, error) {
+	scope := txs.Tenant(org)
 	wait, err := scope.Waits().GetForUpdate(ctx, waitID)
 	if errors.Is(err, uc.ErrNotFound) {
 		return false, nil
@@ -176,8 +176,8 @@ func (w *StepWorker) tryCloseWait(ctx context.Context, txs uc.Store, org uc.OrgI
 
 // resumeParent injects the wait's outcome as the result of the parent's
 // original tool call and enqueues its next step, at most once.
-func (w *StepWorker) resumeParent(ctx context.Context, txs uc.Store, org uc.OrgID, wait uc.RunWait, outcome uc.WaitOutcome, raw json.RawMessage) (bool, error) {
-	scope := txs.Org(org)
+func (w *StepWorker) resumeParent(ctx context.Context, txs uc.Store, org uc.TenantID, wait uc.RunWait, outcome uc.WaitOutcome, raw json.RawMessage) (bool, error) {
+	scope := txs.Tenant(org)
 	// MarkResumed is the at-most-once gate: whoever wins it resumes.
 	first, err := scope.Waits().MarkResumed(ctx, wait.ID)
 	if err != nil || !first {
@@ -213,7 +213,7 @@ func (w *StepWorker) resumeParent(ctx context.Context, txs uc.Store, org uc.OrgI
 		return false, err
 	}
 	if _, err := scope.Events().Append(ctx, parent.SessionID, uc.Event{
-		Actor: uc.Actor{Type: uc.ActorSystem}, Kind: uc.EventKindToolResult, Payload: payload,
+		Actor: uc.ActorSystem(), Kind: uc.EventKindToolResult, Payload: payload,
 	}); err != nil {
 		return false, err
 	}
@@ -229,7 +229,7 @@ func (w *StepWorker) resumeParent(ctx context.Context, txs uc.Store, org uc.OrgI
 		}
 	}
 	if err := w.Enqueue.EnqueueInTx(ctx, txs, StepJob{
-		RunID: string(parent.ID), OrgID: string(parent.OrgID),
+		RunID: string(parent.ID), TenantID: string(parent.TenantID),
 		SessionID: string(parent.SessionID), StepIndex: next,
 	}); err != nil {
 		return false, err
@@ -264,13 +264,13 @@ func appendWaitResult(raw json.RawMessage, wait uc.RunWait, outcome uc.WaitOutco
 // Every terminal path — completed, failed, cancelled — funnels through it, so
 // no child can quietly leave its parent parked forever.
 func (w *StepWorker) resolveChildWaits(ctx context.Context, txs uc.Store, child uc.AgentRun) error {
-	scope := txs.Org(child.OrgID)
+	scope := txs.Tenant(child.TenantID)
 	waits, err := scope.Waits().ListOpenForChild(ctx, child.ID)
 	if err != nil {
 		return err
 	}
 	for _, wait := range waits {
-		if _, err := w.tryCloseWait(ctx, txs, child.OrgID, wait.ID, closeReasonChild); err != nil {
+		if _, err := w.tryCloseWait(ctx, txs, child.TenantID, wait.ID, closeReasonChild); err != nil {
 			return err
 		}
 	}
@@ -280,15 +280,15 @@ func (w *StepWorker) resolveChildWaits(ctx context.Context, txs uc.Store, child 
 // AbandonWaits closes a terminal run's open waits from outside the loop
 // package. The API's cancel path needs it: a cancelled parent must not be
 // resumable by a child that finishes afterwards.
-func AbandonWaits(ctx context.Context, txs uc.Store, org uc.OrgID, parent uc.RunID) error {
+func AbandonWaits(ctx context.Context, txs uc.Store, org uc.TenantID, parent uc.RunID) error {
 	return (&StepWorker{}).abandonParentWaits(ctx, txs, org, parent)
 }
 
 // abandonParentWaits closes a terminal parent's open waits. Without it a
 // cancelled parent would leave an open wait the timeout sweeper keeps
 // visiting, whose children would try to resume a run that is already finished.
-func (w *StepWorker) abandonParentWaits(ctx context.Context, txs uc.Store, org uc.OrgID, parent uc.RunID) error {
-	scope := txs.Org(org)
+func (w *StepWorker) abandonParentWaits(ctx context.Context, txs uc.Store, org uc.TenantID, parent uc.RunID) error {
+	scope := txs.Tenant(org)
 	waits, err := scope.Waits().ListOpenForParent(ctx, parent)
 	if err != nil {
 		return err

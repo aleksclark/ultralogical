@@ -16,12 +16,12 @@ import (
 	"github.com/aleksclark/ultracore/secrets"
 )
 
-// StepJob is one durable step of one agent run. Org and session ride along
+// StepJob is one durable step of one agent run. Tenant and session ride along
 // so redelivered jobs need no directory lookups; they are immutable for the
 // life of the run.
 type StepJob struct {
 	RunID     string `json:"run_id"`
-	OrgID     string `json:"org_id"`
+	TenantID     string `json:"org_id"`
 	SessionID string `json:"session_id"`
 	StepIndex int    `json:"step_index"`
 }
@@ -87,7 +87,7 @@ func (w *StepWorker) txStale(ctx context.Context, fn func(uc.Store) error) error
 
 // Work implements jobqueue.Worker[StepJob].
 func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
-	scope := w.Store.Org(uc.OrgID(job.OrgID))
+	scope := w.Store.Tenant(uc.TenantID(job.TenantID))
 	runID := uc.RunID(job.RunID)
 	sessionID := uc.SessionID(job.SessionID)
 
@@ -110,7 +110,7 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 			return
 		}
 		if _, err := events.Append(ctx, sessionID, uc.Event{
-			Actor:   uc.Actor{Type: uc.ActorAgent, ID: job.RunID},
+			Actor:   uc.ActorAgent(uc.RunID(job.RunID)),
 			Kind:    kind,
 			Payload: b,
 		}); err != nil {
@@ -167,10 +167,10 @@ func (w *StepWorker) Work(ctx context.Context, job StepJob) error {
 	// the human or read the session's shared memory just because those tools
 	// happen to be built in.
 	var tools []fantasy.AgentTool
-	if run.Grants.AllowsTool("ask_user") {
+	if run.Policy.AllowsTool("ask_user") {
 		tools = append(tools, newAskUserTool(rec))
 	}
-	if run.Grants.AllowsTool("post_event") {
+	if run.Policy.AllowsTool("post_event") {
 		tools = append(tools, newPostEventTool(events, sessionID, runID))
 	}
 	tools = append(tools, memoryTools(w.Store, run)...)
@@ -261,7 +261,7 @@ func (w *StepWorker) claim(ctx context.Context, job StepJob) (uc.AgentRun, int, 
 	var run uc.AgentRun
 	var attempt int
 	err := w.txStale(ctx, func(txs uc.Store) error {
-		scope := txs.Org(uc.OrgID(job.OrgID))
+		scope := txs.Tenant(uc.TenantID(job.TenantID))
 		var err error
 		run, err = scope.Runs().GetForUpdate(ctx, uc.RunID(job.RunID))
 		if err != nil {
@@ -306,7 +306,7 @@ func (w *StepWorker) claim(ctx context.Context, job StepJob) (uc.AgentRun, int, 
 
 // countAttempts counts prior StepStarted events for this step index by
 // scanning the run's step_started events. Cheap for phase-1 scale.
-func (w *StepWorker) countAttempts(ctx context.Context, scope uc.OrgScope, job StepJob) int {
+func (w *StepWorker) countAttempts(ctx context.Context, scope uc.TenantScope, job StepJob) int {
 	count := 0
 	var from int64
 	for {
@@ -328,7 +328,7 @@ func (w *StepWorker) countAttempts(ctx context.Context, scope uc.OrgScope, job S
 }
 
 // pollCancel cancels the step context when a cancel request lands.
-func (w *StepWorker) pollCancel(ctx context.Context, scope uc.OrgScope, runID uc.RunID, cancel context.CancelCauseFunc) {
+func (w *StepWorker) pollCancel(ctx context.Context, scope uc.TenantScope, runID uc.RunID, cancel context.CancelCauseFunc) {
 	ticker := time.NewTicker(w.cancelPoll())
 	defer ticker.Stop()
 	for {
@@ -373,15 +373,15 @@ func (w *StepWorker) handleStreamError(ctx context.Context, job StepJob, stepCtx
 // inside the given transaction-bound store. It returns errCancelledCommit,
 // which txStale translates into a committed transaction + silent ack.
 func (w *StepWorker) markCancelledTx(ctx context.Context, txs uc.Store, job StepJob) error {
-	org := uc.OrgID(job.OrgID)
+	org := uc.TenantID(job.TenantID)
 	runID := uc.RunID(job.RunID)
-	scope := txs.Org(org)
+	scope := txs.Tenant(org)
 	if err := scope.Runs().SetState(ctx, runID, uc.RunCancelled, "", ""); err != nil {
 		return err
 	}
 	payload, _ := json.Marshal(uc.RunCancelledPayload{RunID: runID})
 	_, err := scope.Events().Append(ctx, uc.SessionID(job.SessionID), uc.Event{
-		Actor:   uc.Actor{Type: uc.ActorSystem},
+		Actor:   uc.ActorSystem(),
 		Kind:    uc.EventKindRunCancelled,
 		Payload: payload,
 	})
@@ -398,11 +398,11 @@ func (w *StepWorker) markCancelledTx(ctx context.Context, txs uc.Store, job Step
 // it was holding are abandoned, and waits it is a member of are re-evaluated.
 // Every terminal transition calls it, so cancellation and failure resolve
 // parents exactly like completion does.
-func (w *StepWorker) settleTerminalRun(ctx context.Context, txs uc.Store, org uc.OrgID, runID uc.RunID) error {
+func (w *StepWorker) settleTerminalRun(ctx context.Context, txs uc.Store, org uc.TenantID, runID uc.RunID) error {
 	if err := w.abandonParentWaits(ctx, txs, org, runID); err != nil {
 		return err
 	}
-	run, err := txs.Org(org).Runs().Get(ctx, runID)
+	run, err := txs.Tenant(org).Runs().Get(ctx, runID)
 	if err != nil {
 		return err
 	}
@@ -421,7 +421,7 @@ func waitAwaitingText(rec *stepRecorder) string {
 // failRun marks a terminal, typed failure.
 func (w *StepWorker) failRun(ctx context.Context, job StepJob, reason, message string) error {
 	return w.Store.Tx(ctx, func(txs uc.Store) error {
-		scope := txs.Org(uc.OrgID(job.OrgID))
+		scope := txs.Tenant(uc.TenantID(job.TenantID))
 		run, err := scope.Runs().GetForUpdate(ctx, uc.RunID(job.RunID))
 		if err != nil || run.State.Terminal() {
 			return nil
@@ -431,7 +431,7 @@ func (w *StepWorker) failRun(ctx context.Context, job StepJob, reason, message s
 		}
 		payload, _ := json.Marshal(uc.RunFailedPayload{RunID: run.ID, Reason: reason, Message: message})
 		if _, err := scope.Events().Append(ctx, uc.SessionID(job.SessionID), uc.Event{
-			Actor:   uc.Actor{Type: uc.ActorSystem},
+			Actor:   uc.ActorSystem(),
 			Kind:    uc.EventKindRunFailed,
 			Payload: payload,
 		}); err != nil {
@@ -439,7 +439,7 @@ func (w *StepWorker) failRun(ctx context.Context, job StepJob, reason, message s
 		}
 		// A failed child must resume its parent just as a completed one does,
 		// or one bad child parks the parent until its deadline.
-		return w.settleTerminalRun(ctx, txs, uc.OrgID(job.OrgID), run.ID)
+		return w.settleTerminalRun(ctx, txs, uc.TenantID(job.TenantID), run.ID)
 	})
 }
 
@@ -461,7 +461,7 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 	sessionID := uc.SessionID(job.SessionID)
 
 	err = w.txStale(ctx, func(txs uc.Store) error {
-		scope := txs.Org(uc.OrgID(job.OrgID))
+		scope := txs.Tenant(uc.TenantID(job.TenantID))
 		run, err := scope.Runs().GetForUpdate(ctx, runID)
 		if err != nil {
 			return err
@@ -489,7 +489,7 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 				return err
 			}
 			_, err = scope.Events().Append(ctx, sessionID, uc.Event{
-				Actor:   uc.Actor{Type: uc.ActorAgent, ID: job.RunID},
+				Actor:   uc.ActorAgent(uc.RunID(job.RunID)),
 				Kind:    kind,
 				Payload: b,
 			})
@@ -532,7 +532,7 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 		case step.FinishReason == fantasy.FinishReasonToolCalls:
 			// Continue: next step in the same commit.
 			return w.Enqueue.EnqueueInTx(ctx, txs, StepJob{
-				RunID: job.RunID, OrgID: job.OrgID, SessionID: job.SessionID,
+				RunID: job.RunID, TenantID: job.TenantID, SessionID: job.SessionID,
 				StepIndex: job.StepIndex + 1,
 			})
 		default:
@@ -557,7 +557,7 @@ func (w *StepWorker) commitOutcome(ctx context.Context, job StepJob, attempt int
 			}
 			// Both directions of the tree must settle: waits this run is a
 			// member of, and waits it was itself holding.
-			if err := w.abandonParentWaits(ctx, txs, run.OrgID, runID); err != nil {
+			if err := w.abandonParentWaits(ctx, txs, run.TenantID, runID); err != nil {
 				return err
 			}
 			return w.resolveChildWaits(ctx, txs, run)

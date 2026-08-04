@@ -6,7 +6,7 @@ We follow the standard package layout in
 [`package_layout.md`](package_layout.md), adapted as follows:
 
 1. **Root package (`core`, import alias `uc`) is for domain types** — types
-   (`Org`, `Session`, `Event`, `Grants`, ...) and interfaces (`Store`,
+   (`Tenant`, `Session`, `Event`, `Grants`, ...) and interfaces (`Store`,
    `EventBus`, `Authenticator`). It depends on no other package in the app.
    Logic is allowed only when it depends solely on domain types (e.g.
    `DevTokenAuthenticator`). Some source filenames are historical
@@ -35,7 +35,7 @@ first-party UI tree after E1; consumers bring UI.
 ## Go
 
 - Module `github.com/aleksclark/ultracore`, root package `core` (import as
-  `uc`). Domain IDs are typed strings (`uc.OrgID`, `uc.SessionID`, ...) —
+  `uc`). Domain IDs are typed strings (`uc.TenantID`, `uc.SessionID`, ...) —
   UUIDs minted with `google/uuid` at creation sites (handlers), not in the
   store.
 - Errors: stores translate backend errors to the sentinels in the root
@@ -45,7 +45,7 @@ first-party UI tree after E1; consumers bring UI.
 - Wrap errors with package-prefixed context: `fmt.Errorf("postgres: create
   org: %w", err)`.
 - SQL lives inline in store methods (no ORM, no query builder). Every
-  tenant-scoped query includes `org_id` — see the OrgScope rule in
+  tenant-scoped query includes `tenant_id (column still org_id until E4)` — see the TenantScope rule in
   agent_docs/architecture.md.
 - Migrations: `postgres/migrations/NNNNN_name.sql`, goose `-- +goose Up` /
   `-- +goose Down`, sequential 5-digit prefixes. Never edit an applied
@@ -82,7 +82,7 @@ first-party UI tree after E1; consumers bring UI.
 
 ## Things to never do
 
-- Add an unscoped accessor for tenant data to `Store` (only `SessionOrg`
+- Add an unscoped accessor for tenant data to `Store` (only `SessionTenant`
   directory lookups are allowed, and callers must collapse denials into
   not-found).
 - Return different errors for "missing" vs "not yours" (existence oracle).

@@ -19,7 +19,7 @@ import (
 
 // Client is an authenticated API client for one user.
 type Client struct {
-	Orgs       corev1connect.OrgServiceClient
+	Tenants    corev1connect.TenantServiceClient
 	Sessions   corev1connect.SessionServiceClient
 	Events     corev1connect.EventServiceClient
 	Agents     corev1connect.AgentServiceClient
@@ -29,23 +29,32 @@ type Client struct {
 
 type authTransport struct {
 	token string
+	actor string
 	base  http.RoundTripper
 }
 
 func (t *authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req = req.Clone(req.Context())
 	req.Header.Set("Authorization", "Bearer "+t.token)
+	if t.actor != "" {
+		req.Header.Set("X-Core-Actor", t.actor)
+	}
 	return t.base.RoundTrip(req)
 }
 
 // New builds a Client against baseURL, authenticating every request with the
 // given bearer token.
 func New(baseURL, token string) *Client {
+	return NewWithActor(baseURL, token, "service/test")
+}
+
+// NewWithActor builds a Client that sends the given X-Core-Actor header.
+func NewWithActor(baseURL, token, actor string) *Client {
 	httpClient := &http.Client{
-		Transport: &authTransport{token: token, base: http.DefaultTransport},
+		Transport: &authTransport{token: token, actor: actor, base: http.DefaultTransport},
 	}
 	return &Client{
-		Orgs:       corev1connect.NewOrgServiceClient(httpClient, baseURL),
+		Tenants:    corev1connect.NewTenantServiceClient(httpClient, baseURL),
 		Sessions:   corev1connect.NewSessionServiceClient(httpClient, baseURL),
 		Events:     corev1connect.NewEventServiceClient(httpClient, baseURL),
 		Agents:     corev1connect.NewAgentServiceClient(httpClient, baseURL),

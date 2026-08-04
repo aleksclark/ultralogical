@@ -6,72 +6,82 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/aleksclark/ultracore/gen/go/core/v1;corev1";
 
-// OrgRole is a user's role within an org.
-enum OrgRole {
-  ORG_ROLE_UNSPECIFIED = 0;
-  ORG_ROLE_OWNER = 1;
-  ORG_ROLE_ADMIN = 2;
-  ORG_ROLE_MEMBER = 3;
-}
-
-// Org is the tenancy boundary.
-message Org {
+// Tenant is the tenancy boundary.
+message Tenant {
   string id = 1;
   string name = 2;
   google.protobuf.Timestamp created_at = 4;
 }
 
-// OrgMember links a user to an org with a role.
-message OrgMember {
-  string org_id = 1;
-  string user_id = 2;
-  string email = 3;
-  OrgRole role = 4;
-  google.protobuf.Timestamp joined_at = 5;
+// KeyScope is the authority granted by one API key.
+enum KeyScope {
+  KEY_SCOPE_UNSPECIFIED = 0;
+  KEY_SCOPE_ADMIN = 1;
+  KEY_SCOPE_SESSIONS = 2;
 }
 
-message CreateOrgRequest {
+// APIKeyInfo is the listable, secret-free view of a tenant API key.
+message APIKeyInfo {
+  string id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  KeyScope scope = 4;
+  string prefix = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp revoked_at = 7;
+}
+
+message CreateTenantRequest {
   string name = 1;
 }
 
-message CreateOrgResponse {
-  Org org = 1;
+message CreateTenantResponse {
+  Tenant tenant = 1;
+  // Raw key returned once at creation. Never stored or logged.
+  string admin_key = 2;
 }
 
-message GetOrgRequest {
-  string org_id = 1;
+message GetTenantRequest {
+  string tenant_id = 1;
 }
 
-message GetOrgResponse {
-  Org org = 1;
+message GetTenantResponse {
+  Tenant tenant = 1;
 }
 
-message InviteMemberRequest {
-  string org_id = 1;
-  // Email of an existing user. Invitation flows for unknown emails are a
-  // later phase; for now the user must already exist.
-  string email = 2;
-  OrgRole role = 3;
+message ListTenantsRequest {}
+
+message ListTenantsResponse {
+  // Tenants the caller's key can see (its own tenant).
+  repeated Tenant tenants = 1;
 }
 
-message InviteMemberResponse {
-  OrgMember member = 1;
+message CreateAPIKeyRequest {
+  string tenant_id = 1;
+  string name = 2;
+  KeyScope scope = 3;
 }
 
-message ListMembersRequest {
-  string org_id = 1;
+message CreateAPIKeyResponse {
+  APIKeyInfo key = 1;
+  // Raw key returned once. Never stored or logged.
+  string raw_key = 2;
 }
 
-message ListMembersResponse {
-  repeated OrgMember members = 1;
+message ListAPIKeysRequest {
+  string tenant_id = 1;
 }
 
-message ListOrgsRequest {}
-
-message ListOrgsResponse {
-  // Orgs the caller is a member of.
-  repeated Org orgs = 1;
+message ListAPIKeysResponse {
+  repeated APIKeyInfo keys = 1;
 }
+
+message RevokeAPIKeyRequest {
+  string tenant_id = 1;
+  string key_id = 2;
+}
+
+message RevokeAPIKeyResponse {}
 
 // CredentialInfo is the listable, secret-free view of a credential.
 // Payload values are write-only: they never appear in any response.
@@ -83,7 +93,7 @@ message CredentialInfo {
 }
 
 message PutCredentialRequest {
-  string org_id = 1;
+  string tenant_id = 1;
   string kind = 2; // inference:openai | inference:anthropic | inference:bedrock
   string name = 3; // "default" if empty
   // Write-only secret material.
@@ -99,7 +109,7 @@ message PutCredentialResponse {
 }
 
 message ListCredentialsRequest {
-  string org_id = 1;
+  string tenant_id = 1;
 }
 
 message ListCredentialsResponse {
@@ -107,7 +117,7 @@ message ListCredentialsResponse {
 }
 
 message DeleteCredentialRequest {
-  string org_id = 1;
+  string tenant_id = 1;
   string kind = 2;
   string name = 3;
 }
@@ -128,7 +138,7 @@ message ProviderCapability {
 
 message ProviderInstance {
   string id = 1;
-  string org_id = 2;
+  string tenant_id = 2;
   string kind = 3;
   string name = 4;
   string state = 6;
@@ -136,22 +146,25 @@ message ProviderInstance {
   google.protobuf.Timestamp created_at = 8;
   repeated ProviderCapability capabilities = 9;
 }
-message RegisterProviderRequest { string org_id = 1; string kind = 2; string name = 3; string config_json = 4; }
+message RegisterProviderRequest { string tenant_id = 1; string kind = 2; string name = 3; string config_json = 4; }
 message RegisterProviderResponse { ProviderInstance provider = 1; }
-message ListProvidersRequest { string org_id = 1; }
+message ListProvidersRequest { string tenant_id = 1; }
 message ListProvidersResponse { repeated ProviderInstance providers = 1; }
-message DeleteProviderRequest { string org_id = 1; string provider_id = 2; }
+message DeleteProviderRequest { string tenant_id = 1; string provider_id = 2; }
 message DeleteProviderResponse {}
 
-// OrgService manages orgs, membership, credentials, and provider instances. The caller of
-// CreateOrg becomes the org's owner. Credential payloads are write-only and
-// encrypted at rest.
-service OrgService {
-  rpc CreateOrg(CreateOrgRequest) returns (CreateOrgResponse);
-  rpc GetOrg(GetOrgRequest) returns (GetOrgResponse);
-  rpc ListOrgs(ListOrgsRequest) returns (ListOrgsResponse);
-  rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse);
-  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+// TenantService manages tenants, API keys, credentials, and provider
+// instances. CreateTenant is bootstrap-only (no prior key required once a
+// deployment-level bootstrap path exists; for now any authenticated admin
+// key may create additional tenants). Credential payloads are write-only and
+// encrypted at rest. Raw API keys are returned once at creation.
+service TenantService {
+  rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse);
+  rpc GetTenant(GetTenantRequest) returns (GetTenantResponse);
+  rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
+  rpc CreateAPIKey(CreateAPIKeyRequest) returns (CreateAPIKeyResponse);
+  rpc ListAPIKeys(ListAPIKeysRequest) returns (ListAPIKeysResponse);
+  rpc RevokeAPIKey(RevokeAPIKeyRequest) returns (RevokeAPIKeyResponse);
   rpc PutCredential(PutCredentialRequest) returns (PutCredentialResponse);
   rpc ListCredentials(ListCredentialsRequest) returns (ListCredentialsResponse);
   rpc DeleteCredential(DeleteCredentialRequest) returns (DeleteCredentialResponse);

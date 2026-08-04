@@ -21,8 +21,8 @@ import (
 func TestA86_SessionMemory(t *testing.T) {
 	stack := harness.Up(t, harness.WithReplicas(2, 2))
 	ctx := context.Background()
-	org := stack.OrgA.ID
-	alice := stack.IngressClient(harness.TokenAlice)
+	org := stack.TenantA.ID
+	alice := stack.IngressClient(stack.KeyA)
 	bob := stack.BobClient()
 	sess := createSession(t, alice, string(org), "session memory")
 
@@ -188,7 +188,7 @@ func TestA86_SessionMemory(t *testing.T) {
 		if !strings.Contains(got.Msg.GetEntry().GetValueJson(), "writer") {
 			t.Fatalf("human view of memory is %q", got.Msg.GetEntry().GetValueJson())
 		}
-		if got.Msg.GetEntry().GetUpdatedByType() != string(uc.ActorAgent) {
+		if got.Msg.GetEntry().GetUpdatedByType() != "agent" {
 			t.Fatalf("memory attributed to %q, want the agent that wrote it", got.Msg.GetEntry().GetUpdatedByType())
 		}
 	})
@@ -242,7 +242,7 @@ func collectEventsIn(t *testing.T, stack *harness.Stack, session, kind string, t
 		var found []uc.Event
 		var from int64
 		for {
-			batch, err := stack.Store.Org(stack.OrgA.ID).Events().Range(context.Background(), uc.SessionID(session), from, 512)
+			batch, err := stack.Store.Tenant(stack.TenantA.ID).Events().Range(context.Background(), uc.SessionID(session), from, 512)
 			if err != nil || len(batch) == 0 {
 				break
 			}

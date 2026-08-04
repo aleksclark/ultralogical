@@ -22,61 +22,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// OrgRole is a user's role within an org.
-type OrgRole int32
+// KeyScope is the authority granted by one API key.
+type KeyScope int32
 
 const (
-	OrgRole_ORG_ROLE_UNSPECIFIED OrgRole = 0
-	OrgRole_ORG_ROLE_OWNER       OrgRole = 1
-	OrgRole_ORG_ROLE_ADMIN       OrgRole = 2
-	OrgRole_ORG_ROLE_MEMBER      OrgRole = 3
+	KeyScope_KEY_SCOPE_UNSPECIFIED KeyScope = 0
+	KeyScope_KEY_SCOPE_ADMIN       KeyScope = 1
+	KeyScope_KEY_SCOPE_SESSIONS    KeyScope = 2
 )
 
-// Enum value maps for OrgRole.
+// Enum value maps for KeyScope.
 var (
-	OrgRole_name = map[int32]string{
-		0: "ORG_ROLE_UNSPECIFIED",
-		1: "ORG_ROLE_OWNER",
-		2: "ORG_ROLE_ADMIN",
-		3: "ORG_ROLE_MEMBER",
+	KeyScope_name = map[int32]string{
+		0: "KEY_SCOPE_UNSPECIFIED",
+		1: "KEY_SCOPE_ADMIN",
+		2: "KEY_SCOPE_SESSIONS",
 	}
-	OrgRole_value = map[string]int32{
-		"ORG_ROLE_UNSPECIFIED": 0,
-		"ORG_ROLE_OWNER":       1,
-		"ORG_ROLE_ADMIN":       2,
-		"ORG_ROLE_MEMBER":      3,
+	KeyScope_value = map[string]int32{
+		"KEY_SCOPE_UNSPECIFIED": 0,
+		"KEY_SCOPE_ADMIN":       1,
+		"KEY_SCOPE_SESSIONS":    2,
 	}
 )
 
-func (x OrgRole) Enum() *OrgRole {
-	p := new(OrgRole)
+func (x KeyScope) Enum() *KeyScope {
+	p := new(KeyScope)
 	*p = x
 	return p
 }
 
-func (x OrgRole) String() string {
+func (x KeyScope) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (OrgRole) Descriptor() protoreflect.EnumDescriptor {
+func (KeyScope) Descriptor() protoreflect.EnumDescriptor {
 	return file_core_v1_org_proto_enumTypes[0].Descriptor()
 }
 
-func (OrgRole) Type() protoreflect.EnumType {
+func (KeyScope) Type() protoreflect.EnumType {
 	return &file_core_v1_org_proto_enumTypes[0]
 }
 
-func (x OrgRole) Number() protoreflect.EnumNumber {
+func (x KeyScope) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use OrgRole.Descriptor instead.
-func (OrgRole) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use KeyScope.Descriptor instead.
+func (KeyScope) EnumDescriptor() ([]byte, []int) {
 	return file_core_v1_org_proto_rawDescGZIP(), []int{0}
 }
 
-// Org is the tenancy boundary.
-type Org struct {
+// Tenant is the tenancy boundary.
+type Tenant struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -85,20 +82,20 @@ type Org struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Org) Reset() {
-	*x = Org{}
+func (x *Tenant) Reset() {
+	*x = Tenant{}
 	mi := &file_core_v1_org_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Org) String() string {
+func (x *Tenant) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Org) ProtoMessage() {}
+func (*Tenant) ProtoMessage() {}
 
-func (x *Org) ProtoReflect() protoreflect.Message {
+func (x *Tenant) ProtoReflect() protoreflect.Message {
 	mi := &file_core_v1_org_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -110,58 +107,60 @@ func (x *Org) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Org.ProtoReflect.Descriptor instead.
-func (*Org) Descriptor() ([]byte, []int) {
+// Deprecated: Use Tenant.ProtoReflect.Descriptor instead.
+func (*Tenant) Descriptor() ([]byte, []int) {
 	return file_core_v1_org_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Org) GetId() string {
+func (x *Tenant) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *Org) GetName() string {
+func (x *Tenant) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *Org) GetCreatedAt() *timestamppb.Timestamp {
+func (x *Tenant) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
 	return nil
 }
 
-// OrgMember links a user to an org with a role.
-type OrgMember struct {
+// APIKeyInfo is the listable, secret-free view of a tenant API key.
+type APIKeyInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
-	Role          OrgRole                `protobuf:"varint,4,opt,name=role,proto3,enum=core.v1.OrgRole" json:"role,omitempty"`
-	JoinedAt      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TenantId      string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Scope         KeyScope               `protobuf:"varint,4,opt,name=scope,proto3,enum=core.v1.KeyScope" json:"scope,omitempty"`
+	Prefix        string                 `protobuf:"bytes,5,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	RevokedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=revoked_at,json=revokedAt,proto3" json:"revoked_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *OrgMember) Reset() {
-	*x = OrgMember{}
+func (x *APIKeyInfo) Reset() {
+	*x = APIKeyInfo{}
 	mi := &file_core_v1_org_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *OrgMember) String() string {
+func (x *APIKeyInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*OrgMember) ProtoMessage() {}
+func (*APIKeyInfo) ProtoMessage() {}
 
-func (x *OrgMember) ProtoReflect() protoreflect.Message {
+func (x *APIKeyInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_core_v1_org_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -173,111 +172,127 @@ func (x *OrgMember) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use OrgMember.ProtoReflect.Descriptor instead.
-func (*OrgMember) Descriptor() ([]byte, []int) {
+// Deprecated: Use APIKeyInfo.ProtoReflect.Descriptor instead.
+func (*APIKeyInfo) Descriptor() ([]byte, []int) {
 	return file_core_v1_org_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *OrgMember) GetOrgId() string {
+func (x *APIKeyInfo) GetId() string {
 	if x != nil {
-		return x.OrgId
+		return x.Id
 	}
 	return ""
 }
 
-func (x *OrgMember) GetUserId() string {
+func (x *APIKeyInfo) GetTenantId() string {
 	if x != nil {
-		return x.UserId
+		return x.TenantId
 	}
 	return ""
 }
 
-func (x *OrgMember) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *OrgMember) GetRole() OrgRole {
-	if x != nil {
-		return x.Role
-	}
-	return OrgRole_ORG_ROLE_UNSPECIFIED
-}
-
-func (x *OrgMember) GetJoinedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.JoinedAt
-	}
-	return nil
-}
-
-type CreateOrgRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CreateOrgRequest) Reset() {
-	*x = CreateOrgRequest{}
-	mi := &file_core_v1_org_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreateOrgRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreateOrgRequest) ProtoMessage() {}
-
-func (x *CreateOrgRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreateOrgRequest.ProtoReflect.Descriptor instead.
-func (*CreateOrgRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *CreateOrgRequest) GetName() string {
+func (x *APIKeyInfo) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-type CreateOrgResponse struct {
+func (x *APIKeyInfo) GetScope() KeyScope {
+	if x != nil {
+		return x.Scope
+	}
+	return KeyScope_KEY_SCOPE_UNSPECIFIED
+}
+
+func (x *APIKeyInfo) GetPrefix() string {
+	if x != nil {
+		return x.Prefix
+	}
+	return ""
+}
+
+func (x *APIKeyInfo) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *APIKeyInfo) GetRevokedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RevokedAt
+	}
+	return nil
+}
+
+type CreateTenantRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Org           *Org                   `protobuf:"bytes,1,opt,name=org,proto3" json:"org,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CreateOrgResponse) Reset() {
-	*x = CreateOrgResponse{}
+func (x *CreateTenantRequest) Reset() {
+	*x = CreateTenantRequest{}
+	mi := &file_core_v1_org_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateTenantRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateTenantRequest) ProtoMessage() {}
+
+func (x *CreateTenantRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_org_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateTenantRequest.ProtoReflect.Descriptor instead.
+func (*CreateTenantRequest) Descriptor() ([]byte, []int) {
+	return file_core_v1_org_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *CreateTenantRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type CreateTenantResponse struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Tenant *Tenant                `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
+	// Raw key returned once at creation. Never stored or logged.
+	AdminKey      string `protobuf:"bytes,2,opt,name=admin_key,json=adminKey,proto3" json:"admin_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateTenantResponse) Reset() {
+	*x = CreateTenantResponse{}
 	mi := &file_core_v1_org_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CreateOrgResponse) String() string {
+func (x *CreateTenantResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CreateOrgResponse) ProtoMessage() {}
+func (*CreateTenantResponse) ProtoMessage() {}
 
-func (x *CreateOrgResponse) ProtoReflect() protoreflect.Message {
+func (x *CreateTenantResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_core_v1_org_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -289,39 +304,46 @@ func (x *CreateOrgResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CreateOrgResponse.ProtoReflect.Descriptor instead.
-func (*CreateOrgResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateTenantResponse.ProtoReflect.Descriptor instead.
+func (*CreateTenantResponse) Descriptor() ([]byte, []int) {
 	return file_core_v1_org_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *CreateOrgResponse) GetOrg() *Org {
+func (x *CreateTenantResponse) GetTenant() *Tenant {
 	if x != nil {
-		return x.Org
+		return x.Tenant
 	}
 	return nil
 }
 
-type GetOrgRequest struct {
+func (x *CreateTenantResponse) GetAdminKey() string {
+	if x != nil {
+		return x.AdminKey
+	}
+	return ""
+}
+
+type GetTenantRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetOrgRequest) Reset() {
-	*x = GetOrgRequest{}
+func (x *GetTenantRequest) Reset() {
+	*x = GetTenantRequest{}
 	mi := &file_core_v1_org_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetOrgRequest) String() string {
+func (x *GetTenantRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetOrgRequest) ProtoMessage() {}
+func (*GetTenantRequest) ProtoMessage() {}
 
-func (x *GetOrgRequest) ProtoReflect() protoreflect.Message {
+func (x *GetTenantRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_core_v1_org_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -333,39 +355,39 @@ func (x *GetOrgRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetOrgRequest.ProtoReflect.Descriptor instead.
-func (*GetOrgRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetTenantRequest.ProtoReflect.Descriptor instead.
+func (*GetTenantRequest) Descriptor() ([]byte, []int) {
 	return file_core_v1_org_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetOrgRequest) GetOrgId() string {
+func (x *GetTenantRequest) GetTenantId() string {
 	if x != nil {
-		return x.OrgId
+		return x.TenantId
 	}
 	return ""
 }
 
-type GetOrgResponse struct {
+type GetTenantResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Org           *Org                   `protobuf:"bytes,1,opt,name=org,proto3" json:"org,omitempty"`
+	Tenant        *Tenant                `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetOrgResponse) Reset() {
-	*x = GetOrgResponse{}
+func (x *GetTenantResponse) Reset() {
+	*x = GetTenantResponse{}
 	mi := &file_core_v1_org_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetOrgResponse) String() string {
+func (x *GetTenantResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetOrgResponse) ProtoMessage() {}
+func (*GetTenantResponse) ProtoMessage() {}
 
-func (x *GetOrgResponse) ProtoReflect() protoreflect.Message {
+func (x *GetTenantResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_core_v1_org_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -377,43 +399,38 @@ func (x *GetOrgResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetOrgResponse.ProtoReflect.Descriptor instead.
-func (*GetOrgResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetTenantResponse.ProtoReflect.Descriptor instead.
+func (*GetTenantResponse) Descriptor() ([]byte, []int) {
 	return file_core_v1_org_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *GetOrgResponse) GetOrg() *Org {
+func (x *GetTenantResponse) GetTenant() *Tenant {
 	if x != nil {
-		return x.Org
+		return x.Tenant
 	}
 	return nil
 }
 
-type InviteMemberRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	OrgId string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
-	// Email of an existing user. Invitation flows for unknown emails are a
-	// later phase; for now the user must already exist.
-	Email         string  `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	Role          OrgRole `protobuf:"varint,3,opt,name=role,proto3,enum=core.v1.OrgRole" json:"role,omitempty"`
+type ListTenantsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *InviteMemberRequest) Reset() {
-	*x = InviteMemberRequest{}
+func (x *ListTenantsRequest) Reset() {
+	*x = ListTenantsRequest{}
 	mi := &file_core_v1_org_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *InviteMemberRequest) String() string {
+func (x *ListTenantsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*InviteMemberRequest) ProtoMessage() {}
+func (*ListTenantsRequest) ProtoMessage() {}
 
-func (x *InviteMemberRequest) ProtoReflect() protoreflect.Message {
+func (x *ListTenantsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_core_v1_org_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -425,53 +442,33 @@ func (x *InviteMemberRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use InviteMemberRequest.ProtoReflect.Descriptor instead.
-func (*InviteMemberRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListTenantsRequest.ProtoReflect.Descriptor instead.
+func (*ListTenantsRequest) Descriptor() ([]byte, []int) {
 	return file_core_v1_org_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *InviteMemberRequest) GetOrgId() string {
-	if x != nil {
-		return x.OrgId
-	}
-	return ""
-}
-
-func (x *InviteMemberRequest) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *InviteMemberRequest) GetRole() OrgRole {
-	if x != nil {
-		return x.Role
-	}
-	return OrgRole_ORG_ROLE_UNSPECIFIED
-}
-
-type InviteMemberResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Member        *OrgMember             `protobuf:"bytes,1,opt,name=member,proto3" json:"member,omitempty"`
+type ListTenantsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Tenants the caller's key can see (its own tenant).
+	Tenants       []*Tenant `protobuf:"bytes,1,rep,name=tenants,proto3" json:"tenants,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *InviteMemberResponse) Reset() {
-	*x = InviteMemberResponse{}
+func (x *ListTenantsResponse) Reset() {
+	*x = ListTenantsResponse{}
 	mi := &file_core_v1_org_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *InviteMemberResponse) String() string {
+func (x *ListTenantsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*InviteMemberResponse) ProtoMessage() {}
+func (*ListTenantsResponse) ProtoMessage() {}
 
-func (x *InviteMemberResponse) ProtoReflect() protoreflect.Message {
+func (x *ListTenantsResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_core_v1_org_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -483,39 +480,41 @@ func (x *InviteMemberResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use InviteMemberResponse.ProtoReflect.Descriptor instead.
-func (*InviteMemberResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListTenantsResponse.ProtoReflect.Descriptor instead.
+func (*ListTenantsResponse) Descriptor() ([]byte, []int) {
 	return file_core_v1_org_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *InviteMemberResponse) GetMember() *OrgMember {
+func (x *ListTenantsResponse) GetTenants() []*Tenant {
 	if x != nil {
-		return x.Member
+		return x.Tenants
 	}
 	return nil
 }
 
-type ListMembersRequest struct {
+type CreateAPIKeyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Scope         KeyScope               `protobuf:"varint,3,opt,name=scope,proto3,enum=core.v1.KeyScope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListMembersRequest) Reset() {
-	*x = ListMembersRequest{}
+func (x *CreateAPIKeyRequest) Reset() {
+	*x = CreateAPIKeyRequest{}
 	mi := &file_core_v1_org_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListMembersRequest) String() string {
+func (x *CreateAPIKeyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListMembersRequest) ProtoMessage() {}
+func (*CreateAPIKeyRequest) ProtoMessage() {}
 
-func (x *ListMembersRequest) ProtoReflect() protoreflect.Message {
+func (x *CreateAPIKeyRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_core_v1_org_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -527,39 +526,55 @@ func (x *ListMembersRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListMembersRequest.ProtoReflect.Descriptor instead.
-func (*ListMembersRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateAPIKeyRequest.ProtoReflect.Descriptor instead.
+func (*CreateAPIKeyRequest) Descriptor() ([]byte, []int) {
 	return file_core_v1_org_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *ListMembersRequest) GetOrgId() string {
+func (x *CreateAPIKeyRequest) GetTenantId() string {
 	if x != nil {
-		return x.OrgId
+		return x.TenantId
 	}
 	return ""
 }
 
-type ListMembersResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Members       []*OrgMember           `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
+func (x *CreateAPIKeyRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateAPIKeyRequest) GetScope() KeyScope {
+	if x != nil {
+		return x.Scope
+	}
+	return KeyScope_KEY_SCOPE_UNSPECIFIED
+}
+
+type CreateAPIKeyResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Key   *APIKeyInfo            `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	// Raw key returned once. Never stored or logged.
+	RawKey        string `protobuf:"bytes,2,opt,name=raw_key,json=rawKey,proto3" json:"raw_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListMembersResponse) Reset() {
-	*x = ListMembersResponse{}
+func (x *CreateAPIKeyResponse) Reset() {
+	*x = CreateAPIKeyResponse{}
 	mi := &file_core_v1_org_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListMembersResponse) String() string {
+func (x *CreateAPIKeyResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListMembersResponse) ProtoMessage() {}
+func (*CreateAPIKeyResponse) ProtoMessage() {}
 
-func (x *ListMembersResponse) ProtoReflect() protoreflect.Message {
+func (x *CreateAPIKeyResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_core_v1_org_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -571,39 +586,186 @@ func (x *ListMembersResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListMembersResponse.ProtoReflect.Descriptor instead.
-func (*ListMembersResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateAPIKeyResponse.ProtoReflect.Descriptor instead.
+func (*CreateAPIKeyResponse) Descriptor() ([]byte, []int) {
 	return file_core_v1_org_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *ListMembersResponse) GetMembers() []*OrgMember {
+func (x *CreateAPIKeyResponse) GetKey() *APIKeyInfo {
 	if x != nil {
-		return x.Members
+		return x.Key
 	}
 	return nil
 }
 
-type ListOrgsRequest struct {
+func (x *CreateAPIKeyResponse) GetRawKey() string {
+	if x != nil {
+		return x.RawKey
+	}
+	return ""
+}
+
+type ListAPIKeysRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAPIKeysRequest) Reset() {
+	*x = ListAPIKeysRequest{}
+	mi := &file_core_v1_org_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAPIKeysRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAPIKeysRequest) ProtoMessage() {}
+
+func (x *ListAPIKeysRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_org_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAPIKeysRequest.ProtoReflect.Descriptor instead.
+func (*ListAPIKeysRequest) Descriptor() ([]byte, []int) {
+	return file_core_v1_org_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListAPIKeysRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+type ListAPIKeysResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Keys          []*APIKeyInfo          `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAPIKeysResponse) Reset() {
+	*x = ListAPIKeysResponse{}
+	mi := &file_core_v1_org_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAPIKeysResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAPIKeysResponse) ProtoMessage() {}
+
+func (x *ListAPIKeysResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_org_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAPIKeysResponse.ProtoReflect.Descriptor instead.
+func (*ListAPIKeysResponse) Descriptor() ([]byte, []int) {
+	return file_core_v1_org_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ListAPIKeysResponse) GetKeys() []*APIKeyInfo {
+	if x != nil {
+		return x.Keys
+	}
+	return nil
+}
+
+type RevokeAPIKeyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	KeyId         string                 `protobuf:"bytes,2,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeAPIKeyRequest) Reset() {
+	*x = RevokeAPIKeyRequest{}
+	mi := &file_core_v1_org_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAPIKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAPIKeyRequest) ProtoMessage() {}
+
+func (x *RevokeAPIKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_org_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAPIKeyRequest.ProtoReflect.Descriptor instead.
+func (*RevokeAPIKeyRequest) Descriptor() ([]byte, []int) {
+	return file_core_v1_org_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RevokeAPIKeyRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *RevokeAPIKeyRequest) GetKeyId() string {
+	if x != nil {
+		return x.KeyId
+	}
+	return ""
+}
+
+type RevokeAPIKeyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListOrgsRequest) Reset() {
-	*x = ListOrgsRequest{}
-	mi := &file_core_v1_org_proto_msgTypes[10]
+func (x *RevokeAPIKeyResponse) Reset() {
+	*x = RevokeAPIKeyResponse{}
+	mi := &file_core_v1_org_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListOrgsRequest) String() string {
+func (x *RevokeAPIKeyResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListOrgsRequest) ProtoMessage() {}
+func (*RevokeAPIKeyResponse) ProtoMessage() {}
 
-func (x *ListOrgsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[10]
+func (x *RevokeAPIKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_org_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -614,54 +776,9 @@ func (x *ListOrgsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListOrgsRequest.ProtoReflect.Descriptor instead.
-func (*ListOrgsRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{10}
-}
-
-type ListOrgsResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Orgs the caller is a member of.
-	Orgs          []*Org `protobuf:"bytes,1,rep,name=orgs,proto3" json:"orgs,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListOrgsResponse) Reset() {
-	*x = ListOrgsResponse{}
-	mi := &file_core_v1_org_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListOrgsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListOrgsResponse) ProtoMessage() {}
-
-func (x *ListOrgsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListOrgsResponse.ProtoReflect.Descriptor instead.
-func (*ListOrgsResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *ListOrgsResponse) GetOrgs() []*Org {
-	if x != nil {
-		return x.Orgs
-	}
-	return nil
+// Deprecated: Use RevokeAPIKeyResponse.ProtoReflect.Descriptor instead.
+func (*RevokeAPIKeyResponse) Descriptor() ([]byte, []int) {
+	return file_core_v1_org_proto_rawDescGZIP(), []int{13}
 }
 
 // CredentialInfo is the listable, secret-free view of a credential.
@@ -678,7 +795,7 @@ type CredentialInfo struct {
 
 func (x *CredentialInfo) Reset() {
 	*x = CredentialInfo{}
-	mi := &file_core_v1_org_proto_msgTypes[12]
+	mi := &file_core_v1_org_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -690,7 +807,7 @@ func (x *CredentialInfo) String() string {
 func (*CredentialInfo) ProtoMessage() {}
 
 func (x *CredentialInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[12]
+	mi := &file_core_v1_org_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -703,7 +820,7 @@ func (x *CredentialInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CredentialInfo.ProtoReflect.Descriptor instead.
 func (*CredentialInfo) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{12}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CredentialInfo) GetKind() string {
@@ -735,10 +852,10 @@ func (x *CredentialInfo) GetRotatedAt() *timestamppb.Timestamp {
 }
 
 type PutCredentialRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	OrgId string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
-	Kind  string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"` // inference:openai | inference:anthropic | inference:bedrock
-	Name  string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"` // "default" if empty
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	TenantId string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Kind     string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"` // inference:openai | inference:anthropic | inference:bedrock
+	Name     string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"` // "default" if empty
 	// Write-only secret material.
 	ApiKey  string `protobuf:"bytes,4,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
 	BaseUrl string `protobuf:"bytes,5,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"` // optional vendor endpoint override
@@ -751,7 +868,7 @@ type PutCredentialRequest struct {
 
 func (x *PutCredentialRequest) Reset() {
 	*x = PutCredentialRequest{}
-	mi := &file_core_v1_org_proto_msgTypes[13]
+	mi := &file_core_v1_org_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -763,7 +880,7 @@ func (x *PutCredentialRequest) String() string {
 func (*PutCredentialRequest) ProtoMessage() {}
 
 func (x *PutCredentialRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[13]
+	mi := &file_core_v1_org_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -776,12 +893,12 @@ func (x *PutCredentialRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutCredentialRequest.ProtoReflect.Descriptor instead.
 func (*PutCredentialRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{13}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *PutCredentialRequest) GetOrgId() string {
+func (x *PutCredentialRequest) GetTenantId() string {
 	if x != nil {
-		return x.OrgId
+		return x.TenantId
 	}
 	return ""
 }
@@ -830,7 +947,7 @@ type PutCredentialResponse struct {
 
 func (x *PutCredentialResponse) Reset() {
 	*x = PutCredentialResponse{}
-	mi := &file_core_v1_org_proto_msgTypes[14]
+	mi := &file_core_v1_org_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -842,7 +959,7 @@ func (x *PutCredentialResponse) String() string {
 func (*PutCredentialResponse) ProtoMessage() {}
 
 func (x *PutCredentialResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[14]
+	mi := &file_core_v1_org_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -855,7 +972,7 @@ func (x *PutCredentialResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutCredentialResponse.ProtoReflect.Descriptor instead.
 func (*PutCredentialResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{14}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *PutCredentialResponse) GetCredential() *CredentialInfo {
@@ -867,14 +984,14 @@ func (x *PutCredentialResponse) GetCredential() *CredentialInfo {
 
 type ListCredentialsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListCredentialsRequest) Reset() {
 	*x = ListCredentialsRequest{}
-	mi := &file_core_v1_org_proto_msgTypes[15]
+	mi := &file_core_v1_org_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -886,7 +1003,7 @@ func (x *ListCredentialsRequest) String() string {
 func (*ListCredentialsRequest) ProtoMessage() {}
 
 func (x *ListCredentialsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[15]
+	mi := &file_core_v1_org_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -899,12 +1016,12 @@ func (x *ListCredentialsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCredentialsRequest.ProtoReflect.Descriptor instead.
 func (*ListCredentialsRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{15}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *ListCredentialsRequest) GetOrgId() string {
+func (x *ListCredentialsRequest) GetTenantId() string {
 	if x != nil {
-		return x.OrgId
+		return x.TenantId
 	}
 	return ""
 }
@@ -918,7 +1035,7 @@ type ListCredentialsResponse struct {
 
 func (x *ListCredentialsResponse) Reset() {
 	*x = ListCredentialsResponse{}
-	mi := &file_core_v1_org_proto_msgTypes[16]
+	mi := &file_core_v1_org_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -930,7 +1047,7 @@ func (x *ListCredentialsResponse) String() string {
 func (*ListCredentialsResponse) ProtoMessage() {}
 
 func (x *ListCredentialsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[16]
+	mi := &file_core_v1_org_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -943,7 +1060,7 @@ func (x *ListCredentialsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCredentialsResponse.ProtoReflect.Descriptor instead.
 func (*ListCredentialsResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{16}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ListCredentialsResponse) GetCredentials() []*CredentialInfo {
@@ -955,7 +1072,7 @@ func (x *ListCredentialsResponse) GetCredentials() []*CredentialInfo {
 
 type DeleteCredentialRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -964,7 +1081,7 @@ type DeleteCredentialRequest struct {
 
 func (x *DeleteCredentialRequest) Reset() {
 	*x = DeleteCredentialRequest{}
-	mi := &file_core_v1_org_proto_msgTypes[17]
+	mi := &file_core_v1_org_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -976,7 +1093,7 @@ func (x *DeleteCredentialRequest) String() string {
 func (*DeleteCredentialRequest) ProtoMessage() {}
 
 func (x *DeleteCredentialRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[17]
+	mi := &file_core_v1_org_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -989,12 +1106,12 @@ func (x *DeleteCredentialRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCredentialRequest.ProtoReflect.Descriptor instead.
 func (*DeleteCredentialRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{17}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *DeleteCredentialRequest) GetOrgId() string {
+func (x *DeleteCredentialRequest) GetTenantId() string {
 	if x != nil {
-		return x.OrgId
+		return x.TenantId
 	}
 	return ""
 }
@@ -1021,7 +1138,7 @@ type DeleteCredentialResponse struct {
 
 func (x *DeleteCredentialResponse) Reset() {
 	*x = DeleteCredentialResponse{}
-	mi := &file_core_v1_org_proto_msgTypes[18]
+	mi := &file_core_v1_org_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1033,7 +1150,7 @@ func (x *DeleteCredentialResponse) String() string {
 func (*DeleteCredentialResponse) ProtoMessage() {}
 
 func (x *DeleteCredentialResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[18]
+	mi := &file_core_v1_org_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1046,7 +1163,7 @@ func (x *DeleteCredentialResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCredentialResponse.ProtoReflect.Descriptor instead.
 func (*DeleteCredentialResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{18}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{20}
 }
 
 // ProviderCapability names one optional behavior a registration's control
@@ -1066,7 +1183,7 @@ type ProviderCapability struct {
 
 func (x *ProviderCapability) Reset() {
 	*x = ProviderCapability{}
-	mi := &file_core_v1_org_proto_msgTypes[19]
+	mi := &file_core_v1_org_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1078,7 +1195,7 @@ func (x *ProviderCapability) String() string {
 func (*ProviderCapability) ProtoMessage() {}
 
 func (x *ProviderCapability) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[19]
+	mi := &file_core_v1_org_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1091,7 +1208,7 @@ func (x *ProviderCapability) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProviderCapability.ProtoReflect.Descriptor instead.
 func (*ProviderCapability) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{19}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ProviderCapability) GetName() string {
@@ -1118,7 +1235,7 @@ func (x *ProviderCapability) GetReason() string {
 type ProviderInstance struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	OrgId         string                 `protobuf:"bytes,2,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	TenantId      string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
 	Name          string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
 	State         string                 `protobuf:"bytes,6,opt,name=state,proto3" json:"state,omitempty"`
@@ -1131,7 +1248,7 @@ type ProviderInstance struct {
 
 func (x *ProviderInstance) Reset() {
 	*x = ProviderInstance{}
-	mi := &file_core_v1_org_proto_msgTypes[20]
+	mi := &file_core_v1_org_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1143,7 +1260,7 @@ func (x *ProviderInstance) String() string {
 func (*ProviderInstance) ProtoMessage() {}
 
 func (x *ProviderInstance) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[20]
+	mi := &file_core_v1_org_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1156,7 +1273,7 @@ func (x *ProviderInstance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProviderInstance.ProtoReflect.Descriptor instead.
 func (*ProviderInstance) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{20}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ProviderInstance) GetId() string {
@@ -1166,9 +1283,9 @@ func (x *ProviderInstance) GetId() string {
 	return ""
 }
 
-func (x *ProviderInstance) GetOrgId() string {
+func (x *ProviderInstance) GetTenantId() string {
 	if x != nil {
-		return x.OrgId
+		return x.TenantId
 	}
 	return ""
 }
@@ -1217,7 +1334,7 @@ func (x *ProviderInstance) GetCapabilities() []*ProviderCapability {
 
 type RegisterProviderRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	ConfigJson    string                 `protobuf:"bytes,4,opt,name=config_json,json=configJson,proto3" json:"config_json,omitempty"`
@@ -1227,7 +1344,7 @@ type RegisterProviderRequest struct {
 
 func (x *RegisterProviderRequest) Reset() {
 	*x = RegisterProviderRequest{}
-	mi := &file_core_v1_org_proto_msgTypes[21]
+	mi := &file_core_v1_org_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1239,7 +1356,7 @@ func (x *RegisterProviderRequest) String() string {
 func (*RegisterProviderRequest) ProtoMessage() {}
 
 func (x *RegisterProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[21]
+	mi := &file_core_v1_org_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1252,12 +1369,12 @@ func (x *RegisterProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterProviderRequest.ProtoReflect.Descriptor instead.
 func (*RegisterProviderRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{21}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{23}
 }
 
-func (x *RegisterProviderRequest) GetOrgId() string {
+func (x *RegisterProviderRequest) GetTenantId() string {
 	if x != nil {
-		return x.OrgId
+		return x.TenantId
 	}
 	return ""
 }
@@ -1292,7 +1409,7 @@ type RegisterProviderResponse struct {
 
 func (x *RegisterProviderResponse) Reset() {
 	*x = RegisterProviderResponse{}
-	mi := &file_core_v1_org_proto_msgTypes[22]
+	mi := &file_core_v1_org_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1304,7 +1421,7 @@ func (x *RegisterProviderResponse) String() string {
 func (*RegisterProviderResponse) ProtoMessage() {}
 
 func (x *RegisterProviderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[22]
+	mi := &file_core_v1_org_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1317,7 +1434,7 @@ func (x *RegisterProviderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterProviderResponse.ProtoReflect.Descriptor instead.
 func (*RegisterProviderResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{22}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *RegisterProviderResponse) GetProvider() *ProviderInstance {
@@ -1329,14 +1446,14 @@ func (x *RegisterProviderResponse) GetProvider() *ProviderInstance {
 
 type ListProvidersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListProvidersRequest) Reset() {
 	*x = ListProvidersRequest{}
-	mi := &file_core_v1_org_proto_msgTypes[23]
+	mi := &file_core_v1_org_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1348,7 +1465,7 @@ func (x *ListProvidersRequest) String() string {
 func (*ListProvidersRequest) ProtoMessage() {}
 
 func (x *ListProvidersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[23]
+	mi := &file_core_v1_org_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1361,12 +1478,12 @@ func (x *ListProvidersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProvidersRequest.ProtoReflect.Descriptor instead.
 func (*ListProvidersRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{23}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{25}
 }
 
-func (x *ListProvidersRequest) GetOrgId() string {
+func (x *ListProvidersRequest) GetTenantId() string {
 	if x != nil {
-		return x.OrgId
+		return x.TenantId
 	}
 	return ""
 }
@@ -1380,7 +1497,7 @@ type ListProvidersResponse struct {
 
 func (x *ListProvidersResponse) Reset() {
 	*x = ListProvidersResponse{}
-	mi := &file_core_v1_org_proto_msgTypes[24]
+	mi := &file_core_v1_org_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1392,7 +1509,7 @@ func (x *ListProvidersResponse) String() string {
 func (*ListProvidersResponse) ProtoMessage() {}
 
 func (x *ListProvidersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[24]
+	mi := &file_core_v1_org_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1405,7 +1522,7 @@ func (x *ListProvidersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProvidersResponse.ProtoReflect.Descriptor instead.
 func (*ListProvidersResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{24}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ListProvidersResponse) GetProviders() []*ProviderInstance {
@@ -1417,7 +1534,7 @@ func (x *ListProvidersResponse) GetProviders() []*ProviderInstance {
 
 type DeleteProviderRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	ProviderId    string                 `protobuf:"bytes,2,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1425,7 +1542,7 @@ type DeleteProviderRequest struct {
 
 func (x *DeleteProviderRequest) Reset() {
 	*x = DeleteProviderRequest{}
-	mi := &file_core_v1_org_proto_msgTypes[25]
+	mi := &file_core_v1_org_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1437,7 +1554,7 @@ func (x *DeleteProviderRequest) String() string {
 func (*DeleteProviderRequest) ProtoMessage() {}
 
 func (x *DeleteProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[25]
+	mi := &file_core_v1_org_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1450,12 +1567,12 @@ func (x *DeleteProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProviderRequest.ProtoReflect.Descriptor instead.
 func (*DeleteProviderRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{25}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{27}
 }
 
-func (x *DeleteProviderRequest) GetOrgId() string {
+func (x *DeleteProviderRequest) GetTenantId() string {
 	if x != nil {
-		return x.OrgId
+		return x.TenantId
 	}
 	return ""
 }
@@ -1475,7 +1592,7 @@ type DeleteProviderResponse struct {
 
 func (x *DeleteProviderResponse) Reset() {
 	*x = DeleteProviderResponse{}
-	mi := &file_core_v1_org_proto_msgTypes[26]
+	mi := &file_core_v1_org_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1487,7 +1604,7 @@ func (x *DeleteProviderResponse) String() string {
 func (*DeleteProviderResponse) ProtoMessage() {}
 
 func (x *DeleteProviderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_org_proto_msgTypes[26]
+	mi := &file_core_v1_org_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1500,55 +1617,66 @@ func (x *DeleteProviderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProviderResponse.ProtoReflect.Descriptor instead.
 func (*DeleteProviderResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_org_proto_rawDescGZIP(), []int{26}
+	return file_core_v1_org_proto_rawDescGZIP(), []int{28}
 }
 
 var File_core_v1_org_proto protoreflect.FileDescriptor
 
 const file_core_v1_org_proto_rawDesc = "" +
 	"\n" +
-	"\x11core/v1/org.proto\x12\acore.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"d\n" +
-	"\x03Org\x12\x0e\n" +
+	"\x11core/v1/org.proto\x12\acore.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"g\n" +
+	"\x06Tenant\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x129\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xb0\x01\n" +
-	"\tOrgMember\x12\x15\n" +
-	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x14\n" +
-	"\x05email\x18\x03 \x01(\tR\x05email\x12$\n" +
-	"\x04role\x18\x04 \x01(\x0e2\x10.core.v1.OrgRoleR\x04role\x127\n" +
-	"\tjoined_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\bjoinedAt\"&\n" +
-	"\x10CreateOrgRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"3\n" +
-	"\x11CreateOrgResponse\x12\x1e\n" +
-	"\x03org\x18\x01 \x01(\v2\f.core.v1.OrgR\x03org\"&\n" +
-	"\rGetOrgRequest\x12\x15\n" +
-	"\x06org_id\x18\x01 \x01(\tR\x05orgId\"0\n" +
-	"\x0eGetOrgResponse\x12\x1e\n" +
-	"\x03org\x18\x01 \x01(\v2\f.core.v1.OrgR\x03org\"h\n" +
-	"\x13InviteMemberRequest\x12\x15\n" +
-	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12$\n" +
-	"\x04role\x18\x03 \x01(\x0e2\x10.core.v1.OrgRoleR\x04role\"B\n" +
-	"\x14InviteMemberResponse\x12*\n" +
-	"\x06member\x18\x01 \x01(\v2\x12.core.v1.OrgMemberR\x06member\"+\n" +
-	"\x12ListMembersRequest\x12\x15\n" +
-	"\x06org_id\x18\x01 \x01(\tR\x05orgId\"C\n" +
-	"\x13ListMembersResponse\x12,\n" +
-	"\amembers\x18\x01 \x03(\v2\x12.core.v1.OrgMemberR\amembers\"\x11\n" +
-	"\x0fListOrgsRequest\"4\n" +
-	"\x10ListOrgsResponse\x12 \n" +
-	"\x04orgs\x18\x01 \x03(\v2\f.core.v1.OrgR\x04orgs\"\xae\x01\n" +
+	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\x84\x02\n" +
+	"\n" +
+	"APIKeyInfo\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12'\n" +
+	"\x05scope\x18\x04 \x01(\x0e2\x11.core.v1.KeyScopeR\x05scope\x12\x16\n" +
+	"\x06prefix\x18\x05 \x01(\tR\x06prefix\x129\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"revoked_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\trevokedAt\")\n" +
+	"\x13CreateTenantRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"\\\n" +
+	"\x14CreateTenantResponse\x12'\n" +
+	"\x06tenant\x18\x01 \x01(\v2\x0f.core.v1.TenantR\x06tenant\x12\x1b\n" +
+	"\tadmin_key\x18\x02 \x01(\tR\badminKey\"/\n" +
+	"\x10GetTenantRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"<\n" +
+	"\x11GetTenantResponse\x12'\n" +
+	"\x06tenant\x18\x01 \x01(\v2\x0f.core.v1.TenantR\x06tenant\"\x14\n" +
+	"\x12ListTenantsRequest\"@\n" +
+	"\x13ListTenantsResponse\x12)\n" +
+	"\atenants\x18\x01 \x03(\v2\x0f.core.v1.TenantR\atenants\"o\n" +
+	"\x13CreateAPIKeyRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12'\n" +
+	"\x05scope\x18\x03 \x01(\x0e2\x11.core.v1.KeyScopeR\x05scope\"V\n" +
+	"\x14CreateAPIKeyResponse\x12%\n" +
+	"\x03key\x18\x01 \x01(\v2\x13.core.v1.APIKeyInfoR\x03key\x12\x17\n" +
+	"\araw_key\x18\x02 \x01(\tR\x06rawKey\"1\n" +
+	"\x12ListAPIKeysRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\">\n" +
+	"\x13ListAPIKeysResponse\x12'\n" +
+	"\x04keys\x18\x01 \x03(\v2\x13.core.v1.APIKeyInfoR\x04keys\"I\n" +
+	"\x13RevokeAPIKeyRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x15\n" +
+	"\x06key_id\x18\x02 \x01(\tR\x05keyId\"\x16\n" +
+	"\x14RevokeAPIKeyResponse\"\xae\x01\n" +
 	"\x0eCredentialInfo\x12\x12\n" +
 	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x129\n" +
 	"\n" +
 	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"rotated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\"\xb7\x01\n" +
-	"\x14PutCredentialRequest\x12\x15\n" +
-	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
+	"rotated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\trotatedAt\"\xbd\x01\n" +
+	"\x14PutCredentialRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x17\n" +
 	"\aapi_key\x18\x04 \x01(\tR\x06apiKey\x12\x19\n" +
@@ -1557,59 +1685,58 @@ const file_core_v1_org_proto_rawDesc = "" +
 	"\x15PutCredentialResponse\x127\n" +
 	"\n" +
 	"credential\x18\x01 \x01(\v2\x17.core.v1.CredentialInfoR\n" +
-	"credential\"/\n" +
-	"\x16ListCredentialsRequest\x12\x15\n" +
-	"\x06org_id\x18\x01 \x01(\tR\x05orgId\"T\n" +
+	"credential\"5\n" +
+	"\x16ListCredentialsRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"T\n" +
 	"\x17ListCredentialsResponse\x129\n" +
-	"\vcredentials\x18\x01 \x03(\v2\x17.core.v1.CredentialInfoR\vcredentials\"X\n" +
-	"\x17DeleteCredentialRequest\x12\x15\n" +
-	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
+	"\vcredentials\x18\x01 \x03(\v2\x17.core.v1.CredentialInfoR\vcredentials\"^\n" +
+	"\x17DeleteCredentialRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\"\x1a\n" +
 	"\x18DeleteCredentialResponse\"^\n" +
 	"\x12ProviderCapability\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
 	"\tsupported\x18\x02 \x01(\bR\tsupported\x12\x16\n" +
-	"\x06reason\x18\x03 \x01(\tR\x06reason\"\xb7\x02\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\"\xbd\x02\n" +
 	"\x10ProviderInstance\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x06org_id\x18\x02 \x01(\tR\x05orgId\x12\x12\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x12\n" +
 	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x04 \x01(\tR\x04name\x12\x14\n" +
 	"\x05state\x18\x06 \x01(\tR\x05state\x12B\n" +
 	"\x0flast_healthy_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\rlastHealthyAt\x129\n" +
 	"\n" +
 	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12?\n" +
-	"\fcapabilities\x18\t \x03(\v2\x1b.core.v1.ProviderCapabilityR\fcapabilities\"y\n" +
-	"\x17RegisterProviderRequest\x12\x15\n" +
-	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n" +
+	"\fcapabilities\x18\t \x03(\v2\x1b.core.v1.ProviderCapabilityR\fcapabilities\"\x7f\n" +
+	"\x17RegisterProviderRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x1f\n" +
 	"\vconfig_json\x18\x04 \x01(\tR\n" +
 	"configJson\"Q\n" +
 	"\x18RegisterProviderResponse\x125\n" +
-	"\bprovider\x18\x01 \x01(\v2\x19.core.v1.ProviderInstanceR\bprovider\"-\n" +
-	"\x14ListProvidersRequest\x12\x15\n" +
-	"\x06org_id\x18\x01 \x01(\tR\x05orgId\"P\n" +
+	"\bprovider\x18\x01 \x01(\v2\x19.core.v1.ProviderInstanceR\bprovider\"3\n" +
+	"\x14ListProvidersRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"P\n" +
 	"\x15ListProvidersResponse\x127\n" +
-	"\tproviders\x18\x01 \x03(\v2\x19.core.v1.ProviderInstanceR\tproviders\"O\n" +
-	"\x15DeleteProviderRequest\x12\x15\n" +
-	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x1f\n" +
+	"\tproviders\x18\x01 \x03(\v2\x19.core.v1.ProviderInstanceR\tproviders\"U\n" +
+	"\x15DeleteProviderRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1f\n" +
 	"\vprovider_id\x18\x02 \x01(\tR\n" +
 	"providerId\"\x18\n" +
-	"\x16DeleteProviderResponse*`\n" +
-	"\aOrgRole\x12\x18\n" +
-	"\x14ORG_ROLE_UNSPECIFIED\x10\x00\x12\x12\n" +
-	"\x0eORG_ROLE_OWNER\x10\x01\x12\x12\n" +
-	"\x0eORG_ROLE_ADMIN\x10\x02\x12\x13\n" +
-	"\x0fORG_ROLE_MEMBER\x10\x032\xde\x06\n" +
-	"\n" +
-	"OrgService\x12B\n" +
-	"\tCreateOrg\x12\x19.core.v1.CreateOrgRequest\x1a\x1a.core.v1.CreateOrgResponse\x129\n" +
-	"\x06GetOrg\x12\x16.core.v1.GetOrgRequest\x1a\x17.core.v1.GetOrgResponse\x12?\n" +
-	"\bListOrgs\x12\x18.core.v1.ListOrgsRequest\x1a\x19.core.v1.ListOrgsResponse\x12K\n" +
-	"\fInviteMember\x12\x1c.core.v1.InviteMemberRequest\x1a\x1d.core.v1.InviteMemberResponse\x12H\n" +
-	"\vListMembers\x12\x1b.core.v1.ListMembersRequest\x1a\x1c.core.v1.ListMembersResponse\x12N\n" +
+	"\x16DeleteProviderResponse*R\n" +
+	"\bKeyScope\x12\x19\n" +
+	"\x15KEY_SCOPE_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fKEY_SCOPE_ADMIN\x10\x01\x12\x16\n" +
+	"\x12KEY_SCOPE_SESSIONS\x10\x022\xc9\a\n" +
+	"\rTenantService\x12K\n" +
+	"\fCreateTenant\x12\x1c.core.v1.CreateTenantRequest\x1a\x1d.core.v1.CreateTenantResponse\x12B\n" +
+	"\tGetTenant\x12\x19.core.v1.GetTenantRequest\x1a\x1a.core.v1.GetTenantResponse\x12H\n" +
+	"\vListTenants\x12\x1b.core.v1.ListTenantsRequest\x1a\x1c.core.v1.ListTenantsResponse\x12K\n" +
+	"\fCreateAPIKey\x12\x1c.core.v1.CreateAPIKeyRequest\x1a\x1d.core.v1.CreateAPIKeyResponse\x12H\n" +
+	"\vListAPIKeys\x12\x1b.core.v1.ListAPIKeysRequest\x1a\x1c.core.v1.ListAPIKeysResponse\x12K\n" +
+	"\fRevokeAPIKey\x12\x1c.core.v1.RevokeAPIKeyRequest\x1a\x1d.core.v1.RevokeAPIKeyResponse\x12N\n" +
 	"\rPutCredential\x12\x1d.core.v1.PutCredentialRequest\x1a\x1e.core.v1.PutCredentialResponse\x12T\n" +
 	"\x0fListCredentials\x12\x1f.core.v1.ListCredentialsRequest\x1a .core.v1.ListCredentialsResponse\x12W\n" +
 	"\x10DeleteCredential\x12 .core.v1.DeleteCredentialRequest\x1a!.core.v1.DeleteCredentialResponse\x12W\n" +
@@ -1630,84 +1757,89 @@ func file_core_v1_org_proto_rawDescGZIP() []byte {
 }
 
 var file_core_v1_org_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_core_v1_org_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_core_v1_org_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_core_v1_org_proto_goTypes = []any{
-	(OrgRole)(0),                     // 0: core.v1.OrgRole
-	(*Org)(nil),                      // 1: core.v1.Org
-	(*OrgMember)(nil),                // 2: core.v1.OrgMember
-	(*CreateOrgRequest)(nil),         // 3: core.v1.CreateOrgRequest
-	(*CreateOrgResponse)(nil),        // 4: core.v1.CreateOrgResponse
-	(*GetOrgRequest)(nil),            // 5: core.v1.GetOrgRequest
-	(*GetOrgResponse)(nil),           // 6: core.v1.GetOrgResponse
-	(*InviteMemberRequest)(nil),      // 7: core.v1.InviteMemberRequest
-	(*InviteMemberResponse)(nil),     // 8: core.v1.InviteMemberResponse
-	(*ListMembersRequest)(nil),       // 9: core.v1.ListMembersRequest
-	(*ListMembersResponse)(nil),      // 10: core.v1.ListMembersResponse
-	(*ListOrgsRequest)(nil),          // 11: core.v1.ListOrgsRequest
-	(*ListOrgsResponse)(nil),         // 12: core.v1.ListOrgsResponse
-	(*CredentialInfo)(nil),           // 13: core.v1.CredentialInfo
-	(*PutCredentialRequest)(nil),     // 14: core.v1.PutCredentialRequest
-	(*PutCredentialResponse)(nil),    // 15: core.v1.PutCredentialResponse
-	(*ListCredentialsRequest)(nil),   // 16: core.v1.ListCredentialsRequest
-	(*ListCredentialsResponse)(nil),  // 17: core.v1.ListCredentialsResponse
-	(*DeleteCredentialRequest)(nil),  // 18: core.v1.DeleteCredentialRequest
-	(*DeleteCredentialResponse)(nil), // 19: core.v1.DeleteCredentialResponse
-	(*ProviderCapability)(nil),       // 20: core.v1.ProviderCapability
-	(*ProviderInstance)(nil),         // 21: core.v1.ProviderInstance
-	(*RegisterProviderRequest)(nil),  // 22: core.v1.RegisterProviderRequest
-	(*RegisterProviderResponse)(nil), // 23: core.v1.RegisterProviderResponse
-	(*ListProvidersRequest)(nil),     // 24: core.v1.ListProvidersRequest
-	(*ListProvidersResponse)(nil),    // 25: core.v1.ListProvidersResponse
-	(*DeleteProviderRequest)(nil),    // 26: core.v1.DeleteProviderRequest
-	(*DeleteProviderResponse)(nil),   // 27: core.v1.DeleteProviderResponse
-	(*timestamppb.Timestamp)(nil),    // 28: google.protobuf.Timestamp
+	(KeyScope)(0),                    // 0: core.v1.KeyScope
+	(*Tenant)(nil),                   // 1: core.v1.Tenant
+	(*APIKeyInfo)(nil),               // 2: core.v1.APIKeyInfo
+	(*CreateTenantRequest)(nil),      // 3: core.v1.CreateTenantRequest
+	(*CreateTenantResponse)(nil),     // 4: core.v1.CreateTenantResponse
+	(*GetTenantRequest)(nil),         // 5: core.v1.GetTenantRequest
+	(*GetTenantResponse)(nil),        // 6: core.v1.GetTenantResponse
+	(*ListTenantsRequest)(nil),       // 7: core.v1.ListTenantsRequest
+	(*ListTenantsResponse)(nil),      // 8: core.v1.ListTenantsResponse
+	(*CreateAPIKeyRequest)(nil),      // 9: core.v1.CreateAPIKeyRequest
+	(*CreateAPIKeyResponse)(nil),     // 10: core.v1.CreateAPIKeyResponse
+	(*ListAPIKeysRequest)(nil),       // 11: core.v1.ListAPIKeysRequest
+	(*ListAPIKeysResponse)(nil),      // 12: core.v1.ListAPIKeysResponse
+	(*RevokeAPIKeyRequest)(nil),      // 13: core.v1.RevokeAPIKeyRequest
+	(*RevokeAPIKeyResponse)(nil),     // 14: core.v1.RevokeAPIKeyResponse
+	(*CredentialInfo)(nil),           // 15: core.v1.CredentialInfo
+	(*PutCredentialRequest)(nil),     // 16: core.v1.PutCredentialRequest
+	(*PutCredentialResponse)(nil),    // 17: core.v1.PutCredentialResponse
+	(*ListCredentialsRequest)(nil),   // 18: core.v1.ListCredentialsRequest
+	(*ListCredentialsResponse)(nil),  // 19: core.v1.ListCredentialsResponse
+	(*DeleteCredentialRequest)(nil),  // 20: core.v1.DeleteCredentialRequest
+	(*DeleteCredentialResponse)(nil), // 21: core.v1.DeleteCredentialResponse
+	(*ProviderCapability)(nil),       // 22: core.v1.ProviderCapability
+	(*ProviderInstance)(nil),         // 23: core.v1.ProviderInstance
+	(*RegisterProviderRequest)(nil),  // 24: core.v1.RegisterProviderRequest
+	(*RegisterProviderResponse)(nil), // 25: core.v1.RegisterProviderResponse
+	(*ListProvidersRequest)(nil),     // 26: core.v1.ListProvidersRequest
+	(*ListProvidersResponse)(nil),    // 27: core.v1.ListProvidersResponse
+	(*DeleteProviderRequest)(nil),    // 28: core.v1.DeleteProviderRequest
+	(*DeleteProviderResponse)(nil),   // 29: core.v1.DeleteProviderResponse
+	(*timestamppb.Timestamp)(nil),    // 30: google.protobuf.Timestamp
 }
 var file_core_v1_org_proto_depIdxs = []int32{
-	28, // 0: core.v1.Org.created_at:type_name -> google.protobuf.Timestamp
-	0,  // 1: core.v1.OrgMember.role:type_name -> core.v1.OrgRole
-	28, // 2: core.v1.OrgMember.joined_at:type_name -> google.protobuf.Timestamp
-	1,  // 3: core.v1.CreateOrgResponse.org:type_name -> core.v1.Org
-	1,  // 4: core.v1.GetOrgResponse.org:type_name -> core.v1.Org
-	0,  // 5: core.v1.InviteMemberRequest.role:type_name -> core.v1.OrgRole
-	2,  // 6: core.v1.InviteMemberResponse.member:type_name -> core.v1.OrgMember
-	2,  // 7: core.v1.ListMembersResponse.members:type_name -> core.v1.OrgMember
-	1,  // 8: core.v1.ListOrgsResponse.orgs:type_name -> core.v1.Org
-	28, // 9: core.v1.CredentialInfo.created_at:type_name -> google.protobuf.Timestamp
-	28, // 10: core.v1.CredentialInfo.rotated_at:type_name -> google.protobuf.Timestamp
-	13, // 11: core.v1.PutCredentialResponse.credential:type_name -> core.v1.CredentialInfo
-	13, // 12: core.v1.ListCredentialsResponse.credentials:type_name -> core.v1.CredentialInfo
-	28, // 13: core.v1.ProviderInstance.last_healthy_at:type_name -> google.protobuf.Timestamp
-	28, // 14: core.v1.ProviderInstance.created_at:type_name -> google.protobuf.Timestamp
-	20, // 15: core.v1.ProviderInstance.capabilities:type_name -> core.v1.ProviderCapability
-	21, // 16: core.v1.RegisterProviderResponse.provider:type_name -> core.v1.ProviderInstance
-	21, // 17: core.v1.ListProvidersResponse.providers:type_name -> core.v1.ProviderInstance
-	3,  // 18: core.v1.OrgService.CreateOrg:input_type -> core.v1.CreateOrgRequest
-	5,  // 19: core.v1.OrgService.GetOrg:input_type -> core.v1.GetOrgRequest
-	11, // 20: core.v1.OrgService.ListOrgs:input_type -> core.v1.ListOrgsRequest
-	7,  // 21: core.v1.OrgService.InviteMember:input_type -> core.v1.InviteMemberRequest
-	9,  // 22: core.v1.OrgService.ListMembers:input_type -> core.v1.ListMembersRequest
-	14, // 23: core.v1.OrgService.PutCredential:input_type -> core.v1.PutCredentialRequest
-	16, // 24: core.v1.OrgService.ListCredentials:input_type -> core.v1.ListCredentialsRequest
-	18, // 25: core.v1.OrgService.DeleteCredential:input_type -> core.v1.DeleteCredentialRequest
-	22, // 26: core.v1.OrgService.RegisterProvider:input_type -> core.v1.RegisterProviderRequest
-	24, // 27: core.v1.OrgService.ListProviders:input_type -> core.v1.ListProvidersRequest
-	26, // 28: core.v1.OrgService.DeleteProvider:input_type -> core.v1.DeleteProviderRequest
-	4,  // 29: core.v1.OrgService.CreateOrg:output_type -> core.v1.CreateOrgResponse
-	6,  // 30: core.v1.OrgService.GetOrg:output_type -> core.v1.GetOrgResponse
-	12, // 31: core.v1.OrgService.ListOrgs:output_type -> core.v1.ListOrgsResponse
-	8,  // 32: core.v1.OrgService.InviteMember:output_type -> core.v1.InviteMemberResponse
-	10, // 33: core.v1.OrgService.ListMembers:output_type -> core.v1.ListMembersResponse
-	15, // 34: core.v1.OrgService.PutCredential:output_type -> core.v1.PutCredentialResponse
-	17, // 35: core.v1.OrgService.ListCredentials:output_type -> core.v1.ListCredentialsResponse
-	19, // 36: core.v1.OrgService.DeleteCredential:output_type -> core.v1.DeleteCredentialResponse
-	23, // 37: core.v1.OrgService.RegisterProvider:output_type -> core.v1.RegisterProviderResponse
-	25, // 38: core.v1.OrgService.ListProviders:output_type -> core.v1.ListProvidersResponse
-	27, // 39: core.v1.OrgService.DeleteProvider:output_type -> core.v1.DeleteProviderResponse
-	29, // [29:40] is the sub-list for method output_type
-	18, // [18:29] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	30, // 0: core.v1.Tenant.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 1: core.v1.APIKeyInfo.scope:type_name -> core.v1.KeyScope
+	30, // 2: core.v1.APIKeyInfo.created_at:type_name -> google.protobuf.Timestamp
+	30, // 3: core.v1.APIKeyInfo.revoked_at:type_name -> google.protobuf.Timestamp
+	1,  // 4: core.v1.CreateTenantResponse.tenant:type_name -> core.v1.Tenant
+	1,  // 5: core.v1.GetTenantResponse.tenant:type_name -> core.v1.Tenant
+	1,  // 6: core.v1.ListTenantsResponse.tenants:type_name -> core.v1.Tenant
+	0,  // 7: core.v1.CreateAPIKeyRequest.scope:type_name -> core.v1.KeyScope
+	2,  // 8: core.v1.CreateAPIKeyResponse.key:type_name -> core.v1.APIKeyInfo
+	2,  // 9: core.v1.ListAPIKeysResponse.keys:type_name -> core.v1.APIKeyInfo
+	30, // 10: core.v1.CredentialInfo.created_at:type_name -> google.protobuf.Timestamp
+	30, // 11: core.v1.CredentialInfo.rotated_at:type_name -> google.protobuf.Timestamp
+	15, // 12: core.v1.PutCredentialResponse.credential:type_name -> core.v1.CredentialInfo
+	15, // 13: core.v1.ListCredentialsResponse.credentials:type_name -> core.v1.CredentialInfo
+	30, // 14: core.v1.ProviderInstance.last_healthy_at:type_name -> google.protobuf.Timestamp
+	30, // 15: core.v1.ProviderInstance.created_at:type_name -> google.protobuf.Timestamp
+	22, // 16: core.v1.ProviderInstance.capabilities:type_name -> core.v1.ProviderCapability
+	23, // 17: core.v1.RegisterProviderResponse.provider:type_name -> core.v1.ProviderInstance
+	23, // 18: core.v1.ListProvidersResponse.providers:type_name -> core.v1.ProviderInstance
+	3,  // 19: core.v1.TenantService.CreateTenant:input_type -> core.v1.CreateTenantRequest
+	5,  // 20: core.v1.TenantService.GetTenant:input_type -> core.v1.GetTenantRequest
+	7,  // 21: core.v1.TenantService.ListTenants:input_type -> core.v1.ListTenantsRequest
+	9,  // 22: core.v1.TenantService.CreateAPIKey:input_type -> core.v1.CreateAPIKeyRequest
+	11, // 23: core.v1.TenantService.ListAPIKeys:input_type -> core.v1.ListAPIKeysRequest
+	13, // 24: core.v1.TenantService.RevokeAPIKey:input_type -> core.v1.RevokeAPIKeyRequest
+	16, // 25: core.v1.TenantService.PutCredential:input_type -> core.v1.PutCredentialRequest
+	18, // 26: core.v1.TenantService.ListCredentials:input_type -> core.v1.ListCredentialsRequest
+	20, // 27: core.v1.TenantService.DeleteCredential:input_type -> core.v1.DeleteCredentialRequest
+	24, // 28: core.v1.TenantService.RegisterProvider:input_type -> core.v1.RegisterProviderRequest
+	26, // 29: core.v1.TenantService.ListProviders:input_type -> core.v1.ListProvidersRequest
+	28, // 30: core.v1.TenantService.DeleteProvider:input_type -> core.v1.DeleteProviderRequest
+	4,  // 31: core.v1.TenantService.CreateTenant:output_type -> core.v1.CreateTenantResponse
+	6,  // 32: core.v1.TenantService.GetTenant:output_type -> core.v1.GetTenantResponse
+	8,  // 33: core.v1.TenantService.ListTenants:output_type -> core.v1.ListTenantsResponse
+	10, // 34: core.v1.TenantService.CreateAPIKey:output_type -> core.v1.CreateAPIKeyResponse
+	12, // 35: core.v1.TenantService.ListAPIKeys:output_type -> core.v1.ListAPIKeysResponse
+	14, // 36: core.v1.TenantService.RevokeAPIKey:output_type -> core.v1.RevokeAPIKeyResponse
+	17, // 37: core.v1.TenantService.PutCredential:output_type -> core.v1.PutCredentialResponse
+	19, // 38: core.v1.TenantService.ListCredentials:output_type -> core.v1.ListCredentialsResponse
+	21, // 39: core.v1.TenantService.DeleteCredential:output_type -> core.v1.DeleteCredentialResponse
+	25, // 40: core.v1.TenantService.RegisterProvider:output_type -> core.v1.RegisterProviderResponse
+	27, // 41: core.v1.TenantService.ListProviders:output_type -> core.v1.ListProvidersResponse
+	29, // 42: core.v1.TenantService.DeleteProvider:output_type -> core.v1.DeleteProviderResponse
+	31, // [31:43] is the sub-list for method output_type
+	19, // [19:31] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_core_v1_org_proto_init() }
@@ -1721,7 +1853,7 @@ func file_core_v1_org_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_core_v1_org_proto_rawDesc), len(file_core_v1_org_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   27,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

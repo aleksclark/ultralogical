@@ -37,17 +37,29 @@ func spawnKey(parent uc.RunID, stepIndex int, toolCallID string) string {
 // run_agent_cohort so both produce identical children.
 type childSpec struct {
 	// Prompt is the child's starting instruction.
-	Prompt string   `json:"prompt,omitempty"`
-	Tools  []string `json:"tools,omitempty"`
+	Prompt string        `json:"prompt,omitempty"`
+	Tools  []string      `json:"tools,omitempty"` // shorthand for AllowTools when Policy omitted
+	Policy *uc.RunPolicy `json:"policy,omitempty"`
 }
 
-func (s childSpec) grants(parent uc.Grants) uc.Grants {
-	// Omitted tools inherit the parent's allowlist. An explicit empty list
-	// means no tools — that is how a parent deliberately spawns a mute child.
-	if s.Tools == nil {
-		return uc.Grants{Tools: append([]string(nil), parent.Tools...)}
+func (s childSpec) resolvePolicy(parent uc.RunPolicy) (uc.RunPolicy, error) {
+	// ChildInherit forces the parent's policy verbatim.
+	if parent.ChildInherit {
+		return parent, nil
 	}
-	return uc.Grants{Tools: append([]string(nil), s.Tools...)}
+	child := parent
+	if s.Policy != nil {
+		child = *s.Policy
+	} else if s.Tools != nil {
+		// Shorthand: explicit tools list becomes AllowTools; empty means mute.
+		child.AllowTools = append([]string(nil), s.Tools...)
+	} else {
+		child.AllowTools = append([]string(nil), parent.AllowTools...)
+	}
+	if !child.IsSubset(parent) {
+		return uc.RunPolicy{}, &deniedError{reason: "child policy escapes parent"}
+	}
+	return child, nil
 }
 
 // spawnOutcome is what a spawn tool returns to the model.
@@ -59,11 +71,11 @@ type spawnOutcome struct {
 }
 
 func (w *StepWorker) spawnTools(run uc.AgentRun, job StepJob, rec *stepRecorder) []fantasy.AgentTool {
-	if !run.Grants.AllowsTool("spawn_agent") {
+	if !run.Policy.AllowsTool("spawn_agent") {
 		return nil
 	}
 	tools := []fantasy.AgentTool{w.spawnAgentTool(run, job), w.waitForAgentsTool(run, rec)}
-	if run.Grants.AllowsTool("run_agent_cohort") {
+	if run.Policy.AllowsTool("run_agent_cohort") {
 		tools = append(tools, w.runAgentCohortTool(run, job, rec))
 	}
 	return tools
@@ -74,7 +86,7 @@ func (w *StepWorker) spawnTools(run uc.AgentRun, job StepJob, rec *stepRecorder)
 func (w *StepWorker) spawnAgentTool(run uc.AgentRun, job StepJob) fantasy.AgentTool {
 	return fantasy.NewAgentTool("spawn_agent", "Spawn a child agent.",
 		func(ctx context.Context, in childSpec, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			if !run.Grants.AllowsTool("spawn_agent") {
+			if !run.Policy.AllowsTool("spawn_agent") {
 				return w.permissionDenied(ctx, run, "spawn_agent", "tool not granted"), nil
 			}
 			child, adopted, err := w.spawnChild(ctx, run, job, spawnRequest{spec: in, toolCallID: call.ID})
@@ -109,7 +121,7 @@ func (w *StepWorker) waitForAgentsTool(run uc.AgentRun, rec *stepRecorder) fanta
 			}
 			// A parent may only wait on runs it actually parented: waiting on
 			// an arbitrary run would leak both its existence and its result.
-			children, err := w.Store.Org(run.OrgID).Runs().Children(ctx, run.ID)
+			children, err := w.Store.Tenant(run.TenantID).Runs().Children(ctx, run.ID)
 			if err != nil {
 				return fantasy.NewTextErrorResponse("wait failed"), nil
 			}
@@ -170,7 +182,7 @@ func (w *StepWorker) runAgentCohortTool(run uc.AgentRun, job StepJob, rec *stepR
 	}
 	return fantasy.NewAgentTool("run_agent_cohort", "Run several child agents concurrently and collect their results.",
 		func(ctx context.Context, in cohortInput, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			if !run.Grants.AllowsTool("run_agent_cohort") {
+			if !run.Policy.AllowsTool("run_agent_cohort") {
 				return w.permissionDenied(ctx, run, "run_agent_cohort", "tool not granted"), nil
 			}
 			if len(in.Specs) == 0 {
@@ -256,9 +268,16 @@ func (w *StepWorker) spawnChild(ctx context.Context, run uc.AgentRun, job StepJo
 	if strings.TrimSpace(req.spec.Prompt) == "" {
 		return uc.AgentRun{}, false, errMissingChildPrompt
 	}
-	grants := req.spec.grants(run.Grants)
+	policy, perr := req.spec.resolvePolicy(run.Policy)
+	if perr != nil {
+		return uc.AgentRun{}, false, perr
+	}
+	// Enforce MaxChildren against live child count.
+	if run.Policy.MaxChildren <= 0 {
+		return uc.AgentRun{}, false, &deniedError{reason: "spawning not permitted"}
+	}
 	key := spawnKey(run.ID, job.StepIndex, req.toolCallID)
-	scope := w.Store.Org(run.OrgID)
+	scope := w.Store.Tenant(run.TenantID)
 
 	// Fast path: this spawn already happened on an earlier delivery.
 	if existing, err := scope.Runs().GetBySpawnKey(ctx, key); err == nil {
@@ -273,16 +292,23 @@ func (w *StepWorker) spawnChild(ctx context.Context, run uc.AgentRun, job StepJo
 	}
 	parentID := run.ID
 	child := uc.AgentRun{
-		ID: uc.RunID(uuid.NewString()), SessionID: run.SessionID, OrgID: run.OrgID,
+		ID: uc.RunID(uuid.NewString()), SessionID: run.SessionID, TenantID: run.TenantID,
 		ParentRunID: &parentID, SpawnKey: key, CohortID: req.cohortID, CohortOrdinal: req.ordinal,
-		Grants: grants, LoopKind: run.LoopKind, LoopVersion: run.LoopVersion,
+		Policy: policy, Actor: run.Actor, LoopKind: run.LoopKind, LoopVersion: run.LoopVersion,
 		ModelConfig: run.ModelConfig, Prompt: req.spec.Prompt, History: history,
 	}
 
 	err = w.Store.Tx(ctx, func(txs uc.Store) error {
-		txScope := txs.Org(run.OrgID)
+		txScope := txs.Tenant(run.TenantID)
 		if _, err := txScope.Runs().GetForUpdate(ctx, run.ID); err != nil {
 			return err
+		}
+		n, err := txScope.Runs().CountChildren(ctx, run.ID)
+		if err != nil {
+			return err
+		}
+		if n >= run.Policy.MaxChildren {
+			return &deniedError{reason: "max children reached"}
 		}
 		if existing, err := txScope.Runs().GetBySpawnKey(ctx, key); err == nil {
 			child = existing
@@ -298,14 +324,14 @@ func (w *StepWorker) spawnChild(ctx context.Context, run uc.AgentRun, job StepJo
 			return err
 		}
 		if _, err := txScope.Events().Append(ctx, run.SessionID, uc.Event{
-			Actor: uc.Actor{Type: uc.ActorAgent, ID: string(run.ID)}, Kind: uc.EventKindRunSpawned, Payload: payload,
+			Actor: uc.ActorAgent(uc.RunID(string(run.ID))), Kind: uc.EventKindRunSpawned, Payload: payload,
 		}); err != nil {
 			return err
 		}
 		// Creation and the child's first step commit together, so a child row
 		// can never exist without work scheduled for it.
 		return w.Enqueue.EnqueueInTx(ctx, txs, StepJob{
-			RunID: string(child.ID), OrgID: job.OrgID, SessionID: job.SessionID, StepIndex: 0,
+			RunID: string(child.ID), TenantID: job.TenantID, SessionID: job.SessionID, StepIndex: 0,
 		})
 	})
 	switch {
@@ -348,7 +374,7 @@ func (w *StepWorker) denialStubs(ctx context.Context, run uc.AgentRun, offered [
 
 func (w *StepWorker) permissionDenied(ctx context.Context, run uc.AgentRun, tool, reason string) fantasy.ToolResponse {
 	payload, _ := json.Marshal(uc.PermissionDeniedPayload{RunID: run.ID, Tool: tool, Reason: reason})
-	_, _ = w.Store.Org(run.OrgID).Events().Append(ctx, run.SessionID, uc.Event{Actor: uc.Actor{Type: uc.ActorSystem}, Kind: uc.EventKindPermissionDenied, Payload: payload})
+	_, _ = w.Store.Tenant(run.TenantID).Events().Append(ctx, run.SessionID, uc.Event{Actor: uc.ActorSystem(), Kind: uc.EventKindPermissionDenied, Payload: payload})
 	// Every denial returns the same opaque message: a caller must not be able
 	// to tell "you may not touch this" from "this does not exist".
 	return fantasy.NewTextErrorResponse("permission denied")

@@ -4,58 +4,61 @@
 package core
 
 import (
+	"fmt"
 	"time"
+	"unicode/utf8"
 )
 
-// OrgID identifies an organization, the tenancy boundary.
-type OrgID string
+// TenantID identifies a tenant, the tenancy boundary.
+type TenantID string
 
-// UserID identifies a human user.
-type UserID string
-
-// SessionID identifies a durable work session within an org.
+// SessionID identifies a durable work session within a tenant.
 type SessionID string
 
-// OrgRole is a user's role within an org.
-type OrgRole string
-
-const (
-	OrgRoleOwner  OrgRole = "owner"
-	OrgRoleAdmin  OrgRole = "admin"
-	OrgRoleMember OrgRole = "member"
-)
-
-// Org is the tenancy boundary. Every session, credential, and provider
-// instance belongs to exactly one org.
-type Org struct {
-	ID        OrgID
+// Tenant is the tenancy boundary. Every session, credential, provider
+// instance, and API key belongs to exactly one tenant. One consumer service
+// typically maps to one tenant (or several for staging/prod); the core does
+// not interpret the name.
+type Tenant struct {
+	ID        TenantID
 	Name      string
 	CreatedAt time.Time
 }
 
-// User is a human identity. Org membership is modeled separately so a user
-// can belong to multiple orgs.
-type User struct {
-	ID        UserID
-	Email     string
-	Display   string
-	CreatedAt time.Time
-}
-
-// OrgMember links a user to an org with a role.
-type OrgMember struct {
-	OrgID    OrgID
-	UserID   UserID
-	Role     OrgRole
-	JoinedAt time.Time
-}
+// Session label limits. Enforced on write so list selectors stay cheap.
+const (
+	MaxSessionLabels      = 16
+	MaxSessionLabelKeyLen = 128
+	MaxSessionLabelValLen = 128
+)
 
 // Session is the durable unit of work: it outlives any process, UI, agent
-// loop, or environment, and owns an append-only event log.
+// loop, or resource, and owns an append-only event log. Labels are a
+// consumer-defined taxonomy the core indexes but never interprets.
 type Session struct {
 	ID         SessionID
-	OrgID      OrgID
+	TenantID   TenantID
 	Title      string
+	Labels     map[string]string
 	CreatedAt  time.Time
 	ArchivedAt *time.Time
+}
+
+// ValidateLabels checks label cardinality and key/value length limits.
+func ValidateLabels(labels map[string]string) error {
+	if len(labels) > MaxSessionLabels {
+		return fmt.Errorf("labels: at most %d pairs", MaxSessionLabels)
+	}
+	for k, v := range labels {
+		if k == "" {
+			return fmt.Errorf("labels: empty key")
+		}
+		if utf8.RuneCountInString(k) > MaxSessionLabelKeyLen {
+			return fmt.Errorf("labels: key %q exceeds %d characters", k, MaxSessionLabelKeyLen)
+		}
+		if utf8.RuneCountInString(v) > MaxSessionLabelValLen {
+			return fmt.Errorf("labels: value for %q exceeds %d characters", k, MaxSessionLabelValLen)
+		}
+	}
+	return nil
 }

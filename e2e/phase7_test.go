@@ -117,7 +117,7 @@ func TestA72_IncrementalRendering(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "incremental")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "incremental")
 	stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
 		{Text: "one two three four five six", ChunkSize: 3, ChunkDelay: 40 * time.Millisecond},
 	}})
@@ -179,7 +179,7 @@ func TestA73_RedactionSweep(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "redaction sweep")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "redaction sweep")
 
 	// The canary credential is the one the run actually authenticates with.
 	stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{
@@ -228,15 +228,15 @@ func TestA73_RedactionSweep(t *testing.T) {
 		assertNoCanary(t, "event payload "+testclient.Kind(ev), string(payload))
 	}
 
-	stored, err := stack.Store.Org(stack.OrgA.ID).Runs().Get(ctx, uc.RunID(run.GetId()))
+	stored, err := stack.Store.Tenant(stack.TenantA.ID).Runs().Get(ctx, uc.RunID(run.GetId()))
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertNoCanary(t, "persisted run history", string(stored.History))
 	assertNoCanary(t, "persisted run failure message", stored.FailureMessage)
 
-	creds, err := alice.Orgs.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
-		OrgId: string(stack.OrgA.ID),
+	creds, err := alice.Tenants.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+		TenantId: string(stack.TenantA.ID),
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -258,12 +258,12 @@ func TestA73_RedactionSweep(t *testing.T) {
 	assertNoCanary(t, "ListRuns response", string(runsJSON))
 
 	// Database diagnostic fields for credentials and environments.
-	dbCred, err := stack.Store.Org(stack.OrgA.ID).Credentials().Get(ctx, uc.CredentialKindOpenAI, "default")
+	dbCred, err := stack.Store.Tenant(stack.TenantA.ID).Credentials().Get(ctx, uc.CredentialKindOpenAI, "default")
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertNoCanary(t, "credential ciphertext at rest", string(dbCred.EncPayload))
-	storedResources, err := stack.Store.Org(stack.OrgA.ID).Resources().List(ctx, uc.SessionID(sess.GetId()))
+	storedResources, err := stack.Store.Tenant(stack.TenantA.ID).Resources().List(ctx, uc.SessionID(sess.GetId()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -317,7 +317,7 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "durability")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "durability")
 
 	envProto := provisionEnv(t, stack, sess.GetId())
 	envID := envProto.GetId()
@@ -329,7 +329,7 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	before, err := stack.Store.Org(stack.OrgA.ID).Resources().Get(ctx, uc.ResourceID(envID))
+	before, err := stack.Store.Tenant(stack.TenantA.ID).Resources().Get(ctx, uc.ResourceID(envID))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -384,7 +384,7 @@ func TestA74_EnvDurabilityAndRotation(t *testing.T) {
 		t.Fatalf("epoch did not advance: %d → %d", before.Epoch, ready.GetEpoch())
 	}
 
-	after, err := stack.Store.Org(stack.OrgA.ID).Resources().Get(ctx, uc.ResourceID(envID))
+	after, err := stack.Store.Tenant(stack.TenantA.ID).Resources().Get(ctx, uc.ResourceID(envID))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -429,7 +429,7 @@ func TestA75_FailureAndReconciliation(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "env failure")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "env failure")
 	envProto := provisionEnv(t, stack, sess.GetId())
 	envID := uc.ResourceID(envProto.GetId())
 
@@ -577,7 +577,7 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "interrupted provisioning")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "interrupted provisioning")
 
 	provider, err := localdocker.New(localdocker.Config{Image: harness.BezalelImage})
 	if err != nil {
@@ -606,7 +606,7 @@ func TestA75_InterruptedProvisioning(t *testing.T) {
 		killDeadline := time.Now().Add(60 * time.Second)
 		missed := false
 		for time.Now().Before(killDeadline) {
-			current, err := stack.Store.Org(stack.OrgA.ID).Resources().Get(ctx, envID)
+			current, err := stack.Store.Tenant(stack.TenantA.ID).Resources().Get(ctx, envID)
 			if err != nil {
 				t.Fatal(err)
 			}

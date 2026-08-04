@@ -30,7 +30,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait pre-commit")
 
 		// The parent spawns, then waits in a *later* step. By the time the
@@ -79,7 +79,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait post-commit")
 
 		release := make(chan struct{})
@@ -103,7 +103,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait duplicate")
 
 		release := make(chan struct{})
@@ -119,7 +119,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 
 		wait := assertSingleCorrelatedResult(t, stack, org, parentID, uc.WaitResolved)
 		// A second close and a second resumption attempt must both be refused.
-		scope := stack.Store.Org(org)
+		scope := stack.Store.Tenant(org)
 		if closed, err := scope.Waits().Close(ctx, wait.ID, uc.WaitResolved, wait.Result); err != nil {
 			t.Fatal(err)
 		} else if closed {
@@ -140,7 +140,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait mixed")
 
 		cancelReady := make(chan struct{})
@@ -204,7 +204,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait timeout")
 
 		neverReleased := make(chan struct{})
@@ -248,7 +248,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait timeout race")
 
 		release := make(chan struct{})
@@ -286,7 +286,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait parent cancel")
 
 		release := make(chan struct{})
@@ -316,7 +316,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 			t.Fatalf("cancelled parent left an open wait: %+v", waits[0])
 		}
 		// And the parent stays cancelled rather than being resumed.
-		final, err := stack.Store.Org(org).Runs().Get(ctx, parentID)
+		final, err := stack.Store.Tenant(org).Runs().Get(ctx, parentID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -343,7 +343,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 				depth, stack.DebugRunnableJobs(t, ctx))
 		}
 		// The cancellation is final: no step executed after it.
-		steps, err := stack.Store.Org(org).Runs().Steps(ctx, parentID)
+		steps, err := stack.Store.Tenant(org).Runs().Steps(ctx, parentID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -358,7 +358,7 @@ func TestA82_WaitRaceMatrix(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		ctx := context.Background()
-		org := stack.OrgA.ID
+		org := stack.TenantA.ID
 		sess := createSession(t, alice, string(org), "wait worker death")
 
 		release := make(chan struct{})

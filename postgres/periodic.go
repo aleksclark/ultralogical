@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type periodicStore struct{ scope *orgScope }
+type periodicStore struct{ scope *tenantScope }
 
 func (s *periodicStore) Create(ctx context.Context, p uc.PeriodicPrompt) error {
 	_, err := s.scope.s.db().Exec(ctx, `INSERT INTO periodic_prompts(id,org_id,session_id,run_id,schedule,prompt,enabled,next_at)VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, string(p.ID), string(s.scope.org), string(p.SessionID), nil, p.Schedule.String(), p.Prompt, p.Enabled, p.NextAt)
@@ -19,7 +19,7 @@ func scanPeriodic(row pgx.Row) (uc.PeriodicPrompt, error) {
 	var p uc.PeriodicPrompt
 	var schedule string
 	var runID *string
-	err := row.Scan(&p.ID, &p.OrgID, &p.SessionID, &runID, &schedule, &p.Prompt, &p.Enabled, &p.NextAt, &p.CreatedAt)
+	err := row.Scan(&p.ID, &p.TenantID, &p.SessionID, &runID, &schedule, &p.Prompt, &p.Enabled, &p.NextAt, &p.CreatedAt)
 	if runID != nil {
 		p.RunID = uc.RunID(*runID)
 	}

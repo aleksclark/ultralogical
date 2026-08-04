@@ -15,7 +15,7 @@ import (
 func run(t *testing.T, stack *harness.Stack, args ...string) (int, string, string) {
 	t.Helper()
 	var stdout, stderr bytes.Buffer
-	environment := cli.NewEnv(stack.BaseURL, harness.TokenAlice, string(stack.OrgA.ID))
+	environment := cli.NewEnv(stack.BaseURL, stack.KeyA, string(stack.TenantA.ID))
 	code, err := cli.RunWithEnv(args, environment, &stdout, &stderr)
 	if err != nil {
 		stderr.WriteString(err.Error())

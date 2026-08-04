@@ -31,8 +31,8 @@ func TestA01_TSClientSmoke(t *testing.T) {
 	cmd.Dir = tsDir
 	cmd.Env = append(os.Environ(),
 		"CORED_URL="+stack.BaseURL,
-		"CORE_TOKEN="+harness.TokenAlice,
-		"CORE_ORG_ID="+string(stack.OrgA.ID),
+		"CORE_TOKEN="+stack.KeyA,
+		"CORE_TENANT_ID="+string(stack.TenantA.ID),
 	)
 	out, err := cmd.CombinedOutput()
 	if err != nil {

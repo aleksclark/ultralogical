@@ -16,7 +16,7 @@
 //
 //	DATABASE_URL      Postgres connection string (seed)
 //	CORE_MASTER_KEY  credential master key (seed)
-//	CORE_DEV_EMAIL   dev user email (seed, default dev@example.com)
+//	CORE_DEV_EMAIL   dev user "dev@example.com" (seed, default dev@example.com)
 //	CORE_MODEL_URL   base URL of the local model endpoint (seed)
 //	CORE_SMOKE_API   cored base URL (smoke)
 //	CORE_SMOKE_TOKEN dev bearer token (smoke)
@@ -94,38 +94,55 @@ func seed(ctx context.Context) error {
 	}
 	defer pool.Close()
 
-	email := envOr("CORE_DEV_EMAIL", "dev@example.com")
-	user, err := store.Users().GetByEmail(ctx, email)
-	if errors.Is(err, uc.ErrNotFound) {
-		user = uc.User{ID: uc.UserID(uuid.NewString()), Email: email, Display: "Dev"}
-		if err := store.Users().Create(ctx, user); err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	}
-
-	orgs, err := store.Orgs().ListForUser(ctx, user.ID)
+	// Seed a dev tenant + admin API key when missing.
+	var org uc.Tenant
+	tenants, err := store.Tenants().List(ctx)
 	if err != nil {
 		return err
 	}
-	var org uc.Org
-	if len(orgs) > 0 {
-		org = orgs[0]
+	if len(tenants) > 0 {
+		org = tenants[0]
 	} else {
-		org = uc.Org{ID: uc.OrgID(uuid.NewString()), Name: "dev"}
-		if err := store.Orgs().Create(ctx, org); err != nil {
-			return err
-		}
-		if err := store.Orgs().AddMember(ctx, uc.OrgMember{OrgID: org.ID, UserID: user.ID, Role: uc.OrgRoleOwner}); err != nil {
+		org = uc.Tenant{ID: uc.TenantID(uuid.NewString()), Name: "dev"}
+		if err := store.Tenants().Create(ctx, org); err != nil {
 			return err
 		}
 	}
-
-	scope := store.Org(org.ID)
+	// Ensure at least one admin key exists; print it once for the operator.
+	keys, err := store.APIKeys().List(ctx, org.ID)
+	if err != nil {
+		return err
+	}
+	hasLive := false
+	for _, k := range keys {
+		if k.RevokedAt == nil && k.Scope == uc.KeyScopeAdmin {
+			hasLive = true
+			break
+		}
+	}
+	if !hasLive {
+		raw, prefix, err := uc.GenerateAPIKey()
+		if err != nil {
+			return err
+		}
+		secrets.DefaultRedactor.Register(raw)
+		enc, err := keyring.Encrypt([]byte(raw))
+		if err != nil {
+			return err
+		}
+		if err := store.APIKeys().Create(ctx, uc.APIKey{
+			ID: uc.APIKeyID(uuid.NewString()), TenantID: org.ID, Name: "dev",
+			Scope: uc.KeyScopeAdmin, Prefix: prefix, KeyHash: uc.HashAPIKey(raw), KeyEnc: enc,
+		}); err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stderr, "devstack: admin API key (save now):", raw)
+		fmt.Fprintln(os.Stderr, "devstack: tenant id:", org.ID)
+	}
+	scope := store.Tenant(org.ID)
 	if _, err := scope.Providers().GetByName(ctx, "default"); errors.Is(err, uc.ErrNotFound) {
 		if err := scope.Providers().Create(ctx, uc.ProviderInstance{
-			ID: uc.ProviderInstanceID(uuid.NewString()), OrgID: org.ID,
+			ID: uc.ProviderInstanceID(uuid.NewString()), TenantID: org.ID,
 			Kind: uc.ProviderKindLocalDocker, Name: "default",
 			State: "ready",
 		}); err != nil {
@@ -152,9 +169,7 @@ func seed(ctx context.Context) error {
 	}
 
 	return json.NewEncoder(os.Stdout).Encode(map[string]string{
-		"org_id":  string(org.ID),
-		"user_id": string(user.ID),
-		"email":   email,
+		"tenant_id": string(org.ID),
 	})
 }
 
@@ -194,7 +209,7 @@ func smoke(ctx context.Context) error {
 		}
 
 	created, err := client.sessions.CreateSession(ctx, connect.NewRequest(&corev1.CreateSessionRequest{
-		OrgId: org, Title: "dev stack smoke",
+		TenantId: org, Title: "dev stack smoke",
 	}))
 	if err != nil {
 		return fmt.Errorf("create session: %w", err)

@@ -59,7 +59,7 @@ func TestA102_KubernetesReconcilesExternallyDeletedPod(t *testing.T) {
 
 	env := harness.Request(t, uc.DevEnvSpec{Name: "reconcile", Workdir: "/work"})
 	t.Cleanup(func() {
-		current, err := harness.Store.Org(harness.Org).Resources().Get(context.Background(), env.ID)
+		current, err := harness.Store.Tenant(harness.Tenant).Resources().Get(context.Background(), env.ID)
 		if err == nil {
 			_ = provider.Terminate(context.Background(), current)
 		}

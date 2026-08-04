@@ -14,7 +14,7 @@ import (
 const maxInlineMemoryValue = 1024
 
 // appendMemoryEvent records a memory change so every subscriber sees it.
-func appendMemoryEvent(ctx context.Context, scope uc.OrgScope, run uc.AgentRun, kind, key string, value []byte, actor uc.Actor) error {
+func appendMemoryEvent(ctx context.Context, scope uc.TenantScope, run uc.AgentRun, kind, key string, value []byte, actor uc.Actor) error {
 	inline := value
 	if len(inline) > maxInlineMemoryValue {
 		inline = nil
@@ -31,7 +31,7 @@ func appendMemoryEvent(ctx context.Context, scope uc.OrgScope, run uc.AgentRun, 
 }
 
 func memoryTools(store uc.Store, run uc.AgentRun) []fantasy.AgentTool {
-	scope := store.Org(run.OrgID)
+	scope := store.Tenant(run.TenantID)
 	type keyInput struct {
 		Key string `json:"key"`
 	}
@@ -59,9 +59,9 @@ func memoryTools(store uc.Store, run uc.AgentRun) []fantasy.AgentTool {
 		if err != nil {
 			return fantasy.NewTextErrorResponse("invalid value"), nil
 		}
-		actor := uc.Actor{Type: uc.ActorAgent, ID: string(run.ID)}
+		actor := uc.ActorAgent(uc.RunID(string(run.ID)))
 		err = store.Tx(ctx, func(txs uc.Store) error {
-			scope := txs.Org(run.OrgID)
+			scope := txs.Tenant(run.TenantID)
 			entry := uc.SessionMemoryEntry{SessionID: run.SessionID, Key: in.Key, Value: b, UpdatedBy: actor}
 			if e := scope.Memory().Set(ctx, entry); e != nil {
 				return e
@@ -77,9 +77,9 @@ func memoryTools(store uc.Store, run uc.AgentRun) []fantasy.AgentTool {
 		return fantasy.NewTextResponse("stored"), nil
 	})
 	del := fantasy.NewAgentTool("session_memory_delete", "Delete session-scoped durable memory.", func(ctx context.Context, in keyInput, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-		actor := uc.Actor{Type: uc.ActorAgent, ID: string(run.ID)}
+		actor := uc.ActorAgent(uc.RunID(string(run.ID)))
 		err := store.Tx(ctx, func(txs uc.Store) error {
-			scope := txs.Org(run.OrgID)
+			scope := txs.Tenant(run.TenantID)
 			if e := scope.Memory().Delete(ctx, run.SessionID, in.Key); e != nil {
 				return e
 			}
@@ -101,7 +101,7 @@ func memoryTools(store uc.Store, run uc.AgentRun) []fantasy.AgentTool {
 	}
 	var granted []fantasy.AgentTool
 	for _, name := range []string{"session_memory_get", "session_memory_list", "session_memory_set", "session_memory_delete"} {
-		if run.Grants.AllowsTool(name) {
+		if run.Policy.AllowsTool(name) {
 			granted = append(granted, byName[name])
 		}
 	}

@@ -122,7 +122,7 @@ type ResourceLister interface {
 // Resource is one session-owned durable resource.
 type Resource struct {
 	ID                 ResourceID
-	OrgID              OrgID
+	TenantID           TenantID
 	SessionID          SessionID
 	Kind               ResourceKind
 	ProviderInstanceID ProviderInstanceID
@@ -167,16 +167,16 @@ func HandlePresent(h json.RawMessage) bool {
 	return true
 }
 
-// ProviderInstance is an org-scoped registration of where resources run.
+// ProviderInstance is a tenant-scoped registration of where resources run.
 // Kind is the provider adapter kind (local_docker, byo_k8s, …). The resource
 // kind the adapter hosts is returned by ResourceProvider.Kind().
 type ProviderInstance struct {
-	ID     ProviderInstanceID
-	OrgID  OrgID
-	Kind   string
-	Name   string
-	Config json.RawMessage
-	State  string
+	ID       ProviderInstanceID
+	TenantID TenantID
+	Kind     string
+	Name     string
+	Config   json.RawMessage
+	State    string
 	// Capabilities is what this registration's control plane answered when it
 	// was probed. It is stored rather than recomputed so a decision about what
 	// a provider can do never depends on the control plane being reachable at

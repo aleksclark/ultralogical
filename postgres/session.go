@@ -2,37 +2,49 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 
 	uc "github.com/aleksclark/ultracore"
 )
 
-// orgScope filters every query by org id, making cross-tenant access
+// tenantScope filters every query by tenant id, making cross-tenant access
 // structurally impossible at this layer.
-type orgScope struct {
+type tenantScope struct {
 	s   *Store
-	org uc.OrgID
+	org uc.TenantID
 }
 
-func (o *orgScope) Sessions() uc.SessionStore               { return &sessionStore{o} }
-func (o *orgScope) Events() uc.EventStore                   { return &eventStore{o} }
-func (o *orgScope) Runs() uc.RunStore                       { return &runStore{o} }
-func (o *orgScope) Credentials() uc.CredentialStore         { return &credentialStore{o} }
-func (o *orgScope) Resources() uc.ResourceStore                       { return &resourceStore{o} }
-func (o *orgScope) Providers() uc.ProviderInstanceStore     { return &providerStore{o} }
-func (o *orgScope) Memory() uc.SessionMemoryStore           { return &memoryStore{o} }
-func (o *orgScope) Waits() uc.RunWaitStore                  { return &waitStore{o} }
-func (o *orgScope) PeriodicPrompts() uc.PeriodicPromptStore { return &periodicStore{o} }
+func (o *tenantScope) Sessions() uc.SessionStore               { return &sessionStore{o} }
+func (o *tenantScope) Events() uc.EventStore                   { return &eventStore{o} }
+func (o *tenantScope) Runs() uc.RunStore                       { return &runStore{o} }
+func (o *tenantScope) Credentials() uc.CredentialStore         { return &credentialStore{o} }
+func (o *tenantScope) Resources() uc.ResourceStore             { return &resourceStore{o} }
+func (o *tenantScope) Providers() uc.ProviderInstanceStore     { return &providerStore{o} }
+func (o *tenantScope) Memory() uc.SessionMemoryStore           { return &memoryStore{o} }
+func (o *tenantScope) Waits() uc.RunWaitStore                  { return &waitStore{o} }
+func (o *tenantScope) PeriodicPrompts() uc.PeriodicPromptStore { return &periodicStore{o} }
 
-type sessionStore struct{ scope *orgScope }
+type sessionStore struct{ scope *tenantScope }
 
 func (st *sessionStore) Create(ctx context.Context, s uc.Session) error {
-	_, err := st.scope.s.db().Exec(ctx,
-		`INSERT INTO sessions (id, org_id, title) VALUES ($1, $2, $3)`,
-		string(s.ID), string(st.scope.org), s.Title)
+	if err := uc.ValidateLabels(s.Labels); err != nil {
+		return err
+	}
+	labels, err := json.Marshal(s.Labels)
+	if err != nil {
+		return fmt.Errorf("postgres: encode labels: %w", err)
+	}
+	if s.Labels == nil {
+		labels = []byte("{}")
+	}
+	_, err = st.scope.s.db().Exec(ctx,
+		`INSERT INTO sessions (id, org_id, title, labels) VALUES ($1, $2, $3, $4)`,
+		string(s.ID), string(st.scope.org), s.Title, labels)
 	if isUniqueViolation(err) {
 		return uc.ErrAlreadyExists
 	}
@@ -42,43 +54,103 @@ func (st *sessionStore) Create(ctx context.Context, s uc.Session) error {
 	return nil
 }
 
-func (st *sessionStore) Get(ctx context.Context, id uc.SessionID) (uc.Session, error) {
+func (st *sessionStore) scan(row pgx.Row) (uc.Session, error) {
 	var s uc.Session
-	err := st.scope.s.db().QueryRow(ctx,
-		`SELECT id, org_id, title, created_at, archived_at
-		   FROM sessions WHERE id = $1 AND org_id = $2`,
-		string(id), string(st.scope.org)).
-		Scan(&s.ID, &s.OrgID, &s.Title, &s.CreatedAt, &s.ArchivedAt)
+	var labels []byte
+	err := row.Scan(&s.ID, &s.TenantID, &s.Title, &labels, &s.CreatedAt, &s.ArchivedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return uc.Session{}, uc.ErrNotFound
 	}
 	if err != nil {
-		return uc.Session{}, fmt.Errorf("postgres: get session: %w", err)
+		return uc.Session{}, fmt.Errorf("postgres: scan session: %w", err)
+	}
+	if len(labels) > 0 && string(labels) != "null" {
+		if err := json.Unmarshal(labels, &s.Labels); err != nil {
+			return uc.Session{}, fmt.Errorf("postgres: decode labels: %w", err)
+		}
+	}
+	if s.Labels == nil {
+		s.Labels = map[string]string{}
 	}
 	return s, nil
 }
 
-func (st *sessionStore) List(ctx context.Context) ([]uc.Session, error) {
-	rows, err := st.scope.s.db().Query(ctx,
-		`SELECT id, org_id, title, created_at, archived_at
-		   FROM sessions WHERE org_id = $1 ORDER BY created_at DESC`,
-		string(st.scope.org))
+const sessionColumns = `id, org_id, title, labels, created_at, archived_at`
+
+func (st *sessionStore) Get(ctx context.Context, id uc.SessionID) (uc.Session, error) {
+	return st.scan(st.scope.s.db().QueryRow(ctx,
+		`SELECT `+sessionColumns+` FROM sessions WHERE id = $1 AND org_id = $2`,
+		string(id), string(st.scope.org)))
+}
+
+func (st *sessionStore) List(ctx context.Context, selectors []uc.LabelSelector) ([]uc.Session, error) {
+	q := `SELECT ` + sessionColumns + ` FROM sessions WHERE org_id = $1`
+	args := []any{string(st.scope.org)}
+	for _, sel := range selectors {
+		switch sel.Op {
+		case "=", "eq", "":
+			if len(sel.Values) != 1 {
+				return nil, fmt.Errorf("postgres: equality selector needs one value")
+			}
+			args = append(args, map[string]string{sel.Key: sel.Values[0]})
+			q += fmt.Sprintf(` AND labels @> $%d::jsonb`, len(args))
+		case "in":
+			if len(sel.Values) == 0 {
+				// in () matches nothing
+				return nil, nil
+			}
+			// OR of equality containments for each value.
+			parts := make([]string, 0, len(sel.Values))
+			for _, v := range sel.Values {
+				args = append(args, map[string]string{sel.Key: v})
+				parts = append(parts, fmt.Sprintf("labels @> $%d::jsonb", len(args)))
+			}
+			q += ` AND (` + strings.Join(parts, " OR ") + `)`
+		default:
+			return nil, fmt.Errorf("postgres: unknown selector op %q", sel.Op)
+		}
+	}
+	q += ` ORDER BY created_at DESC`
+	rows, err := st.scope.s.db().Query(ctx, q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("postgres: list sessions: %w", err)
 	}
 	defer rows.Close()
 	var sessions []uc.Session
 	for rows.Next() {
-		var s uc.Session
-		if err := rows.Scan(&s.ID, &s.OrgID, &s.Title, &s.CreatedAt, &s.ArchivedAt); err != nil {
-			return nil, fmt.Errorf("postgres: scan session: %w", err)
+		s, err := st.scan(rows)
+		if err != nil {
+			return nil, err
 		}
 		sessions = append(sessions, s)
 	}
 	return sessions, rows.Err()
 }
 
-type eventStore struct{ scope *orgScope }
+func (st *sessionStore) UpdateLabels(ctx context.Context, id uc.SessionID, labels map[string]string) (uc.Session, error) {
+	if err := uc.ValidateLabels(labels); err != nil {
+		return uc.Session{}, err
+	}
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	b, err := json.Marshal(labels)
+	if err != nil {
+		return uc.Session{}, fmt.Errorf("postgres: encode labels: %w", err)
+	}
+	tag, err := st.scope.s.db().Exec(ctx,
+		`UPDATE sessions SET labels = $3 WHERE id = $1 AND org_id = $2`,
+		string(id), string(st.scope.org), b)
+	if err != nil {
+		return uc.Session{}, fmt.Errorf("postgres: update labels: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return uc.Session{}, uc.ErrNotFound
+	}
+	return st.Get(ctx, id)
+}
+
+type eventStore struct{ scope *tenantScope }
 
 // Append assigns the next per-session seq by bumping sessions.last_seq inside
 // a transaction, inserts the event, and pg_notify()s subscribers in the same
@@ -105,9 +177,9 @@ func (e *eventStore) Append(ctx context.Context, sessionID uc.SessionID, ev uc.E
 			payload = []byte("{}")
 		}
 		if _, err := ps.db().Exec(ctx,
-			`INSERT INTO session_events (session_id, seq, actor_type, actor_id, kind, payload)
-			 VALUES ($1, $2, $3, $4, $5, $6)`,
-			string(sessionID), seq, string(ev.Actor.Type), ev.Actor.ID, ev.Kind, payload); err != nil {
+			`INSERT INTO session_events (session_id, seq, actor_type, actor_id, actor_display, kind, payload)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+			string(sessionID), seq, ev.Actor.Kind, ev.Actor.ID, ev.Actor.Display, ev.Kind, payload); err != nil {
 			return fmt.Errorf("postgres: insert event: %w", err)
 		}
 		if _, err := ps.db().Exec(ctx,
@@ -128,7 +200,7 @@ func (e *eventStore) Range(ctx context.Context, sessionID uc.SessionID, fromSeq 
 		limit = 256
 	}
 	rows, err := e.scope.s.db().Query(ctx,
-		`SELECT ev.session_id, ev.seq, ev.ts, ev.actor_type, ev.actor_id, ev.kind, ev.payload
+		`SELECT ev.session_id, ev.seq, ev.ts, ev.actor_type, ev.actor_id, COALESCE(ev.actor_display,''), ev.kind, ev.payload
 		   FROM session_events ev
 		   JOIN sessions s ON s.id = ev.session_id
 		  WHERE ev.session_id = $1 AND s.org_id = $2 AND ev.seq > $3
@@ -141,7 +213,7 @@ func (e *eventStore) Range(ctx context.Context, sessionID uc.SessionID, fromSeq 
 	var events []uc.Event
 	for rows.Next() {
 		var ev uc.Event
-		if err := rows.Scan(&ev.SessionID, &ev.Seq, &ev.TS, &ev.Actor.Type, &ev.Actor.ID, &ev.Kind, &ev.Payload); err != nil {
+		if err := rows.Scan(&ev.SessionID, &ev.Seq, &ev.TS, &ev.Actor.Kind, &ev.Actor.ID, &ev.Actor.Display, &ev.Kind, &ev.Payload); err != nil {
 			return nil, fmt.Errorf("postgres: scan event: %w", err)
 		}
 		events = append(events, ev)

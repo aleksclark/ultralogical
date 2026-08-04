@@ -89,24 +89,24 @@ func (s *Store) db() db {
 	return s.pool
 }
 
-// Orgs implements uc.Store.
-func (s *Store) Orgs() uc.OrgStore { return &orgStore{s} }
+// Tenants implements uc.Store.
+func (s *Store) Tenants() uc.TenantStore { return &tenantStore{s} }
 
-// Users implements uc.Store.
-func (s *Store) Users() uc.UserStore { return &userStore{s} }
+// APIKeys implements uc.Store.
+func (s *Store) APIKeys() uc.APIKeyStore { return &apiKeyStore{s} }
 
-// Org implements uc.Store.
-func (s *Store) Org(id uc.OrgID) uc.OrgScope { return &orgScope{s: s, org: id} }
+// Tenant implements uc.Store.
+func (s *Store) Tenant(id uc.TenantID) uc.TenantScope { return &tenantScope{s: s, org: id} }
 
-// SessionOrg implements uc.Store.
-func (s *Store) SessionOrg(ctx context.Context, id uc.SessionID) (uc.OrgID, error) {
-	var org uc.OrgID
+// SessionTenant implements uc.Store.
+func (s *Store) SessionTenant(ctx context.Context, id uc.SessionID) (uc.TenantID, error) {
+	var org uc.TenantID
 	err := s.db().QueryRow(ctx, `SELECT org_id FROM sessions WHERE id = $1`, string(id)).Scan(&org)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", uc.ErrNotFound
 	}
 	if err != nil {
-		return "", fmt.Errorf("postgres: session org: %w", err)
+		return "", fmt.Errorf("postgres: session tenant: %w", err)
 	}
 	return org, nil
 }

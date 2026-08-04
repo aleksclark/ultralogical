@@ -11,19 +11,21 @@ import (
 	uc "github.com/aleksclark/ultracore"
 )
 
-type runStore struct{ scope *orgScope }
+type runStore struct{ scope *tenantScope }
 
 const runColumns = `id, session_id, org_id, parent_run_id, COALESCE(spawn_key,''), COALESCE(cohort_id::text,''), COALESCE(cohort_ordinal,0),
 	grants, result, state, loop_kind, loop_version, model_config,
-	prompt, history, failure_reason, failure_message, cancel_requested_at, created_at, updated_at`
+	prompt, history, failure_reason, failure_message, cancel_requested_at, created_at, updated_at,
+	COALESCE(actor_kind,''), COALESCE(actor_id,''), COALESCE(actor_display,'')`
 
 func (r *runStore) scan(row pgx.Row) (uc.AgentRun, error) {
 	var run uc.AgentRun
 	var modelConfig, grants []byte
-	err := row.Scan(&run.ID, &run.SessionID, &run.OrgID, &run.ParentRunID, &run.SpawnKey, &run.CohortID, &run.CohortOrdinal,
+	err := row.Scan(&run.ID, &run.SessionID, &run.TenantID, &run.ParentRunID, &run.SpawnKey, &run.CohortID, &run.CohortOrdinal,
 		&grants, &run.Result, &run.State, &run.LoopKind,
 		&run.LoopVersion, &modelConfig, &run.Prompt, &run.History, &run.FailureReason,
-		&run.FailureMessage, &run.CancelRequestedAt, &run.CreatedAt, &run.UpdatedAt)
+		&run.FailureMessage, &run.CancelRequestedAt, &run.CreatedAt, &run.UpdatedAt,
+		&run.Actor.Kind, &run.Actor.ID, &run.Actor.Display)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return uc.AgentRun{}, uc.ErrNotFound
 	}
@@ -33,10 +35,32 @@ func (r *runStore) scan(row pgx.Row) (uc.AgentRun, error) {
 	if err := json.Unmarshal(modelConfig, &run.ModelConfig); err != nil {
 		return uc.AgentRun{}, fmt.Errorf("postgres: decode model config: %w", err)
 	}
-	if err := json.Unmarshal(grants, &run.Grants); err != nil {
-		return uc.AgentRun{}, fmt.Errorf("postgres: decode grants: %w", err)
+	if err := decodePolicy(grants, &run.Policy); err != nil {
+		return uc.AgentRun{}, fmt.Errorf("postgres: decode policy: %w", err)
 	}
 	return run, nil
+}
+
+// decodePolicy accepts both the E3 RunPolicy shape and the E1 interim
+// {"tools":[...]} allowlist so existing rows and in-flight tests keep working
+// until every writer uses the new shape.
+func decodePolicy(raw []byte, p *uc.RunPolicy) error {
+	if len(raw) == 0 || string(raw) == "null" {
+		*p = uc.RunPolicy{}
+		return nil
+	}
+	if err := json.Unmarshal(raw, p); err != nil {
+		return err
+	}
+	// Legacy shape: only "tools" was set.
+	var legacy struct {
+		Tools []string `json:"tools"`
+	}
+	_ = json.Unmarshal(raw, &legacy)
+	if len(p.AllowTools) == 0 && len(legacy.Tools) > 0 {
+		p.AllowTools = legacy.Tools
+	}
+	return nil
 }
 
 func (r *runStore) Create(ctx context.Context, run uc.AgentRun) error {
@@ -44,7 +68,7 @@ func (r *runStore) Create(ctx context.Context, run uc.AgentRun) error {
 	if err != nil {
 		return fmt.Errorf("postgres: encode model config: %w", err)
 	}
-	grants, err := json.Marshal(run.Grants)
+	grants, err := json.Marshal(run.Policy)
 	if err != nil {
 		return err
 	}
@@ -65,11 +89,12 @@ func (r *runStore) Create(ctx context.Context, run uc.AgentRun) error {
 		cohortID = run.CohortID
 	}
 	tag, err := r.scope.s.db().Exec(ctx,
-		`INSERT INTO agent_runs (id, session_id, org_id, parent_run_id, grants, state, loop_kind, loop_version, model_config, prompt, history, spawn_key, cohort_id, cohort_ordinal)
-		 SELECT $1, s.id, s.org_id, $3, $4, $5, $6, $7, $8, $9, $10, $12, $13, $14
+		`INSERT INTO agent_runs (id, session_id, org_id, parent_run_id, grants, state, loop_kind, loop_version, model_config, prompt, history, spawn_key, cohort_id, cohort_ordinal, actor_kind, actor_id, actor_display)
+		 SELECT $1, s.id, s.org_id, $3, $4, $5, $6, $7, $8, $9, $10, $12, $13, $14, $15, $16, $17
 		   FROM sessions s WHERE s.id = $2 AND s.org_id = $11`,
 		string(run.ID), string(run.SessionID), run.ParentRunID, grants, string(uc.RunPending), run.LoopKind,
-		run.LoopVersion, modelConfig, run.Prompt, history, string(r.scope.org), spawnKey, cohortID, run.CohortOrdinal)
+		run.LoopVersion, modelConfig, run.Prompt, history, string(r.scope.org), spawnKey, cohortID, run.CohortOrdinal,
+		run.Actor.Kind, run.Actor.ID, run.Actor.Display)
 	if isUniqueViolation(err) {
 		return uc.ErrAlreadyExists
 	}
@@ -222,7 +247,7 @@ func (r *runStore) Steps(ctx context.Context, id uc.RunID) ([]uc.RunStep, error)
 	return steps, rows.Err()
 }
 
-type credentialStore struct{ scope *orgScope }
+type credentialStore struct{ scope *tenantScope }
 
 func (c *credentialStore) Put(ctx context.Context, cred uc.Credential) error {
 	_, err := c.scope.s.db().Exec(ctx,
@@ -262,7 +287,7 @@ func (c *credentialStore) Get(ctx context.Context, kind, name string) (uc.Creden
 		`SELECT org_id, kind, name, enc_payload, created_at, rotated_at FROM credentials
 		  WHERE org_id = $1 AND kind = $2 AND name = $3`,
 		string(c.scope.org), kind, name).
-		Scan(&cred.OrgID, &cred.Kind, &cred.Name, &cred.EncPayload, &cred.CreatedAt, &cred.RotatedAt)
+		Scan(&cred.TenantID, &cred.Kind, &cred.Name, &cred.EncPayload, &cred.CreatedAt, &cred.RotatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return uc.Credential{}, uc.ErrNotFound
 	}

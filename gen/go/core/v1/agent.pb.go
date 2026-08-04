@@ -84,13 +84,13 @@ func (RunState) EnumDescriptor() ([]byte, []int) {
 	return file_core_v1_agent_proto_rawDescGZIP(), []int{0}
 }
 
-// ModelConfig names the model a run uses and which org credential pays for
-// it. Inference is always on org credentials.
+// ModelConfig names the model a run uses and which tenant credential pays for
+// it. Inference is always on tenant credentials.
 type ModelConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Provider      string                 `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"` // openai | anthropic | bedrock
 	ModelId       string                 `protobuf:"bytes,2,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
-	Credential    string                 `protobuf:"bytes,3,opt,name=credential,proto3" json:"credential,omitempty"` // credential name within the org; "default" if empty
+	Credential    string                 `protobuf:"bytes,3,opt,name=credential,proto3" json:"credential,omitempty"` // credential name within the tenant; "default" if empty
 	Fallbacks     []*ModelConfig         `protobuf:"bytes,4,rep,name=fallbacks,proto3" json:"fallbacks,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -154,6 +154,83 @@ func (x *ModelConfig) GetFallbacks() []*ModelConfig {
 	return nil
 }
 
+// RunPolicy is fixed at run creation and immutable thereafter.
+type RunPolicy struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AllowTools    []string               `protobuf:"bytes,1,rep,name=allow_tools,json=allowTools,proto3" json:"allow_tools,omitempty"`          // "*" or explicit
+	DenyTools     []string               `protobuf:"bytes,2,rep,name=deny_tools,json=denyTools,proto3" json:"deny_tools,omitempty"`             // after allow; wins
+	ResourceKinds []string               `protobuf:"bytes,3,rep,name=resource_kinds,json=resourceKinds,proto3" json:"resource_kinds,omitempty"` // empty=none, ["*"]=all
+	MaxChildren   int32                  `protobuf:"varint,4,opt,name=max_children,json=maxChildren,proto3" json:"max_children,omitempty"`      // 0 = no spawning
+	ChildInherit  bool                   `protobuf:"varint,5,opt,name=child_inherit,json=childInherit,proto3" json:"child_inherit,omitempty"`   // children get same policy verbatim
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RunPolicy) Reset() {
+	*x = RunPolicy{}
+	mi := &file_core_v1_agent_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunPolicy) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunPolicy) ProtoMessage() {}
+
+func (x *RunPolicy) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_agent_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunPolicy.ProtoReflect.Descriptor instead.
+func (*RunPolicy) Descriptor() ([]byte, []int) {
+	return file_core_v1_agent_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *RunPolicy) GetAllowTools() []string {
+	if x != nil {
+		return x.AllowTools
+	}
+	return nil
+}
+
+func (x *RunPolicy) GetDenyTools() []string {
+	if x != nil {
+		return x.DenyTools
+	}
+	return nil
+}
+
+func (x *RunPolicy) GetResourceKinds() []string {
+	if x != nil {
+		return x.ResourceKinds
+	}
+	return nil
+}
+
+func (x *RunPolicy) GetMaxChildren() int32 {
+	if x != nil {
+		return x.MaxChildren
+	}
+	return 0
+}
+
+func (x *RunPolicy) GetChildInherit() bool {
+	if x != nil {
+		return x.ChildInherit
+	}
+	return false
+}
+
 // AgentRun is one durable agent loop bound to a session.
 type AgentRun struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
@@ -169,7 +246,7 @@ type AgentRun struct {
 	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt      *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ParentRunId    string                 `protobuf:"bytes,12,opt,name=parent_run_id,json=parentRunId,proto3" json:"parent_run_id,omitempty"`
-	Grants         *Grants                `protobuf:"bytes,13,opt,name=grants,proto3" json:"grants,omitempty"`
+	Policy         *RunPolicy             `protobuf:"bytes,13,opt,name=policy,proto3" json:"policy,omitempty"`
 	// Result is the run's final output, persisted at terminal transition so a
 	// parent (or a client) can read what a child produced after it is gone.
 	ResultJson string `protobuf:"bytes,14,opt,name=result_json,json=resultJson,proto3" json:"result_json,omitempty"`
@@ -177,13 +254,17 @@ type AgentRun struct {
 	// cohort_ordinal preserves their declaration order.
 	CohortId      string `protobuf:"bytes,15,opt,name=cohort_id,json=cohortId,proto3" json:"cohort_id,omitempty"`
 	CohortOrdinal int32  `protobuf:"varint,16,opt,name=cohort_ordinal,json=cohortOrdinal,proto3" json:"cohort_ordinal,omitempty"`
+	// Opaque attribution captured at run creation.
+	ActorKind     string `protobuf:"bytes,17,opt,name=actor_kind,json=actorKind,proto3" json:"actor_kind,omitempty"`
+	ActorId       string `protobuf:"bytes,18,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	ActorDisplay  string `protobuf:"bytes,19,opt,name=actor_display,json=actorDisplay,proto3" json:"actor_display,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AgentRun) Reset() {
 	*x = AgentRun{}
-	mi := &file_core_v1_agent_proto_msgTypes[1]
+	mi := &file_core_v1_agent_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -195,7 +276,7 @@ func (x *AgentRun) String() string {
 func (*AgentRun) ProtoMessage() {}
 
 func (x *AgentRun) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[1]
+	mi := &file_core_v1_agent_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -208,7 +289,7 @@ func (x *AgentRun) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentRun.ProtoReflect.Descriptor instead.
 func (*AgentRun) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{1}
+	return file_core_v1_agent_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *AgentRun) GetId() string {
@@ -295,9 +376,9 @@ func (x *AgentRun) GetParentRunId() string {
 	return ""
 }
 
-func (x *AgentRun) GetGrants() *Grants {
+func (x *AgentRun) GetPolicy() *RunPolicy {
 	if x != nil {
-		return x.Grants
+		return x.Policy
 	}
 	return nil
 }
@@ -323,6 +404,27 @@ func (x *AgentRun) GetCohortOrdinal() int32 {
 	return 0
 }
 
+func (x *AgentRun) GetActorKind() string {
+	if x != nil {
+		return x.ActorKind
+	}
+	return ""
+}
+
+func (x *AgentRun) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *AgentRun) GetActorDisplay() string {
+	if x != nil {
+		return x.ActorDisplay
+	}
+	return ""
+}
+
 // RunWait is a parent's durable fan-in on child runs. It leaves the open state
 // exactly once, and clients render its state as the parent's awaiting reason.
 type RunWait struct {
@@ -343,7 +445,7 @@ type RunWait struct {
 
 func (x *RunWait) Reset() {
 	*x = RunWait{}
-	mi := &file_core_v1_agent_proto_msgTypes[2]
+	mi := &file_core_v1_agent_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -355,7 +457,7 @@ func (x *RunWait) String() string {
 func (*RunWait) ProtoMessage() {}
 
 func (x *RunWait) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[2]
+	mi := &file_core_v1_agent_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -368,7 +470,7 @@ func (x *RunWait) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunWait.ProtoReflect.Descriptor instead.
 func (*RunWait) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{2}
+	return file_core_v1_agent_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RunWait) GetId() string {
@@ -454,7 +556,7 @@ type RunTreeNode struct {
 
 func (x *RunTreeNode) Reset() {
 	*x = RunTreeNode{}
-	mi := &file_core_v1_agent_proto_msgTypes[3]
+	mi := &file_core_v1_agent_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -466,7 +568,7 @@ func (x *RunTreeNode) String() string {
 func (*RunTreeNode) ProtoMessage() {}
 
 func (x *RunTreeNode) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[3]
+	mi := &file_core_v1_agent_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -479,7 +581,7 @@ func (x *RunTreeNode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunTreeNode.ProtoReflect.Descriptor instead.
 func (*RunTreeNode) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{3}
+	return file_core_v1_agent_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RunTreeNode) GetRun() *AgentRun {
@@ -512,7 +614,7 @@ type GetRunTreeRequest struct {
 
 func (x *GetRunTreeRequest) Reset() {
 	*x = GetRunTreeRequest{}
-	mi := &file_core_v1_agent_proto_msgTypes[4]
+	mi := &file_core_v1_agent_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -524,7 +626,7 @@ func (x *GetRunTreeRequest) String() string {
 func (*GetRunTreeRequest) ProtoMessage() {}
 
 func (x *GetRunTreeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[4]
+	mi := &file_core_v1_agent_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -537,7 +639,7 @@ func (x *GetRunTreeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunTreeRequest.ProtoReflect.Descriptor instead.
 func (*GetRunTreeRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{4}
+	return file_core_v1_agent_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetRunTreeRequest) GetSessionId() string {
@@ -556,7 +658,7 @@ type GetRunTreeResponse struct {
 
 func (x *GetRunTreeResponse) Reset() {
 	*x = GetRunTreeResponse{}
-	mi := &file_core_v1_agent_proto_msgTypes[5]
+	mi := &file_core_v1_agent_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -568,7 +670,7 @@ func (x *GetRunTreeResponse) String() string {
 func (*GetRunTreeResponse) ProtoMessage() {}
 
 func (x *GetRunTreeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[5]
+	mi := &file_core_v1_agent_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -581,56 +683,12 @@ func (x *GetRunTreeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunTreeResponse.ProtoReflect.Descriptor instead.
 func (*GetRunTreeResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{5}
+	return file_core_v1_agent_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetRunTreeResponse) GetRoots() []*RunTreeNode {
 	if x != nil {
 		return x.Roots
-	}
-	return nil
-}
-
-type Grants struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Tools         []string               `protobuf:"bytes,1,rep,name=tools,proto3" json:"tools,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Grants) Reset() {
-	*x = Grants{}
-	mi := &file_core_v1_agent_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Grants) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Grants) ProtoMessage() {}
-
-func (x *Grants) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_agent_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Grants.ProtoReflect.Descriptor instead.
-func (*Grants) Descriptor() ([]byte, []int) {
-	return file_core_v1_agent_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *Grants) GetTools() []string {
-	if x != nil {
-		return x.Tools
 	}
 	return nil
 }
@@ -642,9 +700,8 @@ type StartRunRequest struct {
 	// Optional; defaults to {provider: "openai", model from server default,
 	// credential: "default"}.
 	ModelConfig *ModelConfig `protobuf:"bytes,3,opt,name=model_config,json=modelConfig,proto3" json:"model_config,omitempty"`
-	// Optional only for child-spawn internals; human StartRun ignores this
-	// and receives server-defined root grants.
-	Grants        *Grants `protobuf:"bytes,4,opt,name=grants,proto3" json:"grants,omitempty"`
+	// Optional; defaults to DefaultRunPolicy (full tools, all kinds, spawn cap).
+	Policy        *RunPolicy `protobuf:"bytes,4,opt,name=policy,proto3" json:"policy,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -700,9 +757,9 @@ func (x *StartRunRequest) GetModelConfig() *ModelConfig {
 	return nil
 }
 
-func (x *StartRunRequest) GetGrants() *Grants {
+func (x *StartRunRequest) GetPolicy() *RunPolicy {
 	if x != nil {
-		return x.Grants
+		return x.Policy
 	}
 	return nil
 }
@@ -1125,7 +1182,15 @@ const file_core_v1_agent_proto_rawDesc = "" +
 	"\n" +
 	"credential\x18\x03 \x01(\tR\n" +
 	"credential\x122\n" +
-	"\tfallbacks\x18\x04 \x03(\v2\x14.core.v1.ModelConfigR\tfallbacks\"\xeb\x04\n" +
+	"\tfallbacks\x18\x04 \x03(\v2\x14.core.v1.ModelConfigR\tfallbacks\"\xba\x01\n" +
+	"\tRunPolicy\x12\x1f\n" +
+	"\vallow_tools\x18\x01 \x03(\tR\n" +
+	"allowTools\x12\x1d\n" +
+	"\n" +
+	"deny_tools\x18\x02 \x03(\tR\tdenyTools\x12%\n" +
+	"\x0eresource_kinds\x18\x03 \x03(\tR\rresourceKinds\x12!\n" +
+	"\fmax_children\x18\x04 \x01(\x05R\vmaxChildren\x12#\n" +
+	"\rchild_inherit\x18\x05 \x01(\bR\fchildInherit\"\xcd\x05\n" +
 	"\bAgentRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -1142,12 +1207,16 @@ const file_core_v1_agent_proto_rawDesc = "" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\"\n" +
-	"\rparent_run_id\x18\f \x01(\tR\vparentRunId\x12'\n" +
-	"\x06grants\x18\r \x01(\v2\x0f.core.v1.GrantsR\x06grants\x12\x1f\n" +
+	"\rparent_run_id\x18\f \x01(\tR\vparentRunId\x12*\n" +
+	"\x06policy\x18\r \x01(\v2\x12.core.v1.RunPolicyR\x06policy\x12\x1f\n" +
 	"\vresult_json\x18\x0e \x01(\tR\n" +
 	"resultJson\x12\x1b\n" +
 	"\tcohort_id\x18\x0f \x01(\tR\bcohortId\x12%\n" +
-	"\x0ecohort_ordinal\x18\x10 \x01(\x05R\rcohortOrdinal\"\xce\x02\n" +
+	"\x0ecohort_ordinal\x18\x10 \x01(\x05R\rcohortOrdinal\x12\x1d\n" +
+	"\n" +
+	"actor_kind\x18\x11 \x01(\tR\tactorKind\x12\x19\n" +
+	"\bactor_id\x18\x12 \x01(\tR\aactorId\x12#\n" +
+	"\ractor_display\x18\x13 \x01(\tR\factorDisplay\"\xce\x02\n" +
 	"\aRunWait\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\"\n" +
 	"\rparent_run_id\x18\x02 \x01(\tR\vparentRunId\x12\x1d\n" +
@@ -1171,15 +1240,13 @@ const file_core_v1_agent_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"@\n" +
 	"\x12GetRunTreeResponse\x12*\n" +
-	"\x05roots\x18\x01 \x03(\v2\x14.core.v1.RunTreeNodeR\x05roots\"\x1e\n" +
-	"\x06Grants\x12\x14\n" +
-	"\x05tools\x18\x01 \x03(\tR\x05tools\"\xaa\x01\n" +
+	"\x05roots\x18\x01 \x03(\v2\x14.core.v1.RunTreeNodeR\x05roots\"\xad\x01\n" +
 	"\x0fStartRunRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x16\n" +
 	"\x06prompt\x18\x02 \x01(\tR\x06prompt\x127\n" +
-	"\fmodel_config\x18\x03 \x01(\v2\x14.core.v1.ModelConfigR\vmodelConfig\x12'\n" +
-	"\x06grants\x18\x04 \x01(\v2\x0f.core.v1.GrantsR\x06grants\"T\n" +
+	"\fmodel_config\x18\x03 \x01(\v2\x14.core.v1.ModelConfigR\vmodelConfig\x12*\n" +
+	"\x06policy\x18\x04 \x01(\v2\x12.core.v1.RunPolicyR\x06policy\"T\n" +
 	"\x10StartRunResponse\x12#\n" +
 	"\x03run\x18\x01 \x01(\v2\x11.core.v1.AgentRunR\x03run\x12\x1b\n" +
 	"\tevent_seq\x18\x02 \x01(\x03R\beventSeq\"C\n" +
@@ -1234,12 +1301,12 @@ var file_core_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_core_v1_agent_proto_goTypes = []any{
 	(RunState)(0),                 // 0: core.v1.RunState
 	(*ModelConfig)(nil),           // 1: core.v1.ModelConfig
-	(*AgentRun)(nil),              // 2: core.v1.AgentRun
-	(*RunWait)(nil),               // 3: core.v1.RunWait
-	(*RunTreeNode)(nil),           // 4: core.v1.RunTreeNode
-	(*GetRunTreeRequest)(nil),     // 5: core.v1.GetRunTreeRequest
-	(*GetRunTreeResponse)(nil),    // 6: core.v1.GetRunTreeResponse
-	(*Grants)(nil),                // 7: core.v1.Grants
+	(*RunPolicy)(nil),             // 2: core.v1.RunPolicy
+	(*AgentRun)(nil),              // 3: core.v1.AgentRun
+	(*RunWait)(nil),               // 4: core.v1.RunWait
+	(*RunTreeNode)(nil),           // 5: core.v1.RunTreeNode
+	(*GetRunTreeRequest)(nil),     // 6: core.v1.GetRunTreeRequest
+	(*GetRunTreeResponse)(nil),    // 7: core.v1.GetRunTreeResponse
 	(*StartRunRequest)(nil),       // 8: core.v1.StartRunRequest
 	(*StartRunResponse)(nil),      // 9: core.v1.StartRunResponse
 	(*PromptRunRequest)(nil),      // 10: core.v1.PromptRunRequest
@@ -1258,29 +1325,29 @@ var file_core_v1_agent_proto_depIdxs = []int32{
 	1,  // 2: core.v1.AgentRun.model_config:type_name -> core.v1.ModelConfig
 	18, // 3: core.v1.AgentRun.created_at:type_name -> google.protobuf.Timestamp
 	18, // 4: core.v1.AgentRun.updated_at:type_name -> google.protobuf.Timestamp
-	7,  // 5: core.v1.AgentRun.grants:type_name -> core.v1.Grants
+	2,  // 5: core.v1.AgentRun.policy:type_name -> core.v1.RunPolicy
 	18, // 6: core.v1.RunWait.deadline:type_name -> google.protobuf.Timestamp
-	2,  // 7: core.v1.RunTreeNode.run:type_name -> core.v1.AgentRun
-	4,  // 8: core.v1.RunTreeNode.children:type_name -> core.v1.RunTreeNode
-	3,  // 9: core.v1.RunTreeNode.waits:type_name -> core.v1.RunWait
-	4,  // 10: core.v1.GetRunTreeResponse.roots:type_name -> core.v1.RunTreeNode
+	3,  // 7: core.v1.RunTreeNode.run:type_name -> core.v1.AgentRun
+	5,  // 8: core.v1.RunTreeNode.children:type_name -> core.v1.RunTreeNode
+	4,  // 9: core.v1.RunTreeNode.waits:type_name -> core.v1.RunWait
+	5,  // 10: core.v1.GetRunTreeResponse.roots:type_name -> core.v1.RunTreeNode
 	1,  // 11: core.v1.StartRunRequest.model_config:type_name -> core.v1.ModelConfig
-	7,  // 12: core.v1.StartRunRequest.grants:type_name -> core.v1.Grants
-	2,  // 13: core.v1.StartRunResponse.run:type_name -> core.v1.AgentRun
-	2,  // 14: core.v1.GetRunResponse.run:type_name -> core.v1.AgentRun
-	2,  // 15: core.v1.ListRunsResponse.runs:type_name -> core.v1.AgentRun
+	2,  // 12: core.v1.StartRunRequest.policy:type_name -> core.v1.RunPolicy
+	3,  // 13: core.v1.StartRunResponse.run:type_name -> core.v1.AgentRun
+	3,  // 14: core.v1.GetRunResponse.run:type_name -> core.v1.AgentRun
+	3,  // 15: core.v1.ListRunsResponse.runs:type_name -> core.v1.AgentRun
 	8,  // 16: core.v1.AgentService.StartRun:input_type -> core.v1.StartRunRequest
 	10, // 17: core.v1.AgentService.PromptRun:input_type -> core.v1.PromptRunRequest
 	12, // 18: core.v1.AgentService.CancelRun:input_type -> core.v1.CancelRunRequest
 	14, // 19: core.v1.AgentService.GetRun:input_type -> core.v1.GetRunRequest
 	16, // 20: core.v1.AgentService.ListRuns:input_type -> core.v1.ListRunsRequest
-	5,  // 21: core.v1.AgentService.GetRunTree:input_type -> core.v1.GetRunTreeRequest
+	6,  // 21: core.v1.AgentService.GetRunTree:input_type -> core.v1.GetRunTreeRequest
 	9,  // 22: core.v1.AgentService.StartRun:output_type -> core.v1.StartRunResponse
 	11, // 23: core.v1.AgentService.PromptRun:output_type -> core.v1.PromptRunResponse
 	13, // 24: core.v1.AgentService.CancelRun:output_type -> core.v1.CancelRunResponse
 	15, // 25: core.v1.AgentService.GetRun:output_type -> core.v1.GetRunResponse
 	17, // 26: core.v1.AgentService.ListRuns:output_type -> core.v1.ListRunsResponse
-	6,  // 27: core.v1.AgentService.GetRunTree:output_type -> core.v1.GetRunTreeResponse
+	7,  // 27: core.v1.AgentService.GetRunTree:output_type -> core.v1.GetRunTreeResponse
 	22, // [22:28] is the sub-list for method output_type
 	16, // [16:22] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name

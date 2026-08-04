@@ -34,7 +34,7 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	org := string(stack.OrgA.ID)
+	org := string(stack.TenantA.ID)
 	session := createSession(t, alice, org, "credential rotation")
 
 	// A run before the rotation, so the seeded canary is proven to be the
@@ -51,8 +51,8 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 
 	// Rotate through the public API, to the same kind and name, which is what
 	// makes this a rotation rather than a second credential.
-	rotated, err := alice.Orgs.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
-		OrgId: org, Kind: uc.CredentialKindOpenAI, Name: "default",
+	rotated, err := alice.Tenants.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
+		TenantId: org, Kind: uc.CredentialKindOpenAI, Name: "default",
 		ApiKey: rotatedAPIKey, BaseUrl: stack.Model.URL(),
 	}))
 	if err != nil {
@@ -83,7 +83,7 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 	// Neither value appears anywhere observable. The old value is included
 	// because retiring a secret does not make disclosing it acceptable.
 	for _, secret := range []string{harness.CanaryAPIKey, rotatedAPIKey} {
-		events, err := stack.Store.Org(stack.OrgA.ID).Events().Range(ctx,
+		events, err := stack.Store.Tenant(stack.TenantA.ID).Events().Range(ctx,
 			uc.SessionID(session.GetId()), 0, 4096)
 		if err != nil {
 			t.Fatal(err)
@@ -97,8 +97,8 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 		assertNoSecret(t, secret, "cored and worker logs", stack.Logs())
 
 		// The credential surface never echoes secret material back.
-		listed, err := alice.Orgs.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
-			OrgId: org,
+		listed, err := alice.Tenants.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+			TenantId: org,
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -108,7 +108,7 @@ func TestA106_CredentialRotationTakesEffectAndLeaksNothing(t *testing.T) {
 		}
 
 		// Nor does the stored row hold it in the clear.
-		stored, err := stack.Store.Org(stack.OrgA.ID).Credentials().Get(ctx,
+		stored, err := stack.Store.Tenant(stack.TenantA.ID).Credentials().Get(ctx,
 			uc.CredentialKindOpenAI, "default")
 		if err != nil {
 			t.Fatal(err)
@@ -133,7 +133,7 @@ func TestA106_RotationAppliesToAlreadyRunningSessions(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	org := string(stack.OrgA.ID)
+	org := string(stack.TenantA.ID)
 	session := createSession(t, alice, org, "rotation mid-session")
 
 	stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{{Text: "first"}}})
@@ -143,8 +143,8 @@ func TestA106_RotationAppliesToAlreadyRunningSessions(t *testing.T) {
 	}
 	alice.AwaitRunState(t, first.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 60*time.Second)
 
-	if _, err := alice.Orgs.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
-		OrgId: org, Kind: uc.CredentialKindOpenAI, Name: "default",
+	if _, err := alice.Tenants.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
+		TenantId: org, Kind: uc.CredentialKindOpenAI, Name: "default",
 		ApiKey: rotatedAPIKey, BaseUrl: stack.Model.URL(),
 	})); err != nil {
 		t.Fatal(err)

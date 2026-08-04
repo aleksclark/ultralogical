@@ -5,19 +5,29 @@ import (
 	"time"
 )
 
-// ActorType classifies who produced an event.
-type ActorType string
-
+// Well-known Actor.Kind values used by the core itself. Consumers may send
+// any opaque kind; the core never interprets it beyond storage and replay.
 const (
-	ActorUser   ActorType = "user"
-	ActorAgent  ActorType = "agent"
-	ActorSystem ActorType = "system"
+	ActorKindSystem  = "system"
+	ActorKindAgent   = "agent"
+	ActorKindService = "service"
 )
 
-// Actor identifies the producer of an event.
+// Actor is opaque attribution the consumer (or the core, for loop-internal
+// events) attaches to an event, run, or memory write. The core stores and
+// replays it; it never branches on Kind.
 type Actor struct {
-	Type ActorType
-	ID   string
+	Kind    string `json:"kind"`
+	ID      string `json:"id"`
+	Display string `json:"display,omitempty"`
+}
+
+// ActorSystem is the loop/worker attribution for machine-generated events.
+func ActorSystem() Actor { return Actor{Kind: ActorKindSystem, ID: "core"} }
+
+// ActorAgent attributes an event to a specific run.
+func ActorAgent(id RunID) Actor {
+	return Actor{Kind: ActorKindAgent, ID: string(id)}
 }
 
 // Event kinds. Every observable thing in a session is a typed event with a
@@ -53,6 +63,7 @@ const (
 	EventKindModelFallback       = "model_fallback"
 	EventKindHookFired           = "hook_fired"
 	EventKindPeriodicPromptFired = "periodic_prompt_fired"
+	EventKindSessionLabelsChanged = "session_labels_changed"
 )
 
 // Event is one entry in a session's append-only event log. Payload is the
@@ -220,10 +231,16 @@ type MemoryEventPayload struct {
 func NewMemoryEventPayload(key string, updatedBy Actor, value []byte) MemoryEventPayload {
 	return MemoryEventPayload{
 		Key:           key,
-		UpdatedByType: string(updatedBy.Type),
+		UpdatedByType: updatedBy.Kind,
 		UpdatedByID:   updatedBy.ID,
 		ValueJSON:     string(value),
 	}
+}
+
+// SessionLabelsChangedPayload records a labels mutation. The event log is the
+// source of truth for when consumer taxonomy changed.
+type SessionLabelsChangedPayload struct {
+	Labels map[string]string `json:"labels"`
 }
 
 type HistoryCompactedPayload struct {
@@ -255,8 +272,8 @@ type PermissionDeniedPayload struct {
 
 // EventBus delivers ordered, gapless per-session event streams: a catch-up
 // read from the log followed by live delivery until ctx is cancelled.
-// Authorization must be checked by the caller; the read itself is org-scoped
-// so a wrong org yields nothing.
+// Authorization must be checked by the caller; the read itself is
+// tenant-scoped so a wrong tenant yields nothing.
 type EventBus interface {
-	Subscribe(ctx context.Context, org OrgID, session SessionID, fromSeq int64) (<-chan Event, error)
+	Subscribe(ctx context.Context, tenant TenantID, session SessionID, fromSeq int64) (<-chan Event, error)
 }

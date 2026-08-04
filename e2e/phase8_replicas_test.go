@@ -68,10 +68,10 @@ func TestA84_CrossReplicaSubscription(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	replicaA := stack.ReplicaClient(0, harness.TokenAlice)
-	replicaB := stack.ReplicaClient(1, harness.TokenAlice)
-	ingress := stack.IngressClient(harness.TokenAlice)
-	org := stack.OrgA.ID
+	replicaA := stack.ReplicaClient(0, stack.KeyA)
+	replicaB := stack.ReplicaClient(1, stack.KeyA)
+	ingress := stack.IngressClient(stack.KeyA)
+	org := stack.TenantA.ID
 
 	// Created through the ingress, so no client is pinned to a replica.
 	sess := createSession(t, ingress, string(org), "cross replica")
@@ -107,7 +107,7 @@ func TestA84_CrossReplicaSubscription(t *testing.T) {
 	// Restart replica A underneath its subscriber. A fresh client must resume
 	// by seq and rebuild the identical sequence.
 	stack.RestartUltrad(0)
-	resumed := stack.ReplicaClient(0, harness.TokenAlice)
+	resumed := stack.ReplicaClient(0, stack.KeyA)
 	subResumed, err := resumed.Subscribe(ctx, sess.GetId(), 0)
 	if err != nil {
 		t.Fatal(err)
@@ -175,8 +175,8 @@ func TestA85_WorkerTakeover(t *testing.T) {
 		t.Fatalf("harness started %d workers, want 2", got)
 	}
 	ctx := context.Background()
-	org := stack.OrgA.ID
-	ingress := stack.IngressClient(harness.TokenAlice)
+	org := stack.TenantA.ID
+	ingress := stack.IngressClient(stack.KeyA)
 	sess := createSession(t, ingress, string(org), "worker takeover")
 
 	// Each run takes several steps, so a kill lands mid-workload rather than
@@ -226,7 +226,7 @@ func TestA85_WorkerTakeover(t *testing.T) {
 			if id == "" {
 				continue
 			}
-			steps, err := stack.Store.Org(org).Runs().Steps(ctx, uc.RunID(id))
+			steps, err := stack.Store.Tenant(org).Runs().Steps(ctx, uc.RunID(id))
 			if err == nil && len(steps) > 0 {
 				progressed++
 			}
@@ -249,7 +249,7 @@ func TestA85_WorkerTakeover(t *testing.T) {
 	// No run executed a step index twice: redelivery after the kill is
 	// idempotent, enforced by the step table's uniqueness.
 	for _, id := range ids {
-		steps, err := stack.Store.Org(org).Runs().Steps(ctx, uc.RunID(id))
+		steps, err := stack.Store.Tenant(org).Runs().Steps(ctx, uc.RunID(id))
 		if err != nil {
 			t.Fatal(err)
 		}

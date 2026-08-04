@@ -37,7 +37,7 @@ type Harness struct {
 	Store   *postgres.Store
 	Resources    *resourcework.Service
 	Keyring secrets.Keyring
-	Org     uc.OrgID
+	Tenant     uc.TenantID
 	Session uc.SessionID
 
 	queue *inproc.Queue
@@ -132,18 +132,18 @@ func New(t *testing.T, provider uc.ResourceProvider, options Options) *Harness {
 func (h *Harness) seed(t *testing.T, kind string) {
 	t.Helper()
 	ctx := context.Background()
-	h.Org = uc.OrgID(uuid.NewString())
-	if err := h.Store.Orgs().Create(ctx, uc.Org{ID: h.Org, Name: "converge"}); err != nil {
+	h.Tenant = uc.TenantID(uuid.NewString())
+	if err := h.Store.Tenants().Create(ctx, uc.Tenant{ID: h.Tenant, Name: "converge"}); err != nil {
 		t.Fatal(err)
 	}
 	h.Session = uc.SessionID(uuid.NewString())
-	if err := h.Store.Org(h.Org).Sessions().Create(ctx, uc.Session{
-		ID: h.Session, OrgID: h.Org, Title: "reconciliation",
+	if err := h.Store.Tenant(h.Tenant).Sessions().Create(ctx, uc.Session{
+		ID: h.Session, TenantID: h.Tenant, Title: "reconciliation",
 	}); err != nil {
 		t.Fatal(err)
 	}
-	err := h.Store.Org(h.Org).Providers().Create(ctx, uc.ProviderInstance{
-		ID: uc.ProviderInstanceID(uuid.NewString()), OrgID: h.Org, Kind: kind,
+	err := h.Store.Tenant(h.Tenant).Providers().Create(ctx, uc.ProviderInstance{
+		ID: uc.ProviderInstanceID(uuid.NewString()), TenantID: h.Tenant, Kind: kind,
 		Name: "default", State: "ready",
 		Capabilities: uc.ProviderCapabilities{
 			Kind: kind,
@@ -177,7 +177,7 @@ func (h *Harness) Start(t *testing.T) {
 func (h *Harness) Request(t *testing.T, spec uc.DevEnvSpec) uc.Resource {
 	t.Helper()
 	b, _ := json.Marshal(spec)
-	env, _, err := h.Resources.Request(context.Background(), h.Org, h.Session, uc.ResourceKindDevEnv, b, "default", nil)
+	env, _, err := h.Resources.Request(context.Background(), h.Tenant, h.Session, uc.ResourceKindDevEnv, b, "default", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +187,7 @@ func (h *Harness) Request(t *testing.T, spec uc.DevEnvSpec) uc.Resource {
 // Get reads an environment's persisted state.
 func (h *Harness) Get(t *testing.T, id uc.ResourceID) uc.Resource {
 	t.Helper()
-	env, err := h.Store.Org(h.Org).Resources().Get(context.Background(), id)
+	env, err := h.Store.Tenant(h.Tenant).Resources().Get(context.Background(), id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +213,7 @@ func (h *Harness) Await(t *testing.T, id uc.ResourceID, want uc.ResourceState, t
 	deadline := time.Now().Add(timeout)
 	var last uc.Resource
 	for time.Now().Before(deadline) {
-		env, err := h.Store.Org(h.Org).Resources().Get(context.Background(), id)
+		env, err := h.Store.Tenant(h.Tenant).Resources().Get(context.Background(), id)
 		if err == nil {
 			last = env
 			if env.State == want {

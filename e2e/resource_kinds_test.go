@@ -26,8 +26,8 @@ func TestResourceKinds_DevEnvAndNullConcurrent(t *testing.T) {
 	ctx := context.Background()
 	client := stack.AliceClient()
 
-	_, err := client.Orgs.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
-		OrgId:      string(stack.OrgA.ID),
+	_, err := client.Tenants.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
+		TenantId:      string(stack.TenantA.ID),
 		Name:       "null",
 		Kind:       uc.ProviderKindNull,
 		ConfigJson: `{}`,
@@ -36,7 +36,7 @@ func TestResourceKinds_DevEnvAndNullConcurrent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sess := createSession(t, client, string(stack.OrgA.ID), "mixed-kinds")
+	sess := createSession(t, client, string(stack.TenantA.ID), "mixed-kinds")
 	sid := sess.GetId()
 
 	dev, err := client.Resources.ProvisionResource(ctx, connect.NewRequest(&corev1.ProvisionResourceRequest{
@@ -85,7 +85,7 @@ func TestResourceKinds_DevEnvAndNullConcurrent(t *testing.T) {
 	}
 	awaitResourceState(t, client, nullID, corev1.ResourceState_RESOURCE_STATE_READY, 30*time.Second)
 
-	events, err := stack.Store.Org(stack.OrgA.ID).Events().Range(ctx, uc.SessionID(sid), 0, 200)
+	events, err := stack.Store.Tenant(stack.TenantA.ID).Events().Range(ctx, uc.SessionID(sid), 0, 200)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +159,7 @@ func TestResourceKinds_DevEnvAndNullConcurrent(t *testing.T) {
 	}
 	client.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 90*time.Second)
 
-	events, err = stack.Store.Org(stack.OrgA.ID).Events().Range(ctx, uc.SessionID(sid), 0, 500)
+	events, err = stack.Store.Tenant(stack.TenantA.ID).Events().Range(ctx, uc.SessionID(sid), 0, 500)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,7 +242,7 @@ func TestResourceKinds_DevEnvAndNullConcurrent(t *testing.T) {
 		time.Sleep(200 * time.Millisecond)
 	}
 
-	active, err := stack.Store.Org(stack.OrgA.ID).Resources().ListActive(ctx)
+	active, err := stack.Store.Tenant(stack.TenantA.ID).Resources().ListActive(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -253,7 +253,7 @@ func TestResourceKinds_DevEnvAndNullConcurrent(t *testing.T) {
 	}
 
 	// Terminated events for both kinds.
-	events, err = stack.Store.Org(stack.OrgA.ID).Events().Range(ctx, uc.SessionID(sid), 0, 400)
+	events, err = stack.Store.Tenant(stack.TenantA.ID).Events().Range(ctx, uc.SessionID(sid), 0, 400)
 	if err != nil {
 		t.Fatal(err)
 	}

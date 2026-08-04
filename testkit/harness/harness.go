@@ -37,12 +37,7 @@ import (
 // Seeded identities. The harness provisions two orgs with one user each so
 // tenant-isolation is testable out of the box.
 const (
-	TokenAlice = "tok-alice"
-	TokenBob   = "tok-bob"
-	EmailAlice = "alice@example.com"
-	EmailBob   = "bob@example.com"
-
-	// CanaryAPIKey is the secret embedded in org A's seeded inference
+	// CanaryAPIKey is the secret embedded in tenant A's seeded inference
 	// credential. Tests assert it never leaks into events, logs, or errors.
 	CanaryAPIKey = "sk-canary-XyZZy-0451-leak-detector"
 )
@@ -79,10 +74,10 @@ type Stack struct {
 	BaseURL     string
 	DatabaseURL string
 	MasterKey   string
-	OrgA        uc.Org
-	OrgB        uc.Org
-	Alice       uc.User
-	Bob         uc.User
+	TenantA        uc.Tenant
+	TenantB        uc.Tenant
+	KeyA        string
+	KeyB        string
 	Store       *postgres.Store
 	Model       *modelscript.Server
 
@@ -292,7 +287,6 @@ func (s *Stack) startUltradAt(index int) {
 	cmd.Env = append(os.Environ(),
 		"DATABASE_URL="+s.DatabaseURL,
 		"CORE_ADDR="+parsed.Host,
-		fmt.Sprintf("CORE_DEV_TOKENS=%s=%s,%s=%s", TokenAlice, EmailAlice, TokenBob, EmailBob),
 		"CORE_MASTER_KEY="+s.MasterKey,
 		"CORE_DEFAULT_MODEL=mock-model",
 		"CORE_MIGRATE=false",
@@ -475,39 +469,45 @@ func (s *Stack) seed(t *testing.T, store *postgres.Store, options Options) {
 	t.Helper()
 	ctx := context.Background()
 
-	s.OrgA = uc.Org{ID: uc.OrgID(uuid.NewString()), Name: "org-a"}
-	s.OrgB = uc.Org{ID: uc.OrgID(uuid.NewString()), Name: "org-b"}
-	s.Alice = uc.User{ID: uc.UserID(uuid.NewString()), Email: EmailAlice, Display: "Alice"}
-	s.Bob = uc.User{ID: uc.UserID(uuid.NewString()), Email: EmailBob, Display: "Bob"}
+	s.TenantA = uc.Tenant{ID: uc.TenantID(uuid.NewString()), Name: "tenant-a"}
+	s.TenantB = uc.Tenant{ID: uc.TenantID(uuid.NewString()), Name: "tenant-b"}
 
-	for _, org := range []uc.Org{s.OrgA, s.OrgB} {
-		if err := store.Orgs().Create(ctx, org); err != nil {
-			t.Fatal(err)
-		}
-	}
-	for _, user := range []uc.User{s.Alice, s.Bob} {
-		if err := store.Users().Create(ctx, user); err != nil {
-			t.Fatal(err)
-		}
-	}
-	memberships := []uc.OrgMember{
-		{OrgID: s.OrgA.ID, UserID: s.Alice.ID, Role: uc.OrgRoleOwner},
-		{OrgID: s.OrgB.ID, UserID: s.Bob.ID, Role: uc.OrgRoleOwner},
-	}
-	for _, m := range memberships {
-		if err := store.Orgs().AddMember(ctx, m); err != nil {
+	for _, tenant := range []uc.Tenant{s.TenantA, s.TenantB} {
+		if err := store.Tenants().Create(ctx, tenant); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	// Every test org has a default local provider instance.
-	for _, org := range []uc.Org{s.OrgA, s.OrgB} {
-		if err := store.Org(org.ID).Providers().Create(ctx, uc.ProviderInstance{
-			ID: uc.ProviderInstanceID(uuid.NewString()), OrgID: org.ID,
+	keyring, err := secrets.NewAESKeyring(s.MasterKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mint := func(tenant uc.TenantID, name string) string {
+		raw, prefix, err := uc.GenerateAPIKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+		secrets.DefaultRedactor.Register(raw)
+		enc, err := keyring.Encrypt([]byte(raw))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := store.APIKeys().Create(ctx, uc.APIKey{
+			ID: uc.APIKeyID(uuid.NewString()), TenantID: tenant, Name: name,
+			Scope: uc.KeyScopeAdmin, Prefix: prefix, KeyHash: uc.HashAPIKey(raw), KeyEnc: enc,
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return raw
+	}
+	s.KeyA = mint(s.TenantA.ID, "alice")
+	s.KeyB = mint(s.TenantB.ID, "bob")
+
+	// Every test tenant has a default local provider instance.
+	for _, tenant := range []uc.Tenant{s.TenantA, s.TenantB} {
+		if err := store.Tenant(tenant.ID).Providers().Create(ctx, uc.ProviderInstance{
+			ID: uc.ProviderInstanceID(uuid.NewString()), TenantID: tenant.ID,
 			Kind: uc.ProviderKindLocalDocker, Name: "default", State: "ready",
-			// The seeded registration carries the capabilities local Docker
-			// really has. Seeding it blank would make every flow that declares
-			// health readiness fail for the wrong reason.
 			Capabilities: uc.ProviderCapabilities{
 				Kind: uc.ProviderKindLocalDocker,
 				Supported: []uc.ProviderCapability{
@@ -522,12 +522,12 @@ func (s *Stack) seed(t *testing.T, store *postgres.Store, options Options) {
 		}
 	}
 	if options.SeedCredential {
-		s.SeedCredential(t, s.OrgA.ID, "default", CanaryAPIKey, s.Model.URL())
+		s.SeedCredential(t, s.TenantA.ID, "default", CanaryAPIKey, s.Model.URL())
 	}
 }
 
 // SeedCredential stores an encrypted openai inference credential for an org.
-func (s *Stack) SeedCredential(t *testing.T, org uc.OrgID, name, apiKey, baseURL string) {
+func (s *Stack) SeedCredential(t *testing.T, tenant uc.TenantID, name, apiKey, baseURL string) {
 	t.Helper()
 	keyring, err := secrets.NewAESKeyring(s.MasterKey)
 	if err != nil {
@@ -541,7 +541,7 @@ func (s *Stack) SeedCredential(t *testing.T, org uc.OrgID, name, apiKey, baseURL
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Store.Org(org).Credentials().Put(context.Background(), uc.Credential{
+	if err := s.Store.Tenant(tenant).Credentials().Put(context.Background(), uc.Credential{
 		Kind: uc.CredentialKindOpenAI, Name: name, EncPayload: enc,
 	}); err != nil {
 		t.Fatal(err)
@@ -646,8 +646,8 @@ func (s *Stack) RestartUltrad(index int) {
 	s.startUltradAt(index)
 }
 
-// AliceClient returns a client authenticated as Alice (owner of OrgA).
-func (s *Stack) AliceClient() *testclient.Client { return testclient.New(s.BaseURL, TokenAlice) }
+// AliceClient returns a client authenticated as Alice (owner of TenantA).
+func (s *Stack) AliceClient() *testclient.Client { return testclient.New(s.BaseURL, s.KeyA) }
 
-// BobClient returns a client authenticated as Bob (owner of OrgB).
-func (s *Stack) BobClient() *testclient.Client { return testclient.New(s.BaseURL, TokenBob) }
+// BobClient returns a client authenticated as Bob (owner of TenantB).
+func (s *Stack) BobClient() *testclient.Client { return testclient.New(s.BaseURL, s.KeyB) }

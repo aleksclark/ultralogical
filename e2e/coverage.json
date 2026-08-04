@@ -2,10 +2,11 @@
   "capabilities": {
     "auth_org_sessions": {
       "rpcs": [
-        "core.v1.OrgService/ListOrgs",
+        "core.v1.TenantService/ListTenants",
         "core.v1.SessionService/CreateSession",
         "core.v1.SessionService/ListSessions",
-        "core.v1.SessionService/GetSession"
+        "core.v1.SessionService/GetSession",
+        "core.v1.TenantService/GetTenant"
       ],
       "go": {
         "file": "functional_test.go",
@@ -71,8 +72,8 @@
     },
     "credential_gateway_fields": {
       "rpcs": [
-        "core.v1.OrgService/PutCredential",
-        "core.v1.OrgService/ListCredentials"
+        "core.v1.TenantService/PutCredential",
+        "core.v1.TenantService/ListCredentials"
       ],
       "go": {
         "file": "agent_test.go",
@@ -85,7 +86,7 @@
     },
     "credential_redaction": {
       "rpcs": [
-        "core.v1.OrgService/DeleteCredential"
+        "core.v1.TenantService/DeleteCredential"
       ],
       "go": {
         "file": "agent_test.go",
@@ -140,8 +141,8 @@
     },
     "provider_registration_kinds": {
       "rpcs": [
-        "core.v1.OrgService/RegisterProvider",
-        "core.v1.OrgService/ListProviders"
+        "core.v1.TenantService/RegisterProvider",
+        "core.v1.TenantService/ListProviders"
       ],
       "go": {
         "file": "provider_test.go",
@@ -247,7 +248,7 @@
     },
     "provider_ownership_and_hosting": {
       "rpcs": [
-        "core.v1.OrgService/DeleteProvider"
+        "core.v1.TenantService/DeleteProvider"
       ],
       "go": {
         "file": "provider_test.go",
@@ -288,10 +289,12 @@
     },
     "tenant_isolation": {
       "rpcs": [
-        "core.v1.OrgService/GetOrg",
-        "core.v1.OrgService/CreateOrg",
-        "core.v1.OrgService/InviteMember",
-        "core.v1.OrgService/ListMembers"
+        "core.v1.TenantService/GetTenant",
+        "core.v1.TenantService/CreateTenant",
+        "core.v1.TenantService/CreateAPIKey",
+        "core.v1.TenantService/ListAPIKeys",
+        "core.v1.TenantService/RevokeAPIKey",
+        "core.v1.SessionService/UpdateSessionLabels"
       ],
       "go": {
         "file": "functional_test.go",
@@ -326,6 +329,82 @@
         "asserts": [
           "caps_are_enforced",
           "concurrent_writes_are_atomic"
+        ]
+      }
+    },
+    "e3_tenancy_keys_actor": {
+      "rpcs": [
+        "core.v1.TenantService/CreateTenant",
+        "core.v1.TenantService/CreateAPIKey",
+        "core.v1.TenantService/ListAPIKeys",
+        "core.v1.TenantService/RevokeAPIKey",
+        "core.v1.TenantService/GetTenant",
+        "core.v1.TenantService/ListTenants"
+      ],
+      "go": {
+        "file": "tenancy_test.go",
+        "test": "TestA31_CrossTenantInvisibility",
+        "asserts": [
+          "cross-tenant get session succeeded",
+          "cross-tenant label query leaked",
+          "cross-tenant subscribe succeeded"
+        ]
+      }
+    },
+    "e3_key_lifecycle": {
+      "rpcs": [
+        "core.v1.TenantService/CreateAPIKey",
+        "core.v1.TenantService/RevokeAPIKey"
+      ],
+      "go": {
+        "file": "tenancy_test.go",
+        "test": "TestA33_KeyLifecycle",
+        "asserts": [
+          "sessions key created a key",
+          "sessions key created a tenant",
+          "revoked key still authenticated"
+        ]
+      }
+    },
+    "e3_actor_attribution": {
+      "rpcs": [
+        "core.v1.EventService/Append"
+      ],
+      "go": {
+        "file": "tenancy_test.go",
+        "test": "TestA34_ActorAttribution",
+        "asserts": [
+          "student/jacob"
+        ]
+      }
+    },
+    "e3_labels": {
+      "rpcs": [
+        "core.v1.SessionService/CreateSession",
+        "core.v1.SessionService/ListSessions",
+        "core.v1.SessionService/UpdateSessionLabels"
+      ],
+      "go": {
+        "file": "labels_test.go",
+        "test": "TestA35_LabelsCRUDAndSelectors",
+        "asserts": [
+          "equality:",
+          "in-selector",
+          "SessionLabelsChanged"
+        ]
+      }
+    },
+    "e3_run_policy": {
+      "rpcs": [
+        "core.v1.AgentService/StartRun"
+      ],
+      "go": {
+        "file": "policy_test.go",
+        "test": "TestA36_PolicyEnforcement",
+        "asserts": [
+          "permission_denied",
+          "stored policy",
+          "empty ResourceKinds"
         ]
       }
     }

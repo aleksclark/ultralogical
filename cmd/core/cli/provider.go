@@ -101,12 +101,12 @@ func providerRegister(ctx context.Context, clients *Clients, environment Env, ar
 	if *kind == "" {
 		return ExitUsage, errors.New("--kind is required")
 	}
-	orgID, err := requireOrg(environment, *org)
+	tenantID, err := requireTenantID(environment, *org)
 	if err != nil {
 		return ExitUsage, err
 	}
 	resp, err := clients.Orgs.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
-		OrgId: orgID, Kind: *kind, Name: positional[0], ConfigJson: *config,
+		TenantId: tenantID, Kind: *kind, Name: positional[0], ConfigJson: *config,
 	}))
 	if err != nil {
 		return report(stderr, *asJSON, err)
@@ -133,11 +133,11 @@ func providerList(ctx context.Context, clients *Clients, environment Env, args [
 	if err := fs.Parse(args); err != nil {
 		return ExitUsage, nil
 	}
-	orgID, err := requireOrg(environment, *org)
+	tenantID, err := requireTenantID(environment, *org)
 	if err != nil {
 		return ExitUsage, err
 	}
-	items, err := listProviders(ctx, clients, orgID)
+	items, err := listProviders(ctx, clients, tenantID)
 	if err != nil {
 		return report(stderr, *asJSON, err)
 	}
@@ -151,8 +151,8 @@ func providerList(ctx context.Context, clients *Clients, environment Env, args [
 	return ExitOK, sink.Err()
 }
 
-func listProviders(ctx context.Context, clients *Clients, orgID string) ([]providerView, error) {
-	resp, err := clients.Orgs.ListProviders(ctx, connect.NewRequest(&corev1.ListProvidersRequest{OrgId: orgID}))
+func listProviders(ctx context.Context, clients *Clients, tenantID string) ([]providerView, error) {
+	resp, err := clients.Orgs.ListProviders(ctx, connect.NewRequest(&corev1.ListProvidersRequest{TenantId: tenantID}))
 	if err != nil {
 		return nil, err
 	}
@@ -165,8 +165,8 @@ func listProviders(ctx context.Context, clients *Clients, orgID string) ([]provi
 
 // findProvider resolves a registration by name. Names are what an operator
 // knows; identifiers are what the API takes.
-func findProvider(ctx context.Context, clients *Clients, orgID, name string) (providerView, error) {
-	items, err := listProviders(ctx, clients, orgID)
+func findProvider(ctx context.Context, clients *Clients, tenantID, name string) (providerView, error) {
+	items, err := listProviders(ctx, clients, tenantID)
 	if err != nil {
 		return providerView{}, err
 	}
@@ -190,11 +190,11 @@ func providerShow(ctx context.Context, clients *Clients, environment Env, args [
 	if len(positional) != 1 {
 		return ExitUsage, errors.New("usage: ultra provider show NAME")
 	}
-	orgID, err := requireOrg(environment, *org)
+	tenantID, err := requireTenantID(environment, *org)
 	if err != nil {
 		return ExitUsage, err
 	}
-	item, err := findProvider(ctx, clients, orgID, positional[0])
+	item, err := findProvider(ctx, clients, tenantID, positional[0])
 	if err != nil {
 		return report(stderr, *asJSON, err)
 	}
@@ -225,18 +225,18 @@ func providerRemove(ctx context.Context, clients *Clients, environment Env, args
 	if len(positional) != 1 {
 		return ExitUsage, errors.New("usage: ultra provider remove NAME")
 	}
-	orgID, err := requireOrg(environment, *org)
+	tenantID, err := requireTenantID(environment, *org)
 	if err != nil {
 		return ExitUsage, err
 	}
-	item, err := findProvider(ctx, clients, orgID, positional[0])
+	item, err := findProvider(ctx, clients, tenantID, positional[0])
 	if err != nil {
 		return report(stderr, *asJSON, err)
 	}
 	// Removal is refused while the provider still hosts environments, so the
 	// error is the useful answer here rather than an exception.
 	if _, err := clients.Orgs.DeleteProvider(ctx, connect.NewRequest(&corev1.DeleteProviderRequest{
-		OrgId: orgID, ProviderId: item.ID,
+		TenantId: tenantID, ProviderId: item.ID,
 	})); err != nil {
 		return report(stderr, *asJSON, err)
 	}

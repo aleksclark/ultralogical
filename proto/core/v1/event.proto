@@ -6,18 +6,13 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/aleksclark/ultracore/gen/go/core/v1;corev1";
 
-// ActorType classifies who produced an event.
-enum ActorType {
-  ACTOR_TYPE_UNSPECIFIED = 0;
-  ACTOR_TYPE_USER = 1;
-  ACTOR_TYPE_AGENT = 2;
-  ACTOR_TYPE_SYSTEM = 3;
-}
-
-// Actor identifies the producer of an event.
+// Actor is opaque attribution the consumer (or the core, for loop-internal
+// events) attaches to an event. The core stores and replays it; it never
+// branches on kind.
 message Actor {
-  ActorType type = 1;
+  string kind = 1;
   string id = 2;
+  string display = 3;
 }
 
 // UserMessage is a human message into the session.
@@ -146,6 +141,7 @@ message ModelFallback { string run_id=1; string from=2; string to=3; string reas
 message HookFired { string hook=1; string run_id=2; }
 message PeriodicPromptFired { string run_id=1; string prompt=2; }
 message PermissionDenied { string run_id=1; string tool=2; string resource_id=3; string reason=4; }
+message SessionLabelsChanged { map<string, string> labels = 1; }
 
 
 
@@ -186,6 +182,7 @@ message EventPayload {
     // A suspended resource's host is temporarily unreachable. It is
     // deliberately distinct from resource_failed: durable state still exists.
     ResourceLifecycle resource_suspended = 44;
+    SessionLabelsChanged session_labels_changed = 45;
   }
 }
 

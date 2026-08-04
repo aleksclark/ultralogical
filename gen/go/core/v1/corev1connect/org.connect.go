@@ -21,8 +21,8 @@ import (
 const _ = connect.IsAtLeastVersion1_13_0
 
 const (
-	// OrgServiceName is the fully-qualified name of the OrgService service.
-	OrgServiceName = "core.v1.OrgService"
+	// TenantServiceName is the fully-qualified name of the TenantService service.
+	TenantServiceName = "core.v1.TenantService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -33,43 +33,51 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// OrgServiceCreateOrgProcedure is the fully-qualified name of the OrgService's CreateOrg RPC.
-	OrgServiceCreateOrgProcedure = "/core.v1.OrgService/CreateOrg"
-	// OrgServiceGetOrgProcedure is the fully-qualified name of the OrgService's GetOrg RPC.
-	OrgServiceGetOrgProcedure = "/core.v1.OrgService/GetOrg"
-	// OrgServiceListOrgsProcedure is the fully-qualified name of the OrgService's ListOrgs RPC.
-	OrgServiceListOrgsProcedure = "/core.v1.OrgService/ListOrgs"
-	// OrgServiceInviteMemberProcedure is the fully-qualified name of the OrgService's InviteMember RPC.
-	OrgServiceInviteMemberProcedure = "/core.v1.OrgService/InviteMember"
-	// OrgServiceListMembersProcedure is the fully-qualified name of the OrgService's ListMembers RPC.
-	OrgServiceListMembersProcedure = "/core.v1.OrgService/ListMembers"
-	// OrgServicePutCredentialProcedure is the fully-qualified name of the OrgService's PutCredential
+	// TenantServiceCreateTenantProcedure is the fully-qualified name of the TenantService's
+	// CreateTenant RPC.
+	TenantServiceCreateTenantProcedure = "/core.v1.TenantService/CreateTenant"
+	// TenantServiceGetTenantProcedure is the fully-qualified name of the TenantService's GetTenant RPC.
+	TenantServiceGetTenantProcedure = "/core.v1.TenantService/GetTenant"
+	// TenantServiceListTenantsProcedure is the fully-qualified name of the TenantService's ListTenants
 	// RPC.
-	OrgServicePutCredentialProcedure = "/core.v1.OrgService/PutCredential"
-	// OrgServiceListCredentialsProcedure is the fully-qualified name of the OrgService's
+	TenantServiceListTenantsProcedure = "/core.v1.TenantService/ListTenants"
+	// TenantServiceCreateAPIKeyProcedure is the fully-qualified name of the TenantService's
+	// CreateAPIKey RPC.
+	TenantServiceCreateAPIKeyProcedure = "/core.v1.TenantService/CreateAPIKey"
+	// TenantServiceListAPIKeysProcedure is the fully-qualified name of the TenantService's ListAPIKeys
+	// RPC.
+	TenantServiceListAPIKeysProcedure = "/core.v1.TenantService/ListAPIKeys"
+	// TenantServiceRevokeAPIKeyProcedure is the fully-qualified name of the TenantService's
+	// RevokeAPIKey RPC.
+	TenantServiceRevokeAPIKeyProcedure = "/core.v1.TenantService/RevokeAPIKey"
+	// TenantServicePutCredentialProcedure is the fully-qualified name of the TenantService's
+	// PutCredential RPC.
+	TenantServicePutCredentialProcedure = "/core.v1.TenantService/PutCredential"
+	// TenantServiceListCredentialsProcedure is the fully-qualified name of the TenantService's
 	// ListCredentials RPC.
-	OrgServiceListCredentialsProcedure = "/core.v1.OrgService/ListCredentials"
-	// OrgServiceDeleteCredentialProcedure is the fully-qualified name of the OrgService's
+	TenantServiceListCredentialsProcedure = "/core.v1.TenantService/ListCredentials"
+	// TenantServiceDeleteCredentialProcedure is the fully-qualified name of the TenantService's
 	// DeleteCredential RPC.
-	OrgServiceDeleteCredentialProcedure = "/core.v1.OrgService/DeleteCredential"
-	// OrgServiceRegisterProviderProcedure is the fully-qualified name of the OrgService's
+	TenantServiceDeleteCredentialProcedure = "/core.v1.TenantService/DeleteCredential"
+	// TenantServiceRegisterProviderProcedure is the fully-qualified name of the TenantService's
 	// RegisterProvider RPC.
-	OrgServiceRegisterProviderProcedure = "/core.v1.OrgService/RegisterProvider"
-	// OrgServiceListProvidersProcedure is the fully-qualified name of the OrgService's ListProviders
-	// RPC.
-	OrgServiceListProvidersProcedure = "/core.v1.OrgService/ListProviders"
-	// OrgServiceDeleteProviderProcedure is the fully-qualified name of the OrgService's DeleteProvider
-	// RPC.
-	OrgServiceDeleteProviderProcedure = "/core.v1.OrgService/DeleteProvider"
+	TenantServiceRegisterProviderProcedure = "/core.v1.TenantService/RegisterProvider"
+	// TenantServiceListProvidersProcedure is the fully-qualified name of the TenantService's
+	// ListProviders RPC.
+	TenantServiceListProvidersProcedure = "/core.v1.TenantService/ListProviders"
+	// TenantServiceDeleteProviderProcedure is the fully-qualified name of the TenantService's
+	// DeleteProvider RPC.
+	TenantServiceDeleteProviderProcedure = "/core.v1.TenantService/DeleteProvider"
 )
 
-// OrgServiceClient is a client for the core.v1.OrgService service.
-type OrgServiceClient interface {
-	CreateOrg(context.Context, *connect.Request[v1.CreateOrgRequest]) (*connect.Response[v1.CreateOrgResponse], error)
-	GetOrg(context.Context, *connect.Request[v1.GetOrgRequest]) (*connect.Response[v1.GetOrgResponse], error)
-	ListOrgs(context.Context, *connect.Request[v1.ListOrgsRequest]) (*connect.Response[v1.ListOrgsResponse], error)
-	InviteMember(context.Context, *connect.Request[v1.InviteMemberRequest]) (*connect.Response[v1.InviteMemberResponse], error)
-	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
+// TenantServiceClient is a client for the core.v1.TenantService service.
+type TenantServiceClient interface {
+	CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error)
+	GetTenant(context.Context, *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error)
+	ListTenants(context.Context, *connect.Request[v1.ListTenantsRequest]) (*connect.Response[v1.ListTenantsResponse], error)
+	CreateAPIKey(context.Context, *connect.Request[v1.CreateAPIKeyRequest]) (*connect.Response[v1.CreateAPIKeyResponse], error)
+	ListAPIKeys(context.Context, *connect.Request[v1.ListAPIKeysRequest]) (*connect.Response[v1.ListAPIKeysResponse], error)
+	RevokeAPIKey(context.Context, *connect.Request[v1.RevokeAPIKeyRequest]) (*connect.Response[v1.RevokeAPIKeyResponse], error)
 	PutCredential(context.Context, *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error)
 	ListCredentials(context.Context, *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error)
 	DeleteCredential(context.Context, *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error)
@@ -78,93 +86,100 @@ type OrgServiceClient interface {
 	DeleteProvider(context.Context, *connect.Request[v1.DeleteProviderRequest]) (*connect.Response[v1.DeleteProviderResponse], error)
 }
 
-// NewOrgServiceClient constructs a client for the core.v1.OrgService service. By default, it uses
-// the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
+// NewTenantServiceClient constructs a client for the core.v1.TenantService service. By default, it
+// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
 // uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
 // connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewOrgServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) OrgServiceClient {
+func NewTenantServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) TenantServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	orgServiceMethods := v1.File_core_v1_org_proto.Services().ByName("OrgService").Methods()
-	return &orgServiceClient{
-		createOrg: connect.NewClient[v1.CreateOrgRequest, v1.CreateOrgResponse](
+	tenantServiceMethods := v1.File_core_v1_org_proto.Services().ByName("TenantService").Methods()
+	return &tenantServiceClient{
+		createTenant: connect.NewClient[v1.CreateTenantRequest, v1.CreateTenantResponse](
 			httpClient,
-			baseURL+OrgServiceCreateOrgProcedure,
-			connect.WithSchema(orgServiceMethods.ByName("CreateOrg")),
+			baseURL+TenantServiceCreateTenantProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("CreateTenant")),
 			connect.WithClientOptions(opts...),
 		),
-		getOrg: connect.NewClient[v1.GetOrgRequest, v1.GetOrgResponse](
+		getTenant: connect.NewClient[v1.GetTenantRequest, v1.GetTenantResponse](
 			httpClient,
-			baseURL+OrgServiceGetOrgProcedure,
-			connect.WithSchema(orgServiceMethods.ByName("GetOrg")),
+			baseURL+TenantServiceGetTenantProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("GetTenant")),
 			connect.WithClientOptions(opts...),
 		),
-		listOrgs: connect.NewClient[v1.ListOrgsRequest, v1.ListOrgsResponse](
+		listTenants: connect.NewClient[v1.ListTenantsRequest, v1.ListTenantsResponse](
 			httpClient,
-			baseURL+OrgServiceListOrgsProcedure,
-			connect.WithSchema(orgServiceMethods.ByName("ListOrgs")),
+			baseURL+TenantServiceListTenantsProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("ListTenants")),
 			connect.WithClientOptions(opts...),
 		),
-		inviteMember: connect.NewClient[v1.InviteMemberRequest, v1.InviteMemberResponse](
+		createAPIKey: connect.NewClient[v1.CreateAPIKeyRequest, v1.CreateAPIKeyResponse](
 			httpClient,
-			baseURL+OrgServiceInviteMemberProcedure,
-			connect.WithSchema(orgServiceMethods.ByName("InviteMember")),
+			baseURL+TenantServiceCreateAPIKeyProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("CreateAPIKey")),
 			connect.WithClientOptions(opts...),
 		),
-		listMembers: connect.NewClient[v1.ListMembersRequest, v1.ListMembersResponse](
+		listAPIKeys: connect.NewClient[v1.ListAPIKeysRequest, v1.ListAPIKeysResponse](
 			httpClient,
-			baseURL+OrgServiceListMembersProcedure,
-			connect.WithSchema(orgServiceMethods.ByName("ListMembers")),
+			baseURL+TenantServiceListAPIKeysProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("ListAPIKeys")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeAPIKey: connect.NewClient[v1.RevokeAPIKeyRequest, v1.RevokeAPIKeyResponse](
+			httpClient,
+			baseURL+TenantServiceRevokeAPIKeyProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("RevokeAPIKey")),
 			connect.WithClientOptions(opts...),
 		),
 		putCredential: connect.NewClient[v1.PutCredentialRequest, v1.PutCredentialResponse](
 			httpClient,
-			baseURL+OrgServicePutCredentialProcedure,
-			connect.WithSchema(orgServiceMethods.ByName("PutCredential")),
+			baseURL+TenantServicePutCredentialProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("PutCredential")),
 			connect.WithClientOptions(opts...),
 		),
 		listCredentials: connect.NewClient[v1.ListCredentialsRequest, v1.ListCredentialsResponse](
 			httpClient,
-			baseURL+OrgServiceListCredentialsProcedure,
-			connect.WithSchema(orgServiceMethods.ByName("ListCredentials")),
+			baseURL+TenantServiceListCredentialsProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("ListCredentials")),
 			connect.WithClientOptions(opts...),
 		),
 		deleteCredential: connect.NewClient[v1.DeleteCredentialRequest, v1.DeleteCredentialResponse](
 			httpClient,
-			baseURL+OrgServiceDeleteCredentialProcedure,
-			connect.WithSchema(orgServiceMethods.ByName("DeleteCredential")),
+			baseURL+TenantServiceDeleteCredentialProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("DeleteCredential")),
 			connect.WithClientOptions(opts...),
 		),
 		registerProvider: connect.NewClient[v1.RegisterProviderRequest, v1.RegisterProviderResponse](
 			httpClient,
-			baseURL+OrgServiceRegisterProviderProcedure,
-			connect.WithSchema(orgServiceMethods.ByName("RegisterProvider")),
+			baseURL+TenantServiceRegisterProviderProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("RegisterProvider")),
 			connect.WithClientOptions(opts...),
 		),
 		listProviders: connect.NewClient[v1.ListProvidersRequest, v1.ListProvidersResponse](
 			httpClient,
-			baseURL+OrgServiceListProvidersProcedure,
-			connect.WithSchema(orgServiceMethods.ByName("ListProviders")),
+			baseURL+TenantServiceListProvidersProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("ListProviders")),
 			connect.WithClientOptions(opts...),
 		),
 		deleteProvider: connect.NewClient[v1.DeleteProviderRequest, v1.DeleteProviderResponse](
 			httpClient,
-			baseURL+OrgServiceDeleteProviderProcedure,
-			connect.WithSchema(orgServiceMethods.ByName("DeleteProvider")),
+			baseURL+TenantServiceDeleteProviderProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("DeleteProvider")),
 			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
-// orgServiceClient implements OrgServiceClient.
-type orgServiceClient struct {
-	createOrg        *connect.Client[v1.CreateOrgRequest, v1.CreateOrgResponse]
-	getOrg           *connect.Client[v1.GetOrgRequest, v1.GetOrgResponse]
-	listOrgs         *connect.Client[v1.ListOrgsRequest, v1.ListOrgsResponse]
-	inviteMember     *connect.Client[v1.InviteMemberRequest, v1.InviteMemberResponse]
-	listMembers      *connect.Client[v1.ListMembersRequest, v1.ListMembersResponse]
+// tenantServiceClient implements TenantServiceClient.
+type tenantServiceClient struct {
+	createTenant     *connect.Client[v1.CreateTenantRequest, v1.CreateTenantResponse]
+	getTenant        *connect.Client[v1.GetTenantRequest, v1.GetTenantResponse]
+	listTenants      *connect.Client[v1.ListTenantsRequest, v1.ListTenantsResponse]
+	createAPIKey     *connect.Client[v1.CreateAPIKeyRequest, v1.CreateAPIKeyResponse]
+	listAPIKeys      *connect.Client[v1.ListAPIKeysRequest, v1.ListAPIKeysResponse]
+	revokeAPIKey     *connect.Client[v1.RevokeAPIKeyRequest, v1.RevokeAPIKeyResponse]
 	putCredential    *connect.Client[v1.PutCredentialRequest, v1.PutCredentialResponse]
 	listCredentials  *connect.Client[v1.ListCredentialsRequest, v1.ListCredentialsResponse]
 	deleteCredential *connect.Client[v1.DeleteCredentialRequest, v1.DeleteCredentialResponse]
@@ -173,68 +188,74 @@ type orgServiceClient struct {
 	deleteProvider   *connect.Client[v1.DeleteProviderRequest, v1.DeleteProviderResponse]
 }
 
-// CreateOrg calls core.v1.OrgService.CreateOrg.
-func (c *orgServiceClient) CreateOrg(ctx context.Context, req *connect.Request[v1.CreateOrgRequest]) (*connect.Response[v1.CreateOrgResponse], error) {
-	return c.createOrg.CallUnary(ctx, req)
+// CreateTenant calls core.v1.TenantService.CreateTenant.
+func (c *tenantServiceClient) CreateTenant(ctx context.Context, req *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error) {
+	return c.createTenant.CallUnary(ctx, req)
 }
 
-// GetOrg calls core.v1.OrgService.GetOrg.
-func (c *orgServiceClient) GetOrg(ctx context.Context, req *connect.Request[v1.GetOrgRequest]) (*connect.Response[v1.GetOrgResponse], error) {
-	return c.getOrg.CallUnary(ctx, req)
+// GetTenant calls core.v1.TenantService.GetTenant.
+func (c *tenantServiceClient) GetTenant(ctx context.Context, req *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error) {
+	return c.getTenant.CallUnary(ctx, req)
 }
 
-// ListOrgs calls core.v1.OrgService.ListOrgs.
-func (c *orgServiceClient) ListOrgs(ctx context.Context, req *connect.Request[v1.ListOrgsRequest]) (*connect.Response[v1.ListOrgsResponse], error) {
-	return c.listOrgs.CallUnary(ctx, req)
+// ListTenants calls core.v1.TenantService.ListTenants.
+func (c *tenantServiceClient) ListTenants(ctx context.Context, req *connect.Request[v1.ListTenantsRequest]) (*connect.Response[v1.ListTenantsResponse], error) {
+	return c.listTenants.CallUnary(ctx, req)
 }
 
-// InviteMember calls core.v1.OrgService.InviteMember.
-func (c *orgServiceClient) InviteMember(ctx context.Context, req *connect.Request[v1.InviteMemberRequest]) (*connect.Response[v1.InviteMemberResponse], error) {
-	return c.inviteMember.CallUnary(ctx, req)
+// CreateAPIKey calls core.v1.TenantService.CreateAPIKey.
+func (c *tenantServiceClient) CreateAPIKey(ctx context.Context, req *connect.Request[v1.CreateAPIKeyRequest]) (*connect.Response[v1.CreateAPIKeyResponse], error) {
+	return c.createAPIKey.CallUnary(ctx, req)
 }
 
-// ListMembers calls core.v1.OrgService.ListMembers.
-func (c *orgServiceClient) ListMembers(ctx context.Context, req *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error) {
-	return c.listMembers.CallUnary(ctx, req)
+// ListAPIKeys calls core.v1.TenantService.ListAPIKeys.
+func (c *tenantServiceClient) ListAPIKeys(ctx context.Context, req *connect.Request[v1.ListAPIKeysRequest]) (*connect.Response[v1.ListAPIKeysResponse], error) {
+	return c.listAPIKeys.CallUnary(ctx, req)
 }
 
-// PutCredential calls core.v1.OrgService.PutCredential.
-func (c *orgServiceClient) PutCredential(ctx context.Context, req *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error) {
+// RevokeAPIKey calls core.v1.TenantService.RevokeAPIKey.
+func (c *tenantServiceClient) RevokeAPIKey(ctx context.Context, req *connect.Request[v1.RevokeAPIKeyRequest]) (*connect.Response[v1.RevokeAPIKeyResponse], error) {
+	return c.revokeAPIKey.CallUnary(ctx, req)
+}
+
+// PutCredential calls core.v1.TenantService.PutCredential.
+func (c *tenantServiceClient) PutCredential(ctx context.Context, req *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error) {
 	return c.putCredential.CallUnary(ctx, req)
 }
 
-// ListCredentials calls core.v1.OrgService.ListCredentials.
-func (c *orgServiceClient) ListCredentials(ctx context.Context, req *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error) {
+// ListCredentials calls core.v1.TenantService.ListCredentials.
+func (c *tenantServiceClient) ListCredentials(ctx context.Context, req *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error) {
 	return c.listCredentials.CallUnary(ctx, req)
 }
 
-// DeleteCredential calls core.v1.OrgService.DeleteCredential.
-func (c *orgServiceClient) DeleteCredential(ctx context.Context, req *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error) {
+// DeleteCredential calls core.v1.TenantService.DeleteCredential.
+func (c *tenantServiceClient) DeleteCredential(ctx context.Context, req *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error) {
 	return c.deleteCredential.CallUnary(ctx, req)
 }
 
-// RegisterProvider calls core.v1.OrgService.RegisterProvider.
-func (c *orgServiceClient) RegisterProvider(ctx context.Context, req *connect.Request[v1.RegisterProviderRequest]) (*connect.Response[v1.RegisterProviderResponse], error) {
+// RegisterProvider calls core.v1.TenantService.RegisterProvider.
+func (c *tenantServiceClient) RegisterProvider(ctx context.Context, req *connect.Request[v1.RegisterProviderRequest]) (*connect.Response[v1.RegisterProviderResponse], error) {
 	return c.registerProvider.CallUnary(ctx, req)
 }
 
-// ListProviders calls core.v1.OrgService.ListProviders.
-func (c *orgServiceClient) ListProviders(ctx context.Context, req *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error) {
+// ListProviders calls core.v1.TenantService.ListProviders.
+func (c *tenantServiceClient) ListProviders(ctx context.Context, req *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error) {
 	return c.listProviders.CallUnary(ctx, req)
 }
 
-// DeleteProvider calls core.v1.OrgService.DeleteProvider.
-func (c *orgServiceClient) DeleteProvider(ctx context.Context, req *connect.Request[v1.DeleteProviderRequest]) (*connect.Response[v1.DeleteProviderResponse], error) {
+// DeleteProvider calls core.v1.TenantService.DeleteProvider.
+func (c *tenantServiceClient) DeleteProvider(ctx context.Context, req *connect.Request[v1.DeleteProviderRequest]) (*connect.Response[v1.DeleteProviderResponse], error) {
 	return c.deleteProvider.CallUnary(ctx, req)
 }
 
-// OrgServiceHandler is an implementation of the core.v1.OrgService service.
-type OrgServiceHandler interface {
-	CreateOrg(context.Context, *connect.Request[v1.CreateOrgRequest]) (*connect.Response[v1.CreateOrgResponse], error)
-	GetOrg(context.Context, *connect.Request[v1.GetOrgRequest]) (*connect.Response[v1.GetOrgResponse], error)
-	ListOrgs(context.Context, *connect.Request[v1.ListOrgsRequest]) (*connect.Response[v1.ListOrgsResponse], error)
-	InviteMember(context.Context, *connect.Request[v1.InviteMemberRequest]) (*connect.Response[v1.InviteMemberResponse], error)
-	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
+// TenantServiceHandler is an implementation of the core.v1.TenantService service.
+type TenantServiceHandler interface {
+	CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error)
+	GetTenant(context.Context, *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error)
+	ListTenants(context.Context, *connect.Request[v1.ListTenantsRequest]) (*connect.Response[v1.ListTenantsResponse], error)
+	CreateAPIKey(context.Context, *connect.Request[v1.CreateAPIKeyRequest]) (*connect.Response[v1.CreateAPIKeyResponse], error)
+	ListAPIKeys(context.Context, *connect.Request[v1.ListAPIKeysRequest]) (*connect.Response[v1.ListAPIKeysResponse], error)
+	RevokeAPIKey(context.Context, *connect.Request[v1.RevokeAPIKeyRequest]) (*connect.Response[v1.RevokeAPIKeyResponse], error)
 	PutCredential(context.Context, *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error)
 	ListCredentials(context.Context, *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error)
 	DeleteCredential(context.Context, *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error)
@@ -243,152 +264,164 @@ type OrgServiceHandler interface {
 	DeleteProvider(context.Context, *connect.Request[v1.DeleteProviderRequest]) (*connect.Response[v1.DeleteProviderResponse], error)
 }
 
-// NewOrgServiceHandler builds an HTTP handler from the service implementation. It returns the path
-// on which to mount the handler and the handler itself.
+// NewTenantServiceHandler builds an HTTP handler from the service implementation. It returns the
+// path on which to mount the handler and the handler itself.
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewOrgServiceHandler(svc OrgServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	orgServiceMethods := v1.File_core_v1_org_proto.Services().ByName("OrgService").Methods()
-	orgServiceCreateOrgHandler := connect.NewUnaryHandler(
-		OrgServiceCreateOrgProcedure,
-		svc.CreateOrg,
-		connect.WithSchema(orgServiceMethods.ByName("CreateOrg")),
+func NewTenantServiceHandler(svc TenantServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	tenantServiceMethods := v1.File_core_v1_org_proto.Services().ByName("TenantService").Methods()
+	tenantServiceCreateTenantHandler := connect.NewUnaryHandler(
+		TenantServiceCreateTenantProcedure,
+		svc.CreateTenant,
+		connect.WithSchema(tenantServiceMethods.ByName("CreateTenant")),
 		connect.WithHandlerOptions(opts...),
 	)
-	orgServiceGetOrgHandler := connect.NewUnaryHandler(
-		OrgServiceGetOrgProcedure,
-		svc.GetOrg,
-		connect.WithSchema(orgServiceMethods.ByName("GetOrg")),
+	tenantServiceGetTenantHandler := connect.NewUnaryHandler(
+		TenantServiceGetTenantProcedure,
+		svc.GetTenant,
+		connect.WithSchema(tenantServiceMethods.ByName("GetTenant")),
 		connect.WithHandlerOptions(opts...),
 	)
-	orgServiceListOrgsHandler := connect.NewUnaryHandler(
-		OrgServiceListOrgsProcedure,
-		svc.ListOrgs,
-		connect.WithSchema(orgServiceMethods.ByName("ListOrgs")),
+	tenantServiceListTenantsHandler := connect.NewUnaryHandler(
+		TenantServiceListTenantsProcedure,
+		svc.ListTenants,
+		connect.WithSchema(tenantServiceMethods.ByName("ListTenants")),
 		connect.WithHandlerOptions(opts...),
 	)
-	orgServiceInviteMemberHandler := connect.NewUnaryHandler(
-		OrgServiceInviteMemberProcedure,
-		svc.InviteMember,
-		connect.WithSchema(orgServiceMethods.ByName("InviteMember")),
+	tenantServiceCreateAPIKeyHandler := connect.NewUnaryHandler(
+		TenantServiceCreateAPIKeyProcedure,
+		svc.CreateAPIKey,
+		connect.WithSchema(tenantServiceMethods.ByName("CreateAPIKey")),
 		connect.WithHandlerOptions(opts...),
 	)
-	orgServiceListMembersHandler := connect.NewUnaryHandler(
-		OrgServiceListMembersProcedure,
-		svc.ListMembers,
-		connect.WithSchema(orgServiceMethods.ByName("ListMembers")),
+	tenantServiceListAPIKeysHandler := connect.NewUnaryHandler(
+		TenantServiceListAPIKeysProcedure,
+		svc.ListAPIKeys,
+		connect.WithSchema(tenantServiceMethods.ByName("ListAPIKeys")),
 		connect.WithHandlerOptions(opts...),
 	)
-	orgServicePutCredentialHandler := connect.NewUnaryHandler(
-		OrgServicePutCredentialProcedure,
+	tenantServiceRevokeAPIKeyHandler := connect.NewUnaryHandler(
+		TenantServiceRevokeAPIKeyProcedure,
+		svc.RevokeAPIKey,
+		connect.WithSchema(tenantServiceMethods.ByName("RevokeAPIKey")),
+		connect.WithHandlerOptions(opts...),
+	)
+	tenantServicePutCredentialHandler := connect.NewUnaryHandler(
+		TenantServicePutCredentialProcedure,
 		svc.PutCredential,
-		connect.WithSchema(orgServiceMethods.ByName("PutCredential")),
+		connect.WithSchema(tenantServiceMethods.ByName("PutCredential")),
 		connect.WithHandlerOptions(opts...),
 	)
-	orgServiceListCredentialsHandler := connect.NewUnaryHandler(
-		OrgServiceListCredentialsProcedure,
+	tenantServiceListCredentialsHandler := connect.NewUnaryHandler(
+		TenantServiceListCredentialsProcedure,
 		svc.ListCredentials,
-		connect.WithSchema(orgServiceMethods.ByName("ListCredentials")),
+		connect.WithSchema(tenantServiceMethods.ByName("ListCredentials")),
 		connect.WithHandlerOptions(opts...),
 	)
-	orgServiceDeleteCredentialHandler := connect.NewUnaryHandler(
-		OrgServiceDeleteCredentialProcedure,
+	tenantServiceDeleteCredentialHandler := connect.NewUnaryHandler(
+		TenantServiceDeleteCredentialProcedure,
 		svc.DeleteCredential,
-		connect.WithSchema(orgServiceMethods.ByName("DeleteCredential")),
+		connect.WithSchema(tenantServiceMethods.ByName("DeleteCredential")),
 		connect.WithHandlerOptions(opts...),
 	)
-	orgServiceRegisterProviderHandler := connect.NewUnaryHandler(
-		OrgServiceRegisterProviderProcedure,
+	tenantServiceRegisterProviderHandler := connect.NewUnaryHandler(
+		TenantServiceRegisterProviderProcedure,
 		svc.RegisterProvider,
-		connect.WithSchema(orgServiceMethods.ByName("RegisterProvider")),
+		connect.WithSchema(tenantServiceMethods.ByName("RegisterProvider")),
 		connect.WithHandlerOptions(opts...),
 	)
-	orgServiceListProvidersHandler := connect.NewUnaryHandler(
-		OrgServiceListProvidersProcedure,
+	tenantServiceListProvidersHandler := connect.NewUnaryHandler(
+		TenantServiceListProvidersProcedure,
 		svc.ListProviders,
-		connect.WithSchema(orgServiceMethods.ByName("ListProviders")),
+		connect.WithSchema(tenantServiceMethods.ByName("ListProviders")),
 		connect.WithHandlerOptions(opts...),
 	)
-	orgServiceDeleteProviderHandler := connect.NewUnaryHandler(
-		OrgServiceDeleteProviderProcedure,
+	tenantServiceDeleteProviderHandler := connect.NewUnaryHandler(
+		TenantServiceDeleteProviderProcedure,
 		svc.DeleteProvider,
-		connect.WithSchema(orgServiceMethods.ByName("DeleteProvider")),
+		connect.WithSchema(tenantServiceMethods.ByName("DeleteProvider")),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/core.v1.OrgService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/core.v1.TenantService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case OrgServiceCreateOrgProcedure:
-			orgServiceCreateOrgHandler.ServeHTTP(w, r)
-		case OrgServiceGetOrgProcedure:
-			orgServiceGetOrgHandler.ServeHTTP(w, r)
-		case OrgServiceListOrgsProcedure:
-			orgServiceListOrgsHandler.ServeHTTP(w, r)
-		case OrgServiceInviteMemberProcedure:
-			orgServiceInviteMemberHandler.ServeHTTP(w, r)
-		case OrgServiceListMembersProcedure:
-			orgServiceListMembersHandler.ServeHTTP(w, r)
-		case OrgServicePutCredentialProcedure:
-			orgServicePutCredentialHandler.ServeHTTP(w, r)
-		case OrgServiceListCredentialsProcedure:
-			orgServiceListCredentialsHandler.ServeHTTP(w, r)
-		case OrgServiceDeleteCredentialProcedure:
-			orgServiceDeleteCredentialHandler.ServeHTTP(w, r)
-		case OrgServiceRegisterProviderProcedure:
-			orgServiceRegisterProviderHandler.ServeHTTP(w, r)
-		case OrgServiceListProvidersProcedure:
-			orgServiceListProvidersHandler.ServeHTTP(w, r)
-		case OrgServiceDeleteProviderProcedure:
-			orgServiceDeleteProviderHandler.ServeHTTP(w, r)
+		case TenantServiceCreateTenantProcedure:
+			tenantServiceCreateTenantHandler.ServeHTTP(w, r)
+		case TenantServiceGetTenantProcedure:
+			tenantServiceGetTenantHandler.ServeHTTP(w, r)
+		case TenantServiceListTenantsProcedure:
+			tenantServiceListTenantsHandler.ServeHTTP(w, r)
+		case TenantServiceCreateAPIKeyProcedure:
+			tenantServiceCreateAPIKeyHandler.ServeHTTP(w, r)
+		case TenantServiceListAPIKeysProcedure:
+			tenantServiceListAPIKeysHandler.ServeHTTP(w, r)
+		case TenantServiceRevokeAPIKeyProcedure:
+			tenantServiceRevokeAPIKeyHandler.ServeHTTP(w, r)
+		case TenantServicePutCredentialProcedure:
+			tenantServicePutCredentialHandler.ServeHTTP(w, r)
+		case TenantServiceListCredentialsProcedure:
+			tenantServiceListCredentialsHandler.ServeHTTP(w, r)
+		case TenantServiceDeleteCredentialProcedure:
+			tenantServiceDeleteCredentialHandler.ServeHTTP(w, r)
+		case TenantServiceRegisterProviderProcedure:
+			tenantServiceRegisterProviderHandler.ServeHTTP(w, r)
+		case TenantServiceListProvidersProcedure:
+			tenantServiceListProvidersHandler.ServeHTTP(w, r)
+		case TenantServiceDeleteProviderProcedure:
+			tenantServiceDeleteProviderHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-// UnimplementedOrgServiceHandler returns CodeUnimplemented from all methods.
-type UnimplementedOrgServiceHandler struct{}
+// UnimplementedTenantServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedTenantServiceHandler struct{}
 
-func (UnimplementedOrgServiceHandler) CreateOrg(context.Context, *connect.Request[v1.CreateOrgRequest]) (*connect.Response[v1.CreateOrgResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.OrgService.CreateOrg is not implemented"))
+func (UnimplementedTenantServiceHandler) CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.CreateTenant is not implemented"))
 }
 
-func (UnimplementedOrgServiceHandler) GetOrg(context.Context, *connect.Request[v1.GetOrgRequest]) (*connect.Response[v1.GetOrgResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.OrgService.GetOrg is not implemented"))
+func (UnimplementedTenantServiceHandler) GetTenant(context.Context, *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.GetTenant is not implemented"))
 }
 
-func (UnimplementedOrgServiceHandler) ListOrgs(context.Context, *connect.Request[v1.ListOrgsRequest]) (*connect.Response[v1.ListOrgsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.OrgService.ListOrgs is not implemented"))
+func (UnimplementedTenantServiceHandler) ListTenants(context.Context, *connect.Request[v1.ListTenantsRequest]) (*connect.Response[v1.ListTenantsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.ListTenants is not implemented"))
 }
 
-func (UnimplementedOrgServiceHandler) InviteMember(context.Context, *connect.Request[v1.InviteMemberRequest]) (*connect.Response[v1.InviteMemberResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.OrgService.InviteMember is not implemented"))
+func (UnimplementedTenantServiceHandler) CreateAPIKey(context.Context, *connect.Request[v1.CreateAPIKeyRequest]) (*connect.Response[v1.CreateAPIKeyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.CreateAPIKey is not implemented"))
 }
 
-func (UnimplementedOrgServiceHandler) ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.OrgService.ListMembers is not implemented"))
+func (UnimplementedTenantServiceHandler) ListAPIKeys(context.Context, *connect.Request[v1.ListAPIKeysRequest]) (*connect.Response[v1.ListAPIKeysResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.ListAPIKeys is not implemented"))
 }
 
-func (UnimplementedOrgServiceHandler) PutCredential(context.Context, *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.OrgService.PutCredential is not implemented"))
+func (UnimplementedTenantServiceHandler) RevokeAPIKey(context.Context, *connect.Request[v1.RevokeAPIKeyRequest]) (*connect.Response[v1.RevokeAPIKeyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.RevokeAPIKey is not implemented"))
 }
 
-func (UnimplementedOrgServiceHandler) ListCredentials(context.Context, *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.OrgService.ListCredentials is not implemented"))
+func (UnimplementedTenantServiceHandler) PutCredential(context.Context, *connect.Request[v1.PutCredentialRequest]) (*connect.Response[v1.PutCredentialResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.PutCredential is not implemented"))
 }
 
-func (UnimplementedOrgServiceHandler) DeleteCredential(context.Context, *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.OrgService.DeleteCredential is not implemented"))
+func (UnimplementedTenantServiceHandler) ListCredentials(context.Context, *connect.Request[v1.ListCredentialsRequest]) (*connect.Response[v1.ListCredentialsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.ListCredentials is not implemented"))
 }
 
-func (UnimplementedOrgServiceHandler) RegisterProvider(context.Context, *connect.Request[v1.RegisterProviderRequest]) (*connect.Response[v1.RegisterProviderResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.OrgService.RegisterProvider is not implemented"))
+func (UnimplementedTenantServiceHandler) DeleteCredential(context.Context, *connect.Request[v1.DeleteCredentialRequest]) (*connect.Response[v1.DeleteCredentialResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.DeleteCredential is not implemented"))
 }
 
-func (UnimplementedOrgServiceHandler) ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.OrgService.ListProviders is not implemented"))
+func (UnimplementedTenantServiceHandler) RegisterProvider(context.Context, *connect.Request[v1.RegisterProviderRequest]) (*connect.Response[v1.RegisterProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.RegisterProvider is not implemented"))
 }
 
-func (UnimplementedOrgServiceHandler) DeleteProvider(context.Context, *connect.Request[v1.DeleteProviderRequest]) (*connect.Response[v1.DeleteProviderResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.OrgService.DeleteProvider is not implemented"))
+func (UnimplementedTenantServiceHandler) ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.ListProviders is not implemented"))
+}
+
+func (UnimplementedTenantServiceHandler) DeleteProvider(context.Context, *connect.Request[v1.DeleteProviderRequest]) (*connect.Response[v1.DeleteProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("core.v1.TenantService.DeleteProvider is not implemented"))
 }

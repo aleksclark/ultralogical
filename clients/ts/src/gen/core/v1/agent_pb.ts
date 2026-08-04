@@ -12,11 +12,11 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file core/v1/agent.proto.
  */
 export const file_core_v1_agent: GenFile = /*@__PURE__*/
-  fileDesc("ChNjb3JlL3YxL2FnZW50LnByb3RvEgdjb3JlLnYxIm4KC01vZGVsQ29uZmlnEhAKCHByb3ZpZGVyGAEgASgJEhAKCG1vZGVsX2lkGAIgASgJEhIKCmNyZWRlbnRpYWwYAyABKAkSJwoJZmFsbGJhY2tzGAQgAygLMhQuY29yZS52MS5Nb2RlbENvbmZpZyK6AwoIQWdlbnRSdW4SCgoCaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIgCgVzdGF0ZRgDIAEoDjIRLmNvcmUudjEuUnVuU3RhdGUSEQoJbG9vcF9raW5kGAQgASgJEhQKDGxvb3BfdmVyc2lvbhgFIAEoBRIqCgxtb2RlbF9jb25maWcYBiABKAsyFC5jb3JlLnYxLk1vZGVsQ29uZmlnEg4KBnByb21wdBgHIAEoCRIWCg5mYWlsdXJlX3JlYXNvbhgIIAEoCRIXCg9mYWlsdXJlX21lc3NhZ2UYCSABKAkSLgoKY3JlYXRlZF9hdBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFQoNcGFyZW50X3J1bl9pZBgMIAEoCRIfCgZncmFudHMYDSABKAsyDy5jb3JlLnYxLkdyYW50cxITCgtyZXN1bHRfanNvbhgOIAEoCRIRCgljb2hvcnRfaWQYDyABKAkSFgoOY29ob3J0X29yZGluYWwYECABKAUi5gEKB1J1bldhaXQSCgoCaWQYASABKAkSFQoNcGFyZW50X3J1bl9pZBgCIAEoCRISCgpzdGVwX2luZGV4GAMgASgFEhQKDHRvb2xfY2FsbF9pZBgEIAEoCRIMCgRraW5kGAUgASgJEg0KBXN0YXRlGAYgASgJEhYKDnRpbWVvdXRfcG9saWN5GAcgASgJEiwKCGRlYWRsaW5lGAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBITCgtyZXN1bHRfanNvbhgJIAEoCRIWCg5tZW1iZXJfcnVuX2lkcxgKIAMoCSJ2CgtSdW5UcmVlTm9kZRIeCgNydW4YASABKAsyES5jb3JlLnYxLkFnZW50UnVuEiYKCGNoaWxkcmVuGAIgAygLMhQuY29yZS52MS5SdW5UcmVlTm9kZRIfCgV3YWl0cxgDIAMoCzIQLmNvcmUudjEuUnVuV2FpdCInChFHZXRSdW5UcmVlUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIjkKEkdldFJ1blRyZWVSZXNwb25zZRIjCgVyb290cxgBIAMoCzIULmNvcmUudjEuUnVuVHJlZU5vZGUiFwoGR3JhbnRzEg0KBXRvb2xzGAEgAygJIoIBCg9TdGFydFJ1blJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIOCgZwcm9tcHQYAiABKAkSKgoMbW9kZWxfY29uZmlnGAMgASgLMhQuY29yZS52MS5Nb2RlbENvbmZpZxIfCgZncmFudHMYBCABKAsyDy5jb3JlLnYxLkdyYW50cyJFChBTdGFydFJ1blJlc3BvbnNlEh4KA3J1bhgBIAEoCzIRLmNvcmUudjEuQWdlbnRSdW4SEQoJZXZlbnRfc2VxGAIgASgDIjMKEFByb21wdFJ1blJlcXVlc3QSDgoGcnVuX2lkGAEgASgJEg8KB21lc3NhZ2UYAiABKAkiJgoRUHJvbXB0UnVuUmVzcG9uc2USEQoJZXZlbnRfc2VxGAEgASgDIiIKEENhbmNlbFJ1blJlcXVlc3QSDgoGcnVuX2lkGAEgASgJIhMKEUNhbmNlbFJ1blJlc3BvbnNlIh8KDUdldFJ1blJlcXVlc3QSDgoGcnVuX2lkGAEgASgJIjAKDkdldFJ1blJlc3BvbnNlEh4KA3J1bhgBIAEoCzIRLmNvcmUudjEuQWdlbnRSdW4iJQoPTGlzdFJ1bnNSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiMwoQTGlzdFJ1bnNSZXNwb25zZRIfCgRydW5zGAEgAygLMhEuY29yZS52MS5BZ2VudFJ1biqzAQoIUnVuU3RhdGUSGQoVUlVOX1NUQVRFX1VOU1BFQ0lGSUVEEAASFQoRUlVOX1NUQVRFX1BFTkRJTkcQARIVChFSVU5fU1RBVEVfUlVOTklORxACEhYKElJVTl9TVEFURV9BV0FJVElORxADEhcKE1JVTl9TVEFURV9DT01QTEVURUQQBBIUChBSVU5fU1RBVEVfRkFJTEVEEAUSFwoTUlVOX1NUQVRFX0NBTkNFTExFRBAGMpoDCgxBZ2VudFNlcnZpY2USPwoIU3RhcnRSdW4SGC5jb3JlLnYxLlN0YXJ0UnVuUmVxdWVzdBoZLmNvcmUudjEuU3RhcnRSdW5SZXNwb25zZRJCCglQcm9tcHRSdW4SGS5jb3JlLnYxLlByb21wdFJ1blJlcXVlc3QaGi5jb3JlLnYxLlByb21wdFJ1blJlc3BvbnNlEkIKCUNhbmNlbFJ1bhIZLmNvcmUudjEuQ2FuY2VsUnVuUmVxdWVzdBoaLmNvcmUudjEuQ2FuY2VsUnVuUmVzcG9uc2USOQoGR2V0UnVuEhYuY29yZS52MS5HZXRSdW5SZXF1ZXN0GhcuY29yZS52MS5HZXRSdW5SZXNwb25zZRI/CghMaXN0UnVucxIYLmNvcmUudjEuTGlzdFJ1bnNSZXF1ZXN0GhkuY29yZS52MS5MaXN0UnVuc1Jlc3BvbnNlEkUKCkdldFJ1blRyZWUSGi5jb3JlLnYxLkdldFJ1blRyZWVSZXF1ZXN0GhsuY29yZS52MS5HZXRSdW5UcmVlUmVzcG9uc2VCN1o1Z2l0aHViLmNvbS9hbGVrc2NsYXJrL3VsdHJhY29yZS9nZW4vZ28vY29yZS92MTtjb3JldjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
+  fileDesc("ChNjb3JlL3YxL2FnZW50LnByb3RvEgdjb3JlLnYxIm4KC01vZGVsQ29uZmlnEhAKCHByb3ZpZGVyGAEgASgJEhAKCG1vZGVsX2lkGAIgASgJEhIKCmNyZWRlbnRpYWwYAyABKAkSJwoJZmFsbGJhY2tzGAQgAygLMhQuY29yZS52MS5Nb2RlbENvbmZpZyJ5CglSdW5Qb2xpY3kSEwoLYWxsb3dfdG9vbHMYASADKAkSEgoKZGVueV90b29scxgCIAMoCRIWCg5yZXNvdXJjZV9raW5kcxgDIAMoCRIUCgxtYXhfY2hpbGRyZW4YBCABKAUSFQoNY2hpbGRfaW5oZXJpdBgFIAEoCCL6AwoIQWdlbnRSdW4SCgoCaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIgCgVzdGF0ZRgDIAEoDjIRLmNvcmUudjEuUnVuU3RhdGUSEQoJbG9vcF9raW5kGAQgASgJEhQKDGxvb3BfdmVyc2lvbhgFIAEoBRIqCgxtb2RlbF9jb25maWcYBiABKAsyFC5jb3JlLnYxLk1vZGVsQ29uZmlnEg4KBnByb21wdBgHIAEoCRIWCg5mYWlsdXJlX3JlYXNvbhgIIAEoCRIXCg9mYWlsdXJlX21lc3NhZ2UYCSABKAkSLgoKY3JlYXRlZF9hdBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFQoNcGFyZW50X3J1bl9pZBgMIAEoCRIiCgZwb2xpY3kYDSABKAsyEi5jb3JlLnYxLlJ1blBvbGljeRITCgtyZXN1bHRfanNvbhgOIAEoCRIRCgljb2hvcnRfaWQYDyABKAkSFgoOY29ob3J0X29yZGluYWwYECABKAUSEgoKYWN0b3Jfa2luZBgRIAEoCRIQCghhY3Rvcl9pZBgSIAEoCRIVCg1hY3Rvcl9kaXNwbGF5GBMgASgJIuYBCgdSdW5XYWl0EgoKAmlkGAEgASgJEhUKDXBhcmVudF9ydW5faWQYAiABKAkSEgoKc3RlcF9pbmRleBgDIAEoBRIUCgx0b29sX2NhbGxfaWQYBCABKAkSDAoEa2luZBgFIAEoCRINCgVzdGF0ZRgGIAEoCRIWCg50aW1lb3V0X3BvbGljeRgHIAEoCRIsCghkZWFkbGluZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoLcmVzdWx0X2pzb24YCSABKAkSFgoObWVtYmVyX3J1bl9pZHMYCiADKAkidgoLUnVuVHJlZU5vZGUSHgoDcnVuGAEgASgLMhEuY29yZS52MS5BZ2VudFJ1bhImCghjaGlsZHJlbhgCIAMoCzIULmNvcmUudjEuUnVuVHJlZU5vZGUSHwoFd2FpdHMYAyADKAsyEC5jb3JlLnYxLlJ1bldhaXQiJwoRR2V0UnVuVHJlZVJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCSI5ChJHZXRSdW5UcmVlUmVzcG9uc2USIwoFcm9vdHMYASADKAsyFC5jb3JlLnYxLlJ1blRyZWVOb2RlIoUBCg9TdGFydFJ1blJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIOCgZwcm9tcHQYAiABKAkSKgoMbW9kZWxfY29uZmlnGAMgASgLMhQuY29yZS52MS5Nb2RlbENvbmZpZxIiCgZwb2xpY3kYBCABKAsyEi5jb3JlLnYxLlJ1blBvbGljeSJFChBTdGFydFJ1blJlc3BvbnNlEh4KA3J1bhgBIAEoCzIRLmNvcmUudjEuQWdlbnRSdW4SEQoJZXZlbnRfc2VxGAIgASgDIjMKEFByb21wdFJ1blJlcXVlc3QSDgoGcnVuX2lkGAEgASgJEg8KB21lc3NhZ2UYAiABKAkiJgoRUHJvbXB0UnVuUmVzcG9uc2USEQoJZXZlbnRfc2VxGAEgASgDIiIKEENhbmNlbFJ1blJlcXVlc3QSDgoGcnVuX2lkGAEgASgJIhMKEUNhbmNlbFJ1blJlc3BvbnNlIh8KDUdldFJ1blJlcXVlc3QSDgoGcnVuX2lkGAEgASgJIjAKDkdldFJ1blJlc3BvbnNlEh4KA3J1bhgBIAEoCzIRLmNvcmUudjEuQWdlbnRSdW4iJQoPTGlzdFJ1bnNSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiMwoQTGlzdFJ1bnNSZXNwb25zZRIfCgRydW5zGAEgAygLMhEuY29yZS52MS5BZ2VudFJ1biqzAQoIUnVuU3RhdGUSGQoVUlVOX1NUQVRFX1VOU1BFQ0lGSUVEEAASFQoRUlVOX1NUQVRFX1BFTkRJTkcQARIVChFSVU5fU1RBVEVfUlVOTklORxACEhYKElJVTl9TVEFURV9BV0FJVElORxADEhcKE1JVTl9TVEFURV9DT01QTEVURUQQBBIUChBSVU5fU1RBVEVfRkFJTEVEEAUSFwoTUlVOX1NUQVRFX0NBTkNFTExFRBAGMpoDCgxBZ2VudFNlcnZpY2USPwoIU3RhcnRSdW4SGC5jb3JlLnYxLlN0YXJ0UnVuUmVxdWVzdBoZLmNvcmUudjEuU3RhcnRSdW5SZXNwb25zZRJCCglQcm9tcHRSdW4SGS5jb3JlLnYxLlByb21wdFJ1blJlcXVlc3QaGi5jb3JlLnYxLlByb21wdFJ1blJlc3BvbnNlEkIKCUNhbmNlbFJ1bhIZLmNvcmUudjEuQ2FuY2VsUnVuUmVxdWVzdBoaLmNvcmUudjEuQ2FuY2VsUnVuUmVzcG9uc2USOQoGR2V0UnVuEhYuY29yZS52MS5HZXRSdW5SZXF1ZXN0GhcuY29yZS52MS5HZXRSdW5SZXNwb25zZRI/CghMaXN0UnVucxIYLmNvcmUudjEuTGlzdFJ1bnNSZXF1ZXN0GhkuY29yZS52MS5MaXN0UnVuc1Jlc3BvbnNlEkUKCkdldFJ1blRyZWUSGi5jb3JlLnYxLkdldFJ1blRyZWVSZXF1ZXN0GhsuY29yZS52MS5HZXRSdW5UcmVlUmVzcG9uc2VCN1o1Z2l0aHViLmNvbS9hbGVrc2NsYXJrL3VsdHJhY29yZS9nZW4vZ28vY29yZS92MTtjb3JldjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
- * ModelConfig names the model a run uses and which org credential pays for
- * it. Inference is always on org credentials.
+ * ModelConfig names the model a run uses and which tenant credential pays for
+ * it. Inference is always on tenant credentials.
  *
  * @generated from message core.v1.ModelConfig
  */
@@ -34,7 +34,7 @@ export type ModelConfig = Message<"core.v1.ModelConfig"> & {
   modelId: string;
 
   /**
-   * credential name within the org; "default" if empty
+   * credential name within the tenant; "default" if empty
    *
    * @generated from field: string credential = 3;
    */
@@ -52,6 +52,55 @@ export type ModelConfig = Message<"core.v1.ModelConfig"> & {
  */
 export const ModelConfigSchema: GenMessage<ModelConfig> = /*@__PURE__*/
   messageDesc(file_core_v1_agent, 0);
+
+/**
+ * RunPolicy is fixed at run creation and immutable thereafter.
+ *
+ * @generated from message core.v1.RunPolicy
+ */
+export type RunPolicy = Message<"core.v1.RunPolicy"> & {
+  /**
+   * "*" or explicit
+   *
+   * @generated from field: repeated string allow_tools = 1;
+   */
+  allowTools: string[];
+
+  /**
+   * after allow; wins
+   *
+   * @generated from field: repeated string deny_tools = 2;
+   */
+  denyTools: string[];
+
+  /**
+   * empty=none, ["*"]=all
+   *
+   * @generated from field: repeated string resource_kinds = 3;
+   */
+  resourceKinds: string[];
+
+  /**
+   * 0 = no spawning
+   *
+   * @generated from field: int32 max_children = 4;
+   */
+  maxChildren: number;
+
+  /**
+   * children get same policy verbatim
+   *
+   * @generated from field: bool child_inherit = 5;
+   */
+  childInherit: boolean;
+};
+
+/**
+ * Describes the message core.v1.RunPolicy.
+ * Use `create(RunPolicySchema)` to create a new message.
+ */
+export const RunPolicySchema: GenMessage<RunPolicy> = /*@__PURE__*/
+  messageDesc(file_core_v1_agent, 1);
 
 /**
  * AgentRun is one durable agent loop bound to a session.
@@ -124,9 +173,9 @@ export type AgentRun = Message<"core.v1.AgentRun"> & {
   parentRunId: string;
 
   /**
-   * @generated from field: core.v1.Grants grants = 13;
+   * @generated from field: core.v1.RunPolicy policy = 13;
    */
-  grants?: Grants | undefined;
+  policy?: RunPolicy | undefined;
 
   /**
    * Result is the run's final output, persisted at terminal transition so a
@@ -148,6 +197,23 @@ export type AgentRun = Message<"core.v1.AgentRun"> & {
    * @generated from field: int32 cohort_ordinal = 16;
    */
   cohortOrdinal: number;
+
+  /**
+   * Opaque attribution captured at run creation.
+   *
+   * @generated from field: string actor_kind = 17;
+   */
+  actorKind: string;
+
+  /**
+   * @generated from field: string actor_id = 18;
+   */
+  actorId: string;
+
+  /**
+   * @generated from field: string actor_display = 19;
+   */
+  actorDisplay: string;
 };
 
 /**
@@ -155,7 +221,7 @@ export type AgentRun = Message<"core.v1.AgentRun"> & {
  * Use `create(AgentRunSchema)` to create a new message.
  */
 export const AgentRunSchema: GenMessage<AgentRun> = /*@__PURE__*/
-  messageDesc(file_core_v1_agent, 1);
+  messageDesc(file_core_v1_agent, 2);
 
 /**
  * RunWait is a parent's durable fan-in on child runs. It leaves the open state
@@ -224,7 +290,7 @@ export type RunWait = Message<"core.v1.RunWait"> & {
  * Use `create(RunWaitSchema)` to create a new message.
  */
 export const RunWaitSchema: GenMessage<RunWait> = /*@__PURE__*/
-  messageDesc(file_core_v1_agent, 2);
+  messageDesc(file_core_v1_agent, 3);
 
 /**
  * RunTreeNode is one run plus its children, so a client can render a spawn
@@ -254,7 +320,7 @@ export type RunTreeNode = Message<"core.v1.RunTreeNode"> & {
  * Use `create(RunTreeNodeSchema)` to create a new message.
  */
 export const RunTreeNodeSchema: GenMessage<RunTreeNode> = /*@__PURE__*/
-  messageDesc(file_core_v1_agent, 3);
+  messageDesc(file_core_v1_agent, 4);
 
 /**
  * @generated from message core.v1.GetRunTreeRequest
@@ -271,7 +337,7 @@ export type GetRunTreeRequest = Message<"core.v1.GetRunTreeRequest"> & {
  * Use `create(GetRunTreeRequestSchema)` to create a new message.
  */
 export const GetRunTreeRequestSchema: GenMessage<GetRunTreeRequest> = /*@__PURE__*/
-  messageDesc(file_core_v1_agent, 4);
+  messageDesc(file_core_v1_agent, 5);
 
 /**
  * @generated from message core.v1.GetRunTreeResponse
@@ -288,23 +354,6 @@ export type GetRunTreeResponse = Message<"core.v1.GetRunTreeResponse"> & {
  * Use `create(GetRunTreeResponseSchema)` to create a new message.
  */
 export const GetRunTreeResponseSchema: GenMessage<GetRunTreeResponse> = /*@__PURE__*/
-  messageDesc(file_core_v1_agent, 5);
-
-/**
- * @generated from message core.v1.Grants
- */
-export type Grants = Message<"core.v1.Grants"> & {
-  /**
-   * @generated from field: repeated string tools = 1;
-   */
-  tools: string[];
-};
-
-/**
- * Describes the message core.v1.Grants.
- * Use `create(GrantsSchema)` to create a new message.
- */
-export const GrantsSchema: GenMessage<Grants> = /*@__PURE__*/
   messageDesc(file_core_v1_agent, 6);
 
 /**
@@ -330,12 +379,11 @@ export type StartRunRequest = Message<"core.v1.StartRunRequest"> & {
   modelConfig?: ModelConfig | undefined;
 
   /**
-   * Optional only for child-spawn internals; human StartRun ignores this
-   * and receives server-defined root grants.
+   * Optional; defaults to DefaultRunPolicy (full tools, all kinds, spawn cap).
    *
-   * @generated from field: core.v1.Grants grants = 4;
+   * @generated from field: core.v1.RunPolicy policy = 4;
    */
-  grants?: Grants | undefined;
+  policy?: RunPolicy | undefined;
 };
 
 /**
@@ -558,8 +606,8 @@ export const RunStateSchema: GenEnum<RunState> = /*@__PURE__*/
   enumDesc(file_core_v1_agent, 0);
 
 /**
- * AgentService manages agent runs. Access requires membership in the run's
- * session's org.
+ * AgentService manages agent runs. Access requires a key belonging to the
+ * run's session's tenant.
  *
  * @generated from service core.v1.AgentService
  */

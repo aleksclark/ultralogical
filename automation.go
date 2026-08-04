@@ -8,7 +8,7 @@ import (
 type PeriodicPromptID string
 type PeriodicPrompt struct {
 	ID        PeriodicPromptID
-	OrgID     OrgID
+	TenantID  TenantID
 	SessionID SessionID
 	RunID     RunID
 	Schedule  time.Duration

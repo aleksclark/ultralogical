@@ -4,13 +4,13 @@
 import { describe, expect, it } from "vitest";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-node";
-import { OrgService } from "./src/gen/core/v1/org_pb.js";
+import { TenantService } from "./src/gen/core/v1/org_pb.js";
 import { SessionService } from "./src/gen/core/v1/session_pb.js";
 import { EventService } from "./src/gen/core/v1/event_pb.js";
 
 const baseUrl = process.env.CORED_URL;
 const token = process.env.CORE_TOKEN;
-const orgId = process.env.CORE_ORG_ID;
+const tenantId = process.env.CORE_TENANT_ID;
 
 describe.skipIf(!baseUrl)("ultracore TS client smoke", () => {
   const transport = createConnectTransport({
@@ -22,15 +22,15 @@ describe.skipIf(!baseUrl)("ultracore TS client smoke", () => {
   it("creates and fetches a session, appends and subscribes to events", async () => {
     const sessions = createClient(SessionService, transport);
     const events = createClient(EventService, transport);
-    const orgs = createClient(OrgService, transport);
+    const tenants = createClient(TenantService, transport);
 
-    // Org is visible to its member.
-    const org = await orgs.getOrg({ orgId: orgId ?? "" }, { headers });
-    expect(org.org?.id).toBe(orgId);
+    // Tenant is visible to its key.
+    const tenant = await tenants.getTenant({ tenantId: tenantId ?? "" }, { headers });
+    expect(tenant.tenant?.id).toBe(tenantId);
 
     // CreateSession -> GetSession roundtrip (A0.1).
     const created = await sessions.createSession(
-      { orgId: orgId ?? "", title: "ts smoke" },
+      { tenantId: tenantId ?? "", title: "ts smoke" },
       { headers },
     );
     const sessionId = created.session?.id ?? "";
@@ -38,7 +38,7 @@ describe.skipIf(!baseUrl)("ultracore TS client smoke", () => {
 
     const fetched = await sessions.getSession({ sessionId }, { headers });
     expect(fetched.session?.title).toBe("ts smoke");
-    expect(fetched.session?.orgId).toBe(orgId);
+    expect(fetched.session?.tenantId).toBe(tenantId);
 
     // Append returns the produced seq; Subscribe replays it.
     const appended = await events.append(

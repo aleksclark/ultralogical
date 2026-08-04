@@ -29,8 +29,8 @@ task dev:smoke         # boot, smoke, tear down with leak checks
 1. **No mocks of our own components.** Tests run real Postgres, real cored,
    real queue. The only permitted fake is the scripted LLM server.
 2. **Tenancy is structural.** All tenant data access goes through
-   `store.Org(id)` (renames to `Tenant` in E3). Missing and cross-tenant must
-   be indistinguishable (`not found`, same message).
+   `store.Tenant(id)`. Missing and cross-tenant must be indistinguishable
+   (`not found`, same message).
 3. **Package layout is law.** Root package = domain types + interfaces only;
    subpackages grouped by dependency (`postgres/`, `http/`, `jobqueue/*`);
    main packages wire deps. See agent_docs/conventions.md.

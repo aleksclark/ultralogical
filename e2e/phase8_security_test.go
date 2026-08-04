@@ -24,7 +24,7 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	org := stack.OrgA.ID
+	org := stack.TenantA.ID
 	sess := createSession(t, alice, string(org), "security documentation")
 
 	// Section 1 — a caller may narrow a human-started run's authority but
@@ -36,34 +36,34 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 
 		narrowed, err := alice.Agents.StartRun(ctx, connect.NewRequest(&corev1.StartRunRequest{
 			SessionId: sess.GetId(), Prompt: "narrowed start",
-			Grants: &corev1.Grants{Tools: []string{"post_event"}},
+			Policy: &corev1.RunPolicy{AllowTools: []string{"post_event"}},
 		}))
 		if err != nil {
 			t.Fatalf("a request for *less* authority must be accepted: %v", err)
 		}
-		stored, err := stack.Store.Org(org).Runs().Get(ctx, uc.RunID(narrowed.Msg.GetRun().GetId()))
+		stored, err := stack.Store.Tenant(org).Runs().Get(ctx, uc.RunID(narrowed.Msg.GetRun().GetId()))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if stored.Grants.AllowsTool("spawn_agent") {
-			t.Fatalf("narrowed run kept an authority it did not ask for: %+v", stored.Grants)
+		if stored.Policy.AllowsTool("spawn_agent") {
+			t.Fatalf("narrowed run kept an authority it did not ask for: %+v", stored.Policy)
 		}
 
 		// Explicit full allowlist is accepted: E1 has no lattice ceiling on
 		// StartRun, only the tools list that will be checked at dispatch.
 		full, err := alice.Agents.StartRun(ctx, connect.NewRequest(&corev1.StartRunRequest{
 			SessionId: sess.GetId(), Prompt: "full start",
-			Grants: &corev1.Grants{Tools: []string{"*"}},
+			Policy: &corev1.RunPolicy{AllowTools: []string{"*"}},
 		}))
 		if err != nil {
 			t.Fatalf("an explicit full allowlist must be accepted: %v", err)
 		}
-		storedFull, err := stack.Store.Org(org).Runs().Get(ctx, uc.RunID(full.Msg.GetRun().GetId()))
+		storedFull, err := stack.Store.Tenant(org).Runs().Get(ctx, uc.RunID(full.Msg.GetRun().GetId()))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !storedFull.Grants.AllowsTool("spawn_agent") {
-			t.Fatalf("full allowlist did not grant spawn_agent: %+v", storedFull.Grants)
+		if !storedFull.Policy.AllowsTool("spawn_agent") {
+			t.Fatalf("full allowlist did not grant spawn_agent: %+v", storedFull.Policy)
 		}
 	})
 
@@ -136,7 +136,7 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 	// that still performed the side effect would be worthless.
 	t.Run("denied_side_effect_never_happens", func(t *testing.T) {
 		_, childID := forgedToolCall(t, stack, alice, org, sess.GetId())
-		events, err := stack.Store.Org(org).Events().Range(ctx, uc.SessionID(sess.GetId()), 0, 4096)
+		events, err := stack.Store.Tenant(org).Events().Range(ctx, uc.SessionID(sess.GetId()), 0, 4096)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -234,22 +234,22 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 		}
 		alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 90*time.Second)
 
-		events, err := stack.Store.Org(org).Events().Range(ctx, uc.SessionID(sess.GetId()), 0, 4096)
+		events, err := stack.Store.Tenant(org).Events().Range(ctx, uc.SessionID(sess.GetId()), 0, 4096)
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, e := range events {
 			assertNoCanary(t, "event payload "+e.Kind, string(e.Payload))
 		}
-		stored, err := stack.Store.Org(org).Runs().Get(ctx, uc.RunID(run.GetId()))
+		stored, err := stack.Store.Tenant(org).Runs().Get(ctx, uc.RunID(run.GetId()))
 		if err != nil {
 			t.Fatal(err)
 		}
 		assertNoCanary(t, "persisted run history", string(stored.History))
 		assertNoCanary(t, "persisted run result", string(stored.Result))
 
-		listed, err := alice.Orgs.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
-			OrgId: string(org),
+		listed, err := alice.Tenants.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+			TenantId: string(org),
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -260,7 +260,7 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 		}
 		assertNoCanary(t, "ListCredentials response", string(blob))
 
-		atRest, err := stack.Store.Org(org).Credentials().Get(ctx, uc.CredentialKindOpenAI, "default")
+		atRest, err := stack.Store.Tenant(org).Credentials().Get(ctx, uc.CredentialKindOpenAI, "default")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -283,7 +283,7 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 
 		// The child could reach the model, which is the only thing the shared
 		// credential buys it.
-		steps, err := stack.Store.Org(org).Runs().Steps(ctx, child.ID)
+		steps, err := stack.Store.Tenant(org).Runs().Steps(ctx, child.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -293,8 +293,8 @@ func TestA89_SecurityDocumentation(t *testing.T) {
 		// And it is still bounded by its grants, not by what the org can pay
 		// for.
 		for _, tool := range []string{"terminate_env", "provision_env", "run_agent_cohort"} {
-			if child.Grants.AllowsTool(tool) {
-				t.Fatalf("child holds %q, which was never delegated: %+v", tool, child.Grants)
+			if child.Policy.AllowsTool(tool) {
+				t.Fatalf("child holds %q, which was never delegated: %+v", tool, child.Policy)
 			}
 		}
 	})
@@ -312,7 +312,7 @@ const forgedSideEffectMarker = "forged-side-effect-must-not-appear"
 // distinct prompts keeps each subtest independently meaningful.
 func runGrantLadder(t *testing.T, stack *harness.Stack, alice interface {
 	StartRun(context.Context, string, string) (*corev1.AgentRun, int64, error)
-}, org uc.OrgID, session string) uc.AgentRun {
+}, org uc.TenantID, session string) uc.AgentRun {
 	t.Helper()
 	prompt := "ladder parent " + t.Name()
 	childPrompt := "ladder child " + t.Name()
@@ -355,7 +355,7 @@ func runGrantLadder(t *testing.T, stack *harness.Stack, alice interface {
 // anyway, and returns the child's tool results plus its run id.
 func forgedToolCall(t *testing.T, stack *harness.Stack, alice interface {
 	StartRun(context.Context, string, string) (*corev1.AgentRun, int64, error)
-}, org uc.OrgID, session string) ([]toolResult, uc.RunID) {
+}, org uc.TenantID, session string) ([]toolResult, uc.RunID) {
 	t.Helper()
 	prompt := "forge parent " + t.Name()
 	childPrompt := "forge child " + t.Name()

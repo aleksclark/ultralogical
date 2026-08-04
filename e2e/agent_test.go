@@ -72,7 +72,7 @@ func TestA11_HappyPathSequence(t *testing.T) {
 		{Text: "all done"},
 	}})
 
-	sess := createSession(t, alice, string(stack.OrgA.ID), "happy")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "happy")
 	sub, err := alice.Subscribe(ctx, sess.GetId(), 0)
 	if err != nil {
 		t.Fatal(err)
@@ -103,7 +103,7 @@ func TestA11_HappyPathSequence(t *testing.T) {
 	}
 
 	// Step audit rows: indices 0..1, nonzero tokens.
-	steps, err := stack.Store.Org(stack.OrgA.ID).Runs().Steps(ctx, uc.RunID(run.GetId()))
+	steps, err := stack.Store.Tenant(stack.TenantA.ID).Runs().Steps(ctx, uc.RunID(run.GetId()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestA12_DurabilityUnderSIGKILL(t *testing.T) {
 		{Text: "resumed and finished"},
 	}})
 
-	sess := createSession(t, alice, string(stack.OrgA.ID), "durable")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "durable")
 	run, _, err := alice.StartRun(ctx, sess.GetId(), "long haul")
 	if err != nil {
 		t.Fatal(err)
@@ -176,7 +176,7 @@ func TestA12_DurabilityUnderSIGKILL(t *testing.T) {
 	}
 
 	// Step rows unique 0..1.
-	steps, err := stack.Store.Org(stack.OrgA.ID).Runs().Steps(ctx, uc.RunID(run.GetId()))
+	steps, err := stack.Store.Tenant(stack.TenantA.ID).Runs().Steps(ctx, uc.RunID(run.GetId()))
 	if err != nil || len(steps) != 2 {
 		t.Fatalf("steps = %v, err %v", steps, err)
 	}
@@ -197,7 +197,7 @@ func TestA13_AwaitingWithoutParkedWorkers(t *testing.T) {
 		{Text: "great choice of blue"},
 	}})
 
-	sess := createSession(t, alice, string(stack.OrgA.ID), "awaiting")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "awaiting")
 	sub, err := alice.Subscribe(ctx, sess.GetId(), 0)
 	if err != nil {
 		t.Fatal(err)
@@ -247,7 +247,7 @@ func TestA13_AwaitingWithoutParkedWorkers(t *testing.T) {
 	alice.AwaitRunState(t, run.GetId(), corev1.RunState_RUN_STATE_COMPLETED, 30*time.Second)
 
 	// The answer is in the persisted history as a user message.
-	stored, err := stack.Store.Org(stack.OrgA.ID).Runs().Get(ctx, uc.RunID(run.GetId()))
+	stored, err := stack.Store.Tenant(stack.TenantA.ID).Runs().Get(ctx, uc.RunID(run.GetId()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +274,7 @@ func TestA14_Cancellation(t *testing.T) {
 		{Text: "should never run"},
 	}})
 
-	sess := createSession(t, alice, string(stack.OrgA.ID), "cancel")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "cancel")
 	run, _, err := alice.StartRun(ctx, sess.GetId(), "take your time")
 	if err != nil {
 		t.Fatal(err)
@@ -342,7 +342,7 @@ func TestA15_TrueStreaming(t *testing.T) {
 		{Text: strings.Repeat("stream me please ", 40), ChunkSize: 40, ChunkDelay: 150 * time.Millisecond},
 	}})
 
-	sess := createSession(t, alice, string(stack.OrgA.ID), "stream")
+	sess := createSession(t, alice, string(stack.TenantA.ID), "stream")
 	sub, err := alice.Subscribe(ctx, sess.GetId(), 0)
 	if err != nil {
 		t.Fatal(err)
@@ -417,7 +417,7 @@ func TestA17_ByoCredentials(t *testing.T) {
 		t.Parallel()
 		stack := harness.Up(t, harness.WithoutSeedCredential())
 		alice := stack.AliceClient()
-		sess := createSession(t, alice, string(stack.OrgA.ID), "nocred")
+		sess := createSession(t, alice, string(stack.TenantA.ID), "nocred")
 		run, _, err := alice.StartRun(ctx, sess.GetId(), "hello")
 		if err != nil {
 			t.Fatal(err)
@@ -427,7 +427,7 @@ func TestA17_ByoCredentials(t *testing.T) {
 			t.Fatalf("failure reason = %q", final.GetFailureReason())
 		}
 		// No step row exists.
-		steps, err := stack.Store.Org(stack.OrgA.ID).Runs().Steps(ctx, uc.RunID(run.GetId()))
+		steps, err := stack.Store.Tenant(stack.TenantA.ID).Runs().Steps(ctx, uc.RunID(run.GetId()))
 		if err != nil || len(steps) != 0 {
 			t.Fatalf("steps = %v, err = %v", steps, err)
 		}
@@ -441,7 +441,7 @@ func TestA17_ByoCredentials(t *testing.T) {
 			{Status: 401},
 			{Status: 401}, // guard: a retry would consume this
 		}})
-		sess := createSession(t, alice, string(stack.OrgA.ID), "badcred")
+		sess := createSession(t, alice, string(stack.TenantA.ID), "badcred")
 		run, _, err := alice.StartRun(ctx, sess.GetId(), "hello")
 		if err != nil {
 			t.Fatal(err)
@@ -460,7 +460,7 @@ func TestA17_ByoCredentials(t *testing.T) {
 		stack := harness.Up(t)
 		alice := stack.AliceClient()
 		stack.Model.SetScript(modelscript.Script{Turns: []modelscript.Turn{{Text: "done"}}})
-		sess := createSession(t, alice, string(stack.OrgA.ID), "cred")
+		sess := createSession(t, alice, string(stack.TenantA.ID), "cred")
 		run, _, err := alice.StartRun(ctx, sess.GetId(), "hello")
 		if err != nil {
 			t.Fatal(err)
@@ -504,7 +504,7 @@ func TestA17_ByoCredentials(t *testing.T) {
 		t.Parallel()
 		stack := harness.Up(t) // credential seeded in org A only
 		bob := stack.BobClient()
-		sessB := createSession(t, bob, string(stack.OrgB.ID), "bobs")
+		sessB := createSession(t, bob, string(stack.TenantB.ID), "bobs")
 		run, _, err := bob.StartRun(ctx, sessB.GetId(), "hello")
 		if err != nil {
 			t.Fatal(err)
@@ -523,8 +523,8 @@ func TestCredentialRPCs(t *testing.T) {
 	alice := stack.AliceClient()
 	ctx := context.Background()
 
-	put, err := alice.Orgs.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
-		OrgId: string(stack.OrgA.ID), Kind: "inference:anthropic",
+	put, err := alice.Tenants.PutCredential(ctx, connect.NewRequest(&corev1.PutCredentialRequest{
+		TenantId: string(stack.TenantA.ID), Kind: "inference:anthropic",
 		ApiKey: "sk-ant-secret-value-12345", BaseUrl: "https://gateway.example.test/anthropic",
 		ExtraHeadersJson: `{"cf-aig-collect-log-payload":"false","cf-aig-metadata":"{\"tier\":\"fast\"}"}`,
 	}))
@@ -534,7 +534,7 @@ func TestCredentialRPCs(t *testing.T) {
 	if put.Msg.GetCredential().GetName() != "default" {
 		t.Fatalf("put returned %v", put.Msg.GetCredential())
 	}
-	stored, err := stack.Store.Org(stack.OrgA.ID).Credentials().Get(ctx, uc.CredentialKindAnthropic, "default")
+	stored, err := stack.Store.Tenant(stack.TenantA.ID).Credentials().Get(ctx, uc.CredentialKindAnthropic, "default")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -557,8 +557,8 @@ func TestCredentialRPCs(t *testing.T) {
 		t.Fatal("credential value echoed in response")
 	}
 
-	list, err := alice.Orgs.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
-		OrgId: string(stack.OrgA.ID),
+	list, err := alice.Tenants.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+		TenantId: string(stack.TenantA.ID),
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -570,15 +570,15 @@ func TestCredentialRPCs(t *testing.T) {
 		t.Fatal("list leaked secret material")
 	}
 
-	if _, err := alice.Orgs.DeleteCredential(ctx, connect.NewRequest(&corev1.DeleteCredentialRequest{
-		OrgId: string(stack.OrgA.ID), Kind: "inference:anthropic", Name: "default",
+	if _, err := alice.Tenants.DeleteCredential(ctx, connect.NewRequest(&corev1.DeleteCredentialRequest{
+		TenantId: string(stack.TenantA.ID), Kind: "inference:anthropic", Name: "default",
 	})); err != nil {
 		t.Fatal(err)
 	}
 
 	// Bob (not a member of org A) is denied indistinguishably.
-	_, err = stack.BobClient().Orgs.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
-		OrgId: string(stack.OrgA.ID),
+	_, err = stack.BobClient().Tenants.ListCredentials(ctx, connect.NewRequest(&corev1.ListCredentialsRequest{
+		TenantId: string(stack.TenantA.ID),
 	}))
 	var cerr *connect.Error
 	if !errors.As(err, &cerr) || cerr.Code() != connect.CodeNotFound {
@@ -612,7 +612,7 @@ func toolResultsFor(t *testing.T, stack *harness.Stack, session string, run uc.R
 	var out []toolResult
 	var from int64
 	for {
-		batch, err := stack.Store.Org(stack.OrgA.ID).Events().Range(context.Background(), uc.SessionID(session), from, 512)
+		batch, err := stack.Store.Tenant(stack.TenantA.ID).Events().Range(context.Background(), uc.SessionID(session), from, 512)
 		if err != nil || len(batch) == 0 {
 			break
 		}
@@ -637,8 +637,8 @@ func TestE1_FlatAllowlistDenialVisibility(t *testing.T) {
 	stack := harness.Up(t)
 	alice := stack.AliceClient()
 	ctx := context.Background()
-	sess := createSession(t, alice, string(stack.OrgA.ID), "denial")
-	org := stack.OrgA.ID
+	sess := createSession(t, alice, string(stack.TenantA.ID), "denial")
+	org := stack.TenantA.ID
 	prompt := "deny parent " + t.Name()
 	childPrompt := "deny child " + t.Name()
 

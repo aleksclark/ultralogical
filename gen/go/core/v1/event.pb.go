@@ -22,64 +22,14 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ActorType classifies who produced an event.
-type ActorType int32
-
-const (
-	ActorType_ACTOR_TYPE_UNSPECIFIED ActorType = 0
-	ActorType_ACTOR_TYPE_USER        ActorType = 1
-	ActorType_ACTOR_TYPE_AGENT       ActorType = 2
-	ActorType_ACTOR_TYPE_SYSTEM      ActorType = 3
-)
-
-// Enum value maps for ActorType.
-var (
-	ActorType_name = map[int32]string{
-		0: "ACTOR_TYPE_UNSPECIFIED",
-		1: "ACTOR_TYPE_USER",
-		2: "ACTOR_TYPE_AGENT",
-		3: "ACTOR_TYPE_SYSTEM",
-	}
-	ActorType_value = map[string]int32{
-		"ACTOR_TYPE_UNSPECIFIED": 0,
-		"ACTOR_TYPE_USER":        1,
-		"ACTOR_TYPE_AGENT":       2,
-		"ACTOR_TYPE_SYSTEM":      3,
-	}
-)
-
-func (x ActorType) Enum() *ActorType {
-	p := new(ActorType)
-	*p = x
-	return p
-}
-
-func (x ActorType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ActorType) Descriptor() protoreflect.EnumDescriptor {
-	return file_core_v1_event_proto_enumTypes[0].Descriptor()
-}
-
-func (ActorType) Type() protoreflect.EnumType {
-	return &file_core_v1_event_proto_enumTypes[0]
-}
-
-func (x ActorType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ActorType.Descriptor instead.
-func (ActorType) EnumDescriptor() ([]byte, []int) {
-	return file_core_v1_event_proto_rawDescGZIP(), []int{0}
-}
-
-// Actor identifies the producer of an event.
+// Actor is opaque attribution the consumer (or the core, for loop-internal
+// events) attaches to an event. The core stores and replays it; it never
+// branches on kind.
 type Actor struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          ActorType              `protobuf:"varint,1,opt,name=type,proto3,enum=core.v1.ActorType" json:"type,omitempty"`
+	Kind          string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
 	Id            string                 `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	Display       string                 `protobuf:"bytes,3,opt,name=display,proto3" json:"display,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -114,16 +64,23 @@ func (*Actor) Descriptor() ([]byte, []int) {
 	return file_core_v1_event_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Actor) GetType() ActorType {
+func (x *Actor) GetKind() string {
 	if x != nil {
-		return x.Type
+		return x.Kind
 	}
-	return ActorType_ACTOR_TYPE_UNSPECIFIED
+	return ""
 }
 
 func (x *Actor) GetId() string {
 	if x != nil {
 		return x.Id
+	}
+	return ""
+}
+
+func (x *Actor) GetDisplay() string {
+	if x != nil {
+		return x.Display
 	}
 	return ""
 }
@@ -1574,6 +1531,50 @@ func (x *PermissionDenied) GetReason() string {
 	return ""
 }
 
+type SessionLabelsChanged struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Labels        map[string]string      `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SessionLabelsChanged) Reset() {
+	*x = SessionLabelsChanged{}
+	mi := &file_core_v1_event_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionLabelsChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionLabelsChanged) ProtoMessage() {}
+
+func (x *SessionLabelsChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_core_v1_event_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SessionLabelsChanged.ProtoReflect.Descriptor instead.
+func (*SessionLabelsChanged) Descriptor() ([]byte, []int) {
+	return file_core_v1_event_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *SessionLabelsChanged) GetLabels() map[string]string {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
+}
+
 // EventPayload is the typed payload of a session event. Every observable
 // thing in a session is one of these variants; later phases add variants
 // (additive only — enforced by breaking-change CI).
@@ -1610,6 +1611,7 @@ type EventPayload struct {
 	//	*EventPayload_HookFired
 	//	*EventPayload_PeriodicPromptFired
 	//	*EventPayload_ResourceSuspended
+	//	*EventPayload_SessionLabelsChanged
 	Payload       isEventPayload_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1617,7 +1619,7 @@ type EventPayload struct {
 
 func (x *EventPayload) Reset() {
 	*x = EventPayload{}
-	mi := &file_core_v1_event_proto_msgTypes[24]
+	mi := &file_core_v1_event_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1629,7 +1631,7 @@ func (x *EventPayload) String() string {
 func (*EventPayload) ProtoMessage() {}
 
 func (x *EventPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_event_proto_msgTypes[24]
+	mi := &file_core_v1_event_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1642,7 +1644,7 @@ func (x *EventPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventPayload.ProtoReflect.Descriptor instead.
 func (*EventPayload) Descriptor() ([]byte, []int) {
-	return file_core_v1_event_proto_rawDescGZIP(), []int{24}
+	return file_core_v1_event_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *EventPayload) GetPayload() isEventPayload_Payload {
@@ -1913,6 +1915,15 @@ func (x *EventPayload) GetResourceSuspended() *ResourceLifecycle {
 	return nil
 }
 
+func (x *EventPayload) GetSessionLabelsChanged() *SessionLabelsChanged {
+	if x != nil {
+		if x, ok := x.Payload.(*EventPayload_SessionLabelsChanged); ok {
+			return x.SessionLabelsChanged
+		}
+	}
+	return nil
+}
+
 type isEventPayload_Payload interface {
 	isEventPayload_Payload()
 }
@@ -2035,6 +2046,10 @@ type EventPayload_ResourceSuspended struct {
 	ResourceSuspended *ResourceLifecycle `protobuf:"bytes,44,opt,name=resource_suspended,json=resourceSuspended,proto3,oneof"`
 }
 
+type EventPayload_SessionLabelsChanged struct {
+	SessionLabelsChanged *SessionLabelsChanged `protobuf:"bytes,45,opt,name=session_labels_changed,json=sessionLabelsChanged,proto3,oneof"`
+}
+
 func (*EventPayload_UserMessage) isEventPayload_Payload() {}
 
 func (*EventPayload_Annotation) isEventPayload_Payload() {}
@@ -2093,6 +2108,8 @@ func (*EventPayload_PeriodicPromptFired) isEventPayload_Payload() {}
 
 func (*EventPayload_ResourceSuspended) isEventPayload_Payload() {}
 
+func (*EventPayload_SessionLabelsChanged) isEventPayload_Payload() {}
+
 // SessionEvent is one entry in a session's append-only event log. Seq is
 // per-session, gapless, and monotonic; clients resume by seq.
 type SessionEvent struct {
@@ -2108,7 +2125,7 @@ type SessionEvent struct {
 
 func (x *SessionEvent) Reset() {
 	*x = SessionEvent{}
-	mi := &file_core_v1_event_proto_msgTypes[25]
+	mi := &file_core_v1_event_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2120,7 +2137,7 @@ func (x *SessionEvent) String() string {
 func (*SessionEvent) ProtoMessage() {}
 
 func (x *SessionEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_event_proto_msgTypes[25]
+	mi := &file_core_v1_event_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2133,7 +2150,7 @@ func (x *SessionEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionEvent.ProtoReflect.Descriptor instead.
 func (*SessionEvent) Descriptor() ([]byte, []int) {
-	return file_core_v1_event_proto_rawDescGZIP(), []int{25}
+	return file_core_v1_event_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *SessionEvent) GetSessionId() string {
@@ -2181,7 +2198,7 @@ type AppendRequest struct {
 
 func (x *AppendRequest) Reset() {
 	*x = AppendRequest{}
-	mi := &file_core_v1_event_proto_msgTypes[26]
+	mi := &file_core_v1_event_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2193,7 +2210,7 @@ func (x *AppendRequest) String() string {
 func (*AppendRequest) ProtoMessage() {}
 
 func (x *AppendRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_event_proto_msgTypes[26]
+	mi := &file_core_v1_event_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2206,7 +2223,7 @@ func (x *AppendRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendRequest.ProtoReflect.Descriptor instead.
 func (*AppendRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_event_proto_rawDescGZIP(), []int{26}
+	return file_core_v1_event_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *AppendRequest) GetSessionId() string {
@@ -2234,7 +2251,7 @@ type AppendResponse struct {
 
 func (x *AppendResponse) Reset() {
 	*x = AppendResponse{}
-	mi := &file_core_v1_event_proto_msgTypes[27]
+	mi := &file_core_v1_event_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2246,7 +2263,7 @@ func (x *AppendResponse) String() string {
 func (*AppendResponse) ProtoMessage() {}
 
 func (x *AppendResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_event_proto_msgTypes[27]
+	mi := &file_core_v1_event_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2259,7 +2276,7 @@ func (x *AppendResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendResponse.ProtoReflect.Descriptor instead.
 func (*AppendResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_event_proto_rawDescGZIP(), []int{27}
+	return file_core_v1_event_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *AppendResponse) GetSeq() int64 {
@@ -2280,7 +2297,7 @@ type SubscribeRequest struct {
 
 func (x *SubscribeRequest) Reset() {
 	*x = SubscribeRequest{}
-	mi := &file_core_v1_event_proto_msgTypes[28]
+	mi := &file_core_v1_event_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2292,7 +2309,7 @@ func (x *SubscribeRequest) String() string {
 func (*SubscribeRequest) ProtoMessage() {}
 
 func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_event_proto_msgTypes[28]
+	mi := &file_core_v1_event_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2305,7 +2322,7 @@ func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeRequest.ProtoReflect.Descriptor instead.
 func (*SubscribeRequest) Descriptor() ([]byte, []int) {
-	return file_core_v1_event_proto_rawDescGZIP(), []int{28}
+	return file_core_v1_event_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *SubscribeRequest) GetSessionId() string {
@@ -2334,7 +2351,7 @@ type SubscribeResponse struct {
 
 func (x *SubscribeResponse) Reset() {
 	*x = SubscribeResponse{}
-	mi := &file_core_v1_event_proto_msgTypes[29]
+	mi := &file_core_v1_event_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2346,7 +2363,7 @@ func (x *SubscribeResponse) String() string {
 func (*SubscribeResponse) ProtoMessage() {}
 
 func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_core_v1_event_proto_msgTypes[29]
+	mi := &file_core_v1_event_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2359,7 +2376,7 @@ func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeResponse.ProtoReflect.Descriptor instead.
 func (*SubscribeResponse) Descriptor() ([]byte, []int) {
-	return file_core_v1_event_proto_rawDescGZIP(), []int{29}
+	return file_core_v1_event_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *SubscribeResponse) GetEvent() *SessionEvent {
@@ -2373,10 +2390,11 @@ var File_core_v1_event_proto protoreflect.FileDescriptor
 
 const file_core_v1_event_proto_rawDesc = "" +
 	"\n" +
-	"\x13core/v1/event.proto\x12\acore.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"?\n" +
-	"\x05Actor\x12&\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x12.core.v1.ActorTypeR\x04type\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id\"!\n" +
+	"\x13core/v1/event.proto\x12\acore.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"E\n" +
+	"\x05Actor\x12\x12\n" +
+	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\x12\x18\n" +
+	"\adisplay\x18\x03 \x01(\tR\adisplay\"!\n" +
 	"\vUserMessage\x12\x12\n" +
 	"\x04text\x18\x01 \x01(\tR\x04text\" \n" +
 	"\n" +
@@ -2495,7 +2513,12 @@ const file_core_v1_event_proto_rawDesc = "" +
 	"\x04tool\x18\x02 \x01(\tR\x04tool\x12\x1f\n" +
 	"\vresource_id\x18\x03 \x01(\tR\n" +
 	"resourceId\x12\x16\n" +
-	"\x06reason\x18\x04 \x01(\tR\x06reason\"\x8f\x0f\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\"\x94\x01\n" +
+	"\x14SessionLabelsChanged\x12A\n" +
+	"\x06labels\x18\x01 \x03(\v2).core.v1.SessionLabelsChanged.LabelsEntryR\x06labels\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe6\x0f\n" +
 	"\fEventPayload\x129\n" +
 	"\fuser_message\x18\n" +
 	" \x01(\v2\x14.core.v1.UserMessageH\x00R\vuserMessage\x125\n" +
@@ -2535,7 +2558,8 @@ const file_core_v1_event_proto_rawDesc = "" +
 	"\n" +
 	"hook_fired\x18' \x01(\v2\x12.core.v1.HookFiredH\x00R\thookFired\x12R\n" +
 	"\x15periodic_prompt_fired\x18( \x01(\v2\x1c.core.v1.PeriodicPromptFiredH\x00R\x13periodicPromptFired\x12K\n" +
-	"\x12resource_suspended\x18, \x01(\v2\x1a.core.v1.ResourceLifecycleH\x00R\x11resourceSuspendedB\t\n" +
+	"\x12resource_suspended\x18, \x01(\v2\x1a.core.v1.ResourceLifecycleH\x00R\x11resourceSuspended\x12U\n" +
+	"\x16session_labels_changed\x18- \x01(\v2\x1d.core.v1.SessionLabelsChangedH\x00R\x14sessionLabelsChangedB\t\n" +
 	"\apayload\"\xc2\x01\n" +
 	"\fSessionEvent\x12\x1d\n" +
 	"\n" +
@@ -2555,12 +2579,7 @@ const file_core_v1_event_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x19\n" +
 	"\bfrom_seq\x18\x02 \x01(\x03R\afromSeq\"@\n" +
 	"\x11SubscribeResponse\x12+\n" +
-	"\x05event\x18\x01 \x01(\v2\x15.core.v1.SessionEventR\x05event*i\n" +
-	"\tActorType\x12\x1a\n" +
-	"\x16ACTOR_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
-	"\x0fACTOR_TYPE_USER\x10\x01\x12\x14\n" +
-	"\x10ACTOR_TYPE_AGENT\x10\x02\x12\x15\n" +
-	"\x11ACTOR_TYPE_SYSTEM\x10\x032\x8f\x01\n" +
+	"\x05event\x18\x01 \x01(\v2\x15.core.v1.SessionEventR\x05event2\x8f\x01\n" +
 	"\fEventService\x129\n" +
 	"\x06Append\x12\x16.core.v1.AppendRequest\x1a\x17.core.v1.AppendResponse\x12D\n" +
 	"\tSubscribe\x12\x19.core.v1.SubscribeRequest\x1a\x1a.core.v1.SubscribeResponse0\x01B7Z5github.com/aleksclark/ultracore/gen/go/core/v1;corev1b\x06proto3"
@@ -2577,88 +2596,89 @@ func file_core_v1_event_proto_rawDescGZIP() []byte {
 	return file_core_v1_event_proto_rawDescData
 }
 
-var file_core_v1_event_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_core_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_core_v1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_core_v1_event_proto_goTypes = []any{
-	(ActorType)(0),                // 0: core.v1.ActorType
-	(*Actor)(nil),                 // 1: core.v1.Actor
-	(*UserMessage)(nil),           // 2: core.v1.UserMessage
-	(*Annotation)(nil),            // 3: core.v1.Annotation
-	(*RunStarted)(nil),            // 4: core.v1.RunStarted
-	(*StepStarted)(nil),           // 5: core.v1.StepStarted
-	(*TextDelta)(nil),             // 6: core.v1.TextDelta
-	(*ReasoningDelta)(nil),        // 7: core.v1.ReasoningDelta
-	(*ToolCallStarted)(nil),       // 8: core.v1.ToolCallStarted
-	(*ToolResult)(nil),            // 9: core.v1.ToolResult
-	(*StepFinished)(nil),          // 10: core.v1.StepFinished
-	(*Question)(nil),              // 11: core.v1.Question
-	(*RunAwaiting)(nil),           // 12: core.v1.RunAwaiting
-	(*RunCompleted)(nil),          // 13: core.v1.RunCompleted
-	(*RunFailed)(nil),             // 14: core.v1.RunFailed
-	(*RunCancelled)(nil),          // 15: core.v1.RunCancelled
-	(*ResourceLifecycle)(nil),     // 16: core.v1.ResourceLifecycle
-	(*ExecPreviewRan)(nil),        // 17: core.v1.ExecPreviewRan
-	(*RunSpawned)(nil),            // 18: core.v1.RunSpawned
-	(*MemoryChanged)(nil),         // 19: core.v1.MemoryChanged
-	(*HistoryCompacted)(nil),      // 20: core.v1.HistoryCompacted
-	(*ModelFallback)(nil),         // 21: core.v1.ModelFallback
-	(*HookFired)(nil),             // 22: core.v1.HookFired
-	(*PeriodicPromptFired)(nil),   // 23: core.v1.PeriodicPromptFired
-	(*PermissionDenied)(nil),      // 24: core.v1.PermissionDenied
+	(*Actor)(nil),                 // 0: core.v1.Actor
+	(*UserMessage)(nil),           // 1: core.v1.UserMessage
+	(*Annotation)(nil),            // 2: core.v1.Annotation
+	(*RunStarted)(nil),            // 3: core.v1.RunStarted
+	(*StepStarted)(nil),           // 4: core.v1.StepStarted
+	(*TextDelta)(nil),             // 5: core.v1.TextDelta
+	(*ReasoningDelta)(nil),        // 6: core.v1.ReasoningDelta
+	(*ToolCallStarted)(nil),       // 7: core.v1.ToolCallStarted
+	(*ToolResult)(nil),            // 8: core.v1.ToolResult
+	(*StepFinished)(nil),          // 9: core.v1.StepFinished
+	(*Question)(nil),              // 10: core.v1.Question
+	(*RunAwaiting)(nil),           // 11: core.v1.RunAwaiting
+	(*RunCompleted)(nil),          // 12: core.v1.RunCompleted
+	(*RunFailed)(nil),             // 13: core.v1.RunFailed
+	(*RunCancelled)(nil),          // 14: core.v1.RunCancelled
+	(*ResourceLifecycle)(nil),     // 15: core.v1.ResourceLifecycle
+	(*ExecPreviewRan)(nil),        // 16: core.v1.ExecPreviewRan
+	(*RunSpawned)(nil),            // 17: core.v1.RunSpawned
+	(*MemoryChanged)(nil),         // 18: core.v1.MemoryChanged
+	(*HistoryCompacted)(nil),      // 19: core.v1.HistoryCompacted
+	(*ModelFallback)(nil),         // 20: core.v1.ModelFallback
+	(*HookFired)(nil),             // 21: core.v1.HookFired
+	(*PeriodicPromptFired)(nil),   // 22: core.v1.PeriodicPromptFired
+	(*PermissionDenied)(nil),      // 23: core.v1.PermissionDenied
+	(*SessionLabelsChanged)(nil),  // 24: core.v1.SessionLabelsChanged
 	(*EventPayload)(nil),          // 25: core.v1.EventPayload
 	(*SessionEvent)(nil),          // 26: core.v1.SessionEvent
 	(*AppendRequest)(nil),         // 27: core.v1.AppendRequest
 	(*AppendResponse)(nil),        // 28: core.v1.AppendResponse
 	(*SubscribeRequest)(nil),      // 29: core.v1.SubscribeRequest
 	(*SubscribeResponse)(nil),     // 30: core.v1.SubscribeResponse
-	(*timestamppb.Timestamp)(nil), // 31: google.protobuf.Timestamp
+	nil,                           // 31: core.v1.SessionLabelsChanged.LabelsEntry
+	(*timestamppb.Timestamp)(nil), // 32: google.protobuf.Timestamp
 }
 var file_core_v1_event_proto_depIdxs = []int32{
-	0,  // 0: core.v1.Actor.type:type_name -> core.v1.ActorType
-	11, // 1: core.v1.RunAwaiting.question:type_name -> core.v1.Question
-	2,  // 2: core.v1.EventPayload.user_message:type_name -> core.v1.UserMessage
-	3,  // 3: core.v1.EventPayload.annotation:type_name -> core.v1.Annotation
-	4,  // 4: core.v1.EventPayload.run_started:type_name -> core.v1.RunStarted
-	5,  // 5: core.v1.EventPayload.step_started:type_name -> core.v1.StepStarted
-	6,  // 6: core.v1.EventPayload.text_delta:type_name -> core.v1.TextDelta
-	7,  // 7: core.v1.EventPayload.reasoning_delta:type_name -> core.v1.ReasoningDelta
-	8,  // 8: core.v1.EventPayload.tool_call_started:type_name -> core.v1.ToolCallStarted
-	9,  // 9: core.v1.EventPayload.tool_result:type_name -> core.v1.ToolResult
-	10, // 10: core.v1.EventPayload.step_finished:type_name -> core.v1.StepFinished
-	12, // 11: core.v1.EventPayload.run_awaiting:type_name -> core.v1.RunAwaiting
-	13, // 12: core.v1.EventPayload.run_completed:type_name -> core.v1.RunCompleted
-	14, // 13: core.v1.EventPayload.run_failed:type_name -> core.v1.RunFailed
-	15, // 14: core.v1.EventPayload.run_cancelled:type_name -> core.v1.RunCancelled
-	16, // 15: core.v1.EventPayload.resource_requested:type_name -> core.v1.ResourceLifecycle
-	16, // 16: core.v1.EventPayload.resource_provisioning:type_name -> core.v1.ResourceLifecycle
-	16, // 17: core.v1.EventPayload.resource_ready:type_name -> core.v1.ResourceLifecycle
-	16, // 18: core.v1.EventPayload.resource_failed:type_name -> core.v1.ResourceLifecycle
-	16, // 19: core.v1.EventPayload.resource_terminating:type_name -> core.v1.ResourceLifecycle
-	16, // 20: core.v1.EventPayload.resource_terminated:type_name -> core.v1.ResourceLifecycle
-	17, // 21: core.v1.EventPayload.exec_preview_ran:type_name -> core.v1.ExecPreviewRan
-	18, // 22: core.v1.EventPayload.run_spawned:type_name -> core.v1.RunSpawned
-	19, // 23: core.v1.EventPayload.memory_set:type_name -> core.v1.MemoryChanged
-	19, // 24: core.v1.EventPayload.memory_deleted:type_name -> core.v1.MemoryChanged
-	24, // 25: core.v1.EventPayload.permission_denied:type_name -> core.v1.PermissionDenied
-	20, // 26: core.v1.EventPayload.history_compacted:type_name -> core.v1.HistoryCompacted
-	21, // 27: core.v1.EventPayload.model_fallback:type_name -> core.v1.ModelFallback
-	22, // 28: core.v1.EventPayload.hook_fired:type_name -> core.v1.HookFired
-	23, // 29: core.v1.EventPayload.periodic_prompt_fired:type_name -> core.v1.PeriodicPromptFired
-	16, // 30: core.v1.EventPayload.resource_suspended:type_name -> core.v1.ResourceLifecycle
-	31, // 31: core.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
-	1,  // 32: core.v1.SessionEvent.actor:type_name -> core.v1.Actor
-	25, // 33: core.v1.SessionEvent.payload:type_name -> core.v1.EventPayload
-	25, // 34: core.v1.AppendRequest.payload:type_name -> core.v1.EventPayload
-	26, // 35: core.v1.SubscribeResponse.event:type_name -> core.v1.SessionEvent
-	27, // 36: core.v1.EventService.Append:input_type -> core.v1.AppendRequest
-	29, // 37: core.v1.EventService.Subscribe:input_type -> core.v1.SubscribeRequest
-	28, // 38: core.v1.EventService.Append:output_type -> core.v1.AppendResponse
-	30, // 39: core.v1.EventService.Subscribe:output_type -> core.v1.SubscribeResponse
-	38, // [38:40] is the sub-list for method output_type
-	36, // [36:38] is the sub-list for method input_type
-	36, // [36:36] is the sub-list for extension type_name
-	36, // [36:36] is the sub-list for extension extendee
-	0,  // [0:36] is the sub-list for field type_name
+	10, // 0: core.v1.RunAwaiting.question:type_name -> core.v1.Question
+	31, // 1: core.v1.SessionLabelsChanged.labels:type_name -> core.v1.SessionLabelsChanged.LabelsEntry
+	1,  // 2: core.v1.EventPayload.user_message:type_name -> core.v1.UserMessage
+	2,  // 3: core.v1.EventPayload.annotation:type_name -> core.v1.Annotation
+	3,  // 4: core.v1.EventPayload.run_started:type_name -> core.v1.RunStarted
+	4,  // 5: core.v1.EventPayload.step_started:type_name -> core.v1.StepStarted
+	5,  // 6: core.v1.EventPayload.text_delta:type_name -> core.v1.TextDelta
+	6,  // 7: core.v1.EventPayload.reasoning_delta:type_name -> core.v1.ReasoningDelta
+	7,  // 8: core.v1.EventPayload.tool_call_started:type_name -> core.v1.ToolCallStarted
+	8,  // 9: core.v1.EventPayload.tool_result:type_name -> core.v1.ToolResult
+	9,  // 10: core.v1.EventPayload.step_finished:type_name -> core.v1.StepFinished
+	11, // 11: core.v1.EventPayload.run_awaiting:type_name -> core.v1.RunAwaiting
+	12, // 12: core.v1.EventPayload.run_completed:type_name -> core.v1.RunCompleted
+	13, // 13: core.v1.EventPayload.run_failed:type_name -> core.v1.RunFailed
+	14, // 14: core.v1.EventPayload.run_cancelled:type_name -> core.v1.RunCancelled
+	15, // 15: core.v1.EventPayload.resource_requested:type_name -> core.v1.ResourceLifecycle
+	15, // 16: core.v1.EventPayload.resource_provisioning:type_name -> core.v1.ResourceLifecycle
+	15, // 17: core.v1.EventPayload.resource_ready:type_name -> core.v1.ResourceLifecycle
+	15, // 18: core.v1.EventPayload.resource_failed:type_name -> core.v1.ResourceLifecycle
+	15, // 19: core.v1.EventPayload.resource_terminating:type_name -> core.v1.ResourceLifecycle
+	15, // 20: core.v1.EventPayload.resource_terminated:type_name -> core.v1.ResourceLifecycle
+	16, // 21: core.v1.EventPayload.exec_preview_ran:type_name -> core.v1.ExecPreviewRan
+	17, // 22: core.v1.EventPayload.run_spawned:type_name -> core.v1.RunSpawned
+	18, // 23: core.v1.EventPayload.memory_set:type_name -> core.v1.MemoryChanged
+	18, // 24: core.v1.EventPayload.memory_deleted:type_name -> core.v1.MemoryChanged
+	23, // 25: core.v1.EventPayload.permission_denied:type_name -> core.v1.PermissionDenied
+	19, // 26: core.v1.EventPayload.history_compacted:type_name -> core.v1.HistoryCompacted
+	20, // 27: core.v1.EventPayload.model_fallback:type_name -> core.v1.ModelFallback
+	21, // 28: core.v1.EventPayload.hook_fired:type_name -> core.v1.HookFired
+	22, // 29: core.v1.EventPayload.periodic_prompt_fired:type_name -> core.v1.PeriodicPromptFired
+	15, // 30: core.v1.EventPayload.resource_suspended:type_name -> core.v1.ResourceLifecycle
+	24, // 31: core.v1.EventPayload.session_labels_changed:type_name -> core.v1.SessionLabelsChanged
+	32, // 32: core.v1.SessionEvent.ts:type_name -> google.protobuf.Timestamp
+	0,  // 33: core.v1.SessionEvent.actor:type_name -> core.v1.Actor
+	25, // 34: core.v1.SessionEvent.payload:type_name -> core.v1.EventPayload
+	25, // 35: core.v1.AppendRequest.payload:type_name -> core.v1.EventPayload
+	26, // 36: core.v1.SubscribeResponse.event:type_name -> core.v1.SessionEvent
+	27, // 37: core.v1.EventService.Append:input_type -> core.v1.AppendRequest
+	29, // 38: core.v1.EventService.Subscribe:input_type -> core.v1.SubscribeRequest
+	28, // 39: core.v1.EventService.Append:output_type -> core.v1.AppendResponse
+	30, // 40: core.v1.EventService.Subscribe:output_type -> core.v1.SubscribeResponse
+	39, // [39:41] is the sub-list for method output_type
+	37, // [37:39] is the sub-list for method input_type
+	37, // [37:37] is the sub-list for extension type_name
+	37, // [37:37] is the sub-list for extension extendee
+	0,  // [0:37] is the sub-list for field type_name
 }
 
 func init() { file_core_v1_event_proto_init() }
@@ -2666,7 +2686,7 @@ func file_core_v1_event_proto_init() {
 	if File_core_v1_event_proto != nil {
 		return
 	}
-	file_core_v1_event_proto_msgTypes[24].OneofWrappers = []any{
+	file_core_v1_event_proto_msgTypes[25].OneofWrappers = []any{
 		(*EventPayload_UserMessage)(nil),
 		(*EventPayload_Annotation)(nil),
 		(*EventPayload_RunStarted)(nil),
@@ -2696,20 +2716,20 @@ func file_core_v1_event_proto_init() {
 		(*EventPayload_HookFired)(nil),
 		(*EventPayload_PeriodicPromptFired)(nil),
 		(*EventPayload_ResourceSuspended)(nil),
+		(*EventPayload_SessionLabelsChanged)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_core_v1_event_proto_rawDesc), len(file_core_v1_event_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   30,
+			NumEnums:      0,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_core_v1_event_proto_goTypes,
 		DependencyIndexes: file_core_v1_event_proto_depIdxs,
-		EnumInfos:         file_core_v1_event_proto_enumTypes,
 		MessageInfos:      file_core_v1_event_proto_msgTypes,
 	}.Build()
 	File_core_v1_event_proto = out.File

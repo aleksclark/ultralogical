@@ -58,7 +58,7 @@ func TestA51_A106_ProviderRegistrationProbesTheControlPlane(t *testing.T) {
 	stack := harness.Up(t)
 	client := stack.AliceClient()
 	ctx := context.Background()
-	org := string(stack.OrgA.ID)
+	org := string(stack.TenantA.ID)
 
 	config, err := jsonObject(map[string]any{
 		"kubeconfig": kubeconfig, "namespace": "ultra-registration",
@@ -67,8 +67,8 @@ func TestA51_A106_ProviderRegistrationProbesTheControlPlane(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	registered, err := client.Orgs.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
-		OrgId: org, Kind: uc.ProviderKindBYOKubernetes, Name: "cluster", ConfigJson: config,
+	registered, err := client.Tenants.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
+		TenantId: org, Kind: uc.ProviderKindBYOKubernetes, Name: "cluster", ConfigJson: config,
 	}))
 	if err != nil {
 		t.Fatalf("registering a reachable cluster failed: %v", err)
@@ -79,7 +79,7 @@ func TestA51_A106_ProviderRegistrationProbesTheControlPlane(t *testing.T) {
 
 	// The probe's answer is stored with the registration, so a later decision
 	// about what this provider can do never depends on reaching it again.
-	stored, err := stack.Store.Org(stack.OrgA.ID).Providers().GetByName(ctx, "cluster")
+	stored, err := stack.Store.Tenant(stack.TenantA.ID).Providers().GetByName(ctx, "cluster")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing(t *testing.T)
 	stack := harness.Up(t)
 	client := stack.AliceClient()
 	ctx := context.Background()
-	org := string(stack.OrgA.ID)
+	org := string(stack.TenantA.ID)
 
 	cases := []struct {
 		name   string
@@ -128,8 +128,8 @@ func TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing(t *testing.T)
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := client.Orgs.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
-				OrgId: org, Kind: tc.kind, Name: "refused-" + strings.ReplaceAll(tc.name, " ", "-"),
+			_, err := client.Tenants.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
+				TenantId: org, Kind: tc.kind, Name: "refused-" + strings.ReplaceAll(tc.name, " ", "-"),
 				ConfigJson: tc.config,
 			}))
 			if err == nil {
@@ -145,7 +145,7 @@ func TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing(t *testing.T)
 	}
 
 	// Nothing was persisted by any refusal.
-	listed, err := client.Orgs.ListProviders(ctx, connect.NewRequest(&corev1.ListProvidersRequest{OrgId: org}))
+	listed, err := client.Tenants.ListProviders(ctx, connect.NewRequest(&corev1.ListProvidersRequest{TenantId: org}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,8 +157,8 @@ func TestA54_A106_UnreachableAndInvalidRegistrationsPersistNothing(t *testing.T)
 
 	// A kind the deployment does not host is refused by name, not silently
 	// substituted with one that happens to be available.
-	_, err = client.Orgs.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
-		OrgId: org, Kind: "not_a_provider", Name: "bogus", ConfigJson: `{}`,
+	_, err = client.Tenants.RegisterProvider(ctx, connect.NewRequest(&corev1.RegisterProviderRequest{
+		TenantId: org, Kind: "not_a_provider", Name: "bogus", ConfigJson: `{}`,
 	}))
 	if err == nil {
 		t.Fatal("an unknown provider kind was registered")

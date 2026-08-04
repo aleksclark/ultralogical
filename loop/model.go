@@ -27,7 +27,7 @@ func (e *CredentialError) Error() string { return e.Message }
 // ResolveModel resolves a run's model config to a fantasy LanguageModel
 // using the org's credential store. Decrypted secret values are registered
 // with the default redactor before use.
-func ResolveModel(ctx context.Context, scope uc.OrgScope, keyring secrets.Keyring, cfg uc.ModelConfig) (fantasy.LanguageModel, error) {
+func ResolveModel(ctx context.Context, scope uc.TenantScope, keyring secrets.Keyring, cfg uc.ModelConfig) (fantasy.LanguageModel, error) {
 	kind := uc.InferenceCredentialKind(cfg.Provider)
 	if kind == "" {
 		return nil, &CredentialError{

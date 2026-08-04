@@ -17,13 +17,22 @@ enum RunState {
   RUN_STATE_CANCELLED = 6;
 }
 
-// ModelConfig names the model a run uses and which org credential pays for
-// it. Inference is always on org credentials.
+// ModelConfig names the model a run uses and which tenant credential pays for
+// it. Inference is always on tenant credentials.
 message ModelConfig {
   string provider = 1;   // openai | anthropic | bedrock
   string model_id = 2;
-  string credential = 3; // credential name within the org; "default" if empty
+  string credential = 3; // credential name within the tenant; "default" if empty
   repeated ModelConfig fallbacks = 4;
+}
+
+// RunPolicy is fixed at run creation and immutable thereafter.
+message RunPolicy {
+  repeated string allow_tools = 1;     // "*" or explicit
+  repeated string deny_tools = 2;      // after allow; wins
+  repeated string resource_kinds = 3;  // empty=none, ["*"]=all
+  int32 max_children = 4;              // 0 = no spawning
+  bool child_inherit = 5;              // children get same policy verbatim
 }
 
 // AgentRun is one durable agent loop bound to a session.
@@ -40,7 +49,7 @@ message AgentRun {
   google.protobuf.Timestamp created_at = 10;
   google.protobuf.Timestamp updated_at = 11;
   string parent_run_id = 12;
-  Grants grants = 13;
+  RunPolicy policy = 13;
   // Result is the run's final output, persisted at terminal transition so a
   // parent (or a client) can read what a child produced after it is gone.
   string result_json = 14;
@@ -48,6 +57,10 @@ message AgentRun {
   // cohort_ordinal preserves their declaration order.
   string cohort_id = 15;
   int32 cohort_ordinal = 16;
+  // Opaque attribution captured at run creation.
+  string actor_kind = 17;
+  string actor_id = 18;
+  string actor_display = 19;
 }
 
 // RunWait is a parent's durable fan-in on child runs. It leaves the open state
@@ -76,17 +89,14 @@ message RunTreeNode {
 message GetRunTreeRequest { string session_id = 1; }
 message GetRunTreeResponse { repeated RunTreeNode roots = 1; }
 
-message Grants { repeated string tools=1; }
-
 message StartRunRequest {
   string session_id = 1;
   string prompt = 2;
   // Optional; defaults to {provider: "openai", model from server default,
   // credential: "default"}.
   ModelConfig model_config = 3;
-  // Optional only for child-spawn internals; human StartRun ignores this
-  // and receives server-defined root grants.
-  Grants grants = 4;
+  // Optional; defaults to DefaultRunPolicy (full tools, all kinds, spawn cap).
+  RunPolicy policy = 4;
 }
 
 message StartRunResponse {
@@ -128,8 +138,8 @@ message ListRunsResponse {
   repeated AgentRun runs = 1;
 }
 
-// AgentService manages agent runs. Access requires membership in the run's
-// session's org.
+// AgentService manages agent runs. Access requires a key belonging to the
+// run's session's tenant.
 service AgentService {
   rpc StartRun(StartRunRequest) returns (StartRunResponse);
   rpc PromptRun(PromptRunRequest) returns (PromptRunResponse);

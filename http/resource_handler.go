@@ -66,9 +66,9 @@ func resourceToProto(r uc.Resource) *corev1.Resource {
 	return out
 }
 
-func (h *resourceHandler) providersByID(ctx context.Context, org uc.OrgID) map[uc.ProviderInstanceID]uc.ProviderInstance {
+func (h *resourceHandler) providersByID(ctx context.Context, org uc.TenantID) map[uc.ProviderInstanceID]uc.ProviderInstance {
 	out := map[uc.ProviderInstanceID]uc.ProviderInstance{}
-	items, err := h.store.Org(org).Providers().List(ctx)
+	items, err := h.store.Tenant(org).Providers().List(ctx)
 	if err != nil {
 		return out
 	}
@@ -78,8 +78,8 @@ func (h *resourceHandler) providersByID(ctx context.Context, org uc.OrgID) map[u
 	return out
 }
 
-func (h *resourceHandler) provider(ctx context.Context, org uc.OrgID, id uc.ProviderInstanceID) uc.ProviderInstance {
-	instance, err := h.store.Org(org).Providers().Get(ctx, id)
+func (h *resourceHandler) provider(ctx context.Context, org uc.TenantID, id uc.ProviderInstanceID) uc.ProviderInstance {
+	instance, err := h.store.Tenant(org).Providers().Get(ctx, id)
 	if err != nil {
 		return uc.ProviderInstance{}
 	}
@@ -87,29 +87,23 @@ func (h *resourceHandler) provider(ctx context.Context, org uc.OrgID, id uc.Prov
 }
 
 func (h *resourceHandler) resolve(ctx context.Context, id uc.ResourceID) (uc.Resource, error) {
-	user, ok := userFrom(ctx)
+	a, ok := identityFrom(ctx)
 	if !ok {
 		return uc.Resource{}, errUnauthenticated()
 	}
-	orgs, err := h.store.Orgs().ListForUser(ctx, user.ID)
+	e, err := h.store.Tenant(a.Identity.TenantID).Resources().Get(ctx, id)
 	if err != nil {
+		if errors.Is(err, uc.ErrNotFound) {
+			return uc.Resource{}, errNotFound()
+		}
 		return uc.Resource{}, mapStoreErr(err)
 	}
-	for _, o := range orgs {
-		e, err := h.store.Org(o.ID).Resources().Get(ctx, id)
-		if err == nil {
-			return e, nil
-		}
-		if !errors.Is(err, uc.ErrNotFound) {
-			return uc.Resource{}, mapStoreErr(err)
-		}
-	}
-	return uc.Resource{}, errNotFound()
+	return e, nil
 }
 
 func (h *resourceHandler) ProvisionResource(ctx context.Context, req *connect.Request[corev1.ProvisionResourceRequest]) (*connect.Response[corev1.ProvisionResourceResponse], error) {
 	session := uc.SessionID(req.Msg.GetSessionId())
-	org, _, err := resolveSessionOrg(ctx, h.store, session)
+	org, _, err := resolveSessionTenant(ctx, h.store, session)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +131,7 @@ func (h *resourceHandler) ProvisionResource(ctx context.Context, req *connect.Re
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
-	got, err := h.store.Org(org).Resources().Get(ctx, created.ID)
+	got, err := h.store.Tenant(org).Resources().Get(ctx, created.ID)
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
@@ -150,21 +144,21 @@ func (h *resourceHandler) GetResource(ctx context.Context, req *connect.Request[
 		return nil, err
 	}
 	return connect.NewResponse(&corev1.GetResourceResponse{
-		Resource: resourceToProtoWith(e, h.provider(ctx, e.OrgID, e.ProviderInstanceID)),
+		Resource: resourceToProtoWith(e, h.provider(ctx, e.TenantID, e.ProviderInstanceID)),
 	}), nil
 }
 
 func (h *resourceHandler) ListResources(ctx context.Context, req *connect.Request[corev1.ListResourcesRequest]) (*connect.Response[corev1.ListResourcesResponse], error) {
 	session := uc.SessionID(req.Msg.GetSessionId())
-	org, _, err := resolveSessionOrg(ctx, h.store, session)
+	org, _, err := resolveSessionTenant(ctx, h.store, session)
 	if err != nil {
 		return nil, err
 	}
 	var items []uc.Resource
 	if k := req.Msg.GetKind(); k != "" {
-		items, err = h.store.Org(org).Resources().List(ctx, session, uc.ResourceKind(k))
+		items, err = h.store.Tenant(org).Resources().List(ctx, session, uc.ResourceKind(k))
 	} else {
-		items, err = h.store.Org(org).Resources().List(ctx, session)
+		items, err = h.store.Tenant(org).Resources().List(ctx, session)
 	}
 	if err != nil {
 		return nil, mapStoreErr(err)
@@ -182,7 +176,7 @@ func (h *resourceHandler) TerminateResource(ctx context.Context, req *connect.Re
 	if err != nil {
 		return nil, err
 	}
-	if err := h.resources.RequestTerminate(ctx, e.OrgID, e.ID); err != nil {
+	if err := h.resources.RequestTerminate(ctx, e.TenantID, e.ID); err != nil {
 		return nil, mapStoreErr(err)
 	}
 	return connect.NewResponse(&corev1.TerminateResourceResponse{}), nil
@@ -193,14 +187,14 @@ func (h *resourceHandler) RestartResource(ctx context.Context, req *connect.Requ
 	if err != nil {
 		return nil, err
 	}
-	seq, err := h.resources.RequestRestart(ctx, e.OrgID, e.ID)
+	seq, err := h.resources.RequestRestart(ctx, e.TenantID, e.ID)
 	if err != nil {
 		if errors.Is(err, uc.ErrNotFound) {
 			return nil, errNotFound()
 		}
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("resource cannot be restarted"))
 	}
-	restarted, err := h.store.Org(e.OrgID).Resources().Get(ctx, e.ID)
+	restarted, err := h.store.Tenant(e.TenantID).Resources().Get(ctx, e.ID)
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}
@@ -213,14 +207,14 @@ func (h *resourceHandler) ExecPreview(ctx context.Context, req *connect.Request[
 		return nil, err
 	}
 	args, _ := json.Marshal(map[string]any{"command": req.Msg.GetCommand(), "description": "Human ExecPreview"})
-	result, err := h.resources.Exec(ctx, e.OrgID, e.ID, "bash", args)
+	result, err := h.resources.Exec(ctx, e.TenantID, e.ID, "bash", args)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnavailable, errors.New("resource unavailable"))
 	}
-	user, _ := userFrom(ctx)
+	auth, _ := identityFrom(ctx)
 	payload := uc.ExecPreviewRanPayload{ResourceID: e.ID, Command: req.Msg.GetCommand(), Output: result.Text, IsError: result.IsError}
 	b, _ := json.Marshal(payload)
-	seq, err := h.store.Org(e.OrgID).Events().Append(ctx, e.SessionID, uc.Event{Actor: uc.Actor{Type: uc.ActorUser, ID: string(user.ID)}, Kind: uc.EventKindExecPreviewRan, Payload: b})
+	seq, err := h.store.Tenant(e.TenantID).Events().Append(ctx, e.SessionID, uc.Event{Actor: auth.Actor, Kind: uc.EventKindExecPreviewRan, Payload: b})
 	if err != nil {
 		return nil, mapStoreErr(err)
 	}

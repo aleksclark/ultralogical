@@ -60,7 +60,7 @@ func (p *Provider) Status(_ context.Context, r uc.Resource) (uc.ResourceStatus, 
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if _, ok := p.items[r.ID]; !ok {
-		// Fall back to handle presence for adopt/restart paths.
+		// Fall back to handle existence for adopt/restart paths.
 		if !uc.HandlePresent(r.Handle) {
 			return uc.ResourceStatus{State: uc.ResourceFailed, Message: "not found"}, nil
 		}

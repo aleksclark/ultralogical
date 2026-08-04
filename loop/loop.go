@@ -162,7 +162,7 @@ func newPostEventTool(events uc.EventStore, session uc.SessionID, runID uc.RunID
 				return fantasy.NewTextErrorResponse("failed to encode note"), nil
 			}
 			if _, err := events.Append(ctx, session, uc.Event{
-				Actor:   uc.Actor{Type: uc.ActorAgent, ID: string(runID)},
+				Actor:   uc.ActorAgent(uc.RunID(string(runID))),
 				Kind:    uc.EventKindAnnotation,
 				Payload: payload,
 			}); err != nil {

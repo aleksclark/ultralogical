@@ -25,7 +25,7 @@ import (
 
 // ProvisionJob provisions one requested resource.
 type ProvisionJob struct {
-	OrgID      string `json:"org_id"`
+	TenantID      string `json:"org_id"`
 	ResourceID string `json:"resource_id"`
 }
 
@@ -33,7 +33,7 @@ func (ProvisionJob) Kind() string { return "resource.provision" }
 
 // TerminateJob terminates one resource.
 type TerminateJob struct {
-	OrgID      string `json:"org_id"`
+	TenantID      string `json:"org_id"`
 	ResourceID string `json:"resource_id"`
 }
 
@@ -41,14 +41,14 @@ func (TerminateJob) Kind() string { return "resource.terminate" }
 
 // ReconcileJob verifies one active resource and ticks metering.
 type ReconcileJob struct {
-	OrgID      string `json:"org_id"`
+	TenantID      string `json:"org_id"`
 	ResourceID string `json:"resource_id"`
 }
 
 // RestartJob replaces one resource's runtime, preserving durable state when
 // the provider claims restart_preserves_state, and rotating its bearer token.
 type RestartJob struct {
-	OrgID      string `json:"org_id"`
+	TenantID      string `json:"org_id"`
 	ResourceID string `json:"resource_id"`
 }
 
@@ -56,12 +56,12 @@ func (RestartJob) Kind() string { return "resource.restart" }
 
 //nolint:staticcheck // explicit mapping keeps lifecycle job types decoupled.
 func reconcileAfterProvision(job ProvisionJob) ReconcileJob {
-	return ReconcileJob{OrgID: job.OrgID, ResourceID: job.ResourceID}
+	return ReconcileJob{TenantID: job.TenantID, ResourceID: job.ResourceID}
 }
 
 //nolint:staticcheck // explicit mapping keeps lifecycle job types decoupled.
 func reconcileAfterRestart(job RestartJob) ReconcileJob {
-	return ReconcileJob{OrgID: job.OrgID, ResourceID: job.ResourceID}
+	return ReconcileJob{TenantID: job.TenantID, ResourceID: job.ResourceID}
 }
 
 func (ReconcileJob) Kind() string { return "resource.reconcile" }
@@ -138,7 +138,7 @@ func eventPayload(r uc.Resource, message string) uc.ResourceEventPayload {
 	}
 }
 
-func appendEvent(ctx context.Context, scope uc.OrgScope, session uc.SessionID, actor uc.Actor, kind string, payload any) (int64, error) {
+func appendEvent(ctx context.Context, scope uc.TenantScope, session uc.SessionID, actor uc.Actor, kind string, payload any) (int64, error) {
 	b, err := json.Marshal(payload)
 	if err != nil {
 		return 0, err
@@ -149,11 +149,11 @@ func appendEvent(ctx context.Context, scope uc.OrgScope, session uc.SessionID, a
 // Request atomically creates a requested resource, emits ResourceRequested,
 // and enqueues provisioning. providerName defaults to "default". Empty kind
 // is filled from the adapter's Kind(); if the adapter is silent, dev_env.
-func (s *Service) Request(ctx context.Context, org uc.OrgID, session uc.SessionID, kind uc.ResourceKind, spec json.RawMessage, providerName string, createdBy *uc.RunID) (uc.Resource, int64, error) {
+func (s *Service) Request(ctx context.Context, org uc.TenantID, session uc.SessionID, kind uc.ResourceKind, spec json.RawMessage, providerName string, createdBy *uc.RunID) (uc.Resource, int64, error) {
 	if providerName == "" {
 		providerName = "default"
 	}
-	instance, err := s.Store.Org(org).Providers().GetByName(ctx, providerName)
+	instance, err := s.Store.Tenant(org).Providers().GetByName(ctx, providerName)
 	if err != nil {
 		return uc.Resource{}, 0, err
 	}
@@ -186,36 +186,36 @@ func (s *Service) Request(ctx context.Context, org uc.OrgID, session uc.SessionI
 	}
 	secrets.DefaultRedactor.Register(clear)
 	r := uc.Resource{
-		ID: uc.ResourceID(uuid.NewString()), OrgID: org, SessionID: session, Kind: kind,
+		ID: uc.ResourceID(uuid.NewString()), TenantID: org, SessionID: session, Kind: kind,
 		ProviderInstanceID: instance.ID, State: uc.ResourceRequested, Spec: spec,
 		TokenHash: hash, TokenEnc: enc, Epoch: 1, CreatedByRunID: createdBy,
 	}
 	var seq int64
 	err = s.Store.Tx(ctx, func(txs uc.Store) error {
-		scope := txs.Org(org)
+		scope := txs.Tenant(org)
 		if err := scope.Resources().Create(ctx, r); err != nil {
 			return err
 		}
-		seq, err = appendEvent(ctx, scope, session, uc.Actor{Type: uc.ActorSystem}, uc.EventKindResourceRequested, eventPayload(r, ""))
+		seq, err = appendEvent(ctx, scope, session, uc.ActorSystem(), uc.EventKindResourceRequested, eventPayload(r, ""))
 		if err != nil {
 			return err
 		}
-		if err := s.Enqueue.EnqueueInTx(ctx, txs, ProvisionJob{OrgID: string(org), ResourceID: string(r.ID)}); err != nil {
+		if err := s.Enqueue.EnqueueInTx(ctx, txs, ProvisionJob{TenantID: string(org), ResourceID: string(r.ID)}); err != nil {
 			return err
 		}
 		// Arm the reconcile watchdog now: if the worker dies mid-provision
 		// and the provision job is not redelivered, reconciliation still
 		// converges the resource instead of leaving it stuck.
-		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{OrgID: string(org), ResourceID: string(r.ID)},
+		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{TenantID: string(org), ResourceID: string(r.ID)},
 			jobqueue.WithScheduledAt(time.Now().Add(s.provisionTimeout())))
 	})
 	return r, seq, err
 }
 
 // RequestTerminate marks and queues termination.
-func (s *Service) RequestTerminate(ctx context.Context, org uc.OrgID, id uc.ResourceID) error {
+func (s *Service) RequestTerminate(ctx context.Context, org uc.TenantID, id uc.ResourceID) error {
 	return s.Store.Tx(ctx, func(txs uc.Store) error {
-		scope := txs.Org(org)
+		scope := txs.Tenant(org)
 		r, err := scope.Resources().GetForUpdate(ctx, id)
 		if err != nil {
 			return err
@@ -226,15 +226,15 @@ func (s *Service) RequestTerminate(ctx context.Context, org uc.OrgID, id uc.Reso
 		if err := scope.Resources().SetTerminating(ctx, id); err != nil {
 			return err
 		}
-		_, err = appendEvent(ctx, scope, r.SessionID, uc.Actor{Type: uc.ActorSystem}, uc.EventKindResourceTerminating, eventPayload(r, ""))
+		_, err = appendEvent(ctx, scope, r.SessionID, uc.ActorSystem(), uc.EventKindResourceTerminating, eventPayload(r, ""))
 		if err != nil {
 			return err
 		}
-		return s.Enqueue.EnqueueInTx(ctx, txs, TerminateJob{OrgID: string(org), ResourceID: string(id)})
+		return s.Enqueue.EnqueueInTx(ctx, txs, TerminateJob{TenantID: string(org), ResourceID: string(id)})
 	})
 }
 
-func (s *Service) provider(ctx context.Context, scope uc.OrgScope, r uc.Resource) (uc.ResourceProvider, uc.ProviderInstance, error) {
+func (s *Service) provider(ctx context.Context, scope uc.TenantScope, r uc.Resource) (uc.ResourceProvider, uc.ProviderInstance, error) {
 	instance, err := scope.Providers().Get(ctx, r.ProviderInstanceID)
 	if err != nil {
 		return nil, instance, err
@@ -289,10 +289,10 @@ func (s *Service) acquire(ctx context.Context, provider uc.ResourceProvider, r u
 // restart preserves durable state when the provider claims it, mints a new
 // bearer token, and increments the token epoch so cached tool clients are
 // invalidated.
-func (s *Service) RequestRestart(ctx context.Context, org uc.OrgID, id uc.ResourceID) (int64, error) {
+func (s *Service) RequestRestart(ctx context.Context, org uc.TenantID, id uc.ResourceID) (int64, error) {
 	var seq int64
 	err := s.Store.Tx(ctx, func(txs uc.Store) error {
-		scope := txs.Org(org)
+		scope := txs.Tenant(org)
 		r, err := scope.Resources().GetForUpdate(ctx, id)
 		if err != nil {
 			return err
@@ -304,19 +304,19 @@ func (s *Service) RequestRestart(ctx context.Context, org uc.OrgID, id uc.Resour
 			return err
 		}
 		r.State = uc.ResourceProvisioning
-		seq, err = appendEvent(ctx, scope, r.SessionID, uc.Actor{Type: uc.ActorSystem}, uc.EventKindResourceProvisioning, eventPayload(r, "restart requested"))
+		seq, err = appendEvent(ctx, scope, r.SessionID, uc.ActorSystem(), uc.EventKindResourceProvisioning, eventPayload(r, "restart requested"))
 		if err != nil {
 			return err
 		}
-		return s.Enqueue.EnqueueInTx(ctx, txs, RestartJob{OrgID: string(org), ResourceID: string(id)})
+		return s.Enqueue.EnqueueInTx(ctx, txs, RestartJob{TenantID: string(org), ResourceID: string(id)})
 	})
 	return seq, err
 }
 
 // Restart implements jobqueue.Worker[RestartJob].
 func (s *Service) Restart(ctx context.Context, job RestartJob) error {
-	org, id := uc.OrgID(job.OrgID), uc.ResourceID(job.ResourceID)
-	scope := s.Store.Org(org)
+	org, id := uc.TenantID(job.TenantID), uc.ResourceID(job.ResourceID)
+	scope := s.Store.Tenant(org)
 	r, err := scope.Resources().Get(ctx, id)
 	if err != nil {
 		return err
@@ -352,7 +352,7 @@ func (s *Service) Restart(ctx context.Context, job RestartJob) error {
 	}
 	now := time.Now()
 	return s.Store.Tx(ctx, func(txs uc.Store) error {
-		sc := txs.Org(org)
+		sc := txs.Tenant(org)
 		locked, e := sc.Resources().GetForUpdate(ctx, id)
 		if e != nil {
 			return e
@@ -366,7 +366,7 @@ func (s *Service) Restart(ctx context.Context, job RestartJob) error {
 		locked.Handle = handle
 		locked.Endpoint = endpoint
 		locked.State = uc.ResourceReady
-		_, e = appendEvent(ctx, sc, locked.SessionID, uc.Actor{Type: uc.ActorSystem}, uc.EventKindResourceReady, eventPayload(locked, "restarted"))
+		_, e = appendEvent(ctx, sc, locked.SessionID, uc.ActorSystem(), uc.EventKindResourceReady, eventPayload(locked, "restarted"))
 		if e != nil {
 			return e
 		}
@@ -410,8 +410,8 @@ func (s *Service) awaitHealthy(ctx context.Context, provider uc.ResourceProvider
 
 // Provision implements jobqueue.Worker[ProvisionJob].
 func (s *Service) Provision(ctx context.Context, job ProvisionJob) error {
-	org, id := uc.OrgID(job.OrgID), uc.ResourceID(job.ResourceID)
-	scope := s.Store.Org(org)
+	org, id := uc.TenantID(job.TenantID), uc.ResourceID(job.ResourceID)
+	scope := s.Store.Tenant(org)
 	r, err := scope.Resources().Get(ctx, id)
 	if err != nil {
 		return err
@@ -422,7 +422,7 @@ func (s *Service) Provision(ctx context.Context, job ProvisionJob) error {
 	if err := scope.Resources().SetProvisioning(ctx, id); err != nil {
 		return err
 	}
-	_, _ = appendEvent(ctx, scope, r.SessionID, uc.Actor{Type: uc.ActorSystem}, uc.EventKindResourceProvisioning, eventPayload(r, ""))
+	_, _ = appendEvent(ctx, scope, r.SessionID, uc.ActorSystem(), uc.EventKindResourceProvisioning, eventPayload(r, ""))
 	provider, instance, err := s.provider(ctx, scope, r)
 	if err != nil {
 		return s.fail(ctx, org, r, err.Error())
@@ -451,7 +451,7 @@ func (s *Service) Provision(ctx context.Context, job ProvisionJob) error {
 	}
 	now := time.Now()
 	return s.Store.Tx(ctx, func(txs uc.Store) error {
-		sc := txs.Org(org)
+		sc := txs.Tenant(org)
 		locked, e := sc.Resources().GetForUpdate(ctx, id)
 		if e != nil {
 			return e
@@ -465,7 +465,7 @@ func (s *Service) Provision(ctx context.Context, job ProvisionJob) error {
 		locked.Handle = handle
 		locked.Endpoint = endpoint
 		locked.State = uc.ResourceReady
-		_, e = appendEvent(ctx, sc, r.SessionID, uc.Actor{Type: uc.ActorSystem}, uc.EventKindResourceReady, eventPayload(locked, ""))
+		_, e = appendEvent(ctx, sc, r.SessionID, uc.ActorSystem(), uc.EventKindResourceReady, eventPayload(locked, ""))
 		if e != nil {
 			return e
 		}
@@ -474,13 +474,13 @@ func (s *Service) Provision(ctx context.Context, job ProvisionJob) error {
 }
 
 // suspend parks a resource whose host is unreachable.
-func (s *Service) suspend(ctx context.Context, org uc.OrgID, r uc.Resource, message string) error {
+func (s *Service) suspend(ctx context.Context, org uc.TenantID, r uc.Resource, message string) error {
 	s.InvalidateToolClients(r.ID)
 	if message == "" {
 		message = "the resource host is unreachable"
 	}
 	err := s.Store.Tx(ctx, func(txs uc.Store) error {
-		sc := txs.Org(org)
+		sc := txs.Tenant(org)
 		locked, e := sc.Resources().GetForUpdate(ctx, r.ID)
 		if e != nil {
 			return e
@@ -492,7 +492,7 @@ func (s *Service) suspend(ctx context.Context, org uc.OrgID, r uc.Resource, mess
 			return e
 		}
 		r.State = uc.ResourceSuspended
-		_, e = appendEvent(ctx, sc, r.SessionID, uc.Actor{Type: uc.ActorSystem},
+		_, e = appendEvent(ctx, sc, r.SessionID, uc.ActorSystem(),
 			uc.EventKindResourceSuspended, eventPayload(r, message))
 		return e
 	})
@@ -503,8 +503,8 @@ func (s *Service) suspend(ctx context.Context, org uc.OrgID, r uc.Resource, mess
 }
 
 // reconcileSuspended asks whether a suspended resource's host has come back.
-func (s *Service) reconcileSuspended(ctx context.Context, org uc.OrgID, r uc.Resource) error {
-	scope := s.Store.Org(org)
+func (s *Service) reconcileSuspended(ctx context.Context, org uc.TenantID, r uc.Resource) error {
+	scope := s.Store.Tenant(org)
 	provider, instance, err := s.provider(ctx, scope, r)
 	if err != nil {
 		return s.rearmReconcile(ctx, org, r.ID)
@@ -522,7 +522,7 @@ func (s *Service) reconcileSuspended(ctx context.Context, org uc.OrgID, r uc.Res
 	}
 	now := time.Now()
 	return s.Store.Tx(ctx, func(txs uc.Store) error {
-		sc := txs.Org(org)
+		sc := txs.Tenant(org)
 		locked, e := sc.Resources().GetForUpdate(ctx, r.ID)
 		if e != nil {
 			return e
@@ -534,39 +534,39 @@ func (s *Service) reconcileSuspended(ctx context.Context, org uc.OrgID, r uc.Res
 			return e
 		}
 		locked.State = uc.ResourceReady
-		if _, e = appendEvent(ctx, sc, r.SessionID, uc.Actor{Type: uc.ActorSystem},
+		if _, e = appendEvent(ctx, sc, r.SessionID, uc.ActorSystem(),
 			uc.EventKindResourceReady, eventPayload(locked, "resumed")); e != nil {
 			return e
 		}
-		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{OrgID: string(org), ResourceID: string(r.ID)},
+		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{TenantID: string(org), ResourceID: string(r.ID)},
 			jobqueue.WithScheduledAt(now.Add(s.interval())))
 	})
 }
 
 // rearmReconcile keeps a resource under observation without changing it.
-func (s *Service) rearmReconcile(ctx context.Context, org uc.OrgID, id uc.ResourceID) error {
+func (s *Service) rearmReconcile(ctx context.Context, org uc.TenantID, id uc.ResourceID) error {
 	return s.Store.Tx(ctx, func(txs uc.Store) error {
-		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{OrgID: string(org), ResourceID: string(id)},
+		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{TenantID: string(org), ResourceID: string(id)},
 			jobqueue.WithScheduledAt(time.Now().Add(s.interval())))
 	})
 }
 
-func (s *Service) fail(ctx context.Context, org uc.OrgID, r uc.Resource, message string) error {
+func (s *Service) fail(ctx context.Context, org uc.TenantID, r uc.Resource, message string) error {
 	s.InvalidateToolClients(r.ID)
 	return s.Store.Tx(ctx, func(txs uc.Store) error {
-		sc := txs.Org(org)
+		sc := txs.Tenant(org)
 		if err := sc.Resources().SetFailed(ctx, r.ID, message); err != nil {
 			return err
 		}
-		_, err := appendEvent(ctx, sc, r.SessionID, uc.Actor{Type: uc.ActorSystem}, uc.EventKindResourceFailed, eventPayload(r, message))
+		_, err := appendEvent(ctx, sc, r.SessionID, uc.ActorSystem(), uc.EventKindResourceFailed, eventPayload(r, message))
 		return err
 	})
 }
 
 // Terminate implements jobqueue.Worker[TerminateJob].
 func (s *Service) Terminate(ctx context.Context, job TerminateJob) error {
-	org, id := uc.OrgID(job.OrgID), uc.ResourceID(job.ResourceID)
-	scope := s.Store.Org(org)
+	org, id := uc.TenantID(job.TenantID), uc.ResourceID(job.ResourceID)
+	scope := s.Store.Tenant(org)
 	r, err := scope.Resources().Get(ctx, id)
 	if err != nil {
 		return err
@@ -585,19 +585,19 @@ func (s *Service) Terminate(ctx context.Context, job TerminateJob) error {
 		}
 	}
 	return s.Store.Tx(ctx, func(txs uc.Store) error {
-		sc := txs.Org(org)
+		sc := txs.Tenant(org)
 		if err := sc.Resources().SetTerminated(ctx, id); err != nil {
 			return err
 		}
-		_, err := appendEvent(ctx, sc, r.SessionID, uc.Actor{Type: uc.ActorSystem}, uc.EventKindResourceTerminated, eventPayload(r, ""))
+		_, err := appendEvent(ctx, sc, r.SessionID, uc.ActorSystem(), uc.EventKindResourceTerminated, eventPayload(r, ""))
 		return err
 	})
 }
 
 // Reconcile implements jobqueue.Worker[ReconcileJob] and self-reschedules.
 func (s *Service) Reconcile(ctx context.Context, job ReconcileJob) error {
-	org, id := uc.OrgID(job.OrgID), uc.ResourceID(job.ResourceID)
-	scope := s.Store.Org(org)
+	org, id := uc.TenantID(job.TenantID), uc.ResourceID(job.ResourceID)
+	scope := s.Store.Tenant(org)
 	r, err := scope.Resources().Get(ctx, id)
 	if errors.Is(err, uc.ErrNotFound) {
 		return nil
@@ -631,7 +631,7 @@ func (s *Service) Reconcile(ctx context.Context, job ReconcileJob) error {
 	}
 	now := time.Now()
 	return s.Store.Tx(ctx, func(txs uc.Store) error {
-		sc := txs.Org(org)
+		sc := txs.Tenant(org)
 		locked, e := sc.Resources().GetForUpdate(ctx, id)
 		if e != nil {
 			return e
@@ -640,17 +640,17 @@ func (s *Service) Reconcile(ctx context.Context, job ReconcileJob) error {
 			return nil
 		}
 		_ = sc.Providers().MarkHealthy(ctx, r.ProviderInstanceID)
-		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{OrgID: job.OrgID, ResourceID: job.ResourceID}, jobqueue.WithScheduledAt(now.Add(s.interval())))
+		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{TenantID: job.TenantID, ResourceID: job.ResourceID}, jobqueue.WithScheduledAt(now.Add(s.interval())))
 	})
 }
 
 // recoverProvisioning is the watchdog for a resource whose provisioning was interrupted.
-func (s *Service) recoverProvisioning(ctx context.Context, org uc.OrgID, r uc.Resource) error {
+func (s *Service) recoverProvisioning(ctx context.Context, org uc.TenantID, r uc.Resource) error {
 	timeout := s.provisionTimeout()
 	stalled := time.Since(r.UpdatedAt)
 	if stalled < timeout {
 		return s.Store.Tx(ctx, func(txs uc.Store) error {
-			return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{OrgID: string(org), ResourceID: string(r.ID)},
+			return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{TenantID: string(org), ResourceID: string(r.ID)},
 				jobqueue.WithScheduledAt(time.Now().Add(timeout)))
 		})
 	}
@@ -662,7 +662,7 @@ func (s *Service) recoverProvisioning(ctx context.Context, org uc.OrgID, r uc.Re
 			"resource_id", string(r.ID), "stalled_for", stalled.String())
 	}
 	return s.Store.Tx(ctx, func(txs uc.Store) error {
-		sc := txs.Org(org)
+		sc := txs.Tenant(org)
 		locked, err := sc.Resources().GetForUpdate(ctx, r.ID)
 		if err != nil {
 			return err
@@ -670,10 +670,10 @@ func (s *Service) recoverProvisioning(ctx context.Context, org uc.OrgID, r uc.Re
 		if locked.State != uc.ResourceRequested && locked.State != uc.ResourceProvisioning {
 			return nil
 		}
-		if err := s.Enqueue.EnqueueInTx(ctx, txs, ProvisionJob{OrgID: string(org), ResourceID: string(r.ID)}); err != nil {
+		if err := s.Enqueue.EnqueueInTx(ctx, txs, ProvisionJob{TenantID: string(org), ResourceID: string(r.ID)}); err != nil {
 			return err
 		}
-		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{OrgID: string(org), ResourceID: string(r.ID)},
+		return s.Enqueue.EnqueueInTx(ctx, txs, ReconcileJob{TenantID: string(org), ResourceID: string(r.ID)},
 			jobqueue.WithScheduledAt(time.Now().Add(timeout)))
 	})
 }
@@ -716,8 +716,8 @@ func (s *Service) clients() *mcp.Cache {
 }
 
 // Exec runs a real tool against a ready resource.
-func (s *Service) Exec(ctx context.Context, org uc.OrgID, id uc.ResourceID, name string, args json.RawMessage) (mcp.Result, error) {
-	r, err := s.Store.Org(org).Resources().Get(ctx, id)
+func (s *Service) Exec(ctx context.Context, org uc.TenantID, id uc.ResourceID, name string, args json.RawMessage) (mcp.Result, error) {
+	r, err := s.Store.Tenant(org).Resources().Get(ctx, id)
 	if err != nil {
 		return mcp.Result{}, err
 	}
