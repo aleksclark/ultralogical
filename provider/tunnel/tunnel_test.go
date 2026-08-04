@@ -267,7 +267,7 @@ func TestA105_DisconnectSuspendsAndReconnectResumes(t *testing.T) {
 	}
 	gone := time.Now().Add(30 * time.Second)
 	for time.Now().Before(gone) {
-		if mcp.Healthy(ctx, endpoint) != nil {
+		if mcp.Healthy(ctx, string(endpoint)) != nil {
 			return
 		}
 		time.Sleep(200 * time.Millisecond)
@@ -295,7 +295,7 @@ func awaitReady(t *testing.T, ctx context.Context, provider *tunnel.Provider, ha
 		status, err := provider.Status(ctx, uc.Resource{Handle: handle})
 		if err == nil && status.State == uc.ResourceReady {
 			endpoint, err := provider.Endpoint(ctx, uc.Resource{Handle: handle})
-			if err == nil && mcp.Healthy(ctx, endpoint) == nil {
+			if err == nil && mcp.Healthy(ctx, string(endpoint)) == nil {
 				return string(endpoint)
 			}
 		}
