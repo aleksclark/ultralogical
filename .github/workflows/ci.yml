@@ -148,8 +148,17 @@ jobs:
         run: |
           set -o pipefail
           go run sigs.k8s.io/kind@v0.32.0 get kubeconfig --name ultra-test > /tmp/kubeconfig
-          out=$(CORE_TEST_KUBECONFIG=/tmp/kubeconfig             go test ./cmd/core/... -count=1 -v -timeout 20m -run TestA109 2>&1)
+          # Capture status so a failing go test still prints its output before
+          # the shell exits (set -e would otherwise swallow the log).
+          set +e
+          out=$(CORE_TEST_KUBECONFIG=/tmp/kubeconfig go test ./cmd/core/... -count=1 -v -timeout 20m -run TestA109 2>&1)
+          status=$?
+          set -e
           echo "$out"
+          if [ "$status" -ne 0 ]; then
+            echo "go test exited $status" >&2
+            exit "$status"
+          fi
           # A guide whose commands were never executed is a guide nobody has
           # checked, so a skip must fail the leg.
           echo "$out" | grep -q -- "--- PASS: TestA109_KubernetesOnboardingGuideIsExecutable" || {

@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -133,6 +134,23 @@ var (
 	bezalelOnce sync.Once
 	bezalelErr  error
 )
+
+// childEnv returns the process environment suitable for cored/coreworker
+// children. Test-only CORE_TEST_* variables are stripped so config.RefuseUnknown
+// does not reject a process that inherited CI harness knobs (kubeconfig path,
+// kind cluster name, etc.).
+func childEnv() []string {
+	env := os.Environ()
+	out := make([]string, 0, len(env))
+	for _, kv := range env {
+		name, _, _ := strings.Cut(kv, "=")
+		if strings.HasPrefix(name, "CORE_TEST_") {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
+}
 
 // binaries builds cored and worker once per test process.
 func binaries(t *testing.T) (string, string) {
@@ -284,7 +302,7 @@ func (s *Stack) startUltradAt(index int) {
 		s.t.Fatal(err)
 	}
 	cmd := exec.Command(s.ultradBin)
-	cmd.Env = append(os.Environ(),
+	cmd.Env = append(childEnv(),
 		"DATABASE_URL="+s.DatabaseURL,
 		"CORE_ADDR="+parsed.Host,
 		"CORE_MASTER_KEY="+s.MasterKey,
@@ -309,7 +327,7 @@ func (s *Stack) startUltradAt(index int) {
 // newWorkerCmd builds a worker process with the harness environment.
 func (s *Stack) newWorkerCmd() *exec.Cmd {
 	cmd := exec.Command(s.workerBin)
-	cmd.Env = append(os.Environ(),
+	cmd.Env = append(childEnv(),
 		"DATABASE_URL="+s.DatabaseURL,
 		"CORE_MASTER_KEY="+s.MasterKey,
 		"CORE_JOB_TIMEOUT=20s",

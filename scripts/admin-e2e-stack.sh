@@ -169,6 +169,11 @@ run_playwright() {
   if [ ! -e admin-e2e/src/gen ]; then
     ln -sfn ../../clients/admin-ts/src/gen admin-e2e/src/gen || fail "link admin gen"
   fi
+  # Gen sources resolve @bufbuild/protobuf from clients/admin-ts/node_modules.
+  if [ ! -d clients/admin-ts/node_modules ]; then
+    log "installing clients/admin-ts npm deps (for generated imports)"
+    (cd clients/admin-ts && npm install) || fail "admin-ts npm install"
+  fi
   if [ ! -d admin-e2e/node_modules ]; then
     log "installing admin-e2e npm deps"
     if [ -f admin-e2e/package-lock.json ]; then
