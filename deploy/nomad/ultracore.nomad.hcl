@@ -61,7 +61,7 @@ job "ultracore" {
 
       config {
         # DIGEST_PIN: release workflow / deploy lock updates this immutable ref.
-        image      = "ghcr.io/aleksclark/ultracore@sha256:47ad77f777f174d33bd20e236e23c40dabdcbabd31a5730389d134c628fe75b6"
+        image      = "ghcr.io/aleksclark/ultracore@sha256:2f595cd12a30f5b50ec1bacf7546d1ae8cf3ce76cebac46005c9db27b0e4f788"
         entrypoint = ["/usr/local/bin/cored"]
         ports      = ["http"]
         force_pull = true
@@ -113,7 +113,7 @@ job "ultracore" {
       driver = "docker"
 
       config {
-        image      = "ghcr.io/aleksclark/ultracore@sha256:47ad77f777f174d33bd20e236e23c40dabdcbabd31a5730389d134c628fe75b6"
+        image      = "ghcr.io/aleksclark/ultracore@sha256:2f595cd12a30f5b50ec1bacf7546d1ae8cf3ce76cebac46005c9db27b0e4f788"
         entrypoint = ["/usr/local/bin/coreworker"]
         ports      = ["health"]
         force_pull = true
@@ -173,7 +173,7 @@ job "ultracore" {
       driver = "docker"
 
       config {
-        image      = "ghcr.io/aleksclark/ultracore@sha256:47ad77f777f174d33bd20e236e23c40dabdcbabd31a5730389d134c628fe75b6"
+        image      = "ghcr.io/aleksclark/ultracore@sha256:2f595cd12a30f5b50ec1bacf7546d1ae8cf3ce76cebac46005c9db27b0e4f788"
         entrypoint = ["/usr/local/bin/coreadmin"]
         ports      = ["http"]
         force_pull = true
