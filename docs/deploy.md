@@ -89,8 +89,11 @@ Unit examples live in `deploy/systemd/`. Provide
 
 ## Nomad
 
-`deploy/nomad/ultracore.nomad.hcl` is a starting point for a two-group job
-(api + worker) with HTTP checks on `/readyz`.
+`deploy/nomad/ultracore.nomad.hcl` is the authoritative three-group job
+(api + worker + admin) with HTTP checks on `/readyz`. Secrets load from
+Nomad Variable `nomad/jobs/ultracore` (see `deploy/nomad/deployment.yaml`).
+Image authority is an immutable GHCR digest from the release workflow —
+never deploy `:latest` as authority. Contract tests: `go test ./deploy/nomad/tests`.
 
 ## Migrations
 

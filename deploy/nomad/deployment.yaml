@@ -1,0 +1,58 @@
+# Project deployment contract for ultracore (aleksclark/ultralogical).
+# Value-free. Secrets live only in Nomad Variables.
+schema_version: 1
+project: ultralogical
+product: ultracore
+canonical_repo: aleksclark/ultralogical
+ownership: project-owned
+namespace: default
+datacenter: home
+
+jobs:
+  - job_id: ultracore
+    path: deploy/nomad/ultracore.nomad.hcl
+    release_set: ultracore
+    rollout_class: singleton-stateful
+    statefulness: stateful
+    criticality: medium
+    image_lock: deploy/nomad/images.lock.hcl
+    services:
+      - name: cored
+        hostnames:
+          - core.fleet.clark.team
+          - core.clark.team
+        health: /readyz
+        liveness: /healthz
+      - name: coreworker
+        health: /readyz
+      - name: coreadmin
+        hostnames:
+          - core-admin.fleet.clark.team
+        health: /readyz
+    secret_variable_paths:
+      - nomad/jobs/ultracore
+    secret_keys:
+      - database_url
+      - master_key
+      - admin_token
+      - admin_token_role
+      - admin_cursor_secret
+    verification:
+      method: alloc-healthy
+      http:
+        - https://core.fleet.clark.team/healthz
+        - https://core.fleet.clark.team/readyz
+        - https://core-admin.fleet.clark.team/healthz
+    rollback:
+      strategy: previous-job-version
+      notes: stop-to-previous-running version; do not purge volumes or Nomad Variables
+    related_retired:
+      - job_id: ultracore-image-load
+        reason: local tar-load helper superseded by registry digest pull
+        action: stop-without-purge-after-digest-proof
+
+registry:
+  preferred: ghcr.io
+  image: ghcr.io/aleksclark/ultracore
+  authority: digest
+  forbid_latest_as_authority: true
