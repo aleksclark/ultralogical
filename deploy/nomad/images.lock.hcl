@@ -1,14 +1,7 @@
-# Immutable image authority for ultracore (product of aleksclark/ultralogical).
-# Updated by the release workflow after GHCR push. Deployed jobspec must use
-# the digest form, never floating :latest as authority.
-#
-# image_repository = "ghcr.io/aleksclark/ultracore"
-# image_tag        = "0.2.0"
-# image_digest     = ""  # filled after first immutable GHCR publish
-# note: until digest is published, fleet nodes use the preloaded local tag.
-
+# Immutable image authority for ultracore
+# release v2026.8.0 digest sha256:47ad77f777f174d33bd20e236e23c40dabdcbabd31a5730389d134c628fe75b6
 locals {
   ultracore_image_repo   = "ghcr.io/aleksclark/ultracore"
-  ultracore_image_tag    = "0.2.0"
-  ultracore_image_digest = ""
+  ultracore_image_tag    = "v2026.8.0"
+  ultracore_image_digest = "sha256:47ad77f777f174d33bd20e236e23c40dabdcbabd31a5730389d134c628fe75b6"
 }
