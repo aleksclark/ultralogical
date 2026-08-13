@@ -1,6 +1,7 @@
 package deploy_test
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -23,7 +24,7 @@ func repoRoot(t *testing.T) string {
 
 func TestJobspecHasNoSecretLiterals(t *testing.T) {
 	root := repoRoot(t)
-	job := filepath.Join(root, "deploy", "nomad", "ultracore.nomad.hcl")
+	job := filepath.Join(root, "deploy", "nomad", "jobs", "ultracore.nomad.hcl")
 	b, err := os.ReadFile(job)
 	if err != nil {
 		t.Fatal(err)
@@ -49,6 +50,9 @@ func TestJobspecHasNoSecretLiterals(t *testing.T) {
 	if regexp.MustCompile(`image\s*=\s*"[^"]*:latest"`).MatchString(text) {
 		t.Fatal("jobspec must not use :latest as image authority")
 	}
+	if !regexp.MustCompile(`@sha256:[0-9a-f]{64}`).MatchString(text) {
+		t.Fatal("jobspec must pin image by sha256 digest")
+	}
 	if !strings.Contains(text, `provider = "nomad"`) {
 		t.Fatal("expected nomad service provider")
 	}
@@ -58,32 +62,131 @@ func TestJobspecHasNoSecretLiterals(t *testing.T) {
 	if !strings.Contains(text, "core.fleet.clark.team") {
 		t.Fatal("expected internal Traefik hostname")
 	}
+	if strings.Contains(text, "ultracore-image-load") {
+		t.Fatal("retired ultracore-image-load must not appear in jobspec")
+	}
 }
 
-func TestDeploymentContractListsSecretKeysOnly(t *testing.T) {
+func TestDeploymentContractPlan03(t *testing.T) {
 	root := repoRoot(t)
 	p := filepath.Join(root, "deploy", "nomad", "deployment.yaml")
 	b, err := os.ReadFile(p)
 	if err != nil {
 		t.Fatal(err)
 	}
-	text := string(b)
-	for _, key := range []string{
-		"database_url",
-		"master_key",
-		"admin_token",
-		"admin_token_role",
-		"admin_cursor_secret",
-		"nomad/jobs/ultracore",
-		"forbid_latest_as_authority",
-	} {
-		if !strings.Contains(text, key) {
-			t.Fatalf("deployment.yaml missing %q", key)
+	var data map[string]any
+	if err := json.Unmarshal(b, &data); err != nil {
+		t.Fatalf("deployment.yaml must be JSON-compatible: %v", err)
+	}
+	if data["schema_version"] != float64(1) {
+		t.Fatalf("schema_version: %v", data["schema_version"])
+	}
+	if data["project"] != "ultralogical" {
+		t.Fatalf("project: %v", data["project"])
+	}
+	if data["owner"] != "aleks-clark" {
+		t.Fatalf("owner: %v", data["owner"])
+	}
+	if data["repository"] != "https://github.com/aleksclark/ultralogical" {
+		t.Fatalf("repository: %v", data["repository"])
+	}
+	if data["ref_policy"] != "signed-default-branch-commit" {
+		t.Fatalf("ref_policy: %v", data["ref_policy"])
+	}
+	if data["namespace"] != "default" {
+		t.Fatalf("namespace: %v", data["namespace"])
+	}
+	sets, ok := data["release_sets"].([]any)
+	if !ok || len(sets) != 1 {
+		t.Fatalf("release_sets: %v", data["release_sets"])
+	}
+	rs := sets[0].(map[string]any)
+	if rs["name"] != "ultracore" {
+		t.Fatalf("release name: %v", rs["name"])
+	}
+	if rs["env"] != "env/home.nomadvars.hcl" || rs["images"] != "images.lock.hcl" {
+		t.Fatalf("env/images: %v %v", rs["env"], rs["images"])
+	}
+	if rs["rollout"] != "serial" || rs["prune"] != "explicit-only" {
+		t.Fatalf("rollout/prune: %v %v", rs["rollout"], rs["prune"])
+	}
+	jobs := rs["jobs"].([]any)
+	j0 := jobs[0].(map[string]any)
+	if j0["id"] != "ultracore" || j0["spec"] != "jobs/ultracore.nomad.hcl" {
+		t.Fatalf("job entry: %v", j0)
+	}
+	vpaths, _ := rs["variable_paths"].([]any)
+	found := false
+	for _, v := range vpaths {
+		if v == "nomad/jobs/ultracore" {
+			found = true
 		}
 	}
-	// No obvious secret value shapes.
-	if regexp.MustCompile(`(?i)postgres://[^:]+:[^@]+@`).MatchString(text) {
+	if !found {
+		t.Fatal("variable_paths must include nomad/jobs/ultracore")
+	}
+	// No secret value shapes.
+	if regexp.MustCompile(`(?i)postgres://[^:]+:[^@]+@`).MatchString(string(b)) {
 		t.Fatal("deployment.yaml appears to contain a DSN with credentials")
+	}
+}
+
+func TestImagesLockDigestOnly(t *testing.T) {
+	root := repoRoot(t)
+	b, err := os.ReadFile(filepath.Join(root, "deploy", "nomad", "images.lock.hcl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(b)
+	if !regexp.MustCompile(`@sha256:[0-9a-f]{64}`).MatchString(text) {
+		t.Fatal("images.lock.hcl must contain digest pin")
+	}
+	if regexp.MustCompile(`(?m)^\s*image_\w+\s*=\s*"[^"]*:latest"`).MatchString(text) {
+		t.Fatal("images.lock.hcl must not use :latest as image authority")
+	}
+	// Pin must match jobspec digest.
+	job, err := os.ReadFile(filepath.Join(root, "deploy", "nomad", "jobs", "ultracore.nomad.hcl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	re := regexp.MustCompile(`sha256:[0-9a-f]{64}`)
+	lockDigests := re.FindAllString(text, -1)
+	jobDigests := re.FindAllString(string(job), -1)
+	if len(lockDigests) < 1 || len(jobDigests) < 1 {
+		t.Fatal("expected digests in lock and job")
+	}
+	want := lockDigests[0]
+	for _, d := range jobDigests {
+		if d != want {
+			t.Fatalf("job digest %s != lock %s", d, want)
+		}
+	}
+}
+
+func TestEnvOverlayNonSecret(t *testing.T) {
+	root := repoRoot(t)
+	b, err := os.ReadFile(filepath.Join(root, "deploy", "nomad", "env", "home.nomadvars.hcl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(b)
+	if regexp.MustCompile(`(?i)(password|secret|token|private_key)\s*=`).MatchString(text) {
+		t.Fatal("env overlay must not assign secret-like keys")
+	}
+	if !strings.Contains(text, "core.fleet.clark.team") {
+		t.Fatal("expected non-secret hostname overlay")
+	}
+}
+
+func TestCODEOWNERS(t *testing.T) {
+	root := repoRoot(t)
+	b, err := os.ReadFile(filepath.Join(root, ".github", "CODEOWNERS"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(b)
+	if !strings.Contains(text, "/deploy/nomad/") || !strings.Contains(text, "@aleksclark") {
+		t.Fatal("CODEOWNERS must cover /deploy/nomad/ with @aleksclark")
 	}
 }
 
@@ -112,5 +215,20 @@ func TestDockerignoreExists(t *testing.T) {
 	root := repoRoot(t)
 	if _, err := os.Stat(filepath.Join(root, ".dockerignore")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestExpectedServicesFixture(t *testing.T) {
+	root := repoRoot(t)
+	b, err := os.ReadFile(filepath.Join(root, "deploy", "nomad", "tests", "expected-services.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var data map[string]any
+	if err := json.Unmarshal(b, &data); err != nil {
+		t.Fatal(err)
+	}
+	if data["job_id"] != "ultracore" {
+		t.Fatalf("job_id: %v", data["job_id"])
 	}
 }
