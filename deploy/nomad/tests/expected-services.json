@@ -1,0 +1,37 @@
+{
+  "job_id": "ultracore",
+  "namespace": "default",
+  "services": [
+    {
+      "name": "cored",
+      "check_path": "/readyz",
+      "liveness_path": "/healthz",
+      "hostnames": [
+        "core.fleet.clark.team",
+        "core.clark.team"
+      ]
+    },
+    {
+      "name": "coreworker",
+      "check_path": "/readyz"
+    },
+    {
+      "name": "coreadmin",
+      "check_path": "/readyz",
+      "hostnames": [
+        "core-admin.fleet.clark.team"
+      ]
+    }
+  ],
+  "secret_variable_path": "nomad/jobs/ultracore",
+  "secret_key_names": [
+    "database_url",
+    "master_key",
+    "admin_token",
+    "admin_token_role",
+    "admin_cursor_secret"
+  ],
+  "retired_related": [
+    "ultracore-image-load"
+  ]
+}
