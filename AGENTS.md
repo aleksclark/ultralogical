@@ -20,6 +20,7 @@ task sdk:test          # Go SDK + TS SDK smoke against real stack
 task admin:test        # Admin API functional + query conformance (real Postgres)
 task dev               # one-command stack: pg + model + cored + coreworker
 task dev:smoke         # boot, smoke, tear down with leak checks
+task dev:compose:up    # additive Stacklane compose (ephemeral 127.0.0.1 publishes)
 ```
 
 - Go 1.26.6, `buf`, `docker`, `task`, node 22
@@ -71,6 +72,7 @@ task dev:smoke         # boot, smoke, tear down with leak checks
 | [agent_docs/core_extraction_plan/index.md](agent_docs/core_extraction_plan/index.md) | extraction roadmap and iron rules |
 | [docs/security.md](docs/security.md) | tool allowlists, denial visibility, tenancy, credential scope |
 | [docs/deploy.md](docs/deploy.md) | cored/coreworker deploy, CORE_* config, health |
+| [docs/dev-compose.md](docs/dev-compose.md) | additive Stacklane compose lifecycle (dev:compose:*) |
 | [docs/consumers.md](docs/consumers.md) | embedding SDKs, Actor/labels/policy conventions |
 | [agent_docs/package_layout.md](agent_docs/package_layout.md) | deciding where new code goes |
 | [agent_docs/testing.md](agent_docs/testing.md) | writing/running tests, using the harness |

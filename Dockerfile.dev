@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1.7
+# ultracore DEV image — Air hot-reload, source bind-mounted at runtime.
+# Do not use for production (see Dockerfile). Go pin matches go.mod (1.26.x).
+
+# air-verse/air is MIT. Pin >=1.62: older 1.61.x overwrote .air.toml with flag defaults.
+ARG AIR_VERSION=v1.67.4
+
+FROM golang:1.26.6-bookworm@sha256:116d58cbd88c1297624acc6e967a060012422bacf9930927e23fb719189c6f36
+
+ARG AIR_VERSION
+ENV CGO_ENABLED=0 \
+    GO111MODULE=on \
+    GOPATH=/go \
+    GOCACHE=/go-cache \
+    GOMODCACHE=/go/pkg/mod \
+    HOME=/root \
+    PATH=/go/bin:/usr/local/go/bin:$PATH
+
+# curl is used by compose healthchecks against /healthz and /readyz.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && go install github.com/air-verse/air@${AIR_VERSION} \
+ && air -v \
+ && mkdir -p /tmp/air /go-cache /src/tmp
+
+WORKDIR /src
+
+# Default is unused: compose selects Air + a per-binary config as PID1.
+# Bind-mounts hide /src; binaries live on the named volume at /src/tmp.
+CMD ["air", "-c", ".air.cored.toml"]

@@ -79,7 +79,13 @@ When unset, tracing is a no-op.
 
 - **Image:** multi-binary (`cored`, `coreworker`, `core` CLI). See root
   `Dockerfile`.
-- **Compose:** `docker-compose.yml` boots Postgres + both binaries.
+- **Compose (legacy/reference):** `docker-compose.yml` boots Postgres + both
+  binaries on **fixed** host ports `5432`/`8080`/`8081`. `docker compose up
+  --build` is unchanged and will collide across worktrees.
+- **Compose (Stacklane, additive):** `docker-compose.stacklane.yml` via
+  `task dev:compose:*` / `scripts/compose-dev.sh`. Loopback ephemeral publishes
+  (`127.0.0.1::<port>`), project name `ultracore-<instance>`. See
+  [dev-compose.md](dev-compose.md). Does not replace `task dev`.
 - Tag images as `ghcr.io/aleksclark/ultracore:0.1.0` (or your registry).
 
 ## systemd
