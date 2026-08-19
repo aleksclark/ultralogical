@@ -20,7 +20,7 @@ human user model, first-party web/desktop UI. See
 ## Quickstart
 
 ```sh
-# prerequisites: go 1.25+, docker, task, node 22
+# prerequisites: go 1.26.6, docker, task, node 22
 task dev          # pg + model + cored + coreworker
 task dev:smoke    # boot, smoke, tear down
 

@@ -22,7 +22,7 @@ task dev               # one-command stack: pg + model + cored + coreworker
 task dev:smoke         # boot, smoke, tear down with leak checks
 ```
 
-- Go 1.25+ (toolchain auto-downloads), `buf`, `docker`, `task`, node 22
+- Go 1.26.6, `buf`, `docker`, `task`, node 22
   (`npm ci` in `clients/ts` once, for the TS smoke test).
 - Run a single acceptance test: `go test ./e2e/ -run TestA02 -v`
 
