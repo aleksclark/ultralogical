@@ -1,0 +1,132 @@
+# ultracore Stacklane-compatible local DEV stack.
+# Lifecycle: scripts/compose-dev.sh (always pass -p ultracore-<instance>).
+# Publish ONLY 127.0.0.1::<containerPort> (ephemeral host port). Never 0.0.0.0 / fixed host ports.
+#
+# This file is additive. Legacy `docker compose up` still uses docker-compose.yml
+# (fixed 5432/8080/8081 binds). Host `task dev` / scripts/dev-stack.sh is unchanged.
+# Compose project name is set only via `docker compose -p` (never hardcoded here).
+#
+# Local-only sample credentials (not production secrets): POSTGRES_* and
+# CORE_MASTER_KEY match the reference compose so the stack boots without
+# operator tokens. Do not reuse these values outside local compose.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: core
+      POSTGRES_PASSWORD: core
+      POSTGRES_DB: core
+    volumes:
+      - ultracore_pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1::5432"
+    labels:
+      stacklane.enable: "true"
+      stacklane.project: "ultracore"
+      stacklane.instance: ${STACKLANE_INSTANCE:?set by scripts/compose-dev.sh}
+      stacklane.endpoint: "postgres"
+      stacklane.port: "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U core -d core"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  cored:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /src
+    # Air as PID1; no shell wrapper swallowing signals.
+    command: ["air", "-c", ".air.cored.toml"]
+    environment:
+      STACKLANE_INSTANCE: ${STACKLANE_INSTANCE:?set by scripts/compose-dev.sh}
+      # Internal Compose DNS — never host-published ports.
+      DATABASE_URL: postgres://core:core@postgres:5432/core?sslmode=disable
+      CORE_MASTER_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      CORE_ADDR: ":8080"
+      CORE_MIGRATE: "true"
+      CORE_DEFAULT_PROVIDER: openai
+      CORE_DEFAULT_MODEL: gpt-4.1-mini
+      CORE_PROVIDER_KINDS: null,static
+      GOPATH: /go
+      GOCACHE: /go-cache
+      GOMODCACHE: /go/pkg/mod
+      HOME: /root
+    volumes:
+      # Entire repo source RW for Air rebuilds.
+      - .:/src
+      - ultracore_go_mod_cache:/go/pkg/mod
+      - ultracore_go_build_cache:/go-cache
+      # Air binary + build-errors.log (not on the host bind-mounted tree).
+      - ultracore_cored_air_tmp:/src/tmp
+    ports:
+      - "127.0.0.1::8080"
+    labels:
+      stacklane.enable: "true"
+      stacklane.project: "ultracore"
+      stacklane.instance: ${STACKLANE_INSTANCE:?set by scripts/compose-dev.sh}
+      stacklane.endpoint: "api"
+      stacklane.port: "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 180s
+    restart: unless-stopped
+
+  coreworker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /src
+    command: ["air", "-c", ".air.coreworker.toml"]
+    environment:
+      STACKLANE_INSTANCE: ${STACKLANE_INSTANCE:?set by scripts/compose-dev.sh}
+      DATABASE_URL: postgres://core:core@postgres:5432/core?sslmode=disable
+      CORE_MASTER_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      CORE_ADDR: ":8081"
+      CORE_MAX_WORKERS: "4"
+      CORE_PROVIDER_KINDS: null,static
+      GOPATH: /go
+      GOCACHE: /go-cache
+      GOMODCACHE: /go/pkg/mod
+      HOME: /root
+    volumes:
+      - .:/src
+      - ultracore_go_mod_cache:/go/pkg/mod
+      - ultracore_go_build_cache:/go-cache
+      - ultracore_coreworker_air_tmp:/src/tmp
+    ports:
+      - "127.0.0.1::8081"
+    labels:
+      stacklane.enable: "true"
+      stacklane.project: "ultracore"
+      stacklane.instance: ${STACKLANE_INSTANCE:?set by scripts/compose-dev.sh}
+      stacklane.endpoint: "worker"
+      stacklane.port: "8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      cored:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8081/readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 180s
+    restart: unless-stopped
+
+volumes:
+  ultracore_pgdata:
+  ultracore_go_mod_cache:
+  ultracore_go_build_cache:
+  ultracore_cored_air_tmp:
+  ultracore_coreworker_air_tmp:

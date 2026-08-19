@@ -17,6 +17,7 @@ PLAN.md
 AGENTS.md
 README.md
 docker-compose.yml
+docker-compose.stacklane.yml
 deploy
 scripts
 clients/ts/node_modules

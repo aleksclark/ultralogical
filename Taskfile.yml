@@ -149,3 +149,45 @@ tasks:
     cmds:
       - go test ./admin/ -run 'E7_|AdminAuth|CoredHasNo|CoredPackage' -count=1 -timeout 30m
       - bash scripts/check-admin-isolation.sh
+
+  # Additive Stacklane compose lifecycle. Does not replace `task dev` / scripts/dev-stack.sh
+  # or legacy `docker compose up` (docker-compose.yml fixed host binds).
+  dev:compose:check:
+    desc: Fail-closed Stacklane/compose contract validation
+    cmds:
+      - bash scripts/compose-dev.sh check
+
+  dev:compose:up:
+    desc: Check, build, and start Stacklane compose stack; print endpoints
+    cmds:
+      - bash scripts/compose-dev.sh up
+
+  dev:compose:status:
+    desc: Compose ps + Stacklane/direct endpoint table
+    cmds:
+      - bash scripts/compose-dev.sh status
+
+  dev:compose:endpoints:
+    desc: Print Stacklane FQDNs and direct loopback port mappings
+    cmds:
+      - bash scripts/compose-dev.sh endpoints
+
+  dev:compose:logs:
+    desc: Follow Stacklane compose logs (Ctrl-C leaves stack up)
+    cmds:
+      - bash scripts/compose-dev.sh logs
+
+  dev:compose:down:
+    desc: Stop Stacklane compose stack (volumes preserved; never -v)
+    cmds:
+      - bash scripts/compose-dev.sh down
+
+  dev:compose:destroy:
+    desc: Destroy stack volumes (requires CONFIRM=ultracore-<instance>-destroy)
+    cmds:
+      - bash scripts/compose-dev.sh destroy
+
+  dev:compose:test:
+    desc: Lifecycle contract tests for the Stacklane compose wrapper
+    cmds:
+      - bash scripts/compose-dev_test.sh

@@ -72,7 +72,9 @@ task verify:coverage
 
 ## Deploy
 
-See [docs/deploy.md](docs/deploy.md). Compose: `docker compose up --build`.
+See [docs/deploy.md](docs/deploy.md). Legacy compose: `docker compose up --build`
+(fixed `5432`/`8080`/`8081`). Isolated worktree compose:
+[docs/dev-compose.md](docs/dev-compose.md) (`task dev:compose:up`).
 
 ## Consumers
 

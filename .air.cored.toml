@@ -1,0 +1,43 @@
+# Air config for Stacklane compose cored hot-reload (air-verse/air v1.67.x schema).
+# Binary/tmp live under ./tmp (named volume mounted at /src/tmp).
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  args_bin = []
+  bin = "./tmp/cored"
+  # -buildvcs=false: bind-mounted .git is owned by the host UID; container git
+  # rejects it as "dubious ownership", which otherwise aborts VCS stamping.
+  cmd = "go build -buildvcs=false -o ./tmp/cored ./cmd/cored"
+  delay = 1000
+  exclude_dir = ["tmp", "vendor", "testdata", ".git", "node_modules", "admin-web", "admin-e2e", "clients", "e2e", "deploy", "docs", "agent_docs", "plan", "scripts"]
+  exclude_regex = ["_test\\.go$"]
+  exclude_unchanged = false
+  follow_symlink = false
+  include_ext = ["go"]
+  kill_delay = "2s"
+  log = "build-errors.log"
+  poll = true
+  poll_interval = 500
+  rerun = false
+  send_interrupt = true
+  stop_on_error = false
+
+[color]
+  build = "yellow"
+  main = "magenta"
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  silent = false
+  time = false
+
+[misc]
+  clean_on_exit = false
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true
